@@ -1,0 +1,7 @@
+resize_icons.py
+firebase-credentials.json
+face_service.py
+enroll_face_camera.py
+/Application
+/env
+.env
