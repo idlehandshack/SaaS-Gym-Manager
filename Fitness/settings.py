@@ -16,7 +16,7 @@ API_KEY = os.environ.get("INTERNAL_API_KEY", "")
 # ── ALLOWED_HOSTS ─────────────────────────────────────────────────────────
 # Never use ["*"] in production — it accepts requests spoofing any Host header
 if DEBUG:
-    ALLOWED_HOSTS = ['.localhost', '127.0.0.1', '0.0.0.0','https://saas-gym-manager.onrender.com']
+    ALLOWED_HOSTS = ['.localhost', '127.0.0.1', '0.0.0.0','saas-gym-manager.onrender.com']
 else:
     ALLOWED_HOSTS = [
         'saas-gym-manager.onrender.com',
