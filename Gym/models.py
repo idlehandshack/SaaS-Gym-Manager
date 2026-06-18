@@ -1,0 +1,147 @@
+"""
+gyms/models.py
+--------------
+Core multi-tenant model.  Every other app's models carry a FK to Gym.
+"""
+
+import uuid
+from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Subscription Plans (SaaS tiers defined by the software owner)
+# ──────────────────────────────────────────────────────────────────────────────
+class SubscriptionPlan(models.Model):
+    name            = models.CharField(max_length=60, unique=True)   # "Starter", "Pro", "Enterprise"
+    price_monthly   = models.DecimalField(max_digits=10, decimal_places=2)
+    member_limit    = models.PositiveIntegerField(default=100)
+    trainer_limit   = models.PositiveIntegerField(default=5)
+    feature_flags   = models.JSONField(default=dict, blank=True)     # {"face_recognition": true, …}
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['price_monthly']
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Gym  (one row = one tenant)
+# ──────────────────────────────────────────────────────────────────────────────
+class Gym(models.Model):
+    # Identity
+    id              = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    gym_name        = models.CharField(max_length=100)
+    gym_code        = models.SlugField(max_length=20, unique=True, db_index=True)
+
+    # Owner (1 User can own exactly 1 gym — use StaffProfile for multi-gym staff)
+    owner           = models.OneToOneField(
+                          User, on_delete=models.PROTECT,
+                          related_name='owned_gym'
+                      )
+
+    # Subscription
+    plan            = models.ForeignKey(
+                          SubscriptionPlan, on_delete=models.PROTECT,
+                          null=True, blank=True
+                      )
+    active          = models.BooleanField(default=True)
+    subscription_start  = models.DateField(null=True, blank=True)
+    subscription_end    = models.DateField(null=True, blank=True)
+
+    # Limits (mirrored from plan but can be overridden per-gym)
+    member_limit    = models.PositiveIntegerField(default=100)
+    trainer_limit   = models.PositiveIntegerField(default=5)
+
+    # ── White-label settings ──────────────────────────────────────────────
+    logo            = models.ImageField(upload_to='gym_logos/', null=True, blank=True)
+    contact_email   = models.EmailField(blank=True)
+    contact_phone   = models.CharField(max_length=15, blank=True)
+    whatsapp_number = models.CharField(max_length=15, blank=True)
+    theme_color     = models.CharField(max_length=7, default='#007bff')  # hex
+    receipt_footer  = models.TextField(blank=True)
+    address         = models.TextField(blank=True)
+    city            = models.CharField(max_length=60, blank=True)
+    website         = models.URLField(blank=True)
+
+    # ── Geo-fence (per gym) ───────────────────────────────────────────────
+    latitude        = models.FloatField(default=0.0)
+    longitude       = models.FloatField(default=0.0)
+    radius_meters   = models.FloatField(default=100.0)
+
+    created_at      = models.DateTimeField(auto_now_add=True)
+    updated_at      = models.DateTimeField(auto_now=True)
+
+    # ── Helpers ───────────────────────────────────────────────────────────
+    @property
+    def is_subscription_active(self):
+        if not self.active:
+            return False
+        if self.subscription_end and timezone.now().date() > self.subscription_end:
+            return False
+        return True
+
+    @property
+    def days_until_expiry(self):
+        if self.subscription_end:
+            return (self.subscription_end - timezone.now().date()).days
+        return None
+
+    def __str__(self):
+        return f"{self.gym_name} ({self.gym_code})"
+
+    class Meta:
+        ordering  = ['gym_name']
+        indexes   = [models.Index(fields=['gym_code'])]
+        verbose_name        = 'Gym'
+        verbose_name_plural = 'Gyms'
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Staff Profile  (links a User to a Gym with a role)
+# ──────────────────────────────────────────────────────────────────────────────
+class StaffProfile(models.Model):
+    ROLE_CHOICES = [
+        ('super_admin',   'Super Admin'),    # software owner – set via is_superuser
+        ('gym_owner',     'Gym Owner'),
+        ('trainer',       'Trainer'),
+        ('receptionist',  'Receptionist'),
+    ]
+
+    user    = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_profile')
+    gym     = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='staff', null=True, blank=True)
+    role    = models.CharField(max_length=20, choices=ROLE_CHOICES, default='receptionist')
+    active  = models.BooleanField(default=True)
+
+    # Trainer-specific: which members are assigned to this trainer
+    # (populated via Enrollment.trainer FK, not stored here)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['gym', 'role']),
+            models.Index(fields=['user']),
+        ]
+        verbose_name        = 'Staff Profile'
+        verbose_name_plural = 'Staff Profiles'
+
+    def __str__(self):
+        return f"{self.user.username} — {self.get_role_display()} @ {self.gym}"
+
+    # ── Role helpers ──────────────────────────────────────────────────────
+    @property
+    def is_super_admin(self):
+        return self.user.is_superuser
+
+    @property
+    def is_gym_owner(self):
+        return self.role == 'gym_owner'
+
+    @property
+    def is_trainer(self):
+        return self.role == 'trainer'
+
+    @property
+    def is_receptionist(self):
+        return self.role == 'receptionist'

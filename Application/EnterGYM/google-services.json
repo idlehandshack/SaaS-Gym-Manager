@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "10523912840",
+    "project_id": "entergym",
+    "storage_bucket": "entergym.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10523912840:android:43bc330a7036dd75a88d3d",
+        "android_client_info": {
+          "package_name": "com.entergym.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3j4LfRJtXfdNX2E1patke4eZKajmT2lg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
