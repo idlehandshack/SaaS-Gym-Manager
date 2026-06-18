@@ -19,12 +19,12 @@ if DEBUG:
     ALLOWED_HOSTS = ['.localhost', '127.0.0.1', '0.0.0.0']
 else:
     ALLOWED_HOSTS = [
-        'entergym.onrender.com',
-        'www.entergym.onrender.com',
+        'saas-gym-manager.onrender.com',
+        'www.saas-gym-manager.onrender.com',
     ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://entergym.onrender.com",
+    "https://saas-gym-manager.onrender.com",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]
