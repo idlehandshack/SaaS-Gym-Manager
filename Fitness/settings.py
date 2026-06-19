@@ -16,7 +16,7 @@ API_KEY = os.environ.get("INTERNAL_API_KEY", "")
 # ── ALLOWED_HOSTS ─────────────────────────────────────────────────────────
 # Never use ["*"] in production — it accepts requests spoofing any Host header
 if DEBUG:
-    ALLOWED_HOSTS = ['.localhost', '127.0.0.1', '0.0.0.0','saas-gym-manager.onrender.com']
+    ALLOWED_HOSTS = ['.localhost', '127.0.0.1', '0.0.0.0','saas-gym-manager.onrender.com',"localhost","*"]
 else:
     ALLOWED_HOSTS = [
         'saas-gym-manager.onrender.com',
@@ -28,7 +28,6 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]
-
 INSTALLED_APPS = [
     'jazzmin',
 
@@ -64,7 +63,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'Gym.middleware.GymMiddleware',   # ← add this
+    'Gym.middleware.GymMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'AuthFit.middleware.SecurityHeadersMiddleware',
 ]
@@ -89,6 +88,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'AuthFit.context_processors.gym_config',
+                'AuthFit.context_processors.saas_config',
                 'notifications.context_processors.vapid_key',
             ],
         },

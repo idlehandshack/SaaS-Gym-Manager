@@ -87,11 +87,12 @@ def unregister_user_device(request):
 
     # Scope filter: user + gym + token
     # Without gym scoping, a user could deactivate a token at another gym
-    qs = UserDevice.objects.filter(fcm_token=fcm_token, user=request.user)
-    if gym:
-        qs = qs.filter(gym=gym)
 
-    updated = qs.update(active=False)
+    updated = UserDevice.objects.filter(
+    fcm_token=fcm_token,
+    user=request.user,
+    gym=gym,           # always scope by gym, same as shop version
+    ).update(active=False)  
 
     logger.info(
         "unregister_user_device: user_id=%s gym=%s deactivated=%s",

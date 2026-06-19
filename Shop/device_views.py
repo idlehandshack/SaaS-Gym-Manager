@@ -1,6 +1,12 @@
 # shop/device_views.py
 """
-Endpoints called by the React Native app to register/unregister FCM tokens.
+Endpoints called by the React Native WebView to register/unregister FCM tokens.
+
+Registration is made from inside the owner's WebView (not a direct RN fetch),
+so the request carries:
+  - A valid Django session  → request.user = authenticated staff owner
+  - The gym subdomain       → GymMiddleware sets request.gym correctly
+  - A CSRF token            → read from cookie by the injected JS
 
 Add to shop/urls.py:
     path('devices/register/',   views_device.register_device,   name='register_device'),
@@ -9,11 +15,9 @@ Add to shop/urls.py:
 
 import json
 import logging
-from django.conf import settings
 
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .models import StaffDevice
@@ -21,13 +25,39 @@ from .models import StaffDevice
 logger = logging.getLogger(__name__)
 
 
-@csrf_exempt
+# ---------------------------------------------------------------------------
+# register_device
+# ---------------------------------------------------------------------------
+
+@login_required
 @require_POST
 def register_device(request):
-    # Verify shared secret sent by the app
-    if request.headers.get('X-Api-Key') != settings.API_KEY:
-        return JsonResponse({'ok': False, 'error': 'Unauthorized.'}, status=403)
+    """
+    Register (or reactivate) a staff FCM token.
 
+    Called from inside the owner's WebView via injected JavaScript, so:
+      - request.user is the authenticated staff owner (@login_required ensures this)
+      - request.gym  is set by GymMiddleware from the subdomain
+      - CSRF is validated automatically by Django (no @csrf_exempt needed)
+
+    This guarantees StaffDevice is saved with the correct gym + user, so
+    notifications.py's filter(gym=gym, active=True) matches only this
+    tenant's devices — no cross-gym notification leakage.
+    """
+    # ── gym context ─────────────────────────────────────────────────────────
+    gym = getattr(request, 'gym', None)
+    if not gym:
+        logger.error(
+            "register_device: request.gym is None for user_id=%s. "
+            "Check GymMiddleware is installed and the correct subdomain is used.",
+            request.user.id,
+        )
+        return JsonResponse(
+            {'ok': False, 'error': 'No gym context. Use your gym subdomain.'},
+            status=400,
+        )
+
+    # ── parse body ──────────────────────────────────────────────────────────
     try:
         body        = json.loads(request.body)
         fcm_token   = body.get('token', '').strip()
@@ -38,21 +68,43 @@ def register_device(request):
     if not fcm_token:
         return JsonResponse({'ok': False, 'error': 'token is required.'}, status=400)
 
-    # No user association needed — any device that knows the key is staff-owned
+    # ── persist ─────────────────────────────────────────────────────────────
+    # @login_required guarantees request.user is authenticated.
+    # gym is validated above. Both are always saved — no conditional guards needed.
     obj, created = StaffDevice.objects.update_or_create(
         fcm_token=fcm_token,
-        defaults={'device_name': device_name, 'active': True},
+        defaults={
+            'gym':         gym,
+            'user':        request.user,
+            'device_name': device_name,
+            'active':      True,
+        },
+    )
+
+    logger.info(
+        "register_device: user_id=%s gym=%s fcm_token=%.20s… created=%s",
+        request.user.id,
+        getattr(gym, 'gym_code', gym),
+        fcm_token,
+        created,
     )
     return JsonResponse({'ok': True, 'created': created})
 
-# shop/device_views.py
 
-@csrf_exempt
+# ---------------------------------------------------------------------------
+# unregister_device
+# ---------------------------------------------------------------------------
+
+@login_required
 @require_POST
 def unregister_device(request):
-    if request.headers.get('X-Api-Key') != settings.API_KEY:
-        return JsonResponse({'ok': False, 'error': 'Unauthorized.'}, status=403)
+    """
+    Deactivate a staff FCM token.
 
+    Scoped by fcm_token + user + gym — a request from goldengym cannot
+    deactivate a token belonging to ironhouse or a different user.
+    """
+    # ── parse body ──────────────────────────────────────────────────────────
     try:
         body      = json.loads(request.body)
         fcm_token = body.get('token', '').strip()
@@ -62,5 +114,20 @@ def unregister_device(request):
     if not fcm_token:
         return JsonResponse({'ok': False, 'error': 'token is required.'}, status=400)
 
-    updated = StaffDevice.objects.filter(fcm_token=fcm_token).update(active=False)
+    # ── scoped deactivation ─────────────────────────────────────────────────
+    gym = getattr(request, 'gym', None)
+
+    updated = StaffDevice.objects.filter(
+        fcm_token=fcm_token,
+        user=request.user,
+        gym=gym,
+    ).update(active=False)
+
+    logger.info(
+        "unregister_device: user_id=%s gym=%s fcm_token=%.20s… deactivated=%s",
+        request.user.id,
+        getattr(gym, 'gym_code', gym),
+        fcm_token,
+        updated > 0,
+    )
     return JsonResponse({'ok': True, 'deactivated': updated > 0})

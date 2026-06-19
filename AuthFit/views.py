@@ -3,8 +3,9 @@
 import secrets
 import os
 import json
+import functools
 from datetime import date, timedelta
-import functools 
+
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
@@ -25,6 +26,7 @@ from PIL import Image
 import io
 import logging
 
+from Gym.models import Gym                          
 from AuthFit.models import (
     Contact, Enrollment, MembershipPlan, Trainer,
     Attendence as Attendence_model, GymNotification
@@ -38,11 +40,15 @@ from Shop.notifications import notify_staff_new_enrollment
 logger = logging.getLogger(__name__)
 
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
-ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
+ALLOWED_EXTENSIONS  = {'.jpg', '.jpeg', '.png', '.webp'}
+INTERNAL_API_KEY    = os.environ.get("INTERNAL_API_KEY", "")
 
-INTERNAL_API_KEY = os.environ.get("INTERNAL_API_KEY", "")
-
-
+def test_gym(request):
+    return JsonResponse({
+        "gym": request.gym.gym_code if request.gym else None,
+        "role": request.staff_role,
+        "user": request.user.username if request.user.is_authenticated else None,
+    })
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ──────────────────────────────────────────────────────────────────────────────
@@ -55,7 +61,6 @@ def _check_internal_key(request):
 
 
 def is_staff(user):
-    """Used with @user_passes_test for staff-only views."""
     return user.is_staff or user.is_superuser
 
 
@@ -79,20 +84,23 @@ def _safe_next(next_url: str, request) -> str:
 
 
 def _get_gym(request):
-    """
-    Returns gym from request (set by GymMiddleware).
-    Returns None for superusers (cross-gym access).
-    Raises 403 if a normal user has no gym.
-    """
     if request.user.is_superuser:
         return None
-    gym = getattr(request, 'gym', None)
-    return gym  # may be None for unauthenticated — callers handle this
+    return getattr(request, 'gym', None)
+
+
+def _gym_staff_required(view_fn):
+    @login_required
+    @functools.wraps(view_fn)
+    def wrapped(request, *args, **kwargs):
+        if not (request.user.is_staff or request.user.is_superuser):
+            return HttpResponseForbidden("Staff access required.")
+        return view_fn(request, *args, **kwargs)
+    return wrapped
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Internal API views (called by face recognition service, cron jobs)
-# These use unique_id + gym_id from the POST body for scoping
+# Internal API views (called by face recognition service / cron jobs)
 # ──────────────────────────────────────────────────────────────────────────────
 
 @csrf_exempt
@@ -103,9 +111,9 @@ def save_embeddings_batch(request):
         if not _check_internal_key(request):
             return JsonResponse({"error": "Unauthorized"}, status=403)
 
-        data = json.loads(request.body)
-        unique_id = data.get("unique_id")
-        gym_id = data.get("gym_id")       # ← face service must send this
+        data       = json.loads(request.body)
+        unique_id  = data.get("unique_id")
+        gym_id     = data.get("gym_id")
         embeddings = data.get("embeddings", [])
 
         if not unique_id:
@@ -113,7 +121,6 @@ def save_embeddings_batch(request):
         if not embeddings:
             return JsonResponse({"error": "Missing embeddings"}, status=400)
 
-        # Scope lookup to gym — prevents cross-gym unique_id collision
         qs = Enrollment.objects.filter(unique_id=unique_id)
         if gym_id:
             qs = qs.filter(gym_id=gym_id)
@@ -127,10 +134,8 @@ def save_embeddings_batch(request):
             face_embeddings.append(emb)
 
         enrollment.face_embeddings = face_embeddings
-        enrollment.face_enrolled = True
+        enrollment.face_enrolled   = True
         enrollment.save(update_fields=["face_embeddings", "face_enrolled"])
-
-        # Bust gym-scoped cache
         cache.delete(f"face_users_{enrollment.gym_id}")
 
         logger.info("Embeddings updated for enrollment_id=%s", enrollment.id)
@@ -151,9 +156,9 @@ def mark_attendance_api(request):
         if not _check_internal_key(request):
             return JsonResponse({"error": "Unauthorized"}, status=403)
 
-        data = json.loads(request.body)
+        data      = json.loads(request.body)
         unique_id = data.get("unique_id")
-        gym_id = data.get("gym_id")    # ← face service must send this
+        gym_id    = data.get("gym_id")
 
         if not unique_id:
             return JsonResponse({"error": "Missing unique_id"}, status=400)
@@ -170,10 +175,6 @@ def mark_attendance_api(request):
 
 @csrf_exempt
 def get_users(request):
-    """
-    Face recognition service fetches all enrolled users.
-    Must send gym_id as query param: /api/get-users/?gym_id=<uuid>
-    """
     if not _check_internal_key(request):
         return JsonResponse({"error": "Unauthorized"}, status=403)
 
@@ -210,8 +211,8 @@ def upload_face_image(request):
         if not _check_internal_key(request):
             return JsonResponse({"error": "Unauthorized"}, status=403)
 
-        unique_id = request.POST.get("unique_id")
-        gym_id = request.POST.get("gym_id")
+        unique_id  = request.POST.get("unique_id")
+        gym_id     = request.POST.get("gym_id")
         face_image = request.FILES.get("face_image")
 
         if not unique_id or not face_image:
@@ -224,9 +225,8 @@ def upload_face_image(request):
 
         enrollment.face_image = face_image
         enrollment.save(update_fields=["face_image"])
-
         cache.delete(f"profile_image_{enrollment.user_id}")
-        cache.delete(f"enrollment_{enrollment.user_id}")
+        cache.delete(f"enrollment_{enrollment.user_id}_{enrollment.gym_id}")
 
         return JsonResponse({"status": "success", "image_url": enrollment.face_image.url})
 
@@ -254,7 +254,7 @@ def run_expiry_check(request):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Auth views (no gym scoping needed)
+# Auth views
 # ──────────────────────────────────────────────────────────────────────────────
 
 def signupPage(request):
@@ -266,7 +266,7 @@ def signupPage(request):
     if request.method == "POST":
         form = UserLogin(request.POST, gym=gym)
         if form.is_valid():
-            user = form.save()         
+            user = form.save()
             auth_log(request, user)
             messages.success(request, "Account created successfully!")
             return redirect('/')
@@ -283,13 +283,12 @@ def loginPage(request):
     next_url = request.GET.get('next') or request.POST.get('next', '/')
 
     if request.method == "POST":
-        ip = get_client_ip(request)
-        phone = request.POST.get('username', '').strip()
+        ip       = get_client_ip(request)
+        phone    = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
 
         if not check_login_attempt(ip, phone):
-            messages.error(
-                request, "Too many failed login attempts. Try again later.")
+            messages.error(request, "Too many failed login attempts. Try again later.")
             return redirect(f'/login/?next={next_url}')
 
         user = authenticate(request, username=phone, password=password)
@@ -319,52 +318,63 @@ def handlelogout(request):
 def homePage(request):
     gym = getattr(request, 'gym', None)
 
-    # Notifications — per gym
-    notif_key = f"notifications_{gym.pk}" if gym else "notifications_public"
+    # ── SaaS root domain — no gym context ─────────────────────────────────
+    if gym is None:
+        if request.user.is_superuser:
+            gyms = Gym.objects.all().order_by('gym_name')
+            return render(request, 'saas_home.html', {'gyms': gyms})
+        return render(request, 'saas_home.html')
+
+    # ── Gym domain — load gym-specific content ─────────────────────────────
+    notif_key         = f"notifications_{gym.pk}"
     gym_notifications = cache.get(notif_key)
     if gym_notifications is None:
-        qs = GymNotification.objects.filter(is_active=True)
-        if gym:
-            qs = qs.filter(gym=gym)
-        gym_notifications = list(qs.values("icon", "message"))
+        gym_notifications = list(
+            GymNotification.objects
+            .filter(gym=gym, is_active=True)
+            .values("icon", "message")
+        )
         cache.set(notif_key, gym_notifications, timeout=3600)
 
-    # Plans — per gym
-    plans_key = f"membership_plans_{gym.pk}" if gym else "membership_plans_public"
-    plans = cache.get(plans_key)
+    plans_key = f"membership_plans_{gym.pk}"
+    plans     = cache.get(plans_key)
     if plans is None:
-        qs = MembershipPlan.objects.all()
-        if gym:
-            qs = qs.filter(gym=gym)
-        plans = list(qs.values("id", "plan", "price", "duration_days"))
+        plans = list(
+            MembershipPlan.objects
+            .filter(gym=gym)
+            .values("id", "plan", "price", "duration_days")
+        )
         cache.set(plans_key, plans, timeout=3600)
 
-    enrolled = False
-    isStaff = False
+    enrolled    = False
+    isStaff     = False
     isSuperuser = False
 
     if request.user.is_authenticated:
-        isStaff = request.user.is_staff
+        isStaff     = request.user.is_staff
         isSuperuser = request.user.is_superuser
 
-        enrolled = cache.get(f"enrolled_{request.user.id}")
+        cache_key = f"enrolled_{request.user.id}_{gym.pk}"
+        enrolled  = cache.get(cache_key)
         if enrolled is None:
-            enrolled = Enrollment.objects.filter(user=request.user).exists()
-            cache.set(f"enrolled_{request.user.id}", enrolled, timeout=300)
+            enrolled = Enrollment.objects.filter(
+                user=request.user, gym=gym
+            ).exists()
+            cache.set(cache_key, enrolled, timeout=300)
 
-    return render(request, "home.html", {
+    return render(request, 'gym_home.html', {
+        "gym":               gym,
         "enrolled":          enrolled,
         "isStaff":           isStaff,
         "isSuperuser":       isSuperuser,
         "gym_notifications": gym_notifications,
         "plans":             plans,
-        "gym":               gym,
     })
 
 
 def stats_api(request):
     gym = getattr(request, 'gym', None)
-    qs = Enrollment.objects.all()
+    qs  = Enrollment.objects.all()
     if gym:
         qs = qs.filter(gym=gym)
     return JsonResponse({"total_users": qs.count()})
@@ -373,15 +383,19 @@ def stats_api(request):
 def contact(request):
     gym = getattr(request, 'gym', None)
 
+    # FIX: Contact.gym is non-nullable — block on bare domain (gym=None)
+    if not gym:
+        messages.error(request, "Contact form is unavailable on this domain.")
+        return redirect('/')
+
     if request.method == "POST":
-        name = request.POST.get('name', '').strip()
-        number = request.POST.get('number', '').strip()
-        email = request.POST.get('email', '').strip()
+        name    = request.POST.get('name', '').strip()
+        number  = request.POST.get('number', '').strip()
+        email   = request.POST.get('email', '').strip()
         message = request.POST.get('description', '').strip()
 
         if not number.isdigit() or len(number) != 10:
-            messages.error(
-                request, "Please enter a valid 10-digit phone number.")
+            messages.error(request, "Please enter a valid 10-digit phone number.")
             return redirect('/contact/')
 
         Contact.objects.create(
@@ -391,8 +405,7 @@ def contact(request):
             phonenumber=number,
             description=message,
         )
-        messages.success(
-            request, "Thanks for contacting us — we'll get back to you soon!")
+        messages.success(request, "Thanks for contacting us — we'll get back to you soon!")
         return redirect('/contact/')
 
     return render(request, 'contact.html')
@@ -403,7 +416,22 @@ def workout(request):
 
 
 def download_app(request):
-    return render(request, 'download.html')
+    """
+    Renders the app download page.
+    The `gym` object is injected by your context processor automatically,
+    but we also pass gym_name / gym_short explicitly so the template
+    has clean variables to use everywhere (title, meta, aria-label, etc.)
+    """
+    gym = getattr(request, 'gym', None)  # set by your context processor
+ 
+    gym_name  = gym.gym_name if gym else "EnterGYM"
+    # A short slug for things like the APK filename or meta title
+    gym_short = gym_name.replace(" ", "")  # "GoldenGYM", "EnterGYM", etc.
+ 
+    return render(request, 'download.html', {
+        'gym_name':  gym_name,
+        'gym_short': gym_short,
+    })
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -412,41 +440,34 @@ def download_app(request):
 
 @login_required
 def enrollment(request):
-    if Enrollment.objects.filter(user=request.user).exists():
+    gym = getattr(request, 'gym', None)
+    
+    # FIX: scope check to this gym — without gym filter a user enrolled at
+    # fitzone gets redirected away from ironhouse enrollment page
+    if Enrollment.objects.filter(user=request.user, gym=gym).exists():
         return redirect('/profile/')
 
-    gym = getattr(request, 'gym', None)
-
-    # Scope plans and trainers to this gym
-    plans = MembershipPlan.objects.filter(
-        gym=gym) if gym else MembershipPlan.objects.none()
-    trainers = Trainer.objects.filter(
-        gym=gym) if gym else Trainer.objects.none()
+    plans    = MembershipPlan.objects.filter(gym=gym) if gym else MembershipPlan.objects.none()
+    trainers = Trainer.objects.filter(gym=gym) if gym else Trainer.objects.none()
 
     if request.method == "POST":
-        name = request.POST.get('name', '').strip()
-        email = request.POST.get('email', '').strip()
-        phone = request.POST.get('phone', '').strip()
-        gender = request.POST.get('gender')
-        plan_id = request.POST.get('plan')
+        name       = request.POST.get('name', '').strip()
+        email      = request.POST.get('email', '').strip()
+        phone      = request.POST.get('phone', '').strip()
+        gender     = request.POST.get('gender')
+        plan_id    = request.POST.get('plan')
         trainer_id = request.POST.get('trainer')
-        reference = request.POST.get('reference', '').strip()
-        address = request.POST.get('address', '').strip()
+        reference  = request.POST.get('reference', '').strip()
+        address    = request.POST.get('address', '').strip()
 
         selected_trainer = None
         if trainer_id:
-            # Scope trainer lookup to this gym
-            selected_trainer = Trainer.objects.filter(
-                id=trainer_id, gym=gym
-            ).first()
+            selected_trainer = Trainer.objects.filter(id=trainer_id, gym=gym).first()
             if not selected_trainer:
                 messages.error(request, "Selected trainer does not exist.")
                 return redirect('/enrollment/')
 
-        # Scope plan lookup to this gym
-        selected_plan = MembershipPlan.objects.filter(
-            id=plan_id, gym=gym
-        ).first()
+        selected_plan = MembershipPlan.objects.filter(id=plan_id, gym=gym).first()
         if not selected_plan:
             messages.error(request, "Selected plan does not exist.")
             return redirect('/enrollment/')
@@ -475,8 +496,7 @@ def enrollment(request):
         cache.delete(f"enrolled_{request.user.id}_{gym_pk}")
         cache.delete(f"enrollment_status_{request.user.id}_{gym_pk}")
 
-        messages.success(
-            request, "Welcome aboard! Your gym membership has been activated.")
+        messages.success(request, "Welcome aboard! Your gym membership has been activated.")
         return redirect('/profile/')
 
     return render(request, 'enrollment.html', {"plans": plans, "trainers": trainers})
@@ -486,7 +506,6 @@ def enrollment(request):
 def Profile(request):
     gym = getattr(request, 'gym', None)
 
-    # Scope enrollment to this gym
     enrollment = (
         Enrollment.objects
         .filter(user=request.user, gym=gym)
@@ -495,10 +514,9 @@ def Profile(request):
     )
 
     plans_key = f"membership_plans_{gym.pk}" if gym else f"membership_plans_user_{request.user.id}"
-    plans = cache.get(plans_key)
+    plans     = cache.get(plans_key)
     if plans is None:
-        qs = MembershipPlan.objects.filter(
-            gym=gym) if gym else MembershipPlan.objects.none()
+        qs    = MembershipPlan.objects.filter(gym=gym) if gym else MembershipPlan.objects.none()
         plans = list(qs.values("id", "plan", "price", "duration_days"))
         cache.set(plans_key, plans, timeout=3600)
 
@@ -520,11 +538,9 @@ def Profile(request):
                         fetch_format="auto", quality="auto",
                         secure=True,
                     )
-                    cache.set(
-                        f"profile_image_{request.user.id}", image_url, timeout=3600)
+                    cache.set(f"profile_image_{request.user.id}", image_url, timeout=3600)
             except Exception:
-                logger.exception(
-                    "Cloudinary URL error for user %s", request.user.id)
+                logger.exception("Cloudinary URL error for user %s", request.user.id)
 
     return render(request, "profile.html", {
         "enrollment":     enrollment,
@@ -568,7 +584,7 @@ def upload_profile_pic(request):
         if img.mode not in ("RGB", "L"):
             img = img.convert("RGB")
         max_side = 800
-        w, h = img.size
+        w, h     = img.size
         if max(w, h) > max_side:
             ratio = max_side / max(w, h)
             img   = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
@@ -610,7 +626,7 @@ def attendance_page(request):
     today = timezone.localdate()
     user  = request.user
 
-    # Scope attendance to this gym
+    # FIX: both queries scoped to gym
     already_mark = Attendence_model.objects.filter(
         user=user, date=today, gym=gym
     ).exists()
@@ -633,7 +649,6 @@ def attendance_page(request):
         ),
         "today": today,
     })
-
 
 
 @login_required
@@ -680,35 +695,26 @@ def renew_membership(request):
 # Staff views — all scoped to request.gym
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _gym_staff_required(view_fn):
-    @login_required
-    @functools.wraps(view_fn)          # ← preserves __name__, __doc__
-    def wrapped(request, *args, **kwargs):
-        if not (request.user.is_staff or request.user.is_superuser):
-            return HttpResponseForbidden("Staff access required.")
-        return view_fn(request, *args, **kwargs)
-    return wrapped
-
-
 @_gym_staff_required
 def whatsapp_pending_users(request):
     gym = getattr(request, 'gym', None)
 
-    qs = Enrollment.objects.filter(
-        paymentStatus="Pending").select_related("selectPlan")
+    qs = Enrollment.objects.filter(paymentStatus="Pending").select_related("selectPlan", "gym")
     if gym:
         qs = qs.filter(gym=gym)
 
     pending_with_links = []
     for e in qs:
+        # FIX: use gym name from enrollment, not hardcoded "EnterGYM"
+        gym_name = e.gym.gym_name if e.gym else "EnterGYM"
         msg = (
-            f"Hello {e.fullname}! Reminder from EnterGYM: "
-            f"your payment of ₹{e.pendingAmount} is pending. "
+            f"Hello {e.fullname}! Reminder from {gym_name}: "
+            f"your payment of Rs.{e.pendingAmount} is pending. "
             f"Please clear your dues at your earliest convenience. Thank you!"
         )
         pending_with_links.append({
             "enrollment": e,
-            "wa_link": f"https://wa.me/91{e.phone}?text={quote(msg)}",
+            "wa_link":    f"https://wa.me/91{e.phone}?text={quote(msg)}",
         })
 
     return render(request, "admin_whatsapp.html", {"pending": pending_with_links})
@@ -716,9 +722,9 @@ def whatsapp_pending_users(request):
 
 @_gym_staff_required
 def payment_management(request):
-    gym = getattr(request, 'gym', None)
+    gym           = getattr(request, 'gym', None)
     status_filter = request.GET.get("filter", "pending")
-    since = timezone.now() - timedelta(days=7)
+    since         = timezone.now() - timedelta(days=7)
     METHOD_LABELS = {"C": "Cash", "U": "UPI", "B": "UPI + Cash"}
 
     qs = Enrollment.objects.select_related("selectPlan", "trainer")
@@ -726,8 +732,7 @@ def payment_management(request):
         qs = qs.filter(gym=gym)
 
     if status_filter == "done":
-        qs = qs.filter(created_at__gte=since,
-                       paymentStatus="Done").order_by("-created_at")
+        qs = qs.filter(created_at__gte=since, paymentStatus="Done").order_by("-created_at")
     else:
         qs = qs.filter(paymentStatus="Pending").order_by("-created_at")
 
@@ -754,20 +759,17 @@ def payment_management(request):
         for e in qs
     ]
 
-    # Counts scoped to gym
-    base_qs = Enrollment.objects.filter(
-        gym=gym) if gym else Enrollment.objects.all()
+    base_qs       = Enrollment.objects.filter(gym=gym) if gym else Enrollment.objects.all()
     pending_count = base_qs.filter(paymentStatus="Pending").count()
-    paid_count = base_qs.filter(
-        created_at__gte=since, paymentStatus="Done").count()
+    paid_count    = base_qs.filter(created_at__gte=since, paymentStatus="Done").count()
 
     return render(request, "payment_management.html", {
-        "rows":                rows,
-        "status_filter":       status_filter,
+        "rows":                 rows,
+        "status_filter":        status_filter,
         "total_pending_amount": sum(r["pending"] for r in rows),
-        "total_count":         len(rows),
-        "pending_count":       pending_count,
-        "paid_count":          paid_count,
+        "total_count":          len(rows),
+        "pending_count":        pending_count,
+        "paid_count":           paid_count,
     })
 
 
@@ -777,9 +779,9 @@ def payment_management(request):
 def update_payment(request):
     gym = getattr(request, 'gym', None)
     try:
-        data = json.loads(request.body)
-        enrollment_id = int(data.get("enrollment_id", 0))
-        paid_amount = float(data.get("paid_amount", 0))
+        data           = json.loads(request.body)
+        enrollment_id  = int(data.get("enrollment_id", 0))
+        paid_amount    = float(data.get("paid_amount", 0))
         payment_method = data.get("payment_method", "").strip()
         payment_date_s = data.get("payment_date", "").strip() or None
 
@@ -788,18 +790,16 @@ def update_payment(request):
         if payment_method not in ("C", "U", "B", ""):
             return JsonResponse({"error": "Invalid payment method."}, status=400)
 
-        # Scope to gym — prevents IDOR across gyms
         qs = Enrollment.objects.select_related("selectPlan", "user")
         if gym:
             qs = qs.filter(gym=gym)
         enrollment = qs.get(pk=enrollment_id)
 
-        plan_price = float(enrollment.selectPlan.price) if enrollment.selectPlan else float(
-            enrollment.Amount)
-        paid_amount = min(paid_amount, plan_price)
+        plan_price     = float(enrollment.selectPlan.price) if enrollment.selectPlan else float(enrollment.Amount)
+        paid_amount    = min(paid_amount, plan_price)
         pending_amount = max(plan_price - paid_amount, 0)
 
-        enrollment.paidAmount = paid_amount
+        enrollment.paidAmount    = paid_amount
         enrollment.pendingAmount = pending_amount
         enrollment.paymentStatus = "Done" if pending_amount == 0 else "Pending"
         enrollment.paymentMethod = payment_method or None
@@ -814,8 +814,8 @@ def update_payment(request):
             "paymentMethod", "paymentDate",
         ])
 
-        uid    = enrollment.user_id
-        gp     = gym.pk if gym else 'none'
+        uid = enrollment.user_id
+        gp  = gym.pk if gym else 'none'
         cache.delete(f"admin_revenue_{gp}")
         cache.delete(f"enrollment_{uid}_{gp}")
         cache.delete(f"enrollment_status_{uid}_{gp}")
@@ -842,17 +842,23 @@ def update_payment(request):
 
 @_gym_staff_required
 def today_attendance(request):
-    gym = getattr(request, 'gym', None)
+    gym   = getattr(request, 'gym', None)
     today = timezone.localdate()
 
     cache_key = f"today_attendance_{gym.pk if gym else 'super'}_{today}"
-    cached = cache.get(cache_key)
+    cached    = cache.get(cache_key)
     if cached:
         return render(request, "today_attendance.html", cached)
 
+    # FIX: use prefetch_related instead of select_related for reverse FK
+    # User → Enrollment is a FK (one user can have many enrollments across gyms)
+    # select_related("user__enrollment__...") silently fails for FK reverse paths
     qs = (
-        Attendence_model.objects.filter(date=today)
-        .select_related("user__enrollment__selectPlan", "user__enrollment__trainer")
+        Attendence_model.objects
+        .filter(date=today)
+        .select_related("user")
+        .prefetch_related("user__enrollment_set__selectPlan",
+                          "user__enrollment_set__trainer")
         .order_by("timestamp")
     )
     if gym:
@@ -861,8 +867,9 @@ def today_attendance(request):
     morning, evening = [], []
 
     for rec in qs:
-        enrollment = getattr(rec.user, "enrollment", None)
-        image_url = None
+        # FIX: scope enrollment lookup to this gym
+        enrollment = rec.user.enrollment_set.filter(gym=gym).first()
+        image_url  = None
 
         if enrollment and enrollment.face_image:
             try:
@@ -880,8 +887,7 @@ def today_attendance(request):
                         secure=True,
                     )
             except Exception:
-                logger.exception(
-                    "Cloudinary URL error for user %s", rec.user.id)
+                logger.exception("Cloudinary URL error for user %s", rec.user.id)
 
         entry = {
             "id":             rec.id,
@@ -916,7 +922,7 @@ def today_attendance(request):
 
 @_gym_staff_required
 def freeze_membership(request):
-    gym = getattr(request, 'gym', None)
+    gym   = getattr(request, 'gym', None)
     query = request.GET.get("q", "").strip()
 
     qs = Enrollment.objects.select_related("selectPlan").order_by("fullname")
@@ -926,7 +932,7 @@ def freeze_membership(request):
         qs = qs.filter(unique_id=query)
 
     paginator = Paginator(qs, 20)
-    page_obj = paginator.get_page(request.GET.get("page", 1))
+    page_obj  = paginator.get_page(request.GET.get("page", 1))
 
     return render(request, "freeze_membership.html", {"page_obj": page_obj, "query": query})
 
@@ -934,10 +940,10 @@ def freeze_membership(request):
 @_gym_staff_required
 @require_POST
 def freeze_membership_apply(request):
-    gym = getattr(request, 'gym', None)
+    gym        = getattr(request, 'gym', None)
     enrollment_id = request.POST.get("enrollment_id", "").strip()
-    days_raw = request.POST.get("days", "").strip()
-    back_query = request.POST.get("q", "").strip()
+    days_raw      = request.POST.get("days", "").strip()
+    back_query    = request.POST.get("q", "").strip()
 
     redirect_url = f"/freeze-membership/?q={back_query}" if back_query else "/freeze-membership/"
 
@@ -949,7 +955,6 @@ def freeze_membership_apply(request):
         messages.error(request, "Enter a value between 1 and 365.")
         return redirect(redirect_url)
 
-    # Scope to gym — prevents staff from freezing another gym's members
     qs = Enrollment.objects.select_related("user")
     if gym:
         qs = qs.filter(gym=gym)
@@ -961,17 +966,17 @@ def freeze_membership_apply(request):
         return redirect(redirect_url)
 
     if not enrollment.DueDate:
-        messages.error(
-            request, f"Member {enrollment.unique_id} has no due date set.")
+        messages.error(request, f"Member {enrollment.unique_id} has no due date set.")
         return redirect(redirect_url)
 
-    old_due = enrollment.DueDate
-    new_due = old_due + timedelta(days=days)
+    old_due         = enrollment.DueDate
+    new_due         = old_due + timedelta(days=days)
     enrollment.DueDate = new_due
     enrollment.save(update_fields=["DueDate"])
 
-    cache.delete(f"enrollment_{enrollment.user_id}_{gym.pk if gym else 'none'}")
-    cache.delete(f"enrollment_status_{enrollment.user_id}_{gym.pk if gym else 'none'}")
+    gym_pk = gym.pk if gym else 'none'
+    cache.delete(f"enrollment_{enrollment.user_id}_{gym_pk}")
+    cache.delete(f"enrollment_status_{enrollment.user_id}_{gym_pk}")
 
     messages.success(
         request,

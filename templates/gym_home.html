@@ -16,7 +16,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <title>EnterGYM | Fitness Center in Bhilai, Chhattisgarh</title>
+    <title>
+    {% if gym %}{{ gym.gym_name }} | Fitness Center{% if gym.city %} in {{ gym.city }}{% endif %}
+    {% else %}EnterGYM | Gym Management Platform{% endif %}
+  </title>
     <meta
       name="description"
       content="EnterGYM Bhilai - Transform your body with expert coaches, modern equipment & personalized plans. Start your 2-day free trial today!"
@@ -43,65 +46,9 @@
     <link rel="stylesheet" href="{% static 'css/home.css' %}" />
     <link rel="stylesheet" href="{% static 'css/loc_modal.css' %}">
     <!-- Preload mobile image for small screens -->
-    <link
-      rel="preload"
-      as="image"
-      href="{% static 'images/Fitness_mobile.webp' %}"
-      media="(max-width: 768px)"
-      fetchpriority="high" />
-
-    <!-- Preload desktop image for large screens -->
-    <link rel="preload" as="image"
-      href="{% static 'images/Fitness.webp' %}"
-      media="(min-width: 769px)"
-      fetchpriority="high" />
   </head>
   <body>
-    <div id="message-container">
-      {% for message in messages %}
-      <div
-        class="flash-message {% if message.tags == 'success' %} success {% elif message.tags == 'error' %} error {% else %} default {% endif %}"
-      >
-        <span>{{ message }}</span>
-        <button class="close-btn">×</button>
-      </div>
-      {% endfor %}
-    </div>
-
-    {% if request.user.is_staff and VAPID_PUBLIC_KEY %}
-      <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}" style="display:none;"></div>
-    {% endif %}
-
-    <!-- HERO -->
-    <section class="hero" id="home">
-      <!-- Background -->
-      <img
-        src="{% static 'images/Fitness.webp' %}"
-        srcset="
-          {% static 'images/Fitness_mobile.webp' %} 768w,
-          {% static 'images/Fitness.webp' %}        1920w
-        "
-        sizes="100vw"
-        class="hero-bg"
-        width="1920"
-        height="1080"
-        loading="eager"
-        fetchpriority="high"
-        alt="EnterGYM fitness center Bhilai"
-      />
-
-      <div class="overlay"></div>
-
-      <!-- TOP BAR -->
-      <div class="topbar">
-        <div class="container flex-between">
-          <span>EnterGYM in Bhilai, Chhattisgarh</span>
-          <span class="right-inner">Join: (+91) 7000032565</span>
-        </div>
-        <div class="divider"></div>
-      </div>
-
-      <!-- ===================== NOTIFICATION BAR ===================== -->
+    <!-- ===================== NOTIFICATION BAR ===================== -->
       {% if gym_notifications %}
       <div class="notif-bar" id="notifBar">
         <div class="notif-inner">
@@ -132,16 +79,61 @@
       </div>
       {% endif %}
       <!-- =================== END NOTIFICATION BAR =================== -->
+    <div id="message-container">
+      {% for message in messages %}
+      <div
+        class="flash-message {% if message.tags == 'success' %} success {% elif message.tags == 'error' %} error {% else %} default {% endif %}"
+      >
+        <span>{{ message }}</span>
+        <button class="close-btn">×</button>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if request.user.is_staff and VAPID_PUBLIC_KEY %}
+      <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}" style="display:none;"></div>
+    {% endif %}
+
+    <!-- HERO -->
+    <section class="hero" id="home">
+      <!-- Background -->
+      <picture>
+          <source
+              media="(max-width:768px)"
+              srcset="{% static 'images/Fitness_mobile.webp' %}">
+
+          <img
+              src="{% static 'images/Fitness.webp' %}"
+              class="hero-bg"
+              width="1920"
+              height="1080"
+              loading="eager"
+              fetchpriority="high"
+              alt="EnterGYM fitness center Bhilai">
+      </picture>
+
+      <div class="overlay"></div>
+
+      <!-- TOP BAR -->
+      <div class="topbar" id="topbar">
+        <div class="container flex-between">
+          <span>{% if gym %}{{ gym.gym_name }}{% if gym.city %} — {{ gym.city }}{% endif %}{% else %}EnterGYM — Gym Management Platform{% endif %}</span>
+          <span class="right-inner">{% if gym and gym.contact_phone %}Join: (+91) {{ gym.contact_phone }}{% endif %}</span>
+        </div>
+        <div class="divider"></div>
+      </div>
+
+      
 
       <!-- NAVBAR -->
       <nav class="navbar" id="navbar">
         <div class="nav-container">
           <a href="/" class="logo">
-            <img
-              src="{% static 'images/Logo1s.png' %}"
-              alt="EnterGYM Fitness Center Logo"
-              class="logo-img"
-            />
+            {% if gym and gym.logo %}
+                <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }} logo" class="logo-img" />
+              {% else %}
+                <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM Logo" class="logo-img" />
+              {% endif %}
           </a>
 
           <ul class="nav-links" id="navLinks">
@@ -155,7 +147,7 @@
             </li>
             {% endif %}
 
-            {% if isSuperuser %}
+            {% if  isStaff %}
             <li class="dropdown">
               <a href="#">Payment ▼</a>
               <ul class="dropdown-menu">
@@ -240,7 +232,7 @@
 
       <!-- HERO CONTENT -->
       <div id="heroContent" class="hero-content hero-animate">
-        <div class="hero-tag">Now Open · Bhilai, Chhattisgarh</div>
+        <div class="hero-tag">{% if gym %}Now Open{% if gym.city %} · {{ gym.city }}{% endif %}{% else %}Gym Management Platform{% endif %}</div>
         <h1 class="hero-title">
           Crush Your Fitness Goals<br class="break-line" />
           <em>Faster</em> Than Ever Before
@@ -252,15 +244,13 @@
         </p>
 
         <div class="hero-cta-row">
-          {% if request.user.is_authenticated %}
-            {% if enrolled %}
-            {# Already a member — send to profile, not enrollment #}
-            <a href="/profile/" class="cta-btn">My Dashboard →</a>
-            {% else %}
-            <a href="/enrollment/" class="cta-btn">Start 2-Day Free Trial →</a>
-            {% endif %}
+          {% if gym %}
+            {% if request.user.is_authenticated %}
+              {% if enrolled %}<a href="/profile/" class="cta-btn">My Dashboard →</a>
+              {% else %}<a href="/enrollment/" class="cta-btn">Start 2-Day Free Trial →</a>{% endif %}
+            {% else %}<a href="/signup/" class="cta-btn">Start 2-Day Free Trial →</a>{% endif %}
           {% else %}
-          <a href="/signup/" class="cta-btn">Start 2-Day Free Trial →</a>
+            <a href="/admin/" class="cta-btn">Admin Panel →</a>
           {% endif %}
           <a href="#About" class="cta-btn-ghost">Explore More</a>
         </div>
@@ -308,11 +298,9 @@
         <div class="menu-divider"></div>
 
         <ul class="menu-nav">
-          {% if isSuperuser %}
-          <li><a href="/admin/revenue/">Revenue <span>↗</span></a></li>
-          {% endif %}
 
           {% if isStaff %}
+          <li><a href="/admin/revenue/">Revenue <span>↗</span></a></li>
           <li><a href="/manage/orders/">Orders <span>↗</span></a></li>
           <li><a href="/admin-tools/today-attendance/">Attendance List <span>↗</span></a></li>
           <li><a href="/admin/attendance/">Attendance Analysis <span>↗</span></a></li>
@@ -624,7 +612,9 @@
                 alt="EnterGYM location Bhilai Chhattisgarh"
               />
             </div>
-            <p>Infront of AL-Lazeez, Junwani Rd<br />Bhilai, Chhattisgarh 490023</p>
+            {% if gym %}
+            <p>{{ gym.address }}<br />{% if gym.city %}{{ gym.city }}{% endif %}</p>
+            {%endif%}
           </div>
           <div class="footer-contact">
             <div class="footer-icon">
@@ -633,14 +623,18 @@
                 alt="Email EnterGYM support"
               />
             </div>
-            <p>support@gymcenter.com</p>
+            {% if gym %}
+            <p>{{ gym.contact_email }}</p>
+            {%endif%}
           </div>
         </div>
       </div>
 
       <div class="footer-container footer-main">
         <div class="footer-brand">
-          <h2>GY<span>M</span></h2>
+          {% if gym %}
+          <h2><span>{{ gym.gym_name }}</span></h2>
+          {%endif%}
           <p>
             Transform your body and mind with professional training, modern
             equipment and expert fitness coaching.

@@ -4,13 +4,17 @@ import hmac
 import hashlib
 import json
 import logging
-
+import os
 from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
+def saas_config(request):
+    return {
+        'BASE_DOMAIN': os.environ.get('BASE_DOMAIN', 'entergym.in'),
+    }
 
 def _user_hash(uid: int) -> str:
     """

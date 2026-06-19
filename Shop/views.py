@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 import logging
-
+from django.db import models
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
@@ -130,14 +130,22 @@ def _status_counts(base_qs):
 
 @login_required
 def product_list(request):
+    gym      = getattr(request, 'gym', None)
     products = Product.objects.filter(active=True).prefetch_related('flavors')
-    return render(request, 'shop/product_list.html', {'products': products})
+    return render(request, 'shop/product_list.html', {
+        'products': products,
+        'gym':      gym,        # FIX: pass gym so template can use gym.gym_name
+    })
 
 
 @login_required
 def product_detail(request, product_id):
+    gym     = getattr(request, 'gym', None)
     product = _get_active_product(product_id)
-    return render(request, 'shop/product_detail.html', {'product': product})
+    return render(request, 'shop/product_detail.html', {
+        'product': product,
+        'gym':     gym,        # FIX: pass gym so template shows gym.gym_name
+    })
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -146,6 +154,7 @@ def product_detail(request, product_id):
 
 @login_required
 def confirm_order(request, product_id):
+    gym     = getattr(request, 'gym', None)
     product = _get_active_product(product_id)
     if request.method != 'POST':
         return redirect('product_detail', product_id=product_id)
@@ -161,7 +170,6 @@ def confirm_order(request, product_id):
     unit_price  = flavor.final_price if flavor else product.discounted_price
     total_price = unit_price * Decimal(quantity)
 
-    gym        = getattr(request, 'gym', None)
     enrollment = _get_enrollment(request.user, gym=gym)
     image_url  = _get_profile_image(request.user, enrollment)
 
@@ -173,6 +181,7 @@ def confirm_order(request, product_id):
         'total_price': total_price,
         'enrollment':  enrollment,
         'image_url':   image_url,
+        'gym':         gym,  
     })
 
 
@@ -185,16 +194,16 @@ def confirm_order(request, product_id):
 def place_order(request):
     if request.method != 'POST':
         return redirect('product_list')
-
+ 
     gym        = getattr(request, 'gym', None)
     product_id = request.POST.get('product_id')
     product    = _get_active_product(product_id)
     quantity   = int(request.POST.get('quantity', 1))
-
+ 
     flavor, ok = _resolve_flavor(request, product)
     if not ok:
         return redirect('product_detail', product_id=product_id)
-
+ 
     # Hard stock check with row lock
     if flavor:
         flavor     = ProductFlavor.objects.select_for_update().get(id=flavor.id)
@@ -202,17 +211,16 @@ def place_order(request):
     else:
         flavors    = list(ProductFlavor.objects.select_for_update().filter(product=product))
         real_stock = sum(f.stock for f in flavors)
-
+ 
     if quantity < 1 or quantity > real_stock:
         messages.error(request, f"Sorry, only {real_stock} unit(s) left.")
         return redirect('product_detail', product_id=product_id)
-
+ 
     unit_price  = flavor.final_price if flavor else product.discounted_price
     total_price = unit_price * Decimal(quantity)
-
-    # gym set from request — never from user input
+ 
     order = Order.objects.create(
-        gym=gym,                      # ← required FK, was missing
+        gym=gym,
         user=request.user,
         product=product,
         flavor=flavor,
@@ -220,12 +228,39 @@ def place_order(request):
         total_price=total_price,
         status=Order.Status.PENDING,
     )
-
+ 
     if flavor:
         ProductFlavor.objects.filter(id=flavor.id).update(stock=flavor.stock - quantity)
-
+ 
     from .notifications import notify_staff_new_order
     transaction.on_commit(lambda: notify_staff_new_order(order))
+ 
+    # FIX: PRG pattern — redirect to GET endpoint instead of rendering directly
+    # Without this, browser refresh replays the POST and creates a duplicate order
+    return redirect('order_success', order_id=order.id)
+
+# In views.py — replace your order_success view
+
+@login_required
+def order_success(request, order_id):
+    """
+    GET-only success page. Safe to refresh — just re-fetches the existing order.
+    POST to this URL is rejected to prevent any accidental re-submission.
+    """
+    if request.method != 'GET':
+        return redirect('product_list')
+
+    gym = getattr(request, 'gym', None)
+
+    qs = Order.objects.filter(
+        id=order_id,
+        user=request.user,
+    ).select_related('product', 'flavor', 'gym')
+
+    if gym:
+        qs = qs.filter(gym=gym)
+
+    order = get_object_or_404(qs)
 
     enrollment = _get_enrollment(request.user, gym=gym)
     image_url  = _get_profile_image(request.user, enrollment)
@@ -234,8 +269,8 @@ def place_order(request):
         'order':      order,
         'enrollment': enrollment,
         'image_url':  image_url,
+        'gym':        gym,
     })
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # My orders (member view)
@@ -258,6 +293,7 @@ def my_orders(request):
         'orders':     orders,
         'enrollment': enrollment,
         'image_url':  image_url,
+        'gym' : gym,
     })
 
 
@@ -267,12 +303,23 @@ def my_orders(request):
 
 @staff_member_required
 def order_dashboard(request):
+
     gym           = getattr(request, 'gym', None)
     status_filter = request.GET.get('status', 'Pending')
     search        = request.GET.get('q', '').strip()
+    print("USER:", request.user)
+    print("AUTH:", request.user.is_authenticated)
+    print("GYM:", gym)
 
     # Base queryset — scoped to gym
-    base_qs = Order.objects.select_related('user', 'product', 'flavor')
+    base_qs = Order.objects.select_related('user', 'product', 'flavor', 'gym')\
+    .prefetch_related(
+        models.Prefetch(
+            'user__enrollment_set',
+            queryset=Enrollment.objects.filter(gym=gym),
+            to_attr='gym_enrollments'
+        )
+    )
     if gym:
         base_qs = base_qs.filter(gym=gym)
 
@@ -303,6 +350,7 @@ def order_dashboard(request):
         'all_counts':    all_counts,
         'revenue':       revenue,
         'Status':        Order.Status,
+        'gym':           gym, 
         'next_action': {
             Order.Status.PENDING:   ('Confirm — Item at Gym', Order.Status.CONFIRMED, 'confirm'),
             Order.Status.CONFIRMED: ('Mark Collected',        Order.Status.DELIVERED, 'deliver'),

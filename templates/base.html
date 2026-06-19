@@ -10,7 +10,6 @@
       href="{% static 'images/favicons.png' %}"
     />
     <title>EnterGYM {% block title %}{% endblock %}</title>
-
     <!-- Google Fonts — async, non-blocking -->
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -85,22 +84,26 @@
 
       <!-- TOP BAR -->
       <div class="topbar">
-        <div class="topbar-inner">
-          <div>EnterGYM in Bhilai, Chhattisgarh</div>
-          <div class="left-inner">Join: (+91) 7000032565</div>
-        </div>
-        <div class="divider"></div>
+          <div class="topbar-inner">
+              <span class="left-inner">
+              {% if gym %}{{ gym.gym_name }}{% if gym.city %} — {{ gym.city }}{% endif %}{% else %}EnterGYM — Gym Management Platform{% endif %}
+              </span>
+              <span class="right-inner">
+              {% if gym and gym.contact_phone %}Join: (+91) {{ gym.contact_phone }}{% endif %}
+              </span>
+          </div>
+          <div class="topbar-line"></div>
       </div>
 
       <!-- NAVBAR -->
       <nav class="navbar hero-animate">
         <div class="nav-inner">
           <a href="/" class="logo">
-            <img
-              src="{% static 'images/Logo1s.png' %}"
-              alt="EnterName Gym Logo"
-              class="logo-img"
-            />
+            {% if gym and gym.logo %}
+                <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }} logo" class="logo-img" />
+              {% else %}
+                <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM Logo" class="logo-img" />
+              {% endif %}
           </a>
         </div>
       </nav>

@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EnterGYM — Download App</title>
+    <title>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %} — Download App</title>
     <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}">
     <!-- PWA manifest -->
     <link rel="manifest" href="{% static 'js/manifest.json' %}">
@@ -13,7 +13,7 @@
     <!-- iOS PWA meta -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="apple-mobile-web-app-title" content="EnterGYM" />
+    <meta name="apple-mobile-web-app-title" content="{{ gym_name }}" />
     <link
       rel="apple-touch-icon"
       sizes="180x180"
@@ -996,7 +996,7 @@
       <div class="nav-inner">
         <a class="nav-brand" href="/">
           <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
-          EnterGYM <span class="acc">App</span>
+          {{ gym_name }} <span class="acc">App</span>
         </a>
       </div>
     </nav>
@@ -1009,8 +1009,7 @@
         </div>
         <h1>Download <span class="accent">App</span></h1>
         <p>
-          Get the EnterGYM app — auto attendance, membership tracking, and
-          more.
+         Get the {{ gym_name }} app — auto attendance, membership tracking, and more.
         </p>
       </div>
     </header>
@@ -1059,7 +1058,7 @@
                   <div class="phone-icon">
                     <i class="bi bi-lightning-charge-fill"></i>
                   </div>
-                  <div class="phone-app-label">EnterGYM</div>
+                  <div class="phone-app-label">{{ gym_name }}</div>
                   <div class="phone-app-ver">v1.0.0</div>
                 </div>
               </div>
@@ -1068,7 +1067,7 @@
 
           <div class="app-card-info">
             <div class="app-name">
-              EnterGYM <span class="acc">Android</span>
+              {{ gym_name }} <span class="acc">Android</span>
             </div>
             <div class="badge-row">
               <span class="pill pill-orange">v1.0.0</span>
@@ -1132,7 +1131,7 @@
             <div class="step-num">04</div>
             <div class="step-title">Launch</div>
             <div class="step-desc">
-              Tap Install, open EnterGYM, and sign in with your existing
+              Tap Install, open {{gym_name}}, and sign in with your existing
               account.
             </div>
           </div>
@@ -1150,7 +1149,7 @@
                 <div class="phone-screen">
                   <div class="phone-scan"></div>
                   <div class="phone-icon"><i class="bi bi-apple"></i></div>
-                  <div class="phone-app-label">EnterGYM</div>
+                  <div class="phone-app-label">{{ gym_name }}</div>
                   <div class="phone-app-ver">PWA</div>
                 </div>
               </div>
@@ -1158,7 +1157,7 @@
           </div>
 
           <div class="app-card-info">
-            <div class="app-name">EnterGYM <span class="acc">iPhone</span></div>
+            <div class="app-name">{{ gym_name }} <span class="acc">iPhone</span></div>
             <div class="badge-row">
               <span class="pill pill-blue">Web App</span>
               <span class="pill pill-green">No App Store</span>
@@ -1244,9 +1243,9 @@
 
         <div class="ios-modal-header">
           <div class="ios-modal-emoji">📲</div>
-          <div class="ios-modal-title">Install <span>EnterGYM</span></div>
+          <div class="ios-modal-title">Install <span>{{ gym_name }}</span></div>
           <p class="ios-modal-sub">
-            Follow 3 steps in <strong>Safari</strong> to add EnterGYM to your
+            Follow 3 steps in <strong>Safari</strong> to add {{ gym_name }} to your
             Home Screen.
           </p>
         </div>
@@ -1306,6 +1305,8 @@
     ></script>
 
     <script nonce="{{ request.csp_nonce }}" >
+      const GYM_NAME = "{{ gym_name }}";
+      const GYM_SHORT = "{{ gym_short }}";
       document.querySelectorAll(".tab-btn").forEach(btn => {
           btn.addEventListener("click", () => {
               switchTab(btn.dataset.tab);

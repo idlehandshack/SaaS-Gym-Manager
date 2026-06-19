@@ -46,9 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
     closeMenu.addEventListener("click", closeMobileMenu);
 
     mobileMenu.addEventListener("click", (e) => {
-      if (e.target === mobileMenu) {
-        closeMobileMenu();
-      }
+      if (e.target === mobileMenu) closeMobileMenu();
     });
 
     mobileMenu.querySelectorAll("a, button").forEach((item) => {
@@ -57,16 +55,41 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================
-     NOTIFICATION BAR
+     LAYOUT OFFSET ENGINE
+     Stacks: notifBar → topbar → navbar
+     and sets hero padding-top dynamically
+  ========================= */
+  function updateLayout() {
+    const notifBar = document.getElementById("notifBar");
+    const topbar = document.getElementById("topbar");
+    const navbar = document.getElementById("navbar");
+    const hero = document.getElementById("heroContent");
+
+    const notifH =
+      notifBar && !notifBar.classList.contains("hidden")
+        ? notifBar.offsetHeight
+        : 0;
+    const topbarH = topbar ? topbar.offsetHeight : 0;
+    const navbarH = navbar ? navbar.offsetHeight : 0;
+
+    if (topbar) topbar.style.top = notifH + "px";
+    if (navbar) navbar.style.top = notifH + topbarH + "px";
+    if (hero) hero.style.paddingTop = notifH + topbarH + navbarH + 32 + "px";
+  }
+
+  updateLayout();
+  window.addEventListener("resize", updateLayout);
+
+  /* =========================
+     NOTIFICATION CLOSE
   ========================= */
   const notifBar = document.getElementById("notifBar");
   const notifClose = document.getElementById("notifClose");
-  const navbar = document.getElementById("navbar");
 
-  if (notifBar && notifClose && navbar) {
+  if (notifBar && notifClose) {
     notifClose.addEventListener("click", () => {
       notifBar.classList.add("hidden");
-      navbar.classList.add("notif-hidden");
+      setTimeout(updateLayout, 420); // after CSS transition completes
     });
   }
 
@@ -88,22 +111,16 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => removeMessage(msg), 4000 + i * 200);
 
     const closeBtn = msg.querySelector(".close-btn");
-    if (closeBtn) {
-      closeBtn.addEventListener("click", () => removeMessage(msg));
-    }
+    if (closeBtn) closeBtn.addEventListener("click", () => removeMessage(msg));
   });
 
   function removeMessage(msg) {
     if (!msg || !msg.isConnected) return;
-
     msg.style.transition = "all 0.3s ease";
     msg.style.opacity = "0";
     msg.style.transform = "translateY(-10px)";
-
     setTimeout(() => {
-      if (msg.isConnected) {
-        msg.remove();
-      }
+      if (msg.isConnected) msg.remove();
     }, 300);
   }
 
@@ -112,20 +129,16 @@ document.addEventListener("DOMContentLoaded", () => {
   ========================= */
   function animateCount(el, target) {
     if (!el) return;
-
     let current = 0;
     const duration = 1200;
     const stepTime = 16;
     const increment = Math.ceil(target / (duration / stepTime));
-
     const timer = setInterval(() => {
       current += increment;
-
       if (current >= target) {
         current = target;
         clearInterval(timer);
       }
-
       el.textContent = current;
     }, stepTime);
   }
@@ -148,9 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const display = users < 50 ? users : Math.ceil(users / 10) * 10 * 2;
           animateCount(document.getElementById("statUsers"), display);
         })
-        .catch(() => {
-          animateCount(document.getElementById("statUsers"), 10);
-        });
+        .catch(() => animateCount(document.getElementById("statUsers"), 10));
     }, 2000);
   });
 
@@ -175,7 +186,6 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       { threshold: 0.15 },
     );
-
     animatedEls.forEach((el) => {
       el.style.animationPlayState = "paused";
       observer.observe(el);
@@ -195,11 +205,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateNavbar() {
     if (!navbarEl) return;
-    if (window.scrollY > 10) {
-      navbarEl.style.borderBottom = "1px solid rgba(249,115,22,0.25)";
-    } else {
-      navbarEl.style.borderBottom = "";
-    }
+    navbarEl.style.borderBottom =
+      window.scrollY > 10 ? "1px solid rgba(249,115,22,0.25)" : "";
     ticking = false;
   }
 
@@ -232,22 +239,18 @@ document.addEventListener("DOMContentLoaded", () => {
 ========================= */
 function toggleFeature(card) {
   const isActive = card.classList.contains("active");
-
-  document.querySelectorAll(".feature-card").forEach((c) => {
-    c.classList.remove("active");
-  });
-
+  document
+    .querySelectorAll(".feature-card")
+    .forEach((c) => c.classList.remove("active"));
   if (!isActive) {
     card.classList.add("active");
-
     setTimeout(() => {
       const rect = card.getBoundingClientRect();
-      if (rect.bottom > window.innerHeight - 20) {
+      if (rect.bottom > window.innerHeight - 20)
         window.scrollBy({
           top: rect.bottom - window.innerHeight + 40,
           behavior: "smooth",
         });
-      }
     }, 400);
   }
 }
@@ -257,22 +260,18 @@ function toggleFeature(card) {
 ========================= */
 function togglePricing(card) {
   const isActive = card.classList.contains("active");
-
-  document.querySelectorAll(".pricing-card").forEach((c) => {
-    c.classList.remove("active");
-  });
-
+  document
+    .querySelectorAll(".pricing-card")
+    .forEach((c) => c.classList.remove("active"));
   if (!isActive) {
     card.classList.add("active");
-
     setTimeout(() => {
       const rect = card.getBoundingClientRect();
-      if (rect.bottom > window.innerHeight - 20) {
+      if (rect.bottom > window.innerHeight - 20)
         window.scrollBy({
           top: rect.bottom - window.innerHeight + 40,
           behavior: "smooth",
         });
-      }
     }, 400);
   }
 }

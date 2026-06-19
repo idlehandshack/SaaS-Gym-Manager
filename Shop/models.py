@@ -12,20 +12,10 @@ from Gym.models import Gym
 from Gym.mixins import GymManager
 
 
-# ── constants ─────────────────────────────────────────────────────────────────
-
 STOCK_BUFFER = 2  # Reserve this many units — never exposed to users
 
 
-# ── Product and ProductFlavor — platform-global (shared across all gyms) ──────
-#
-# DESIGN DECISION: Products are NOT gym-scoped.
-# The SaaS owner manages one product catalog that all gyms share.
-# (e.g. whey protein, creatine — same products available at every gym)
-#
-# If you later need per-gym products, add:
-#   gym = models.ForeignKey(Gym, null=True, blank=True, on_delete=CASCADE)
-# and filter by gym in product views.
+# ── Product — platform-global (shared across all gyms) ───────────────────────
 
 class Product(models.Model):
     name        = models.CharField(max_length=200)
@@ -37,23 +27,35 @@ class Product(models.Model):
 
     @cached_property
     def discounted_price(self) -> Decimal:
-        return self.base_price * (1 - Decimal(self.discount) / 100)
+        # FIX: base_price is None on unsaved admin add form → guard it
+        if self.base_price is None:
+            return Decimal('0')
+        return self.base_price * (1 - Decimal(self.discount or 0) / 100)
 
     @cached_property
     def discount_amount(self) -> Decimal:
+        # FIX: same guard — base_price is None on unsaved instances
+        if self.base_price is None:
+            return Decimal('0')
         return self.base_price - self.discounted_price
 
     def get_total_stock(self) -> int:
-        """Raw stock — sum of all flavors. Use for internal/admin purposes."""
+        """Raw stock across all flavors. Internal/admin use only."""
+        # FIX: pk is None on unsaved instances — aggregate would crash
+        if not self.pk:
+            return 0
         result = self.flavors.aggregate(total=Sum('stock'))['total']
         return result or 0
 
     def get_available_stock(self) -> int:
-        """User-facing stock: raw stock minus the buffer. Always >= 0."""
+        """User-facing stock: raw stock minus buffer. Always >= 0."""
         return max(0, self.get_total_stock() - STOCK_BUFFER)
 
     @property
     def in_stock(self) -> bool:
+        # FIX: pk is None on unsaved instances — filter would crash
+        if not self.pk:
+            return False
         if 'flavors' in self.__dict__.get('_prefetched_objects_cache', {}):
             return any(f.available_stock > 0 for f in self.flavors.all())
         return self.flavors.filter(stock__gt=STOCK_BUFFER).exists()
@@ -65,6 +67,8 @@ class Product(models.Model):
         ordering = ['name']
 
 
+# ── ProductFlavor — platform-global ──────────────────────────────────────────
+
 class ProductFlavor(models.Model):
     product          = models.ForeignKey(Product, related_name='flavors', on_delete=models.CASCADE)
     name             = models.CharField(max_length=100)
@@ -74,7 +78,12 @@ class ProductFlavor(models.Model):
 
     @cached_property
     def final_price(self) -> Decimal:
-        return self.product.discounted_price + self.price_adjustment
+        # FIX: product may not be saved yet (no pk) or base_price may be None
+        if not self.product_id:
+            return Decimal('0')
+        if self.product.base_price is None:
+            return Decimal('0')
+        return self.product.discounted_price + (self.price_adjustment or Decimal('0'))
 
     @property
     def available_stock(self) -> int:
@@ -92,14 +101,6 @@ class ProductFlavor(models.Model):
 
 
 # ── Order — gym-scoped ────────────────────────────────────────────────────────
-#
-# FIX: Order had no gym FK.
-# This meant:
-#   - notify_staff_new_order(order) couldn't scope staff notifications by gym
-#   - Admin order list showed all gyms' orders to every gym owner
-#   - A member at ironhouse could see fitzone's orders
-#
-# gym is set from request.gym in the place_order view — never from user input.
 
 class Order(models.Model):
     class Status(models.TextChoices):
@@ -108,13 +109,11 @@ class Order(models.Model):
         DELIVERED = 'Delivered', 'Delivered'
         CANCELLED = 'Cancelled', 'Cancelled'
 
-    # FIX: gym FK added — every order belongs to one tenant
     gym = models.ForeignKey(
         Gym,
         on_delete=models.CASCADE,
         db_index=True,
     )
-
     user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     product     = models.ForeignKey(Product, on_delete=models.CASCADE)
     flavor      = models.ForeignKey(
@@ -129,7 +128,7 @@ class Order(models.Model):
     ordered_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 
-    objects = GymManager()   # FIX: enables .for_gym(gym) scoping
+    objects = GymManager()
 
     @property
     def is_pending(self) -> bool:
@@ -155,44 +154,29 @@ class Order(models.Model):
 
 
 # ── StaffDevice — gym-scoped ──────────────────────────────────────────────────
-#
-# FIX: StaffDevice had no gym FK and no user FK.
-# This meant:
-#   - _get_staff_tokens() couldn't filter by gym — ALL staff at ALL gyms
-#     received every order and enrollment notification
-#   - No way to know which gym a device token belongs to
-#   - No way to deactivate a specific staff member's token on logout
-#
-# user FK added so we can tie a token to a specific staff member.
-# gym FK added so notifications are scoped per tenant.
 
 class StaffDevice(models.Model):
     """
     FCM push token for a staff/owner device at a specific gym.
     One user can have multiple devices (phone + tablet etc.).
     """
-    # FIX: gym FK — scopes which gym's notifications this device receives
     gym = models.ForeignKey(
         Gym,
         on_delete=models.CASCADE,
         db_index=True,
     )
-
-    # FIX: user FK — ties the token to a specific staff member
-    # Allows deactivating on logout and scoping by role if needed
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='staff_devices',
         db_index=True,
     )
-
     fcm_token   = models.TextField(unique=True)
     device_name = models.CharField(max_length=120, blank=True)
     last_seen   = models.DateTimeField(auto_now=True)
     active      = models.BooleanField(default=True)
 
-    objects = GymManager()   # FIX: enables .for_gym(gym) scoping
+    objects = GymManager()
 
     def __str__(self):
         return (
@@ -206,6 +190,6 @@ class StaffDevice(models.Model):
         verbose_name        = 'Staff Device'
         verbose_name_plural = 'Staff Devices'
         indexes = [
-            models.Index(fields=['gym', 'active']),   # common query: active tokens per gym
-            models.Index(fields=['user', 'gym']),     # common query: devices per staff member
+            models.Index(fields=['gym', 'active']),
+            models.Index(fields=['user', 'gym']),
         ]

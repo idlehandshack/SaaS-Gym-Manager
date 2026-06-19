@@ -1,139 +1,704 @@
-{% extends "base.html" %} {% load static %} {% block title %}Workout
-{% endblock %} {% block link %}
-<link rel="stylesheet" href="{% static 'css/workout.css' %}" />
-{% endblock %} {% block content %}
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="{% static 'images/favicons.png' %}"
+    />
+    <title>Workout Library</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    />
 
-<div class="workout-container hero-animate">
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
 
-  <div class="workout-eyebrow">Training Library</div>
-  <div class="workout-title">Workout Videos</div>
-  <div class="workout-sub">Select a muscle group and start training.</div>
+      body {
+        font-family: "Inter", sans-serif;
+        background: #080808;
+        color: #fff;
+        overflow-x: hidden;
+      }     
+      /* ── NAVBAR ── */
+      .navbar {
+        position: absolute;
+        top: 37px;
+        left: 0;
+        width: 100%;
+        z-index: 90;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        transition:
+          border-color 0.3s,
+          background 0.3s,
+          top 0.3s;
+      }
+      .navbar.scrolled {
+        border-bottom-color: rgba(249, 115, 22, 0.3);
+        background: rgba(0, 0, 0, 0.85);
+      }
+      .nav-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 68px;
+        padding: 0 24px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+      }
+      .logo-img {
+        height: 54px;
+        width: auto;
+        filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.3));
+        transition: filter 0.3s;
+      }
+      .logo-img:hover {
+        filter: drop-shadow(0 0 16px rgba(249, 115, 22, 0.6));
+      }
 
-  <!-- Category pills -->
-  <div class="category-buttons">
-    <a href="#back">Back</a>
-    <a href="#chest">Chest</a>
-    <a href="#leg">Legs</a>
-    <a href="#biceps">Biceps</a>
-    <a href="#triceps">Triceps</a>
-    <a href="#shoulder">Shoulder</a>
-    <a href="#forearms">Forearms</a>
-  </div>
+      .nav-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.45);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .nav-back:hover {
+        color: #f97316;
+      }
+      .nav-back svg {
+        width: 13px;
+        height: 13px;
+      }
 
-  <!-- BACK -->
-  <section class="workout-section" id="back">
-    <div class="section-header"><span>🏋 Back</span></div>
-    <div class="video-grid">
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/back_4.png' %}">
-          <source src="{% static 'workout/back_1.mp4' %}" />
-        </video>
+      /* ── PAGE SHELL ── */
+      .wk-section {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding-top: 132px;
+        /* padding-top set by JS */
+      }
+
+      /* ── PAGE HEADER ── */
+      .wk-header {
+        padding: 36px 0 28px;
+        border-bottom: 1px solid #141414;
+        margin-bottom: 32px;
+      }
+      .wk-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: #f97316;
+        margin-bottom: 8px;
+      }
+      .wk-eyebrow::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #f97316;
+        box-shadow: 0 0 6px #f97316;
+      }
+      .wk-title {
+        font-size: clamp(24px, 4vw, 38px);
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.5px;
+        margin-bottom: 6px;
+      }
+      .wk-sub {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.35);
+      }
+
+      /* ── CATEGORY PILLS ── */
+      .category-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 40px;
+      }
+      .cat-pill {
+        text-decoration: none;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        padding: 6px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.45);
+        transition: all 0.15s;
+      }
+      .cat-pill:hover,
+      .cat-pill.active {
+        background: #f97316;
+        border-color: #f97316;
+        color: #fff;
+      }
+
+      /* ── WORKOUT CARD (outer wrapper) ── */
+      .wk-card {
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 12px;
+        overflow: hidden;
+        padding: 0 20px;
+      }
+
+      /* ── SECTION ── */
+      .workout-section {
+        padding: 28px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        scroll-margin-top: 130px;
+      }
+      .workout-section:last-child {
+        border-bottom: none;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .section-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 3.5px;
+        text-transform: uppercase;
+        color: #f97316;
+        white-space: nowrap;
+      }
+      .section-line {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          rgba(249, 115, 22, 0.2),
+          transparent
+        );
+      }
+      .section-count {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.2);
+        font-weight: 600;
+        letter-spacing: 1px;
+        white-space: nowrap;
+      }
+
+      /* ── VIDEO GRID ── */
+      .video-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      /* ── VIDEO CARD ── */
+      .video-card {
+        background: #0e0e0e;
+        border: 1px solid #1c1c1c;
+        border-radius: 10px;
+        overflow: hidden;
+        transition:
+          border-color 0.2s,
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      .video-card:hover {
+        border-color: rgba(249, 115, 22, 0.4);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+      }
+      .video-card video {
+        width: 100%;
+        display: block;
+        aspect-ratio: 9/16;
+        object-fit: cover;
+        background: #0a0a0a;
+      }
+
+      /* strip noisy controls */
+      video::-webkit-media-controls-timeline {
+        display: none;
+      }
+      video::-webkit-media-controls-current-time-display {
+        display: none;
+      }
+      video::-webkit-media-controls-time-remaining-display {
+        display: none;
+      }
+      video::-webkit-media-controls-volume-slider {
+        display: none;
+      }
+      video::-webkit-media-controls-mute-button {
+        display: none;
+      }
+
+      /* ── FADE-IN ── */
+      .fade-in {
+        opacity: 0;
+        transform: translateY(16px);
+        transition:
+          opacity 0.5s ease,
+          transform 0.5s ease;
+      }
+      .fade-in.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (min-width: 640px) {
+        .video-grid {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 14px;
+        }
+      }
+      @media (min-width: 1024px) {
+        .video-grid {
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+        }
+        .nav-inner {
+          padding: 0 40px;
+        }
+      
+        .wk-section {
+          padding-left: 40px;
+          padding-right: 40px;
+        }
+      }
+      @media (max-width: 767px) {
+        .navbar {
+          top: 32px;
+        }
+        .nav-inner {
+          height: 56px;
+          padding: 0 16px;
+        }
+        .logo-img {
+          height: 42px;
+        }
+        .wk-section {
+          padding-left: 16px;
+          padding-right: 16px;
+        }
+        .wk-header {
+          padding: 24px 0 20px;
+          margin-bottom: 20px;
+        }
+        .wk-card {
+          padding: 0 14px;
+        }
+        .workout-section {
+          scroll-margin-top: 100px;
+        }
+      }
+      @media (max-width: 480px) {
+        .video-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+      <div class="nav-inner">
+        <a href="/" class="logo">
+          {% if gym and gym.logo %}
+          <img
+            src="{{ gym.logo.url }}"
+            alt="{{ gym.gym_name }} logo"
+            class="logo-img"
+          />
+          {% else %}
+          <img
+            src="{% static 'images/Logo1s.png' %}"
+            alt="EnterGYM Logo"
+            class="logo-img"
+          />
+          {% endif %}
+        </a>
+        <a href="/" class="nav-back">
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          >
+            <path d="M10 12L6 8l4-4" />
+          </svg>
+          Home
+        </a>
       </div>
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/back_3.png' %}">
-          <source src="{% static 'workout/back_2.mp4' %}" />
-        </video>
+    </nav>
+
+    <!-- PAGE CONTENT -->
+    <div class="wk-section" id="wkContent">
+      <div class="wk-header fade-in">
+        <div class="wk-eyebrow">Training Library</div>
+        <div class="wk-title">Workout Videos</div>
+        <div class="wk-sub">Select a muscle group and start training.</div>
       </div>
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/back_2.png' %}">
-          <source src="{% static 'workout/back_3.mp4' %}" />
-        </video>
+
+      <!-- Category pills -->
+      <div class="category-bar fade-in">
+        <a href="#back" class="cat-pill">🏋 Back</a>
+        <a href="#chest" class="cat-pill">💪 Chest</a>
+        <a href="#leg" class="cat-pill">🦵 Legs</a>
+        <a href="#biceps" class="cat-pill">💪 Biceps</a>
+        <a href="#triceps" class="cat-pill">🔱 Triceps</a>
+        <a href="#shoulder" class="cat-pill">🏅 Shoulder</a>
+        <a href="#forearms" class="cat-pill">🤜 Forearms</a>
       </div>
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/back_1.png' %}">
-          <source src="{% static 'workout/back_4.mp4' %}" />
-        </video>
+
+      <div class="wk-card">
+        <!-- BACK -->
+        <section class="workout-section fade-in" id="back">
+          <div class="section-header">
+            <span class="section-label">🏋 Back</span>
+            <div class="section-line"></div>
+            <span class="section-count">4 videos</span>
+          </div>
+          <div class="video-grid">
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/back_4.png' %}"
+              >
+                <source src="{% static 'workout/back_1.mp4' %}" />
+              </video>
+            </div>
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/back_3.png' %}"
+              >
+                <source src="{% static 'workout/back_2.mp4' %}" />
+              </video>
+            </div>
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/back_2.png' %}"
+              >
+                <source src="{% static 'workout/back_3.mp4' %}" />
+              </video>
+            </div>
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/back_1.png' %}"
+              >
+                <source src="{% static 'workout/back_4.mp4' %}" />
+              </video>
+            </div>
+          </div>
+        </section>
+
+        <!-- CHEST -->
+        <section class="workout-section fade-in" id="chest">
+          <div class="section-header">
+            <span class="section-label">💪 Chest</span>
+            <div class="section-line"></div>
+            <span class="section-count">2 videos</span>
+          </div>
+          <div class="video-grid">
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/chest_2.png' %}"
+              >
+                <source src="{% static 'workout/chest_1.mp4' %}" />
+              </video>
+            </div>
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/chest_1.png' %}"
+              >
+                <source src="{% static 'workout/chest_2.mp4' %}" />
+              </video>
+            </div>
+          </div>
+        </section>
+
+        <!-- LEGS -->
+        <section class="workout-section fade-in" id="leg">
+          <div class="section-header">
+            <span class="section-label">🦵 Legs</span>
+            <div class="section-line"></div>
+            <span class="section-count">2 videos</span>
+          </div>
+          <div class="video-grid">
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/leg_2.png' %}"
+              >
+                <source src="{% static 'workout/leg_1.mp4' %}" />
+              </video>
+            </div>
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/leg_1.png' %}"
+              >
+                <source src="{% static 'workout/leg_2.mp4' %}" />
+              </video>
+            </div>
+          </div>
+        </section>
+
+        <!-- BICEPS -->
+        <section class="workout-section fade-in" id="biceps">
+          <div class="section-header">
+            <span class="section-label">💪 Biceps</span>
+            <div class="section-line"></div>
+            <span class="section-count">2 videos</span>
+          </div>
+          <div class="video-grid">
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/biceps_2.png' %}"
+              >
+                <source src="{% static 'workout/biceps_1.mp4' %}" />
+              </video>
+            </div>
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/biceps_1.png' %}"
+              >
+                <source src="{% static 'workout/biceps_3.mp4' %}" />
+              </video>
+            </div>
+          </div>
+        </section>
+
+        <!-- TRICEPS -->
+        <section class="workout-section fade-in" id="triceps">
+          <div class="section-header">
+            <span class="section-label">🔱 Triceps</span>
+            <div class="section-line"></div>
+            <span class="section-count">1 video</span>
+          </div>
+          <div class="video-grid">
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/triceps.png' %}"
+              >
+                <source src="{% static 'workout/triceps_1.mp4' %}" />
+              </video>
+            </div>
+          </div>
+        </section>
+
+        <!-- SHOULDER -->
+        <section class="workout-section fade-in" id="shoulder">
+          <div class="section-header">
+            <span class="section-label">🏅 Shoulder</span>
+            <div class="section-line"></div>
+            <span class="section-count">1 video</span>
+          </div>
+          <div class="video-grid">
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/shoulder.png' %}"
+              >
+                <source src="{% static 'workout/shoulder_1.mp4' %}" />
+              </video>
+            </div>
+          </div>
+        </section>
+
+        <!-- FOREARMS -->
+        <section class="workout-section fade-in" id="forearms">
+          <div class="section-header">
+            <span class="section-label">🤜 Forearms</span>
+            <div class="section-line"></div>
+            <span class="section-count">1 video</span>
+          </div>
+          <div class="video-grid">
+            <div class="video-card">
+              <video
+                controls
+                muted
+                preload="none"
+                poster="{% static 'images/workout/fourarm.png' %}"
+              >
+                <source src="{% static 'workout/forearm.mp4' %}" />
+              </video>
+            </div>
+          </div>
+        </section>
       </div>
+      <!-- /wk-card -->
     </div>
-  </section>
+    <!-- /wk-section -->
 
-  <!-- CHEST -->
-  <section class="workout-section" id="chest">
-    <div class="section-header"><span>💪 Chest</span></div>
-    <div class="video-grid">
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/chest_2.png' %}">
-          <source src="{% static 'workout/chest_1.mp4' %}" />
-        </video>
-      </div>
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/chest_1.png' %}">
-          <source src="{% static 'workout/chest_2.mp4' %}" />
-        </video>
-      </div>
-    </div>
-  </section>
+    <script nonce="{{ request.csp_nonce }}" >
+      // ── Layout engine: stack navbar below topbar, push content below both
+      function updateLayout() {
+        const topbar = document.getElementById("topbar");
+        const navbar = document.getElementById("navbar");
+        const content = document.getElementById("wkContent");
+        if (!topbar || !navbar || !content) return;
+        const topbarH = topbar.getBoundingClientRect().height;
+        const navbarH = navbar.getBoundingClientRect().height;
+        navbar.style.top = topbarH + "px";
+        content.style.paddingTop = topbarH + navbarH + 28 + "px";
+      }
 
-  <!-- LEGS -->
-  <section class="workout-section" id="leg">
-    <div class="section-header"><span>🦵 Legs</span></div>
-    <div class="video-grid">
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/leg_2.png' %}">
-          <source src="{% static 'workout/leg_1.mp4' %}" />
-        </video>
-      </div>
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/leg_1.png' %}">
-          <source src="{% static 'workout/leg_2.mp4' %}" />
-        </video>
-      </div>
-    </div>
-  </section>
+      // Fire immediately, then again after layout is fully painted
+      updateLayout();
+      window.addEventListener("resize", updateLayout, { passive: true });
+      document.addEventListener("DOMContentLoaded", updateLayout);
+      window.addEventListener("load", () => {
+        updateLayout();
+        // One extra tick after images/fonts finish
+        requestAnimationFrame(() => requestAnimationFrame(updateLayout));
+      });
 
-  <!-- BICEPS -->
-  <section class="workout-section" id="biceps">
-    <div class="section-header"><span>💪 Biceps</span></div>
-    <div class="video-grid">
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/biceps_2.png' %}">
-          <source src="{% static 'workout/biceps_1.mp4' %}" />
-        </video>
-      </div>
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/biceps_1.png' %}">
-          <source src="{% static 'workout/biceps_3.mp4' %}" />
-        </video>
-      </div>
-    </div>
-  </section>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Navbar scroll border
+        const navbar = document.getElementById("navbar");
+        let ticking = false;
+        window.addEventListener(
+          "scroll",
+          () => {
+            if (!ticking) {
+              requestAnimationFrame(() => {
+                if (navbar)
+                  navbar.classList.toggle("scrolled", window.scrollY > 10);
+                ticking = false;
+              });
+              ticking = true;
+            }
+          },
+          { passive: true },
+        );
 
-  <!-- TRICEPS -->
-  <section class="workout-section" id="triceps">
-    <div class="section-header"><span>🔱 Triceps</span></div>
-    <div class="video-grid">
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/triceps.png' %}">
-          <source src="{% static 'workout/triceps_1.mp4' %}" />
-        </video>
-      </div>
-    </div>
-  </section>
+        // Scroll-triggered fade-in
+        const fadeEls = document.querySelectorAll(".fade-in");
+        if ("IntersectionObserver" in window) {
+          const obs = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((e) => {
+                if (e.isIntersecting) {
+                  e.target.classList.add("visible");
+                  obs.unobserve(e.target);
+                }
+              });
+            },
+            { threshold: 0.07 },
+          );
+          fadeEls.forEach((el) => obs.observe(el));
+        } else {
+          fadeEls.forEach((el) => el.classList.add("visible"));
+        }
 
-  <!-- SHOULDER -->
-  <section class="workout-section" id="shoulder">
-    <div class="section-header"><span>🏅 Shoulder</span></div>
-    <div class="video-grid">
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/shoulder.png' %}">
-          <source src="{% static 'workout/shoulder_1.mp4' %}" />
-        </video>
-      </div>
-    </div>
-  </section>
+        // Active pill on scroll
+        const sections = document.querySelectorAll(".workout-section");
+        const pills = document.querySelectorAll(".cat-pill");
+        const pillMap = {};
+        pills.forEach((p) => {
+          pillMap[p.getAttribute("href").slice(1)] = p;
+        });
 
-  <!-- FOREARMS -->
-  <section class="workout-section" id="forearms">
-    <div class="section-header"><span>🤜 Forearms</span></div>
-    <div class="video-grid">
-      <div class="video-card">
-        <video controls muted preload="none" poster="{% static 'images/workout/fourarm.png' %}">
-          <source src="{% static 'workout/forearm.mp4' %}" />
-        </video>
-      </div>
-    </div>
-  </section>
+        const secObs = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((e) => {
+              const pill = pillMap[e.target.id];
+              if (pill) pill.classList.toggle("active", e.isIntersecting);
+            });
+          },
+          { threshold: 0.3 },
+        );
+        sections.forEach((s) => secObs.observe(s));
 
-</div>
-<script src="{% static 'js/messages.js' %}"></script>
-{% endblock %}
+        // Smooth scroll
+        pills.forEach((pill) => {
+          pill.addEventListener("click", (e) => {
+            const target = document.querySelector(pill.getAttribute("href"));
+            if (!target) return;
+            e.preventDefault();
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        });
+
+        // One video at a time
+        document.querySelectorAll("video").forEach((vid) => {
+          vid.addEventListener("play", () => {
+            document.querySelectorAll("video").forEach((other) => {
+              if (other !== vid) other.pause();
+            });
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,680 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EnterGYM | Gym Infrastructure Platform</title>
+    <meta
+      name="description"
+      content="EnterGYM — Multi-tenant gym management SaaS. Manage members, attendance, payments and more."
+    />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{% static 'css/saas_home.css' %}" />
+  </head>
+  <body>
+    <!-- ─── NAV ─────────────────────────────────────────────────────────── -->
+    <header class="site-nav" id="siteNav">
+      <a href="/" class="nav-brand">
+        <svg
+          class="brand-mark"
+          viewBox="0 0 28 28"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect width="28" height="28" rx="6" fill="#5B5FFF" />
+          <rect
+            x="5"
+            y="11"
+            width="8"
+            height="6"
+            rx="1.5"
+            fill="white"
+            opacity="0.9"
+          />
+          <rect x="15" y="8" width="8" height="12" rx="1.5" fill="white" />
+        </svg>
+        <span class="brand-name">EnterGYM</span>
+      </a>
+
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="#about">About</a>
+        <a href="https://wa.me/917000032565">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        {% if request.user.is_authenticated %} 
+        {% if request.user.is_superuser %}
+        <a href="/admin/" class="btn-ghost">Admin Panel</a>
+        {% endif %}
+        <form action="{% url 'logout' %}" method="POST" style="display: inline">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost">Logout</button>
+        </form>
+        {% else %}
+        <a href="/login/" class="btn-ghost">Sign in</a>
+        <a href="/login/" class="btn-solid">Get started</a>
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- ─── LIVE TICKER ──────────────────────────────────────────────────── -->
+    <div class="ticker-rail" aria-hidden="true">
+      <div class="ticker-track">
+        <span class="tick-item"
+          ><span class="tick-dot green"></span>Alpha Fitness — 18 members
+          checked in</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot blue"></span>New enrollment — Raj Mehta ·
+          Premium Plan</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot yellow"></span>Payment received — ₹2,400 ·
+          IronZone Gym</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot green"></span>FaceID attendance — Priya S.,
+          06:48 AM</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot blue"></span>Supplement order — Whey Protein ×
+          2 · BeastBox</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot green"></span>34 gyms live on EnterGYM right
+          now</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot yellow"></span>Renewal reminder sent — 14
+          members expiring</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot green"></span>GPS check-in — Ankit V. · CoreFit
+          Studio</span
+        >
+
+        <!-- duplicate for seamless loop -->
+        <span class="tick-item"
+          ><span class="tick-dot green"></span>Alpha Fitness — 18 members
+          checked in</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot blue"></span>New enrollment — Raj Mehta ·
+          Premium Plan</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot yellow"></span>Payment received — ₹2,400 ·
+          IronZone Gym</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot green"></span>FaceID attendance — Priya S.,
+          06:48 AM</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot blue"></span>Supplement order — Whey Protein ×
+          2 · BeastBox</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot green"></span>34 gyms live on EnterGYM right
+          now</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot yellow"></span>Renewal reminder sent — 14
+          members expiring</span
+        >
+        <span class="tick-item"
+          ><span class="tick-dot green"></span>GPS check-in — Ankit V. · CoreFit
+          Studio</span
+        >
+      </div>
+    </div>
+
+    <!-- ─── HERO ─────────────────────────────────────────────────────────── -->
+    <section class="hero-section">
+      <div class="hero-inner">
+        <div class="hero-left">
+          <p class="hero-eyebrow">Infrastructure for serious gyms</p>
+          <h1 class="hero-heading">
+            The operating<br />system for<br /><em>your gym.</em>
+          </h1>
+          <p class="hero-body">
+            EnterGYM replaces the spreadsheets, WhatsApp groups, and paper logs.
+            Members, attendance, payments, and supplements — one platform, fully
+            yours.
+          </p>
+          <div class="hero-cta">
+            {% if request.user.is_authenticated %}
+            <a href="/admin/" class="btn-primary">Open Dashboard</a>
+            {% else %}
+            <a href="/login/" class="btn-primary">Start free trial</a>
+            {% endif %}
+            <a
+              href="https://wa.me/917000032565"
+              class="btn-secondary"
+              target="_blank"
+              rel="noopener"
+              >Talk to us on WhatsApp</a
+            >
+          </div>
+          <div class="hero-proof">
+            <div class="proof-item">
+              <span class="proof-num" data-target="50000">0</span>
+              <span class="proof-label">members managed</span>
+            </div>
+            <div class="proof-divider"></div>
+            <div class="proof-item">
+              <span class="proof-num" data-target="34">0</span>
+              <span class="proof-label">gyms live</span>
+            </div>
+            <div class="proof-divider"></div>
+            <div class="proof-item">
+              <span class="proof-num" data-target="500000">0</span>
+              <span class="proof-label">attendance logs</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-right" aria-hidden="true">
+          <!-- Live activity terminal -->
+          <div class="terminal-card">
+            <div class="terminal-header">
+              <div class="terminal-dots">
+                <span class="tdot red"></span>
+                <span class="tdot yellow"></span>
+                <span class="tdot green"></span>
+              </div>
+              <span class="terminal-title">live — entergym.activity</span>
+              <span class="terminal-badge pulse-badge">● LIVE</span>
+            </div>
+            <div class="terminal-body" id="activityFeed">
+              <div class="feed-row">
+                <span class="feed-time">06:51</span
+                ><span class="feed-tag checkin">CHECK-IN</span
+                ><span class="feed-msg">Arjun Patil · Alpha Fitness</span>
+              </div>
+              <div class="feed-row">
+                <span class="feed-time">06:49</span
+                ><span class="feed-tag payment">PAYMENT</span
+                ><span class="feed-msg">₹3,200 · Muscle Republic</span>
+              </div>
+              <div class="feed-row">
+                <span class="feed-time">06:48</span
+                ><span class="feed-tag checkin">CHECK-IN</span
+                ><span class="feed-msg">Priya S. · FaceID verified</span>
+              </div>
+              <div class="feed-row">
+                <span class="feed-time">06:46</span
+                ><span class="feed-tag enroll">ENROLL</span
+                ><span class="feed-msg">New member · 6-month plan</span>
+              </div>
+              <div class="feed-row">
+                <span class="feed-time">06:44</span
+                ><span class="feed-tag checkin">CHECK-IN</span
+                ><span class="feed-msg">Ravi Nair · CoreFit Studio</span>
+              </div>
+              <div class="feed-row">
+                <span class="feed-time">06:41</span
+                ><span class="feed-tag order">ORDER</span
+                ><span class="feed-msg">Whey Protein × 2 · BeastBox</span>
+              </div>
+              <div class="feed-row">
+                <span class="feed-time">06:38</span
+                ><span class="feed-tag checkin">CHECK-IN</span
+                ><span class="feed-msg">Sneha M. · GPS verified</span>
+              </div>
+              <div class="feed-row faded">
+                <span class="feed-time">06:35</span
+                ><span class="feed-tag payment">PAYMENT</span
+                ><span class="feed-msg">₹1,800 · IronZone Gym</span>
+              </div>
+            </div>
+            <!-- Mini metrics strip -->
+            <div class="terminal-footer">
+              <div class="tfooter-item">
+                <span class="tfooter-val">247</span
+                ><span class="tfooter-label">today's check-ins</span>
+              </div>
+              <div class="tfooter-divider"></div>
+              <div class="tfooter-item">
+                <span class="tfooter-val">₹2.4L</span
+                ><span class="tfooter-label">MTD revenue</span>
+              </div>
+              <div class="tfooter-divider"></div>
+              <div class="tfooter-item">
+                <span class="tfooter-val">99.9%</span
+                ><span class="tfooter-label">uptime</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── FEATURES ─────────────────────────────────────────────────────── -->
+    {% if not request.user.is_superuser %}
+    <section class="features-section" id="features">
+      <div class="features-inner">
+        <div class="features-header">
+          <p class="section-eyebrow">What's inside</p>
+          <h2>Six systems.<br />One platform.</h2>
+          <p class="section-sub">
+            Each module was built for gym operators, not adapted from generic
+            software.
+          </p>
+        </div>
+
+        <!-- Feature 1 — large left -->
+        <div class="feat-row feat-row--flip">
+          <div class="feat-text">
+            <span class="feat-index">01</span>
+            <h3>Member management</h3>
+            <p>
+              Every member in one place. Enrollments, renewals, payment history,
+              expiry alerts — with a clean profile that your staff can actually
+              navigate under pressure.
+            </p>
+            <ul class="feat-list">
+              <li>Batch renewals and bulk messaging</li>
+              <li>Custom membership plans per gym</li>
+              <li>Automated expiry reminders via push</li>
+            </ul>
+          </div>
+          <div class="feat-visual feat-visual--members">
+            <div class="fv-card">
+              <div class="member-row">
+                <div
+                  class="avatar"
+                  style="background: #5b5fff20; color: #5b5fff"
+                >
+                  RN
+                </div>
+                <div class="member-info">
+                  <strong>Ravi Nair</strong
+                  ><span>Premium · Expires 14 Aug</span>
+                </div>
+                <span class="status-pill active">Active</span>
+              </div>
+              <div class="member-row">
+                <div
+                  class="avatar"
+                  style="background: #10b98120; color: #10b981"
+                >
+                  PS
+                </div>
+                <div class="member-info">
+                  <strong>Priya Sharma</strong
+                  ><span>Standard · Expires 2 Jul</span>
+                </div>
+                <span class="status-pill expiring">Expiring</span>
+              </div>
+              <div class="member-row">
+                <div
+                  class="avatar"
+                  style="background: #f59e0b20; color: #f59e0b"
+                >
+                  AM
+                </div>
+                <div class="member-info">
+                  <strong>Ankit Mehta</strong
+                  ><span>Annual · Expires 30 Dec</span>
+                </div>
+                <span class="status-pill active">Active</span>
+              </div>
+              <div class="fv-stat-row">
+                <div class="fv-stat">
+                  <span>1,842</span><label>total members</label>
+                </div>
+                <div class="fv-stat">
+                  <span>+8</span><label>this week</label>
+                </div>
+                <div class="fv-stat">
+                  <span>14</span><label>expiring</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feat-row">
+          <div class="feat-text">
+            <span class="feat-index">02</span>
+            <h3>Face recognition attendance</h3>
+            <p>
+              Members walk in. The camera marks them present. No fobs, no QR
+              codes, no friction at the front desk — attendance just happens.
+            </p>
+            <ul class="feat-list">
+              <li>Runs on standard IP cameras</li>
+              <li>Logs timestamp and confidence score</li>
+              <li>Fallback to manual or GPS check-in</li>
+            </ul>
+          </div>
+          <div class="feat-visual feat-visual--face">
+            <div class="fv-card face-card">
+              <div class="face-scan">
+                <div class="scan-ring outer"></div>
+                <div class="scan-ring inner"></div>
+                <div class="scan-avatar">AP</div>
+                <div class="scan-line"></div>
+              </div>
+              <div class="scan-result">
+                <span class="scan-name">Arjun Patil</span>
+                <span class="scan-conf">98.4% match</span>
+                <span class="scan-time">✓ Checked in · 06:51 AM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feat-row feat-row--flip">
+          <div class="feat-text">
+            <span class="feat-index">03</span>
+            <h3>GPS attendance</h3>
+            <p>
+              When members arrive at the gym's location, the app marks them in
+              automatically. Works alongside face recognition or standalone for
+              outdoor areas.
+            </p>
+            <ul class="feat-list">
+              <li>Configurable radius per gym location</li>
+              <li>Background location — no app-open needed</li>
+              <li>Anti-spoofing validation built in</li>
+            </ul>
+          </div>
+          <div class="feat-visual">
+            <div class="fv-card map-card">
+              <div class="map-bg">
+                <div class="map-grid"></div>
+                <div class="map-pin">
+                  <div class="pin-dot"></div>
+                  <div class="pin-radius"></div>
+                </div>
+              </div>
+              <div class="map-label">
+                <span class="map-gym">CoreFit Studio</span>
+                <span class="map-sub">200m radius · 12 members inside</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature row — 3 smaller cards -->
+        <div class="feat-mini-row">
+          <div class="feat-mini">
+            <span class="feat-index">04</span>
+            <h3>Push notifications</h3>
+            <p>
+              Expiry reminders to members. New enrollment and order alerts to
+              staff. Delivered, not missed.
+            </p>
+          </div>
+          <div class="feat-mini">
+            <span class="feat-index">05</span>
+            <h3>Supplement shop</h3>
+            <p>
+              Built-in product catalog and order management. Sell whey,
+              creatine, and gear directly from your gym's branded app.
+            </p>
+          </div>
+          <div class="feat-mini">
+            <span class="feat-index">06</span>
+            <h3>Multi-gym, fully isolated</h3>
+            <p>
+              One login manages every location. Each gym's data is completely
+              separate — members, staff, and reports don't bleed across.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── CONTACT ───────────────────────────────────────────────────────── -->
+    <section class="contact-section" id="about">
+      <div class="contact-inner">
+        <div class="contact-left">
+          <p class="section-eyebrow">Get started</p>
+          <h2>Set up your gym<br />in one call.</h2>
+          <p>
+            Reach us on WhatsApp — we'll walk you through onboarding, import
+            your existing member data, and have you live within 24 hours.
+          </p>
+          <a
+            href="https://wa.me/917000032565"
+            class="btn-primary"
+            target="_blank"
+            rel="noopener"
+            >Open WhatsApp →</a
+          >
+        </div>
+        <div class="contact-right">
+          <div class="contact-card">
+            <p class="cc-label">Built by</p>
+            <p class="cc-company">Arrow SoftTech</p>
+            <div class="cc-divider"></div>
+            <div class="cc-row">
+              <span class="cc-key">WhatsApp</span>
+              <a href="https://wa.me/917000032565" class="cc-val"
+                >+91 70000 32565</a
+              >
+            </div>
+            <div class="cc-row">
+              <span class="cc-key">Platform</span>
+              <span class="cc-val">EnterGYM SaaS</span>
+            </div>
+            <div class="cc-row">
+              <span class="cc-key">Uptime</span>
+              <span class="cc-val" style="color: #10b981"
+                >99.9% · All systems normal</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- ─── SUPERUSER GYM LIST ─────────────────────────────────────────────── -->
+    {% if request.user.is_superuser and gyms %}
+    <section class="gyms-section">
+      <div class="gyms-inner">
+        <p class="section-eyebrow">Superuser view</p>
+        <h2>Active gyms</h2>
+        <p class="section-sub">All gyms running on EnterGYM.</p>
+        <div class="gyms-grid">
+          {% for g in gyms %}
+          <div
+            class="gym-card {% if not g.is_subscription_active %}gym-card--expired{% endif %}"
+          >
+            <div class="gc-top">
+              <span class="gc-name">{{ g.gym_name }}</span>
+              <span class="gc-code">{{ g.gym_code }}</span>
+            </div>
+            <div class="gc-mid">
+              {% if g.is_subscription_active %}
+              <span class="status-pill active">Active</span>
+              {% else %}
+              <span class="status-pill expired">Expired</span>
+              {% endif %}
+              <span class="gc-expiry"
+                >{{ g.subscription_end|default:"—" }}</span
+              >
+            </div>
+            <a href="//{{ g.gym_code }}.{{ BASE_DOMAIN }}/" class="gc-link"
+              >Visit gym →</a
+            >
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- ─── FOOTER ────────────────────────────────────────────────────────── -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <svg
+            class="brand-mark"
+            viewBox="0 0 28 28"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="28" height="28" rx="6" fill="#5B5FFF" />
+            <rect
+              x="5"
+              y="11"
+              width="8"
+              height="6"
+              rx="1.5"
+              fill="white"
+              opacity="0.9"
+            />
+            <rect x="15" y="8" width="8" height="12" rx="1.5" fill="white" />
+          </svg>
+          <span>EnterGYM</span>
+        </div>
+        <p class="footer-copy">
+          © 2026 EnterGYM by
+          <a href="https://wa.me/917000032565">Arrow SoftTech</a>. All rights
+          reserved.
+        </p>
+      </div>
+    </footer>
+
+    <script nonce="{{ request.csp_nonce }}">
+      (function () {
+        /* Nav scroll */
+        const nav = document.getElementById("siteNav");
+        if (nav) {
+          window.addEventListener(
+            "scroll",
+            () => {
+              nav.classList.toggle("is-scrolled", window.scrollY > 8);
+            },
+            { passive: true },
+          );
+        }
+
+        /* Animated counters */
+        const nums = document.querySelectorAll(".proof-num");
+        if (nums.length && "IntersectionObserver" in window) {
+          const fmt = (n) =>
+            n >= 1000
+              ? n >= 100000
+                ? (n / 1000).toFixed(0) + "K"
+                : (n / 1000).toFixed(0) + "K"
+              : String(n);
+          const animate = (el) => {
+            const target = +el.dataset.target;
+            const dur = 1600;
+            const start = performance.now();
+            const step = (now) => {
+              const t = Math.min((now - start) / dur, 1);
+              const ease = 1 - Math.pow(1 - t, 3);
+              el.textContent = fmt(Math.round(ease * target));
+              if (t < 1) requestAnimationFrame(step);
+              else el.textContent = fmt(target);
+            };
+            requestAnimationFrame(step);
+          };
+          const obs = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((e) => {
+                if (e.isIntersecting) {
+                  animate(e.target);
+                  obs.unobserve(e.target);
+                }
+              });
+            },
+            { threshold: 0.5 },
+          );
+          nums.forEach((n) => obs.observe(n));
+        }
+
+        /* Live feed simulation */
+        const feed = document.getElementById("activityFeed");
+        if (feed) {
+          const events = [
+            {
+              tag: "checkin",
+              label: "CHECK-IN",
+              msg: "Sunita K. · Alpha Fitness",
+            },
+            { tag: "payment", label: "PAYMENT", msg: "₹4,500 · FitZone Elite" },
+            {
+              tag: "enroll",
+              label: "ENROLL",
+              msg: "New member · 3-month plan",
+            },
+            {
+              tag: "checkin",
+              label: "CHECK-IN",
+              msg: "Mohit R. · GPS verified",
+            },
+            { tag: "order", label: "ORDER", msg: "Creatine 500g · MuscleHub" },
+            {
+              tag: "checkin",
+              label: "CHECK-IN",
+              msg: "Deepa V. · FaceID verified",
+            },
+            {
+              tag: "payment",
+              label: "PAYMENT",
+              msg: "₹2,100 · CoreFit Studio",
+            },
+          ];
+          let ei = 0;
+          setInterval(() => {
+            const ev = events[ei % events.length];
+            ei++;
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, "0");
+            const mm = String(now.getMinutes()).padStart(2, "0");
+            const row = document.createElement("div");
+            row.className = "feed-row feed-row--new";
+            row.innerHTML = `<span class="feed-time">${hh}:${mm}</span><span class="feed-tag ${ev.tag}">${ev.label}</span><span class="feed-msg">${ev.msg}</span>`;
+            feed.insertBefore(row, feed.firstChild);
+            setTimeout(() => row.classList.remove("feed-row--new"), 50);
+            const rows = feed.querySelectorAll(".feed-row");
+            if (rows.length > 8) {
+              const last = rows[rows.length - 1];
+              last.classList.add("faded");
+              setTimeout(() => last.remove(), 600);
+            }
+          }, 3200);
+        }
+
+        /* Scroll reveal */
+        if ("IntersectionObserver" in window) {
+          const els = document.querySelectorAll(
+            ".feat-row, .feat-mini, .gym-card",
+          );
+          els.forEach((el) => el.classList.add("reveal"));
+          const obs = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((e) => {
+                if (e.isIntersecting) {
+                  e.target.classList.add("visible");
+                  obs.unobserve(e.target);
+                }
+              });
+            },
+            { threshold: 0.1 },
+          );
+          els.forEach((el) => obs.observe(el));
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -16,8 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path ,include
+from AuthFit.admin import attendance_view, revenue_view
 
 urlpatterns = [
+    path('admin/attendance/', admin.site.admin_view(attendance_view), name='admin_attendance'),
+    path('admin/revenue/',    admin.site.admin_view(revenue_view),    name='admin_revenue'),
     path('admin/', admin.site.urls),
     path('',include("AuthFit.urls")),
     path('',include("Shop.urls")),

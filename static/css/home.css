@@ -75,6 +75,9 @@ body {
   position: relative;
   z-index: 20;
 }
+#heroContent {
+  padding-top: 0; /* JS sets this dynamically */
+}
 .hero-bg {
   position: absolute;
   inset: 0;
@@ -127,7 +130,7 @@ body {
 .flex-between {
   display: flex;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: 16px;
   padding: 6px 20px;
   color: rgba(255, 255, 255, 0.9);
 }
@@ -140,42 +143,36 @@ body {
 }
 
 /* =====================================================
-   NOTIFICATION BAR
+   NOTIFICATION BAR 
    ===================================================== */
 .notif-bar {
   position: absolute;
-  top: 30px;
+  top: 0;
   left: 0;
   width: 100%;
-  z-index: 29;
+  z-index: 9999;
   background: linear-gradient(90deg, #1a1a1a 0%, #111 100%);
-  border-top: 1px solid rgba(249, 115, 22, 0.3);
   border-bottom: 2px solid #f97316;
   overflow: hidden;
-  transition: max-height 0.4s ease, opacity 0.4s ease, transform 0.4s ease;
-  max-height: 100px;
+  max-height: 48px;
+  transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease;
 }
-
 .notif-bar.hidden {
-  opacity: 0;
   max-height: 0;
+  opacity: 0;
   pointer-events: none;
-  overflow: hidden;
 }
-
 .notif-inner {
   display: flex;
   align-items: center;
   height: 44px;
   padding: 0 12px;
-  gap: 0;
 }
-
 .notif-label {
   flex-shrink: 0;
   background: #f97316;
   color: black;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 1.5px;
   padding: 4px 10px;
@@ -184,41 +181,24 @@ body {
   margin-right: 14px;
   text-transform: uppercase;
 }
-
 .notif-ticker-wrap {
   flex: 1;
   overflow: hidden;
   position: relative;
 }
-
 .notif-ticker {
   display: flex;
   align-items: center;
   white-space: nowrap;
   animation: notifScroll 18s linear infinite;
   will-change: transform;
-  backface-visibility: hidden;
 }
-
-.notif-ticker:hover {
-  animation-play-state: paused;
-}
-
+.notif-ticker:hover { animation-play-state: paused; }
 .notif-item {
-  font-size: 18px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.88);
   padding-right: 6px;
 }
-
-.notif-item strong {
-  color: #f97316;
-}
-
-@keyframes notifScroll {
-  0%   { transform: translate3d(0, 0, 0); }
-  100% { transform: translate3d(-120%, 0, 0); }
-}
-
 .notif-close {
   flex-shrink: 0;
   margin-left: 14px;
@@ -232,24 +212,22 @@ body {
   padding: 0 4px;
   transition: color 0.2s ease, transform 0.2s ease;
 }
-.notif-close:hover {
-  color: #f97316;
-  transform: scale(1.2);
+.notif-close:hover { color: #f97316; transform: scale(1.2); }
+
+@keyframes notifScroll {
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
 /* ===== NAVBAR ===== */
 .navbar {
-  position: absolute;
-  top: 88px;
+  position: absolute;          /* change from absolute to fixed */
+  top: 0;
   width: 100%;
   z-index: 1000;
   backdrop-filter: blur(12px);
   background: rgba(0, 0, 0, 0.4);
   transition: top 0.4s ease;
-}
-
-.navbar.notif-hidden {
-  top: 44px;
 }
 
 .nav-container {
@@ -431,14 +409,14 @@ body {
   .nav-links { display: none !important; }
 
   /* Notification bar adjustments */
-  .notif-bar   { top: 44px; }
-  .notif-inner { height: 36px; padding: 0 8px; }
-  .notif-label { font-size: 12px; padding: 3px 6px; margin-right: 8px; }
-  .notif-item  { font-size: 17px; }
-  .notif-close { font-size: 18px; margin-left: 8px; }
+  .notif-bar   { max-height: 42px; }
+  .notif-inner { height: 38px; padding: 0 8px; }
+  .notif-label { font-size: 10px; padding: 3px 7px; margin-right: 8px; }
+  .notif-item  { font-size: 12px; }
+  .notif-close { font-size: 16px; margin-left: 8px; }
 
   /* Navbar offset */
-  .navbar            { top: 88px; }
+  .navbar            { top: 44px; }
   .navbar.notif-hidden { top: 44px; }
   .nav-container     { padding: 15px 20px; }
   .hero-tag {
@@ -752,7 +730,9 @@ body {
   align-items: center;
   min-height: 100vh;
   text-align: center;
-  padding: 180px 20px 40px; 
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 40px;
   opacity: 0;
   animation: fadeIn 1.2s ease forwards;
 }
