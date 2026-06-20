@@ -5,7 +5,6 @@ import os
 import json
 import functools
 from datetime import date, timedelta
-
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
@@ -19,7 +18,7 @@ from django.core.cache import cache
 from django.conf import settings
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import transaction ,IntegrityError
 import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
 from PIL import Image
@@ -28,7 +27,7 @@ import logging
 from urllib.parse import urlencode
 from Gym.models import Gym                          
 from AuthFit.models import (
-    Contact, Enrollment, MembershipPlan, Trainer,
+    Contact, Enrollment, EnrollmentTransfer, MembershipPlan, Trainer,
     Attendence as Attendence_model, GymNotification
 )
 from AuthFit.rate_limit import check_login_attempt, reset_attempt, record_failed_attempt ,get_client_ip
@@ -409,7 +408,9 @@ def contact(request):
         messages.success(request, "Thanks for contacting us — we'll get back to you soon!")
         return redirect('/contact/')
 
-    return render(request, 'contact.html')
+    return render(request, 'contact.html',{
+        "gym":gym
+    })
 
 
 def workout(request):
@@ -442,9 +443,7 @@ def download_app(request):
 @login_required
 def enrollment(request):
     gym = getattr(request, 'gym', None)
-    
-    # FIX: scope check to this gym — without gym filter a user enrolled at
-    # fitzone gets redirected away from ironhouse enrollment page
+
     if Enrollment.objects.filter(user=request.user, gym=gym).exists():
         return redirect('/profile/')
 
@@ -452,6 +451,8 @@ def enrollment(request):
     trainers = Trainer.objects.filter(gym=gym) if gym else Trainer.objects.none()
 
     if request.method == "POST":
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
         name       = request.POST.get('name', '').strip()
         email      = request.POST.get('email', '').strip()
         phone      = request.POST.get('phone', '').strip()
@@ -460,18 +461,73 @@ def enrollment(request):
         trainer_id = request.POST.get('trainer')
         reference  = request.POST.get('reference', '').strip()
         address    = request.POST.get('address', '').strip()
+        confirm_transfer = request.POST.get('confirm_transfer') == '1'
+
+        def fail(msg):
+            if is_ajax:
+                return JsonResponse({"error": msg}, status=400)
+            messages.error(request, msg)
+            return redirect('/enrollment/')
 
         selected_trainer = None
         if trainer_id:
             selected_trainer = Trainer.objects.filter(id=trainer_id, gym=gym).first()
             if not selected_trainer:
-                messages.error(request, "Selected trainer does not exist.")
-                return redirect('/enrollment/')
+                return fail("Selected trainer does not exist.")
 
         selected_plan = MembershipPlan.objects.filter(id=plan_id, gym=gym).first()
         if not selected_plan:
-            messages.error(request, "Selected plan does not exist.")
-            return redirect('/enrollment/')
+            return fail("Selected plan does not exist.")
+
+        # ── Cross-gym transfer check ────────────────────────────────────
+        # Only an ACTIVE enrollment at another gym triggers the popup. Once
+        # the old gym actions it (inactive/deleted), it stops blocking.
+        if not confirm_transfer:
+            other_enrollment = (
+                Enrollment.objects
+                .filter(user=request.user, is_active=True)
+                .exclude(gym=gym)
+                .select_related('gym')
+                .order_by('-doj')
+                .first()
+            )
+            if other_enrollment:
+                payload = {
+                    "transfer_check": True,
+                    "existing": {
+                        "old_enrollment_id":   other_enrollment.id,
+                        "gym_name":            other_enrollment.gym.gym_name,
+                        "member_id":           other_enrollment.unique_id,
+                        "due_date":            other_enrollment.DueDate.strftime("%d %b %Y") if other_enrollment.DueDate else "—",
+                        "pending_amount":      float(other_enrollment.pendingAmount),
+                        "last_payment_amount": float(other_enrollment.paidAmount) if other_enrollment.paidAmount else 0,
+                        "last_payment_date":   other_enrollment.paymentDate.strftime("%d %b %Y") if other_enrollment.paymentDate else None,
+                    },
+                }
+                if is_ajax:
+                    return JsonResponse(payload, status=200)
+                messages.warning(
+                    request,
+                    f"You already have a membership at {other_enrollment.gym.gym_name}. "
+                    "Please enable JavaScript to confirm the transfer, or contact support."
+                )
+                return redirect('/enrollment/')
+
+        # ── Re-validate the referenced old enrollment on confirm ───────
+        # Never trust client-sent financial figures — only the id, then
+        # re-fetch fresh data server-side.
+        old_enrollment = None
+        if confirm_transfer:
+            old_enrollment_id = request.POST.get('old_enrollment_id')
+            old_enrollment = (
+                Enrollment.objects
+                .filter(id=old_enrollment_id, user=request.user, is_active=True)
+                .exclude(gym=gym)
+                .select_related('gym')
+                .first()
+            )
+            # If it no longer matches (e.g. old gym already actioned it),
+            # don't block the member — just proceed as a normal enrollment.
 
         enroll = Enrollment(
             gym=gym,
@@ -489,6 +545,32 @@ def enrollment(request):
         )
         enroll.save()
 
+        if old_enrollment:
+            try:
+                with transaction.atomic():
+                    EnrollmentTransfer.objects.create(
+                        member=request.user,
+                        mobile_number=phone,
+                        previous_gym=old_enrollment.gym,
+                        new_gym=gym,
+                        previous_enrollment=old_enrollment,
+                        previous_member_id=old_enrollment.unique_id,
+                        previous_plan_name=old_enrollment.selectPlan.plan if old_enrollment.selectPlan else '',
+                        previous_joining_date=old_enrollment.doj,
+                        previous_due_date=old_enrollment.DueDate,
+                        previous_pending_amount=old_enrollment.pendingAmount,
+                        last_payment_amount=old_enrollment.paidAmount,
+                        last_payment_date=old_enrollment.paymentDate,
+                    )
+            except IntegrityError:
+                # A pending transfer already exists for this source enrollment
+                # (e.g. duplicate/double-click submission) — the existing
+                # pending record already covers it, so skip silently.
+                logger.info(
+                    "Duplicate pending transfer skipped for enrollment_id=%s",
+                    old_enrollment.id,
+                )
+
         transaction.on_commit(lambda: notify_staff_new_enrollment(enroll))
 
         gym_pk = gym.pk if gym else 'none'
@@ -496,6 +578,9 @@ def enrollment(request):
         cache.delete(f"profile_image_{request.user.id}")
         cache.delete(f"enrolled_{request.user.id}_{gym_pk}")
         cache.delete(f"enrollment_status_{request.user.id}_{gym_pk}")
+
+        if is_ajax:
+            return JsonResponse({"redirect": "/profile/"})
 
         messages.success(request, "Welcome aboard! Your gym membership has been activated.")
         return redirect('/profile/')
@@ -549,6 +634,7 @@ def Profile(request):
         "is_expired":     enrollment.is_expired if enrollment else False,
         "days_remaining": enrollment.days_remaining if enrollment else 0,
         "plans":          plans,
+        "gym":       gym,
     })
 
 
@@ -649,6 +735,7 @@ def attendance_page(request):
             if a.date.year == today.year and a.date.month == today.month
         ),
         "today": today,
+        "gym" : gym,
     })
 
 
@@ -696,17 +783,48 @@ def renew_membership(request):
 # Staff views — all scoped to request.gym
 # ──────────────────────────────────────────────────────────────────────────────
 
+def _panel_data(e, kind, **extra):
+    """
+    Build a flat, JSON-serialisable dict for the slide-out detail panel.
+    `kind` tells the frontend which fields to show ('due' | 'expiring' | 'expired').
+    Dates are converted to strings — date objects are not JSON-serialisable.
+    """
+    data = {
+        "kind": kind,
+        "unique_id": e.unique_id,
+        "name": e.fullname,
+        "phone": e.phone,
+        "email": e.email,
+        "gender": e.get_gender_display() if e.gender else None,
+        "address": e.address,
+        "plan": e.selectPlan.plan if e.selectPlan else None,
+        "plan_price": float(e.selectPlan.price) if e.selectPlan else None,
+        "trainer": e.trainer.name if e.trainer else None,
+        "payment_status": e.paymentStatus,
+        "pending_amount": float(e.pendingAmount),
+        "due_date": e.DueDate.strftime("%d %b %Y") if e.DueDate else None,
+        "doj": e.doj.strftime("%d %b %Y") if e.doj else None,
+        "is_expired": e.is_expired,
+        "days_remaining": e.days_remaining,
+    }
+    data.update(extra)
+    return data
+ 
+ 
 @_gym_staff_required
 def whatsapp_pending_users(request):
     gym = getattr(request, 'gym', None)
-
-    qs = Enrollment.objects.filter(paymentStatus="Pending").select_related("selectPlan", "gym")
+    today = timezone.now().date()
+ 
+    base_qs = Enrollment.objects.select_related("selectPlan", "gym", "trainer")
     if gym:
-        qs = qs.filter(gym=gym)
-
+        base_qs = base_qs.filter(gym=gym)
+ 
+    # ── PANEL 1: Due Payments (unchanged logic) ──
+    pending_qs = base_qs.filter(paymentStatus="Pending").order_by("DueDate")
+ 
     pending_with_links = []
-    for e in qs:
-        # FIX: use gym name from enrollment, not hardcoded "EnterGYM"
+    for e in pending_qs:
         gym_name = e.gym.gym_name if e.gym else "EnterGYM"
         msg = (
             f"Hello {e.fullname}! Reminder from {gym_name}: "
@@ -716,9 +834,58 @@ def whatsapp_pending_users(request):
         pending_with_links.append({
             "enrollment": e,
             "wa_link":    f"https://wa.me/91{e.phone}?text={quote(msg)}",
+            "panel_data": _panel_data(e, "due"),
         })
-
-    return render(request, "admin_whatsapp.html", {"pending": pending_with_links})
+ 
+    # ── PANEL 2: Expiring Soon (DueDate within next 2 days, not yet expired) ──
+    expiring_cutoff = today + timedelta(days=2)
+    expiring_qs = base_qs.filter(
+        DueDate__gte=today,
+        DueDate__lte=expiring_cutoff,
+    ).order_by("DueDate")
+ 
+    expiring_with_links = []
+    for e in expiring_qs:
+        gym_name = e.gym.gym_name if e.gym else "EnterGYM"
+        msg = (
+            f"Hello {e.fullname}! Reminder from {gym_name}: "
+            f"your membership is expiring on {e.DueDate.strftime('%d %b %Y')}. "
+            f"Please renew soon to avoid interruption. Thank you!"
+        )
+        expiring_with_links.append({
+            "enrollment": e,
+            "wa_link":    f"https://wa.me/91{e.phone}?text={quote(msg)}",
+            "panel_data": _panel_data(e, "expiring"),
+        })
+ 
+    # ── PANEL 3: Expired Members (DueDate already passed) ──
+    expired_qs = base_qs.filter(DueDate__lt=today).order_by("-DueDate")
+ 
+    expired_with_links = []
+    for e in expired_qs:
+        gym_name = e.gym.gym_name if e.gym else "EnterGYM"
+        expired_days = (today - e.DueDate).days
+        msg = (
+            f"Hello {e.fullname}! Your membership at {gym_name} expired on "
+            f"{e.DueDate.strftime('%d %b %Y')}. Please renew to continue access. Thank you!"
+        )
+        expired_with_links.append({
+            "enrollment": e,
+            "wa_link":    f"https://wa.me/91{e.phone}?text={quote(msg)}",
+            "expired_days": expired_days,
+            "panel_data": _panel_data(e, "expired", expired_days=expired_days),
+        })
+ 
+    return render(request, "admin_whatsapp.html", {
+        "pending": pending_with_links,
+        "expiring_soon": expiring_with_links,
+        "expired_members": expired_with_links,
+        "pending_count": len(pending_with_links),
+        "expiring_count": len(expiring_with_links),
+        "expired_count": len(expired_with_links),
+        "gym": gym,
+    })
+ 
 
 
 @_gym_staff_required
@@ -771,6 +938,7 @@ def payment_management(request):
         "total_count":          len(rows),
         "pending_count":        pending_count,
         "paid_count":           paid_count,
+        "gym": gym,
     })
 
 
@@ -916,6 +1084,7 @@ def today_attendance(request):
         "sections": [("Morning", "🌅", morning), ("Evening", "🌆", evening)],
         "today":    today,
         "total":    len(morning) + len(evening),
+        "gym" : gym
     }
     cache.set(cache_key, context, timeout=120)
     return render(request, "today_attendance.html", context)
@@ -985,3 +1154,111 @@ def freeze_membership_apply(request):
         f"{old_due.strftime('%d %b %Y')} → {new_due.strftime('%d %b %Y')}."
     )
     return redirect(redirect_url)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Transferred Members — old gym's view into outgoing transfers
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _format_action_date(dt):
+    if not dt:
+        return None
+    return timezone.localtime(dt).strftime("%d %b %Y %I:%M %p")
+
+
+def _action_label(user):
+    if not user:
+        return None
+    return user.get_full_name() or user.username
+
+
+@_gym_staff_required
+def transferred_members(request):
+    gym = getattr(request, 'gym', None)
+
+    qs = (
+        EnrollmentTransfer.objects
+        .filter(previous_gym=gym)
+        .select_related('new_gym', 'member', 'previous_enrollment', 'action_taken_by')
+        .order_by('-created_at')
+    )
+
+    summary = {
+        "total":    qs.count(),
+        "pending":  qs.filter(status='pending').count(),
+        "inactive": qs.filter(status='inactive').count(),
+        "deleted":  qs.filter(status='deleted').count(),
+    }
+
+    rows = [
+        {
+            "id":                   t.id,
+            "member_name":          t.previous_enrollment.fullname if t.previous_enrollment else (t.member.get_full_name() or t.member.username),
+            "mobile_number":        t.mobile_number,
+            "member_id":            t.previous_member_id,
+            "plan_name":            t.previous_plan_name or "—",
+            "joining_date":         t.previous_joining_date.strftime("%d %b %Y") if t.previous_joining_date else "—",
+            "new_gym_name":         t.new_gym.gym_name,
+            "new_gym_joining_date": t.new_gym_joining_date.strftime("%d %b %Y"),
+            "previous_due_date":    t.previous_due_date.strftime("%d %b %Y") if t.previous_due_date else "—",
+            "pending_amount":       float(t.previous_pending_amount),
+            "last_payment_amount":  float(t.last_payment_amount) if t.last_payment_amount else 0,
+            "last_payment_date":    t.last_payment_date.strftime("%d %b %Y") if t.last_payment_date else "—",
+            "status":               t.status,
+            "action_by":            _action_label(t.action_taken_by),
+            "action_date":          _format_action_date(t.action_date),
+        }
+        for t in qs
+    ]
+
+    return render(request, "transferred_members.html", {"rows": rows, "summary": summary})
+
+
+@_gym_staff_required
+@require_POST
+def transfer_mark_inactive(request, transfer_id):
+    gym      = getattr(request, 'gym', None)
+    transfer = get_object_or_404(EnrollmentTransfer, id=transfer_id, previous_gym=gym)
+
+    if transfer.status != 'pending':
+        return JsonResponse({"error": "This transfer has already been actioned."}, status=400)
+
+    with transaction.atomic():
+        if transfer.previous_enrollment_id:
+            Enrollment.objects.filter(id=transfer.previous_enrollment_id).update(is_active=False)
+        transfer.status          = 'inactive'
+        transfer.action_taken_by = request.user
+        transfer.action_date     = timezone.now()
+        transfer.save(update_fields=['status', 'action_taken_by', 'action_date'])
+
+    return JsonResponse({
+        "ok":          True,
+        "status":      transfer.status,
+        "action_by":   _action_label(request.user),
+        "action_date": _format_action_date(transfer.action_date),
+    })
+
+
+@_gym_staff_required
+@require_POST
+def transfer_delete_enrollment(request, transfer_id):
+    gym      = getattr(request, 'gym', None)
+    transfer = get_object_or_404(EnrollmentTransfer, id=transfer_id, previous_gym=gym)
+
+    if transfer.status != 'pending':
+        return JsonResponse({"error": "This transfer has already been actioned."}, status=400)
+
+    with transaction.atomic():
+        if transfer.previous_enrollment_id:
+            Enrollment.objects.filter(id=transfer.previous_enrollment_id).delete()
+        transfer.status          = 'deleted'
+        transfer.action_taken_by = request.user
+        transfer.action_date     = timezone.now()
+        transfer.save(update_fields=['status', 'action_taken_by', 'action_date'])
+
+    return JsonResponse({
+        "ok":          True,
+        "status":      transfer.status,
+        "action_by":   _action_label(request.user),
+        "action_date": _format_action_date(transfer.action_date),
+    })

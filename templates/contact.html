@@ -1,200 +1,624 @@
-{% extends "base.html" %} {% load static %} {% block title %}Contact 
-{% endblock %} {% block link %}
-<link rel="stylesheet" href="{% static 'css/contact.css' %}" />
-{% endblock %} {% block message %}
-<div id="message-container">
-  {% for message in messages %}
-  <div
-    class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}"
-  >
-    <span>{{ message }}</span>
-    <button class="close-btn">×</button>
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+
+  <!-- PWA meta (kept from base.html) -->
+  <link rel="manifest" href="{% static 'js/manifest.json' %}" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="EnterGYM" />
+  <style>
+    /* ── TOKENS (matched to profile.html / today_attendance.html) ── */
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #181818;
+      --surface-3:   #1e1e1e;
+      --border:      rgba(255,255,255,.06);
+      --border-2:    rgba(255,255,255,.11);
+      --orange:      #ff5a00;
+      --orange-dim:  rgba(255,90,0,.10);
+      --orange-bdr:  rgba(255,90,0,.28);
+      --green:       #5de87c;
+      --green-dim:   rgba(93,232,124,.10);
+      --green-bdr:   rgba(93,232,124,.28);
+      --red:         #ef5350;
+      --red-dim:     rgba(239,83,80,.10);
+      --red-bdr:     rgba(239,83,80,.28);
+      --text-hi:     #f5f5f5;
+      --text-mid:    #888;
+      --text-lo:     #444;
+      --font-d:      "Barlow Condensed", sans-serif;
+      --font-b:      "Barlow", sans-serif;
+      --ease:        cubic-bezier(.4,0,.2,1);
+      --t:           .22s;
+      --radius-lg:   18px;
+      --radius-md:   12px;
+      --radius-sm:   8px;
+      --radius-pill: 40px;
+      --nav-h:       60px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    .hero-animate {
+      opacity: 0;
+      transform: translateY(30px);
+      animation: smoothFade 0.5s ease-out forwards;
+    }
+    @keyframes smoothFade {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── STICKY NAV (same shell as profile / attendance pages) ── */
+    .store-nav {
+      position: sticky; top: 0; z-index: 200;
+      height: var(--nav-h);
+      background: rgba(8,8,8,.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .nav-inner {
+      width: 100%; padding: 0 clamp(16px,4vw,40px);
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .nav-brand {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.1rem,3vw,1.5rem);
+      text-transform: uppercase; text-decoration: none;
+      color: var(--text-hi); letter-spacing: -.01em;
+      white-space: nowrap; display: flex; align-items: center; gap: 8px;
+      transition: color var(--t);
+      min-width: 0;
+    }
+    .nav-brand .acc { color: var(--orange); }
+    .nav-logo {
+      height: 26px;
+      width: auto;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 6px rgba(255,90,0,.35));
+    }
+    .back-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; flex-shrink: 0;
+      transition: background var(--t);
+    }
+    .nav-brand:hover .back-icon { background: var(--orange-dim); }
+    .nav-brand:hover { color: var(--text-hi); }
+    .nav-badge {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      background: var(--orange-dim); color: var(--orange);
+      border: 1px solid var(--orange-bdr);
+      padding: 5px 14px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      position: relative;
+      padding: clamp(40px,7vw,72px) 0 clamp(28px,5vw,48px);
+      text-align: center; overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: clamp(24px,4vw,40px);
+    }
+    .page-header::before {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .header-inner {
+      position: relative; z-index: 1;
+      padding: 0 clamp(16px,4vw,40px);
+    }
+    .header-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
+      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 10px;
+      padding: 5px 14px;
+      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
+      background: var(--orange-dim);
+    }
+    .page-header h1 {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(2rem,7vw,3.8rem); line-height: .92;
+      letter-spacing: -.01em; text-transform: uppercase;
+      margin-bottom: 8px; color: var(--text-hi);
+    }
+    .page-header h1 .accent { color: var(--orange); }
+    .contact-sub {
+      font-family: var(--font-b);
+      font-size: clamp(.85rem,2.2vw,.98rem);
+      color: var(--text-mid);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── FLASH MESSAGES ── */
+    #message-container {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      width: 100%;
+      max-width: 400px;
+      padding: 0 16px;
+    }
+    .flash-message {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      margin-bottom: 12px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .flash-message.success { background: #166534; border: 1px solid #22c55e44; }
+    .flash-message.error   { background: #7f1d1d; border: 1px solid #ef444444; }
+    .flash-message.default { background: #1f2937; border: 1px solid #ffffff18; }
+    .close-btn {
+      margin-left: 10px;
+      font-size: 17px;
+      font-weight: 700;
+      border: none;
+      background: none;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .close-btn:hover { color: #fff; }
+
+    /* ── MAIN CONTENT ── */
+    .contact-page {
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(20px, 3vw, 32px);
+      align-items: start;
+    }
+
+    /* Form card */
+    .form-section {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-lg);
+      padding: clamp(24px, 4vw, 36px) clamp(20px, 4vw, 32px);
+    }
+
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field label {
+      font-family: var(--font-d);
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--text-lo);
+    }
+    .field input,
+    .field textarea {
+      background: var(--bg);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      font-size: 14px;
+      padding: 11px 14px;
+      outline: none;
+      transition: border-color var(--t);
+      width: 100%;
+    }
+    .field input:focus,
+    .field textarea:focus {
+      border-color: var(--orange);
+    }
+    .field input::placeholder,
+    .field textarea::placeholder {
+      color: rgba(255, 255, 255, 0.2);
+    }
+    .field textarea {
+      resize: none;
+      min-height: 110px;
+      line-height: 1.6;
+      font-family: var(--font-b);
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .submit-btn {
+      margin-top: 6px;
+      width: 100%;
+      padding: 13px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: var(--orange);
+      color: #fff;
+      font-family: var(--font-d);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background var(--t), transform .1s;
+    }
+    .submit-btn:hover { background: #e04e00; }
+    .submit-btn:active { transform: scale(0.98); }
+    .submit-btn svg { flex-shrink: 0; }
+
+    /* Right column */
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 0;
+    }
+
+    /* Map */
+    .map-section {
+      width: 100%;
+      height: 280px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border-2);
+    }
+    .map-section iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* Info cards */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .info-card {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      min-width: 0;
+    }
+    .info-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      background: var(--orange-dim);
+      border: 1px solid var(--orange-bdr);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--orange);
+    }
+    .info-label {
+      font-family: var(--font-d);
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--text-lo);
+      margin-bottom: 4px;
+    }
+    .info-val {
+      font-family: var(--font-b);
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.75);
+      font-weight: 500;
+      line-height: 1.4;
+      word-break: break-word;
+      hyphens: none;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 860px) {
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 768px) {
+      .map-section { height: 240px; }
+    }
+    @media (max-width: 480px) {
+      .form-section { padding: 24px 18px; }
+      .row-2 { grid-template-columns: 1fr; }
+      .info-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 360px) {
+      .info-grid { grid-template-columns: 1fr; }
+      .nav-brand span:not(.acc) { display: none; }
+    }
+    @supports (padding: env(safe-area-inset-left)) {
+      .nav-inner {
+        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
+        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ FLASH MESSAGES ══ -->
+  <div id="message-container">
+    {% for message in messages %}
+    <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}">
+      <span>{{ message }}</span>
+      <button class="close-btn">×</button>
+    </div>
+    {% endfor %}
   </div>
-  {% endfor %}
-</div>
-{% endblock %} {% block content %}
-<div class="contact-container hero-animate">
-  <div class="contact-eyebrow">Contact Us</div>
-  <div class="contact-title">Get In Touch</div>
-  <div class="contact-sub">
-    We'd love to hear from you. Fill the form or reach us directly.
-  </div>
 
-  <div class="contact-grid">
-    <!-- LEFT: Form -->
-    <div class="form-section">
-      <form method="POST" class="contact-form">
-        {% csrf_token %}
+  <!-- ══ STICKY NAV ══ -->
+  <nav class="store-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/">
+        {% if gym and gym.logo %}
+          <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }} logo" class="nav-logo" />
+        {% else %}
+          <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM Logo" class="nav-logo" />
+        {% endif %}
+        <span>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</span>
+        <span class="acc">Contact</span>
+      </a>
+      <div class="nav-badge">Get In Touch</div>
+    </div>
+  </nav>
 
-        <div class="field">
-          <label for="name">Full Name</label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            placeholder="e.g. Rahul Sharma"
-            required
-          />
-        </div>
+  <!-- ══ PAGE HEADER ══ -->
+  <header class="page-header hero-animate">
+    <div class="header-inner">
+      <div class="header-eyebrow">
+        <i class="bi bi-envelope"></i> Contact Us
+      </div>
+      <h1>Get In <span class="accent">Touch</span></h1>
+      <div class="contact-sub">
+        We'd love to hear from you. Fill the form or reach us directly.
+      </div>
+    </div>
+  </header>
 
-        <div class="row-2">
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="contact-page">
+    <div class="contact-grid">
+
+      <!-- LEFT: Form -->
+      <div class="form-section">
+        <form method="POST" class="contact-form">
+          {% csrf_token %}
+
           <div class="field">
-            <label for="email">Email</label>
+            <label for="name">Full Name</label>
             <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="you@gmail.com"
+              type="text"
+              id="name"
+              name="name"
+              placeholder="e.g. Rahul Sharma"
               required
             />
           </div>
-          <div class="field">
-            <label for="number">Phone</label>
-            <input
-              type="tel"
-              id="number"
-              name="number"
-              placeholder="+91 98765 43210"
-              required
-            />
+
+          <div class="row-2">
+            <div class="field">
+              <label for="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="you@gmail.com"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="number">Phone</label>
+              <input
+                type="tel"
+                id="number"
+                name="number"
+                placeholder="+91 98765 43210"
+                required
+              />
+            </div>
           </div>
-        </div>
 
-        <div class="field">
-          <label for="description">Message</label>
-          <textarea
-            id="description"
-            name="description"
-            placeholder="Tell us what you're looking for…"
-            required
-          ></textarea>
-        </div>
+          <div class="field">
+            <label for="description">Message</label>
+            <textarea
+              id="description"
+              name="description"
+              placeholder="Tell us what you're looking for…"
+              required
+            ></textarea>
+          </div>
 
-        <button type="submit" class="submit-btn">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+          <button type="submit" class="submit-btn">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+            Send Message
+          </button>
+        </form>
+      </div>
+
+      <!-- RIGHT: Map + Info -->
+      <div class="right-col">
+        <div class="map-section">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d232.4594037786825!2d81.3311403871062!3d21.217947006557505!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sin!4v1776093034950!5m2!1sen!2sin"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
           >
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
-          </svg>
-          Send Message
-        </button>
-      </form>
-    </div>
-
-    <!-- RIGHT: Map + Info -->
-    <div class="right-col">
-      <div class="map-section">
-        <iframe
-          src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d232.4594037786825!2d81.3311403871062!3d21.217947006557505!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sin!4v1776093034950!5m2!1sen!2sin"
-          allowfullscreen=""
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-        >
-        </iframe>
-      </div>
-
-      <div class="info-grid">
-        <div class="info-card">
-          <div class="info-icon">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.18 3.37 2 2 0 0 1 3.16 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z"
-              />
-            </svg>
-          </div>
-          <div>
-            <div class="info-label">Call Us</div>
-            <div class="info-val">(+91)&nbsp;70000&nbsp;32565</div>
-          </div>
+          </iframe>
         </div>
 
-        <div class="info-card">
-          <div class="info-icon">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-              />
-              <polyline points="22,6 12,13 2,6" />
-            </svg>
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-icon">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.18 3.37 2 2 0 0 1 3.16 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z"
+                />
+              </svg>
+            </div>
+            <div>
+              <div class="info-label">Call Us</div>
+              <div class="info-val">(+91)&nbsp;70000&nbsp;32565</div>
+            </div>
           </div>
-          <div>
-            <div class="info-label">Email</div>
-            <div class="info-val">entergym@gmail.com</div>
-          </div>
-        </div>
 
-        <div class="info-card">
-          <div class="info-icon">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
+          <div class="info-card">
+            <div class="info-icon">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+            </div>
+            <div>
+              <div class="info-label">Email</div>
+              <div class="info-val">entergym@gmail.com</div>
+            </div>
           </div>
-          <div>
-            <div class="info-label">Hours</div>
-            <div class="info-val">5 AM – 10 PM · Daily</div>
-          </div>
-        </div>
 
-        <div class="info-card">
-          <div class="info-icon">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
+          <div class="info-card">
+            <div class="info-icon">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+            <div>
+              <div class="info-label">Hours</div>
+              <div class="info-val">5 AM – 10 PM · Daily</div>
+            </div>
           </div>
-          <div>
-            <div class="info-label">Location</div>
-            <div class="info-val">Bhilai, Chhattisgarh</div>
+
+          <div class="info-card">
+            <div class="info-icon">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </div>
+            <div>
+              <div class="info-label">Location</div>
+              <div class="info-val">Bhilai, Chhattisgarh</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-<script src="{% static 'js/messages.js' %}"></script>
-{% endblock %}
+  </main>
+
+  <script src="{% static 'js/messages.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+
+</body>
+</html>

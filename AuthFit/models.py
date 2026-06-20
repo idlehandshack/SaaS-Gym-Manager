@@ -136,6 +136,7 @@ class Enrollment(models.Model):
     doj = models.DateField(auto_now_add=True)
     DueDate = models.DateField(blank=True, null=True,db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True, db_index=True)
 
     # ==============================
     # 🔥 FACE SYSTEM (CLEAN)
@@ -307,3 +308,66 @@ class UserDevice(models.Model):
         ordering = ['-last_seen']
         verbose_name = 'User Device'
         verbose_name_plural = 'User Devices'
+
+
+class EnrollmentTransfer(models.Model):
+    """
+    Created when a member who already has an ACTIVE enrollment at one gym
+    confirms enrollment at a different gym. Visible only to the previous gym,
+    which later decides whether to mark the old enrollment inactive or delete it.
+    """
+
+    STATUS_CHOICES = [
+        ('pending',  'Pending'),
+        ('inactive', 'Inactive'),
+        ('deleted',  'Deleted'),
+    ]
+
+    member        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='enrollment_transfers')
+    mobile_number = models.CharField(max_length=10, db_index=True)
+
+    previous_gym = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='outgoing_transfers')
+    new_gym      = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='incoming_transfers')
+
+    # Nulled out automatically if the old gym later deletes the source row —
+    # the transfer record itself is kept as a historical log either way.
+    previous_enrollment = models.ForeignKey(
+        Enrollment, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='transfer_records'
+    )
+
+    # Snapshot of old-gym data at the moment of transfer.
+    # Kept as plain fields (not FKs) so the history survives deletion of the
+    # source enrollment / plan.
+    previous_member_id      = models.CharField(max_length=10)
+    previous_plan_name      = models.CharField(max_length=50, blank=True)
+    previous_joining_date   = models.DateField(null=True, blank=True)
+    previous_due_date       = models.DateField(null=True, blank=True)
+    previous_pending_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    last_payment_amount     = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    last_payment_date       = models.DateField(null=True, blank=True)
+
+    new_gym_joining_date = models.DateField(auto_now_add=True)
+
+    status          = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending', db_index=True)
+    action_taken_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    action_date     = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['previous_gym', 'status'])]
+        constraints = [
+            # DB-level guarantee: only one PENDING transfer per source
+            # enrollment at a time. Prevents duplicate records even under
+            # concurrent/double-click submissions.
+            models.UniqueConstraint(
+                fields=['previous_enrollment'],
+                condition=models.Q(status='pending'),
+                name='unique_pending_transfer_per_enrollment',
+            )
+        ]
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.mobile_number}: {self.previous_gym} → {self.new_gym} ({self.status})"

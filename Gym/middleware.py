@@ -37,10 +37,6 @@ class GymMiddleware:
             return self.get_response(request)
 
         gym = self._resolve_gym(request)
-        print(
-        f"HOST={request.get_host()}",
-        f"GYM={gym.gym_code if gym else None}"
-        )
         request.gym = gym
 
         if request.user.is_authenticated and gym:
@@ -66,21 +62,23 @@ class GymMiddleware:
         render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')
         if render_host and host == render_host.lower():
             return None
-
+        
+        if host == 'localhost':
+            return None
         # ── 2b. Dev: raw IP address (e.g. 192.168.x.x) ───────────────────
         # Only active when DEBUG=True — zero production risk.
         # No query param support: mirrors production gym-specific app behaviour.
         if settings.DEBUG and re.match(r'^\d{1,3}(\.\d{1,3}){3}$', host):
             dev_code = os.environ.get('DEV_GYM_CODE', '').strip()
-            print("DEV_GYM_CODE =", dev_code)
-            gym = Gym.objects.filter(
-                gym_code=dev_code,
-                active=True
-            ).first()
-            print("FOUND_GYM =", gym)
-            return gym
             if dev_code:
-                return Gym.objects.filter(gym_code=dev_code, active=True).first()
+                return Gym.objects.filter(
+                    gym_code=dev_code,
+                    active=True
+                ).first()
+
+            # localhost should be SaaS
+            if host == "localhost":
+                return None
             return None
 
         # ── 3. Dev: fitzone.localhost ─────────────────────────────────────

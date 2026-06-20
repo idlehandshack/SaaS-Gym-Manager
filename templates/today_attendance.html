@@ -1,524 +1,604 @@
-{% extends "base.html" %}
+<!doctype html>
 {% load static custom_filters %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Today's Attendance — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
-{% block title %}Today's Attendance{% endblock %}
+  <style>
+    /* ── TOKENS ── */
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #181818;
+      --surface-3:   #1e1e1e;
+      --border:      rgba(255,255,255,.06);
+      --border-2:    rgba(255,255,255,.11);
+      --orange:      #ff5a00;
+      --orange-dim:  rgba(255,90,0,.10);
+      --orange-bdr:  rgba(255,90,0,.28);
+      --green:       #5de87c;
+      --green-dim:   rgba(93,232,124,.10);
+      --green-bdr:   rgba(93,232,124,.28);
+      --red:         #ef5350;
+      --red-dim:     rgba(239,83,80,.10);
+      --red-bdr:     rgba(239,83,80,.28);
+      --text-hi:     #f5f5f5;
+      --text-mid:    #888;
+      --text-lo:     #444;
+      --font-d:      "Barlow Condensed", sans-serif;
+      --font-b:      "Barlow", sans-serif;
+      --ease:        cubic-bezier(.4,0,.2,1);
+      --t:           .22s;
+      --radius-lg:   18px;
+      --radius-md:   12px;
+      --radius-sm:   8px;
+      --radius-pill: 40px;
+      --nav-h:       60px;
+    }
 
-{% block link %}
-<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
 
-  .header-color { color:#ff4d00; }
-  .date-color   { color:#22c55e; }
+    body {
+      background: var(--bg);
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
 
-  .att-page {
-    padding: 16px 12px 80px;
-    max-width: 860px;
-    margin: 0 auto;
-    width: 100%;
-    box-sizing: border-box;
-  }
+    /* ── STICKY NAV ── */
+    .store-nav {
+      position: sticky; top: 0; z-index: 200;
+      height: var(--nav-h);
+      background: rgba(8,8,8,.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .nav-inner {
+      width: 100%; padding: 0 clamp(16px,4vw,40px);
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .nav-brand {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.1rem,3vw,1.5rem);
+      text-transform: uppercase; text-decoration: none;
+      color: var(--text-hi); letter-spacing: -.01em;
+      white-space: nowrap; display: flex; align-items: center; gap: 8px;
+      transition: color var(--t);
+    }
+    .nav-brand .acc { color: var(--orange); }
+    .back-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; flex-shrink: 0;
+      transition: background var(--t);
+    }
+    .nav-brand:hover .back-icon { background: var(--orange-dim); }
+    .nav-brand:hover { color: var(--text-hi); }
+    .nav-badge {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      background: var(--orange-dim); color: var(--orange);
+      border: 1px solid var(--orange-bdr);
+      padding: 5px 14px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
 
-  /* Header */
-  .att-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .att-header h2 {
-    color: #fff;
-    font-size: clamp(13px, 3.5vw, 17px);
-    font-weight: 800;
-    letter-spacing: 1px;
-    margin: 0;
-  }
-  .att-badge {
-    background: #ff4d0022;
-    border: 1px solid #ff4d0055;
-    color: #ff4d00;
-    font-size: clamp(9px, 2.5vw, 11px);
-    font-weight: 800;
-    letter-spacing: 2px;
-    padding: 3px 10px;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
+    /* ── PAGE HEADER ── */
+    .page-header {
+      position: relative;
+      padding: clamp(40px,7vw,72px) 0 clamp(28px,5vw,48px);
+      text-align: center; overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: clamp(24px,4vw,40px);
+    }
+    .page-header::before {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .header-inner {
+      position: relative; z-index: 1;
+      padding: 0 clamp(16px,4vw,40px);
+    }
+    .header-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
+      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 10px;
+      padding: 5px 14px;
+      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
+      background: var(--orange-dim);
+    }
+    .page-header h1 {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(2rem,7vw,3.8rem); line-height: .92;
+      letter-spacing: -.01em; text-transform: uppercase;
+      margin-bottom: 8px; color: var(--text-hi);
+    }
+    .page-header h1 .accent { color: var(--orange); }
+    .date-line {
+      font-family: var(--font-d);
+      font-size: clamp(.85rem,2.2vw,.98rem);
+      font-weight: 700; letter-spacing: .08em; color: var(--green);
+    }
 
-  /* Section label */
-  .section-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 20px 0 10px;
-  }
-  .section-label span {
-    color: #ff4d00;
-    font-size: clamp(9px, 2.5vw, 10px);
-    font-weight: 800;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-  .section-label::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: #1e1e1e;
-  }
+    /* ── MAIN CONTENT ── */
+    .att-page {
+      max-width: 860px; margin: 0 auto;
+      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
+    }
 
-  /* Card */
-  .att-card {
-    background: #111;
-    border: 1px solid #1e1e1e;
-    border-radius: 8px;
-    padding: clamp(10px, 2.5vw, 14px) clamp(12px, 3vw, 18px);
-    display: flex;
-    align-items: center;
-    gap: clamp(10px, 2.5vw, 16px);
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: border-color .2s, background .2s;
-    box-sizing: border-box;
-    width: 100%;
-  }
-  .att-card:hover  { border-color: #ff4d0055; background: #161616; }
-  .att-card.expired { border-left: 3px solid #ff3333; }
+    /* ── SECTION LABEL ── */
+    .section-label {
+      display: flex; align-items: center; gap: 10px;
+      margin: clamp(20px,4vw,32px) 0 clamp(10px,2vw,14px);
+    }
+    .section-label span {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .2em; text-transform: uppercase;
+      color: var(--text-lo); white-space: nowrap;
+    }
+    .section-label::after {
+      content: ""; flex: 1; height: 1px; background: var(--border);
+    }
 
-  /* Time */
-  .att-time {
-    min-width: clamp(54px, 14vw, 72px);
-    text-align: center;
-    flex-shrink: 0;
-  }
-  .att-time .time-val {
-    color: #ff4d00;
-    font-size: clamp(11px, 3vw, 14px);
-    font-weight: 800;
-    letter-spacing: 0.5px;
-  }
-  .att-time .time-label {
-    color: #444;
-    font-size: clamp(7px, 2vw, 9px);
-    letter-spacing: 2px;
-    font-weight: 600;
-  }
+    /* ── ATT CARD ── */
+    .att-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: clamp(10px,2.5vw,14px) clamp(12px,3vw,18px);
+      display: flex; align-items: center; gap: clamp(10px,2.5vw,16px);
+      margin-bottom: 8px; cursor: pointer;
+      transition: border-color var(--t), background var(--t);
+      width: 100%;
+      animation: fadeUp .35s var(--ease) both;
+    }
+    .att-card:hover  { border-color: var(--orange-bdr); background: var(--surface-2); }
+    .att-card.expired { border-left: 3px solid var(--red); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
 
-  .att-divider {
-    width: 1px;
-    height: 36px;
-    background: #222;
-    flex-shrink: 0;
-  }
+    /* time block */
+    .att-time { min-width: clamp(54px,14vw,72px); text-align: center; flex-shrink: 0; }
+    .att-time .time-val {
+      color: var(--orange); font-family: var(--font-d);
+      font-size: clamp(12px,3vw,15px); font-weight: 800; letter-spacing: .5px;
+    }
+    .att-time .time-label {
+      color: var(--text-lo); font-family: var(--font-d);
+      font-size: clamp(8px,2vw,9px); letter-spacing: .2em;
+      font-weight: 700; text-transform: uppercase; margin-top: 2px;
+    }
 
-  /* Avatar */
-  .att-avatar {
-    width: clamp(34px, 9vw, 42px);
-    height: clamp(34px, 9vw, 42px);
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid #2a2a2a;
-    flex-shrink: 0;
-    background: #1a1a1a;
-  }
-  .att-avatar-placeholder {
-    width: clamp(34px, 9vw, 42px);
-    height: clamp(34px, 9vw, 42px);
-    border-radius: 50%;
-    border: 1px solid #2a2a2a;
-    background: #1a1a1a;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #333;
-    font-size: clamp(13px, 3.5vw, 17px);
-    font-weight: 800;
-  }
+    .att-divider { width: 1px; height: 36px; background: var(--border-2); flex-shrink: 0; }
 
-  /* Info */
-  .att-info {
-    flex: 1;
-    min-width: 0;
-  }
-  .att-name {
-    color: #fff;
-    font-size: clamp(12px, 3.5vw, 15px);
-    font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .att-uid {
-    color: #555;
-    font-size: clamp(9px, 2.5vw, 11px);
-    letter-spacing: 2px;
-    font-weight: 600;
-    margin-top: 2px;
-  }
+    /* avatar */
+    .att-avatar {
+      width: clamp(34px,9vw,42px); height: clamp(34px,9vw,42px);
+      border-radius: 50%; object-fit: cover;
+      border: 1px solid var(--border-2); flex-shrink: 0;
+      background: var(--surface-2);
+    }
+    .att-avatar-placeholder {
+      width: clamp(34px,9vw,42px); height: clamp(34px,9vw,42px);
+      border-radius: 50%; border: 1px solid var(--border-2);
+      background: var(--surface-3); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-lo); font-family: var(--font-d);
+      font-size: clamp(13px,3.5vw,17px); font-weight: 900;
+    }
 
-  /* Meta */
-  .att-meta {
-    text-align: right;
-    flex-shrink: 0;
-    min-width: clamp(60px, 16vw, 80px);
-  }
-  .att-pending {
-    font-size: clamp(12px, 3vw, 14px);
-    font-weight: 800;
-  }
-  .att-pending.has-pending { color: #ff4d00; }
-  .att-due {
-    font-size: clamp(8px, 2vw, 10px);
-    color: #444;
-    letter-spacing: 1px;
-    margin-top: 3px;
-  }
-  .att-due.expired-tag { color: #ff3333; }
+    /* info */
+    .att-info { flex: 1; min-width: 0; }
+    .att-name {
+      color: var(--text-hi); font-family: var(--font-d);
+      font-size: clamp(13px,3.5vw,16px); font-weight: 800;
+      letter-spacing: .02em; text-transform: uppercase;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .att-uid {
+      color: var(--text-lo); font-family: var(--font-d);
+      font-size: clamp(9px,2.5vw,11px); letter-spacing: .18em;
+      font-weight: 700; margin-top: 2px;
+    }
 
-  .empty-state {
-    color: #333;
-    font-size: clamp(10px, 2.5vw, 12px);
-    letter-spacing: 2px;
-    text-align: center;
-    padding: 24px 0;
-    font-weight: 600;
-  }
+    /* meta */
+    .att-meta { text-align: right; flex-shrink: 0; min-width: clamp(60px,16vw,80px); }
+    .att-pending {
+      font-family: var(--font-d);
+      font-size: clamp(12px,3vw,15px); font-weight: 900; color: var(--text-lo);
+    }
+    .att-pending.has-pending { color: var(--orange); }
+    .att-due {
+      font-family: var(--font-d);
+      font-size: clamp(8px,2vw,10px); color: var(--text-lo);
+      letter-spacing: .1em; margin-top: 3px;
+      font-weight: 700; text-transform: uppercase;
+    }
+    .att-due.expired-tag { color: var(--red); }
 
-  /* Modal */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: #000000bb;
-    z-index: 1000;
-    justify-content: flex-end;
-  }
-  .modal-overlay.open { display: flex; }
+    .att-chevron {
+      color: var(--text-lo); font-size: .85rem; flex-shrink: 0;
+      transition: color var(--t), transform var(--t);
+    }
+    .att-card:hover .att-chevron { color: var(--orange); transform: translateX(2px); }
 
-  .modal-panel {
-    background: #0e0e0e;
-    border-left: 1px solid #1e1e1e;
-    width: 100%;
-    max-width: 420px;
-    height: 100%;
-    overflow-y: auto;
-    padding: clamp(20px, 5vw, 32px) clamp(16px, 4vw, 24px) 48px;
-    transform: translateX(100%);
-    transition: transform .3s cubic-bezier(.4,0,.2,1);
-    position: relative;
-    box-sizing: border-box;
-  }
-  .modal-overlay.open .modal-panel { transform: translateX(0); }
+    .empty-state {
+      font-family: var(--font-d); color: var(--text-lo); font-size: .8rem;
+      letter-spacing: .18em; text-align: center; padding: 24px 0;
+      font-weight: 700; text-transform: uppercase;
+    }
 
-  @media (max-width: 440px) {
-    .modal-panel { max-width: 100%; border-left: none; }
-  }
+    /* ── SLIDE PANEL ── */
+    .panel-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.72); z-index: 900;
+    }
+    .panel-backdrop.open { display: block; }
 
-  .modal-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    color: #888;
-    width: 30px;
-    height: 30px;
-    border-radius: 6px;
-    font-size: 15px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color .2s;
-    flex-shrink: 0;
-  }
-  .modal-close:hover { color: #fff; }
+    .slide-panel {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: min(420px, 100vw);
+      background: var(--surface);
+      border-left: 1px solid var(--border-2);
+      z-index: 901; overflow-y: auto;
+      transform: translateX(100%);
+      transition: transform .3s var(--ease);
+      display: flex; flex-direction: column;
+    }
+    .slide-panel.open { transform: translateX(0); }
 
-  /* Modal avatar */
-  .modal-avatar-wrap {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 12px;
-    padding-right: 36px;
-  }
-  .modal-avatar {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #ff4d0055;
-    background: #1a1a1a;
-    flex-shrink: 0;
-  }
-  .modal-avatar-placeholder {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    border: 2px solid #2a2a2a;
-    background: #1a1a1a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #444;
-    font-size: 22px;
-    font-weight: 800;
-    flex-shrink: 0;
-  }
-  .modal-title-block { min-width: 0; }
-  .modal-uid {
-    color: #ff4d00;
-    font-size: clamp(9px, 2.5vw, 11px);
-    font-weight: 800;
-    letter-spacing: 4px;
-    margin-bottom: 4px;
-  }
-  .modal-name {
-    color: #fff;
-    font-size: clamp(16px, 5vw, 22px);
-    font-weight: 900;
-    letter-spacing: 1px;
-    word-break: break-word;
-  }
-  .modal-accent {
-    width: 36px;
-    height: 2px;
-    background: #ff4d00;
-    border-radius: 1px;
-    margin: 10px 0 20px;
-  }
+    .panel-head {
+      padding: clamp(20px,4vw,28px) clamp(16px,4vw,24px) 0;
+      flex-shrink: 0;
+    }
+    .panel-close {
+      width: 32px; height: 32px;
+      background: var(--surface-2); border: 1px solid var(--border-2);
+      color: var(--text-mid); border-radius: var(--radius-sm);
+      font-size: .9rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color var(--t), border-color var(--t);
+      margin-bottom: clamp(16px,3vw,24px);
+    }
+    .panel-close:hover { color: var(--text-hi); border-color: rgba(255,255,255,.22); }
 
-  .detail-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(10px, 3vw, 14px);
-    margin-bottom: 18px;
-  }
-  .detail-item.full { grid-column: 1 / -1; }
-  .detail-label {
-    color: #444;
-    font-size: clamp(8px, 2vw, 9px);
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 3px;
-  }
-  .detail-value {
-    color: #ddd;
-    font-size: clamp(11px, 3vw, 13px);
-    font-weight: 600;
-    word-break: break-word;
-  }
-  .detail-value.highlight { color: #ff4d00; }
-  .detail-value.success   { color: #22c55e; }
-  .detail-value.danger    { color: #ff3333; }
+    .panel-avatar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+    .panel-avatar {
+      width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+      border: 2px solid var(--orange-bdr); background: var(--surface-2); flex-shrink: 0;
+    }
+    .panel-avatar-ph {
+      width: 64px; height: 64px; border-radius: 50%;
+      border: 2px solid var(--border-2); background: var(--surface-3);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-lo); font-family: var(--font-d);
+      font-size: 22px; font-weight: 900; flex-shrink: 0;
+    }
+    .panel-uid {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .2em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 4px;
+    }
+    .panel-name {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.3rem,4vw,1.7rem);
+      text-transform: uppercase; letter-spacing: .01em;
+      color: var(--text-hi); word-break: break-word;
+    }
+    .panel-accent {
+      width: 32px; height: 3px; background: var(--orange);
+      border-radius: 2px; margin: 12px 0 clamp(16px,3vw,24px);
+    }
 
-  .modal-divider { height: 1px; background: #1a1a1a; margin: 18px 0; }
-  .modal-section-title {
-    color: #333;
-    font-size: clamp(8px, 2vw, 9px);
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-</style>
-{% endblock %}
+    .panel-body {
+      padding: 0 clamp(16px,4vw,24px) clamp(24px,4vw,36px); flex: 1;
+    }
+    .panel-section-title {
+      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+      letter-spacing: .22em; text-transform: uppercase;
+      color: var(--text-lo); margin-bottom: 12px;
+    }
+    .detail-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: clamp(10px,2.5vw,14px); margin-bottom: 18px;
+    }
+    .detail-item.full { grid-column: 1 / -1; }
+    .detail-label {
+      font-family: var(--font-d); color: var(--text-lo);
+      font-size: .68rem; font-weight: 700; letter-spacing: .18em;
+      text-transform: uppercase; margin-bottom: 3px;
+    }
+    .detail-value {
+      color: var(--text-hi); font-family: var(--font-b);
+      font-size: clamp(11px,2.5vw,13px); font-weight: 600; word-break: break-word;
+    }
+    .detail-value.highlight { color: var(--orange); }
+    .detail-value.success   { color: var(--green); }
+    .detail-value.danger    { color: var(--red); }
+    .panel-divider { height: 1px; background: var(--border); margin: clamp(14px,3vw,20px) 0; }
 
-{% block content %}
-<div class="att-page hero-animate">
-  <h1 class="header-color">ATTENDANCE</h1>
-  <p class="date-color">{{ today|date:"l, d F Y" }}</p>
-  <div class="att-header">
-    <div><h2>CHECK-INS</h2></div>
-    <div class="att-badge">{{ total }} TOTAL</div>
-  </div>
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-  {% for section_name, section_icon, records in sections %}
-  <div class="section-label"><span>{{ section_icon }} {{ section_name }}</span></div>
-  {% if records %}
-    {% for r in records %}
-    <div class="att-card {% if r.is_expired %}expired{% endif %}" data-json="{{ r|data_json }}">
+    /* ── RESPONSIVE ── */
+    @media (max-width: 440px) {
+      .slide-panel { border-left: none; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .detail-item.full { grid-column: 1; }
+      .att-uid { letter-spacing: .1em; }
+    }
+    @media (max-width: 360px) {
+      .att-time { min-width: 48px; }
+      .att-meta { min-width: 52px; }
+    }
+    @supports (padding: env(safe-area-inset-left)) {
+      .nav-inner {
+        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
+        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
+      }
+      .slide-panel {
+        padding-right: env(safe-area-inset-right);
+      }
+    }
+  </style>
+</head>
+<body>
 
-      <div class="att-time">
-        <div class="time-val">{{ r.time }}</div>
-        <div class="time-label">CHECK-IN</div>
+  <!-- ── STICKY NAV ── -->
+  <nav class="store-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/">
+        <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
+        {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
+        <span class="acc">Attendance</span>
+      </a>
+      <div class="nav-badge">{{ total }} Total</div>
+    </div>
+  </nav>
+
+  <!-- ── PAGE HEADER ── -->
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-eyebrow">
+        <i class="bi bi-calendar-check"></i> Daily Log
       </div>
-      <div class="att-divider"></div>
+      <h1>Today's <span class="accent">Attendance</span></h1>
+      <div class="date-line">{{ today|date:"l, d F Y" }}</div>
+    </div>
+  </header>
 
-      {% if r.image_url %}
-        <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy">
-      {% else %}
-        <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
-      {% endif %}
+  <!-- ── ATTENDANCE LIST ── -->
+  <main class="att-page">
 
-      <div class="att-info">
-        <div class="att-name">{{ r.name }}</div>
-        <div class="att-uid">UID · {{ r.unique_id }}</div>
-      </div>
+    {% for section_name, section_icon, records in sections %}
+    <div class="section-label">
+      <span>{{ section_icon }} {{ section_name }}</span>
+    </div>
 
-      <div class="att-meta">
-        {% if r.pending_amount > 0 %}
-        <div class="att-pending has-pending">₹{{ r.pending_amount|floatformat:0 }}</div>
+    {% if records %}
+      {% for r in records %}
+      <div class="att-card {% if r.is_expired %}expired{% endif %}" data-json="{{ r|data_json }}">
+
+        <div class="att-time">
+          <div class="time-val">{{ r.time }}</div>
+          <div class="time-label">Check-In</div>
+        </div>
+        <div class="att-divider"></div>
+
+        {% if r.image_url %}
+          <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy" />
+        {% else %}
+          <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
         {% endif %}
-        <div class="att-due {% if r.is_expired %}expired-tag{% endif %}">
-          {% if r.is_expired %}EXPIRED{% else %}{{ r.due_date }}{% endif %}
+
+        <div class="att-info">
+          <div class="att-name">{{ r.name }}</div>
+          <div class="att-uid">UID · {{ r.unique_id }}</div>
+        </div>
+
+        <div class="att-meta">
+          {% if r.pending_amount > 0 %}
+            <div class="att-pending has-pending">₹{{ r.pending_amount|floatformat:0 }}</div>
+          {% else %}
+            <div class="att-pending"></div>
+          {% endif %}
+          <div class="att-due {% if r.is_expired %}expired-tag{% endif %}">
+            {% if r.is_expired %}EXPIRED{% else %}{{ r.due_date }}{% endif %}
+          </div>
+        </div>
+
+        <i class="bi bi-chevron-right att-chevron"></i>
+
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">No {{ section_name|upper }} Check-Ins</div>
+    {% endif %}
+    {% endfor %}
+
+  </main>
+
+  <!-- ── SLIDE PANEL BACKDROP ── -->
+  <div class="panel-backdrop" id="panelBackdrop"></div>
+
+  <!-- ── SLIDE PANEL ── -->
+  <div class="slide-panel" id="slidePanel" aria-modal="true" role="dialog" aria-label="Member detail">
+    <div class="panel-head">
+      <button class="panel-close" id="panelClose" aria-label="Close">
+        <i class="bi bi-x"></i>
+      </button>
+      <div class="panel-avatar-row">
+        <img class="panel-avatar" id="pAvatar" src="" alt="" style="display:none" />
+        <div class="panel-avatar-ph" id="pAvatarPh"></div>
+        <div>
+          <div class="panel-uid"  id="pUid"></div>
+          <div class="panel-name" id="pName"></div>
+        </div>
+      </div>
+      <div class="panel-accent"></div>
+    </div>
+
+    <div class="panel-body">
+
+      <div class="panel-section-title">Personal</div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-label">Phone</div>
+          <div class="detail-value" id="pPhone"></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Gender</div>
+          <div class="detail-value" id="pGender"></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Joined</div>
+          <div class="detail-value" id="pDoj"></div>
+        </div>
+        <div class="detail-item full">
+          <div class="detail-label">Address</div>
+          <div class="detail-value" id="pAddress"></div>
+        </div>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <div class="panel-section-title">Membership</div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-label">Plan</div>
+          <div class="detail-value highlight" id="pPlan"></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Plan Price</div>
+          <div class="detail-value" id="pPlanPrice"></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Trainer</div>
+          <div class="detail-value" id="pTrainer"></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Payment</div>
+          <div class="detail-value" id="pPayStatus"></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Pending</div>
+          <div class="detail-value" id="pPending"></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Expires</div>
+          <div class="detail-value" id="pDue"></div>
+        </div>
+        <div class="detail-item full">
+          <div class="detail-label">Days Remaining</div>
+          <div class="detail-value" id="pDays"></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Payment Date</div>
+          <div class="detail-value" id="pPayDate"></div>
         </div>
       </div>
 
     </div>
-    {% endfor %}
-  {% else %}
-    <div class="empty-state">NO {{ section_name|upper }} CHECK-INS</div>
-  {% endif %}
-  {% endfor %}
-
-</div>
-
-<!-- Detail Modal -->
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal-panel" id="modalPanel">
-    <button class="modal-close" id="modalCloseBtn">✕</button>
-
-    <div class="modal-avatar-wrap">
-      <img class="modal-avatar" id="mAvatar" src="" alt="" style="display:none">
-      <div class="modal-avatar-placeholder" id="mAvatarPlaceholder"></div>
-      <div class="modal-title-block">
-        <div class="modal-uid" id="mUid"></div>
-        <div class="modal-name" id="mName"></div>
-      </div>
-    </div>
-    <div class="modal-accent"></div>
-
-    <div class="modal-section-title">Personal</div>
-    <div class="detail-grid">
-      <div class="detail-item">
-        <div class="detail-label">Phone</div>
-        <div class="detail-value" id="mPhone"></div>
-      </div>
-      <div class="detail-item">
-        <div class="detail-label">Gender</div>
-        <div class="detail-value" id="mGender"></div>
-      </div>
-      <div class="detail-item">
-        <div class="detail-label">Joined</div>
-        <div class="detail-value" id="mDoj"></div>
-      </div>
-      <div class="detail-item full">
-        <div class="detail-label">Address</div>
-        <div class="detail-value" id="mAddress"></div>
-      </div>
-    </div>
-
-    <div class="modal-divider"></div>
-
-    <div class="modal-section-title">Membership</div>
-    <div class="detail-grid">
-      <div class="detail-item">
-        <div class="detail-label">Plan</div>
-        <div class="detail-value highlight" id="mPlan"></div>
-      </div>
-      <div class="detail-item">
-        <div class="detail-label">Plan Price</div>
-        <div class="detail-value" id="mPlanPrice"></div>
-      </div>
-
-      <div class="detail-item">
-        <div class="detail-label">Trainer</div>
-        <div class="detail-value" id="mTrainer"></div>
-      </div>
-      <div class="detail-item">
-        <div class="detail-label">Payment</div>
-        <div class="detail-value" id="mPayStatus"></div>
-      </div>
-      <div class="detail-item">
-        <div class="detail-label">Pending</div>
-        <div class="detail-value" id="mPending"></div>
-      </div>
-      <div class="detail-item">
-        <div class="detail-label">Expires</div>
-        <div class="detail-value" id="mDue"></div>
-      </div>
-      <div class="detail-item full">
-        <div class="detail-label">Days Remaining</div>
-        <div class="detail-value" id="mDays"></div>
-      </div>
-      <div class="detail-item">
-        <div class="detail-label">Payment Date</div>
-        <div class="detail-value" id="mPayDate"></div>
-      </div>
-    </div>
-
   </div>
-</div>
 
-<script nonce="{{ request.csp_nonce }}">
-  const overlay  = document.getElementById('modalOverlay');
-  const closeBtn = document.getElementById('modalCloseBtn');
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script nonce="{{ request.csp_nonce }}">
+  (function () {
+    const panel    = document.getElementById('slidePanel');
+    const backdrop = document.getElementById('panelBackdrop');
+    const closeBtn = document.getElementById('panelClose');
 
-  document.addEventListener('click', function (e) {
-    const card = e.target.closest('.att-card');
-    if (card) {
-      try { openModal(JSON.parse(card.dataset.json)); }
-      catch (err) { console.error('Modal parse error:', err); }
+    /* Card click — identical delegation logic to original */
+    document.addEventListener('click', function (e) {
+      const card = e.target.closest('.att-card');
+      if (card) {
+        try { openPanel(JSON.parse(card.dataset.json)); }
+        catch (err) { console.error('Panel parse error:', err); }
+      }
+    });
+
+    closeBtn.addEventListener('click', closePanel);
+    backdrop.addEventListener('click', closePanel);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closePanel();
+    });
+
+    function openPanel(r) {
+      const img = document.getElementById('pAvatar');
+      const ph  = document.getElementById('pAvatarPh');
+
+      if (r.image_url) {
+        img.src = r.image_url; img.alt = r.name || '';
+        img.style.display = 'block';
+        ph.style.display  = 'none';
+      } else {
+        img.style.display = 'none';
+        ph.style.display  = 'flex';
+        ph.textContent    = (r.name || '?')[0].toUpperCase();
+      }
+
+      document.getElementById('pUid').textContent      = 'UID · ' + (r.unique_id || '—');
+      document.getElementById('pName').textContent     = r.name    || '—';
+      document.getElementById('pPhone').textContent    = r.phone   || '—';
+      document.getElementById('pGender').textContent   = r.gender  || '—';
+      document.getElementById('pDoj').textContent      = r.doj     || '—';
+      document.getElementById('pAddress').textContent  = r.address || '—';
+      document.getElementById('pPlan').textContent     = r.plan    || '—';
+      document.getElementById('pPlanPrice').textContent = r.plan_price != null ? '₹' + r.plan_price : '—';
+      document.getElementById('pTrainer').textContent  = r.trainer || '—';
+
+      const ps = document.getElementById('pPayStatus');
+      ps.textContent = r.payment_status || '—';
+      ps.className   = 'detail-value ' + (r.payment_status === 'Done' ? 'success' : 'danger');
+
+      const pend = document.getElementById('pPending');
+      pend.textContent = r.pending_amount != null ? '₹' + r.pending_amount : '—';
+      pend.className   = 'detail-value ' + (r.pending_amount > 0 ? 'danger' : 'success');
+
+      const due = document.getElementById('pDue');
+      due.textContent = r.due_date || '—';
+      due.className   = 'detail-value ' + (r.is_expired ? 'danger' : '');
+
+      const days = document.getElementById('pDays');
+      days.textContent = r.is_expired             ? 'EXPIRED'
+                       : r.days_remaining != null  ? r.days_remaining + ' days'
+                       : '—';
+      days.className = 'detail-value ' + (
+        r.is_expired           ? 'danger'    :
+        r.days_remaining <= 5  ? 'highlight' : 'success'
+      );
+
+      document.getElementById('pPayDate').textContent = r.payment_date || '—';
+
+      panel.classList.add('open');
+      backdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
     }
-  });
 
-  closeBtn.addEventListener('click', closeModal);
-  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
-
-  function openModal(r) {
-    // Avatar
-    const img         = document.getElementById('mAvatar');
-    const placeholder = document.getElementById('mAvatarPlaceholder');
-    if (r.image_url) {
-      img.src              = r.image_url;
-      img.alt              = r.name || '';
-      img.style.display    = 'block';
-      placeholder.style.display = 'none';
-    } else {
-      img.style.display         = 'none';
-      placeholder.style.display = 'flex';
-      placeholder.textContent   = (r.name || '?')[0].toUpperCase();
+    function closePanel() {
+      panel.classList.remove('open');
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
     }
+  })();
+  </script>
 
-    document.getElementById('mUid').textContent      = 'UID · ' + (r.unique_id || '—');
-    document.getElementById('mName').textContent     = r.name    || '—';
-    document.getElementById('mPhone').textContent    = r.phone   || '—';
-    document.getElementById('mGender').textContent   = r.gender  || '—';
-    document.getElementById('mDoj').textContent      = r.doj     || '—';
-    document.getElementById('mAddress').textContent  = r.address || '—';
-    document.getElementById('mPlan').textContent     = r.plan    || '—';
-    document.getElementById('mPlanPrice').textContent = r.plan_price != null ? '₹' + r.plan_price : '—';
-    document.getElementById('mTrainer').textContent  = r.trainer || '—';
-
-    const ps = document.getElementById('mPayStatus');
-    ps.textContent = r.payment_status || '—';
-    ps.className   = 'detail-value ' + (r.payment_status === 'Done' ? 'success' : 'danger');
-
-    const pend = document.getElementById('mPending');
-    pend.textContent = r.pending_amount != null ? '₹' + r.pending_amount : '—';
-    pend.className   = 'detail-value ' + (r.pending_amount > 0 ? 'danger' : 'success');
-
-    const due = document.getElementById('mDue');
-    due.textContent = r.due_date || '—';
-    due.className   = 'detail-value ' + (r.is_expired ? 'danger' : '');
-
-    const days = document.getElementById('mDays');
-    days.textContent = r.is_expired             ? 'EXPIRED'
-                     : r.days_remaining != null  ? r.days_remaining + ' days'
-                     : '—';
-    days.className = 'detail-value ' + (
-      r.is_expired           ? 'danger'    :
-      r.days_remaining <= 5  ? 'highlight' : 'success'
-    );
-    document.getElementById('mPayDate').textContent = r.payment_date || '—';
-
-    overlay.classList.add('open');
-  }
-
-  function closeModal() { overlay.classList.remove('open'); }
-</script>
-{% endblock %}
+</body>
+</html>

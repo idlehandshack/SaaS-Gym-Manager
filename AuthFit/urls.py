@@ -33,6 +33,9 @@ urlpatterns = [
     path('sw.js', serve_sw, name='sw'),
 
     # ── Admin tools ────────────────────────────────────────────
+    path('admin-tools/transferred-members/', views.transferred_members, name='transferred_members'),
+    path('admin-tools/transferred-members/<int:transfer_id>/mark-inactive/', views.transfer_mark_inactive, name='transfer_mark_inactive'),
+    path('admin-tools/transferred-members/<int:transfer_id>/delete/', views.transfer_delete_enrollment, name='transfer_delete_enrollment'),
     path('admin-tools/whatsapp/', views.whatsapp_pending_users, name='whatsapp_pending'),
     path('admin-tools/payments/', views.payment_management, name='payment_management'),
     path('admin-tools/update-payment/', views.update_payment, name='update_payment'),

@@ -141,8 +141,8 @@
             <li class="dropdown">
               <a href="#">Attendance ▼</a>
               <ul class="dropdown-menu">
-                <li><a href="/admin/attendance/">Attendance Analysis</a></li>
-                <li><a href="/admin-tools/today-attendance/">Attendance List</a></li>
+                <li><a href="/admin/attendance/">Attendance Analytics</a></li>
+                <li><a href="/admin-tools/today-attendance/">Attendance Records</a></li>
               </ul>
             </li>
             {% endif %}
@@ -151,17 +151,21 @@
             <li class="dropdown">
               <a href="#">Payment ▼</a>
               <ul class="dropdown-menu">
-                <li><a href="/freeze-membership/">Member's</a></li>
-                <li><a href="/admin/revenue/">Revenue</a></li>
-                <li><a href="{% url 'whatsapp_pending' %}">Payment Reminders</a></li>
+                <li><a href="/admin/revenue/">Revenue Insights</a></li>
+                <li><a href="{% url 'whatsapp_pending' %}">Due Payments</a></li>
               </ul>
             </li>
-            {% endif %}
+            <li class="dropdown">
+              <a href="#">Member's ▼</a>
+              <ul class="dropdown-menu">
+                <li><a href="/freeze-membership/">Members</a></li>
+                <li><a href="/admin/AuthFit/membershipplan/">MemberShip Plans</a></li>
+                <li><a href="/admin-tools/transferred-members/">Member Transferred</a></li>
+              </ul>
+            </li>
 
-            {% if isStaff or isSuperuser %}
-            <li><a href="/manage/orders/">Orders</a></li>
-            <li><a href="/admin/AuthFit/membershipplan/">MemberShip Plan</a></li>
-            <li><a href="/admin/AuthFit/contact/">User Queries</a></li>
+            <li><a href="/manage/orders/">Order Management</a></li>
+            <li><a href="/admin/AuthFit/contact/">Support Requests</a></li>
             {% else %}
             <li class="dropdown">
               <a href="#">Membership ▼</a>
@@ -178,7 +182,7 @@
 
                 {% if request.user.is_authenticated and enrolled %}
                   {% if isStaff %}
-                  <li><a href="/admin/AuthFit/attendence/">Attendance List</a></li>
+                  <li><a href="/admin/AuthFit/attendence/">Attendance Records</a></li>
                   {% else %}
                   <li><a href="/attendence/">Attendance</a></li>
                   {% endif %}
@@ -198,8 +202,8 @@
           <div class="nav-right">
             {% if request.user.is_authenticated %}
               {% if isStaff %}
-              <a href="/admin/" class="btn">AdPanel</a>
-              <a href="{% url 'payment_management' %}" class="btn">Enroll List</a>
+              <a href="/admin/" class="btn">Dashboard</a>
+              <a href="{% url 'payment_management' %}" class="btn">Registrations</a>
               {% else %}
               <a href="/profile/" class="btn">My Profile</a>
 
@@ -290,8 +294,10 @@
           <div class="menu-logo">
             <div class="logo-bars"><span></span><span></span><span></span></div>
             <div class="logo-text">
-              <b>EnterGYM</b>
-              <small>Bhilai &middot; Chhattisgarh</small>
+              {% if gym %}
+                 <b>{{gym.gym_name}}</b>
+                 <small>{{gym.city}}</small>
+              {% endif %}
             </div>
           </div>
           <button id="closeMenu" class="menu-close-btn" aria-label="Close menu">&#10005;</button>
@@ -302,14 +308,15 @@
         <ul class="menu-nav">
 
           {% if isStaff %}
-          <li><a href="/admin/revenue/">Revenue <span>↗</span></a></li>
-          <li><a href="/manage/orders/">Orders <span>↗</span></a></li>
-          <li><a href="/admin-tools/today-attendance/">Attendance List <span>↗</span></a></li>
-          <li><a href="/admin/attendance/">Attendance Analysis <span>↗</span></a></li>
-          <li><a href="/freeze-membership/">Member's <span>↗</span></a></li>
-          <li><a href="{% url 'whatsapp_pending' %}">Payment Reminders <span>↗</span></a></li>
-          <li><a href="/admin/AuthFit/membershipplan/">Plans <span>↗</span></a></li>
-          <li><a href="/admin/AuthFit/contact/">Queries <span>↗</span></a></li>
+          <li><a href="/admin/revenue/">Revenue Insights <span>↗</span></a></li>
+          <li><a href="/manage/orders/">Order Management<span>↗</span></a></li>
+          <li><a href="/admin-tools/today-attendance/">Attendance Records<span>↗</span></a></li>
+          <li><a href="/admin/attendance/">Attendance Analytics <span>↗</span></a></li>
+          <li><a href="/freeze-membership/">Members <span>↗</span></a></li>
+          <li><a href="/admin-tools/transferred-members/">Member Transferred <span>↗</span></a></li>
+          <li><a href="{% url 'whatsapp_pending' %}">Due Payments<span>↗</span></a></li>
+          <li><a href="/admin/AuthFit/membershipplan/">Membership Plans<span>↗</span></a></li>
+          <li><a href="/admin/AuthFit/contact/">Support Requests<span>↗</span></a></li>
           {% else %}
           <li class="active"><a href="/">Home <span>↗</span></a></li>
           {% if enrolled %}
@@ -340,8 +347,10 @@
 
         <div class="menu-footer">
           <p class="menu-footer-label">[ Contact Info ]</p>
-          <a href="tel:+917000032565">(+91) 70000 32565</a>
-          <a href="#classes">Junwani Rd, Bhilai, CG 490023</a>
+          {% if gym %}
+          <a href="tel:+91{{ gym.contact_phone }}">{{gym.contact_phone}}</a>
+          <a href="#classes">{{gym.address}}</a>
+          {% endif %}
         </div>
 
         {% if request.user.is_authenticated %}
@@ -708,10 +717,15 @@
       });
       window.GYM_CONFIG = JSON.parse('{{ GYM_CONFIG_JSON|escapejs }}');
     </script>
+    {% if not isStaff %}
     <script src="{% static 'js/loc_permission.js' %}"></script>
+    {% endif %}
+    {% if enrolled %}
     <script src="{% static 'js/geo_attendance.js' %}"></script>
+    {% endif %}
     {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
     <script src="{% static 'js/push_subscribe.js' %}"></script>
     {% endif %}
+    <script src="{% static 'js/RefreshTrigger.js' %}"></script>
   </body>
 </html>

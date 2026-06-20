@@ -1,204 +1,575 @@
-{% extends "base.html" %}
+<!doctype html>
 {% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />
 
-{% block title %}Attendance{% endblock %}
-{% block heading %}Attendance{% endblock %}
-{% block link %}
-<link rel="stylesheet" href="{% static 'css/attendence.css' %}" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-{% endblock %}
+  <!-- ── PWA (from base.html) ── -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/icon.png' %}" />
+  <link rel="manifest" href="{% static 'js/manifest.json' %}" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="EnterGYM" />
 
-{% block message %}
-<div id="message-container">
-  {% for message in messages %}
-  <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}">
-    <span class="msg-icon">{% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}✕{% else %}◈{% endif %}</span>
-    <span>{{ message }}</span>
-    <button class="close-btn">×</button>
-  </div>
-  {% endfor %}
-</div>
-{% endblock %}
+  <!-- ── FONTS (preload pattern from base.html, non-blocking) ── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="preload"
+    id="font-inter"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
+    as="style"
+  />
+  <link
+    rel="preload"
+    id="font-orbitron"
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap"
+    as="style"
+  />
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" />
+    <link rel="stylesheet" href="{% static 'css/loc_modal.css' %}" />
+  </noscript>
 
-{% block content %}
+  <!-- ── GLOBAL CSS (from base.html) ── -->
+  <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+  <link rel="preload" id="css-loc-modal" href="{% static 'css/loc_modal.css' %}" as="style" />
 
-{# Attended dates for heatmap #}
-<script nonce="{{ request.csp_nonce }}">
-  const ATTENDED_DATES = [
-    {% for a in attended %}"{{ a.date|date:'Y-m-d' }}"{% if not forloop.last %},{% endif %}{% endfor %}
-  ];
-</script>
+  <!-- ── VAPID META (from base.html) ── -->
+  {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
+  <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
+  {% endif %}
 
-<div class="attendance-container hero-animate">
+  <style>
+    /* ── RESET & TOKENS ── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-  {# ── HUD HEADER ── #}
-  <div class="hud-header">
-    <div class="hud-line"></div>
-    <div class="date-display">
-      <span class="date-label">SYS DATE</span>
-      <span class="date-value">{{ today }}</span>
-    </div>
-    <div class="hud-line"></div>
-  </div>
+    :root {
+      --bg:          #020408;
+      --surface:     #080e18;
+      --surface2:    #0d1624;
+      --border:      rgba(0,220,255,.12);
+      --border-hot:  rgba(0,220,255,.4);
+      --neon-cyan:   #00dcff;
+      --neon-green:  #39ff6e;
+      --neon-orange: #ff7a20;
+      --neon-pink:   #ff3cac;
+      --text:        #c8d8e8;
+      --text-dim:    #4a6070;
+      --glow-cyan:   0 0 12px rgba(0,220,255,.5), 0 0 30px rgba(0,220,255,.2);
+      --glow-green:  0 0 12px rgba(57,255,110,.5), 0 0 30px rgba(57,255,110,.2);
+      --glow-orange: 0 0 12px rgba(255,122,32,.5), 0 0 30px rgba(255,122,32,.2);
+    }
 
-  {# ── MARK ATTENDANCE BUTTON ── #}
-  <div class="mark-section">
+    html { scroll-behavior: smooth; }
 
-    <form method="POST" id="attendance-form">
-      {% csrf_token %}
-      <button
-        type="button"
-        id="btn-attend"
-        {% if already_mark %}disabled{% endif %}
-        class="btn-mark {% if already_mark %}marked{% endif %}"
-      >
-        <span class="btn-glow"></span>
-        <span class="btn-text" id="btn-label">
-          {% if already_mark %}
-            <span class="check-icon">✓</span> ATTENDANCE LOGGED
-          {% else %}
-            <span class="pulse-ring"></span>◈ MARK ATTENDANCE
-          {% endif %}
-        </span>
-        <span class="btn-scanline"></span>
-      </button>
-    </form>
+    body {
+      background: var(--bg);
+      font-family: 'Rajdhani', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,100,180,.15), transparent),
+        linear-gradient(180deg, transparent 70%, rgba(0,220,255,.02) 100%);
+    }
 
-    {# ── Geo error message ── #}
-    <div id="geo-error" style="
-      display: none;
-      margin-top: 12px;
-      padding: 12px 16px;
-      border-radius: 6px;
-      border-left: 3px solid #ff3c3c;
-      background: rgba(255,60,60,0.08);
+    /* scanline overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent, transparent 3px,
+        rgba(0,0,0,.08) 3px, rgba(0,0,0,.08) 4px
+      );
+      pointer-events: none; z-index: 9998;
+    }
+
+    /* ── STICKY NAV ── */
+    .store-nav {
+      position: sticky; top: 0; z-index: 9000;
+      height: 56px;
+      background: rgba(2,4,8,.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .nav-inner {
+      width: 100%; max-width: 740px; margin: 0 auto;
+      padding: 0 clamp(16px,4vw,32px);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .nav-brand {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900; font-size: clamp(.85rem,2.5vw,1rem);
+      letter-spacing: .08em; text-transform: uppercase;
+      text-decoration: none; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+      transition: color .2s;
+    }
+    .nav-brand .acc { color: var(--neon-cyan); text-shadow: var(--glow-cyan); }
+    .nav-brand:hover { color: #fff; }
+    .back-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1px solid var(--border-hot); background: rgba(0,220,255,.06);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; color: var(--neon-cyan); flex-shrink: 0;
+      transition: background .2s;
+    }
+    .nav-brand:hover .back-icon { background: rgba(0,220,255,.14); }
+    .nav-pill {
       font-family: 'Share Tech Mono', monospace;
-      font-size: 13px;
-      color: #ff3c3c;
-      text-align: center;
-      letter-spacing: 1px;
-    ">
-      <span id="geo-error-text">⊘ OUT OF RANGE</span>
-      <div id="geo-distance" style="
-        margin-top: 6px;
-        font-size: 11px;
-        color: #ff6b6b;
-        letter-spacing: 2px;
-      "></div>
-    </div>
+      font-size: .68rem; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--neon-green); border: 1px solid rgba(57,255,110,.3);
+      background: rgba(57,255,110,.07);
+      padding: 4px 14px; border-radius: 40px;
+      white-space: nowrap;
+    }
 
-    {# ── Background tracking banner ── #}
-    <div id="auto-mark-banner" style="
-      display: none;
-      margin-top: 12px;
-      padding: 12px 16px;
-      border-radius: 6px;
-      border-left: 3px solid #39ff6e;
-      background: rgba(57,255,110,0.08);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 12px;
-      color: #39ff6e;
-      text-align: center;
-      letter-spacing: 1px;
-    ">
-      ◈ BACKGROUND TRACKING ACTIVE — ATTENDANCE MARKS AUTOMATICALLY WHEN YOU ARRIVE
-    </div>
+    /* ── FLASH MESSAGES ── */
+    #message-container {
+      position: fixed; top: 68px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; width: 100%; max-width: 420px; padding: 0 16px;
+    }
+    .flash-message {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 18px; margin-bottom: 10px;
+      border-radius: 6px; font-family: 'Share Tech Mono', monospace;
+      font-size: 13px; border-left: 3px solid;
+      backdrop-filter: blur(20px);
+      animation: slideIn .3s ease;
+    }
+    @keyframes slideIn { from { opacity:0; transform:translateY(-10px); } }
+    .flash-message.success { background:rgba(57,255,110,.08); border-color:var(--neon-green); color:var(--neon-green); box-shadow:var(--glow-green); }
+    .flash-message.error   { background:rgba(255,60,60,.08);  border-color:#ff3c3c; color:#ff3c3c; }
+    .flash-message.default { background:rgba(0,220,255,.08);  border-color:var(--neon-cyan); color:var(--neon-cyan); }
+    .msg-icon { font-size: 16px; flex-shrink: 0; }
+    .close-btn { margin-left:auto; background:none; border:none; color:inherit; font-size:18px; cursor:pointer; opacity:.7; transition:opacity .2s; }
+    .close-btn:hover { opacity:1; }
 
-    {# ── iOS note ── #}
-    <div id="ios-note" style="
-      display: none;
-      margin-top: 10px;
-      padding: 10px 16px;
-      border-radius: 6px;
-      border-left: 3px solid #00dcff;
-      background: rgba(0,220,255,0.06);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 12px;
-      color: #00dcff;
-      text-align: center;
-      letter-spacing: 1px;
-    ">
-      iPHONE USERS — KEEP THIS PAGE OPEN FOR AUTO-ATTENDANCE DETECTION
-    </div>
+    /* ── ENTRY ANIMATION ── */
+    .hero-animate {
+      opacity: 0; transform: translateY(32px);
+      animation: smoothFade .6s cubic-bezier(.16,1,.3,1) forwards;
+    }
+    @keyframes smoothFade { to { opacity:1; transform:translateY(0); } }
 
+    /* ── MAIN CONTAINER ── */
+    .attendance-container {
+      max-width: 640px; margin: 0 auto;
+      padding: clamp(24px,4vw,36px) clamp(16px,4vw,24px) clamp(60px,8vw,100px);
+    }
+
+    /* ── HUD HEADER ── */
+    .hud-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 28px;
+    }
+    .hud-line {
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      opacity: .4;
+    }
+    .date-display { display:flex; flex-direction:column; align-items:center; white-space:nowrap; }
+    .date-label {
+      font-family: 'Share Tech Mono', monospace; font-size: 9px;
+      letter-spacing: 4px; color: var(--text-dim);
+    }
+    .date-value {
+      font-family: 'Orbitron', monospace; font-size: 15px;
+      font-weight: 700; color: var(--neon-cyan);
+      letter-spacing: 2px; text-shadow: var(--glow-cyan);
+    }
+
+    /* ── MARK BUTTON ── */
+    .mark-section { margin-bottom: 28px; }
+    .btn-mark {
+      position: relative; width: 100%; height: 58px;
+      background: transparent; border: 1px solid var(--neon-orange);
+      border-radius: 6px; cursor: pointer; overflow: hidden;
+      transition: all .3s ease;
+      font-family: 'Orbitron', monospace; font-size: 14px;
+      font-weight: 700; letter-spacing: 3px; color: var(--neon-orange);
+      box-shadow: 0 0 20px rgba(255,122,32,.2), inset 0 0 20px rgba(255,122,32,.04);
+    }
+    .btn-mark:hover:not(:disabled) {
+      background: rgba(255,122,32,.1);
+      box-shadow: 0 0 35px rgba(255,122,32,.4), inset 0 0 30px rgba(255,122,32,.08);
+      transform: translateY(-1px);
+    }
+    .btn-mark.marked {
+      border-color: var(--neon-green); color: var(--neon-green);
+      box-shadow: 0 0 20px rgba(57,255,110,.2), inset 0 0 20px rgba(57,255,110,.04);
+      cursor: not-allowed; opacity: .8;
+    }
+    .btn-text {
+      position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .check-icon { font-size: 18px; }
+    .btn-scanline {
+      position: absolute; inset: 0;
+      background: linear-gradient(105deg, transparent 40%, rgba(255,122,32,.12) 50%, transparent 60%);
+      transform: translateX(-100%);
+      animation: btnScan 3s linear infinite;
+    }
+    .btn-mark.marked .btn-scanline {
+      background: linear-gradient(105deg, transparent 40%, rgba(57,255,110,.12) 50%, transparent 60%);
+    }
+    @keyframes btnScan { to { transform: translateX(200%); } }
+    .pulse-ring {
+      display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+      background: var(--neon-orange);
+      box-shadow: 0 0 0 0 rgba(255,122,32,.6);
+      animation: pulseRing 1.5s ease-out infinite;
+    }
+    @keyframes pulseRing {
+      0%   { box-shadow: 0 0 0 0   rgba(255,122,32,.6); }
+      70%  { box-shadow: 0 0 0 10px rgba(255,122,32,0); }
+      100% { box-shadow: 0 0 0 0   rgba(255,122,32,0); }
+    }
+
+    /* geo error */
+    .geo-error {
+      display: none; margin-top: 12px; padding: 12px 16px;
+      border-radius: 6px; border-left: 3px solid #ff3c3c;
+      background: rgba(255,60,60,.08);
+      font-family: 'Share Tech Mono', monospace; font-size: 13px;
+      color: #ff3c3c; text-align: center; letter-spacing: 1px;
+    }
+    .geo-distance {
+      margin-top: 6px; font-size: 11px; color: #ff6b6b; letter-spacing: 2px;
+    }
+
+    /* tracking banners */
+    .banner {
+      display: none; margin-top: 12px; padding: 12px 16px;
+      border-radius: 6px; font-family: 'Share Tech Mono', monospace;
+      font-size: 12px; text-align: center; letter-spacing: 1px;
+    }
+    .banner-green {
+      border-left: 3px solid #39ff6e; background: rgba(57,255,110,.08); color: #39ff6e;
+    }
+    .banner-cyan {
+      border-left: 3px solid #00dcff; background: rgba(0,220,255,.06); color: #00dcff;
+    }
+
+    /* ── STATS GRID ── */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 12px; margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 12px 12px;
+      position: relative; overflow: hidden;
+      transition: border-color .3s;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top:0; left:0; right:0; height:1px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      opacity: .5;
+    }
+    .stat-card:hover { border-color: var(--border-hot); }
+    .stat-label {
+      font-family: 'Share Tech Mono', monospace; font-size: 9px;
+      letter-spacing: 2px; color: var(--text-dim); margin-bottom: 8px;
+    }
+    .stat-value {
+      font-family: 'Orbitron', monospace; font-size: 32px;
+      font-weight: 900; line-height: 1; margin-bottom: 10px;
+    }
+    .stat-value.green  { color:var(--neon-green);  text-shadow:var(--glow-green);  }
+    .stat-value.cyan   { color:var(--neon-cyan);   text-shadow:var(--glow-cyan);   }
+    .stat-value.orange { color:var(--neon-orange); text-shadow:var(--glow-orange); }
+    .stat-bar { height:2px; background:rgba(255,255,255,.06); border-radius:2px; overflow:hidden; }
+    .stat-bar-fill { height:100%; border-radius:2px; transition:width 1.2s cubic-bezier(.16,1,.3,1); }
+    .green-fill  { background:var(--neon-green);  box-shadow:0 0 6px var(--neon-green);  }
+    .cyan-fill   { background:var(--neon-cyan);   box-shadow:0 0 6px var(--neon-cyan);   }
+    .orange-fill { background:var(--neon-orange); box-shadow:0 0 6px var(--neon-orange); }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Orbitron', monospace; font-size: 12px;
+      font-weight: 700; letter-spacing: 5px; color: var(--text-dim);
+    }
+    .section-tag { color: var(--neon-cyan); font-size: 12px; opacity: .5; }
+
+    /* ── HEATMAP ── */
+    .heatmap-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 24px; margin-bottom: 28px;
+      overflow: hidden; position: relative;
+    }
+    .heatmap-section::after {
+      content: ''; position: absolute; bottom:0; left:0; right:0; height:1px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      opacity: .3;
+    }
+    .heatmap-wrap { overflow-x: auto; padding-bottom: 8px; }
+    .heatmap-months {
+      display: flex; margin-left: 32px; margin-bottom: 10px;
+      font-family: 'Share Tech Mono', monospace; font-size: 11px;
+      letter-spacing: 2px; color: var(--text-dim); gap: 40px;
+    }
+    .heatmap-body { display: flex; gap: 8px; align-items: flex-start; }
+    .heatmap-days {
+      display: flex; flex-direction: column; gap: 4px; padding-top: 2px;
+      font-family: 'Share Tech Mono', monospace; font-size: 10px;
+      color: var(--text-dim); line-height: 14px;
+    }
+    .heatmap-days span { height: 14px; display: flex; align-items: center; }
+    .heatmap-grid { display: flex; gap: 4px; }
+    .heatmap-col { display: flex; flex-direction: column; gap: 4px; }
+    .heatmap-cell {
+      width: 14px; height: 14px; border-radius: 3px;
+      background: var(--surface2); border: 1px solid rgba(255,255,255,.03);
+      transition: transform .15s, box-shadow .15s;
+      cursor: default; position: relative;
+    }
+    .heatmap-cell:hover { transform: scale(1.3); z-index: 10; }
+    .heatmap-cell.l1 { background:rgba(0,220,255,.25); border-color:rgba(0,220,255,.3); box-shadow:0 0 4px rgba(0,220,255,.3); }
+    .heatmap-cell.l2 { background:rgba(0,220,255,.7);  border-color:rgba(0,220,255,.8); box-shadow:0 0 8px rgba(0,220,255,.5); }
+    .heatmap-legend {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 16px; justify-content: flex-end;
+      font-family: 'Share Tech Mono', monospace; font-size: 10px;
+      color: var(--text-dim); letter-spacing: 1px;
+    }
+    .legend-box { width:14px; height:14px; border-radius:3px; }
+    .legend-box.l0 { background:var(--surface2); border:1px solid rgba(255,255,255,.04); }
+    .legend-box.l1 { background:rgba(0,220,255,.25); border:1px solid rgba(0,220,255,.3); }
+    .legend-box.l2 { background:rgba(0,220,255,.7);  border:1px solid rgba(0,220,255,.8); }
+
+    /* ── TIMELINE ── */
+    .timeline-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px;
+    }
+    .timeline-list { display: flex; flex-direction: column; gap: 0; }
+    .timeline-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+      opacity: 0; animation: fadeRow .4s ease forwards;
+    }
+    .timeline-item:last-child { border-bottom: none; }
+    @keyframes fadeRow { to { opacity: 1; } }
+    .tl-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--neon-cyan); box-shadow: 0 0 6px var(--neon-cyan); flex-shrink: 0;
+    }
+    .tl-content { flex:1; display:flex; flex-direction:column; gap:2px; }
+    .tl-date { font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:600; color:var(--text); letter-spacing:.5px; }
+    .tl-time { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--neon-pink); }
+    .tl-badge {
+      font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:2px;
+      color:var(--neon-green); background:rgba(57,255,110,.08);
+      border:1px solid rgba(57,255,110,.2); padding:3px 8px; border-radius:3px; flex-shrink:0;
+    }
+
+    /* empty state */
+    .empty-state { text-align:center; padding:40px 20px; color:var(--text-dim); }
+    .empty-icon  { font-size:32px; margin-bottom:10px; opacity:.3; }
+    .empty-state p { font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:2px; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width:4px; height:4px; }
+    ::-webkit-scrollbar-track  { background:var(--surface); }
+    ::-webkit-scrollbar-thumb  { background:var(--border-hot); border-radius:2px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .stats-grid .stat-card:last-child { grid-column: 1 / -1; }
+      .stat-value { font-size: 26px; }
+      .heatmap-section { padding: 14px; }
+    }
+    @media (max-width: 360px) {
+      .nav-pill { display: none; }
+      .date-value { font-size: 12px; letter-spacing: 1px; }
+    }
+    @supports (padding: env(safe-area-inset-left)) {
+      .nav-inner {
+        padding-left:  max(clamp(16px,4vw,32px), env(safe-area-inset-left));
+        padding-right: max(clamp(16px,4vw,32px), env(safe-area-inset-right));
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── STICKY NAV ── -->
+  <nav class="store-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/">
+        <span class="back-icon">←</span>
+        {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
+        <span class="acc">Attendance</span>
+      </a>
+      <div class="nav-pill">◈ Active</div>
+    </div>
+  </nav>
+
+  <!-- ── FLASH MESSAGES ── -->
+  <div id="message-container">
+    {% for message in messages %}
+    <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}">
+      <span class="msg-icon">{% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}✕{% else %}◈{% endif %}</span>
+      <span>{{ message }}</span>
+      <button class="close-btn">×</button>
+    </div>
+    {% endfor %}
   </div>
 
-  {# ── STATS ROW ── #}
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-label">TOTAL DAYS</div>
-      <div class="stat-value green" data-target="{{ total_days }}">{{ total_days }}</div>
-      <div class="stat-bar"><div class="stat-bar-fill green-fill" style="width:{{ total_days }}%"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">THIS MONTH</div>
-      <div class="stat-value cyan" data-target="{{ monthly_days }}">{{ monthly_days }}</div>
-      <div class="stat-bar"><div class="stat-bar-fill cyan-fill" style="width:{{ monthly_days }}%"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">STREAK</div>
-      <div class="stat-value orange" id="streak-val">0</div>
-      <div class="stat-bar"><div class="stat-bar-fill orange-fill" id="streak-bar" style="width:0%"></div></div>
-    </div>
-  </div>
+  <!-- ── ATTENDED DATES FOR HEATMAP ── -->
+  <script nonce="{{ request.csp_nonce }}">
+    const ATTENDED_DATES = [
+      {% for a in attended %}"{{ a.date|date:'Y-m-d' }}"{% if not forloop.last %},{% endif %}{% endfor %}
+    ];
+  </script>
 
-  {# ── HEATMAP ── #}
-  <div class="heatmap-section">
-    <div class="section-header">
-      <span class="section-tag">◈</span>
-      <h2 class="section-title">ATTENDANCE MATRIX</h2>
-      <span class="section-tag">◈</span>
+  <!-- ── MAIN ── -->
+  <main>
+  <div class="attendance-container hero-animate">
+
+    <!-- HUD HEADER -->
+    <div class="hud-header">
+      <div class="hud-line"></div>
+      <div class="date-display">
+        <span class="date-label">SYS DATE</span>
+        <span class="date-value">{{ today }}</span>
+      </div>
+      <div class="hud-line"></div>
     </div>
-    <div class="heatmap-wrap">
-      <div class="heatmap-months" id="heatmap-months"></div>
-      <div class="heatmap-body">
-        <div class="heatmap-days">
-          <span>M</span><span></span><span>W</span><span></span><span>F</span><span></span><span>S</span>
+
+    <!-- MARK ATTENDANCE BUTTON -->
+    <div class="mark-section">
+      <form method="POST" id="attendance-form">
+        {% csrf_token %}
+        <button
+          type="button"
+          id="btn-attend"
+          {% if already_mark %}disabled{% endif %}
+          class="btn-mark {% if already_mark %}marked{% endif %}"
+        >
+          <span class="btn-glow"></span>
+          <span class="btn-text" id="btn-label">
+            {% if already_mark %}
+              <span class="check-icon">✓</span> ATTENDANCE LOGGED
+            {% else %}
+              <span class="pulse-ring"></span>◈ MARK ATTENDANCE
+            {% endif %}
+          </span>
+          <span class="btn-scanline"></span>
+        </button>
+      </form>
+
+      <!-- Geo error -->
+      <div id="geo-error" class="geo-error">
+        <span id="geo-error-text">⊘ OUT OF RANGE</span>
+        <div id="geo-distance" class="geo-distance"></div>
+      </div>
+
+      <!-- Background tracking banner -->
+      <div id="auto-mark-banner" class="banner banner-green">
+        ◈ BACKGROUND TRACKING ACTIVE — ATTENDANCE MARKS AUTOMATICALLY WHEN YOU ARRIVE
+      </div>
+
+      <!-- iOS note -->
+      <div id="ios-note" class="banner banner-cyan">
+        iPHONE USERS — KEEP THIS PAGE OPEN FOR AUTO-ATTENDANCE DETECTION
+      </div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">TOTAL DAYS</div>
+        <div class="stat-value green" data-target="{{ total_days }}">{{ total_days }}</div>
+        <div class="stat-bar"><div class="stat-bar-fill green-fill"  style="width:{{ total_days }}%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">THIS MONTH</div>
+        <div class="stat-value cyan" data-target="{{ monthly_days }}">{{ monthly_days }}</div>
+        <div class="stat-bar"><div class="stat-bar-fill cyan-fill"   style="width:{{ monthly_days }}%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">STREAK</div>
+        <div class="stat-value orange" id="streak-val">0</div>
+        <div class="stat-bar"><div class="stat-bar-fill orange-fill" id="streak-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- HEATMAP -->
+    <div class="heatmap-section">
+      <div class="section-header">
+        <span class="section-tag">◈</span>
+        <h2 class="section-title">ATTENDANCE MATRIX</h2>
+        <span class="section-tag">◈</span>
+      </div>
+      <div class="heatmap-wrap">
+        <div class="heatmap-months" id="heatmap-months"></div>
+        <div class="heatmap-body">
+          <div class="heatmap-days">
+            <span>M</span><span></span><span>W</span><span></span><span>F</span><span></span><span>S</span>
+          </div>
+          <div class="heatmap-grid" id="heatmap-grid"></div>
         </div>
-        <div class="heatmap-grid" id="heatmap-grid"></div>
-      </div>
-      <div class="heatmap-legend">
-        <span>LESS</span>
-        <div class="legend-box l0"></div>
-        <div class="legend-box l1"></div>
-        <div class="legend-box l2"></div>
-        <span>MORE</span>
-      </div>
-    </div>
-  </div>
-
-  {# ── TIMELINE ── #}
-  <div class="timeline-section">
-    <div class="section-header">
-      <span class="section-tag">◈</span>
-      <h2 class="section-title">LOG HISTORY</h2>
-      <span class="section-tag">◈</span>
-    </div>
-    <div class="timeline-list">
-      {% for a in attended %}
-      <div class="timeline-item" style="animation-delay: {{ forloop.counter0 }}00ms">
-        <div class="tl-dot"></div>
-        <div class="tl-connector"></div>
-        <div class="tl-content">
-          <span class="tl-date">{{ a.date|date:"D, d M Y" }}</span>
-          <span class="tl-time">{{ a.timestamp|time:"H:i:s" }}</span>
+        <div class="heatmap-legend">
+          <span>LESS</span>
+          <div class="legend-box l0"></div>
+          <div class="legend-box l1"></div>
+          <div class="legend-box l2"></div>
+          <span>MORE</span>
         </div>
-        <div class="tl-badge">PRESENT</div>
       </div>
-      {% empty %}
-      <div class="empty-state">
-        <div class="empty-icon">◌</div>
-        <p>NO ATTENDANCE RECORDS FOUND</p>
-      </div>
-      {% endfor %}
     </div>
+
+    <!-- TIMELINE -->
+    <div class="timeline-section">
+      <div class="section-header">
+        <span class="section-tag">◈</span>
+        <h2 class="section-title">LOG HISTORY</h2>
+        <span class="section-tag">◈</span>
+      </div>
+      <div class="timeline-list">
+        {% for a in attended %}
+        <div class="timeline-item" style="animation-delay:{{ forloop.counter0 }}00ms">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <span class="tl-date">{{ a.date|date:"D, d M Y" }}</span>
+            <span class="tl-time">{{ a.timestamp|time:"H:i:s" }}</span>
+          </div>
+          <div class="tl-badge">PRESENT</div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+          <div class="empty-icon">◌</div>
+          <p>NO ATTENDANCE RECORDS FOUND</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
   </div>
+  </main>
 
-</div>
+  <!-- ── BASE JS (from base.html — activates preloaded stylesheets) ── -->
+  <script src="{% static 'js/base.js' %}"></script>
 
-{# ── Show banners and wire button via nonce script ── #}
-<script nonce="{{ request.csp_nonce }}">
+  <!-- ── BANNER + BUTTON WIRING ── -->
+  <script nonce="{{ request.csp_nonce }}">
   {% if not already_mark %}
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
     document.getElementById('auto-mark-banner').style.display = 'block';
@@ -211,9 +582,125 @@
       checkLocationAndSubmit();
     });
   }
-</script>
+  </script>
 
-<script src="{% static 'js/messages.js' %}"></script>
-<script src="{% static 'js/attendance_heatmap.js' %}"></script>
+  <!-- ── FLASH MESSAGE CLOSE ── -->
+  <script nonce="{{ request.csp_nonce }}">
+    document.querySelectorAll('.close-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        b.closest('.flash-message').remove();
+      });
+    });
+  </script>
 
-{% endblock %}
+  <!-- ── HEATMAP JS ── -->
+  <script nonce="{{ request.csp_nonce }}">
+  (function () {
+    const dateSet = new Set(ATTENDED_DATES || []);
+
+    function toKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    function addDays(date, days) {
+      const nd = new Date(date);
+      nd.setDate(nd.getDate() + days);
+      return nd;
+    }
+    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const currentMonth = today.getMonth();
+    const currentYear  = today.getFullYear();
+
+    let previousMonth = currentMonth - 1;
+    let previousYear  = currentYear;
+    if (previousMonth < 0) { previousMonth = 11; previousYear--; }
+
+    const gridStart = new Date(previousYear, previousMonth, 1);
+    const gridEnd   = today;
+    const totalDays = Math.ceil((gridEnd - gridStart) / (1000*60*60*24)) + 1;
+    const totalWeeks = Math.ceil(totalDays / 7);
+
+    /* streak */
+    let streak = 0;
+    let cursor = new Date(today);
+    while (dateSet.has(toKey(cursor))) { streak++; cursor = addDays(cursor, -1); }
+
+    const streakEl  = document.getElementById('streak-val');
+    const streakBar = document.getElementById('streak-bar');
+    if (streakEl)  streakEl.textContent = streak;
+    if (streakBar) streakBar.style.width = Math.min(streak * 10, 100) + '%';
+
+    /* render grid */
+    const grid      = document.getElementById('heatmap-grid');
+    const monthsRow = document.getElementById('heatmap-months');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    monthsRow.innerHTML = '';
+    let lastRenderedMonth = -1;
+
+    for (let week = 0; week < totalWeeks; week++) {
+      const column = document.createElement('div');
+      column.className = 'heatmap-col';
+
+      for (let day = 0; day < 7; day++) {
+        const currentDate = addDays(gridStart, week * 7 + day);
+        if (currentDate > gridEnd) break;
+
+        const key = toKey(currentDate);
+        const isPresent = dateSet.has(key);
+
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell';
+        if (isPresent) {
+          cell.classList.add(currentDate.toDateString() === today.toDateString() ? 'l2' : 'l1');
+        }
+        const formatted = currentDate.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+        cell.title = `${formatted} ${isPresent ? '• PRESENT' : '• ABSENT'}`;
+        column.appendChild(cell);
+
+        if (day === 0) {
+          const month = currentDate.getMonth();
+          if (month !== lastRenderedMonth) {
+            const span = document.createElement('span');
+            span.textContent = MONTH_NAMES[month];
+            span.style.marginRight = '40px';
+            monthsRow.appendChild(span);
+            lastRenderedMonth = month;
+          }
+        }
+      }
+      grid.appendChild(column);
+    }
+
+    /* animate stat bars */
+    document.querySelectorAll('.stat-bar-fill').forEach(function (bar) {
+      const target = bar.style.width;
+      bar.style.width = '0';
+      setTimeout(function () { bar.style.width = target; }, 300);
+    });
+
+  })();
+  </script>
+
+  <!-- ── GYM CONFIG + GEO + PUSH (from base.html) ── -->
+  <script nonce="{{ request.csp_nonce }}">
+    window.GYM_CONFIG = JSON.parse("{{ GYM_CONFIG_JSON|escapejs }}");
+  </script>
+  <script src="{% static 'js/loc_permission.js' %}" defer></script>
+  <script src="{% static 'js/geo_attendance.js' %}" defer></script>
+  {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
+  <script src="{% static 'js/push_subscribe.js' %}"></script>
+  {% endif %}
+
+  <!-- ── MESSAGES AUTO-DISMISS (from base.html pattern) ── -->
+  <script src="{% static 'js/messages.js' %}"></script>
+
+</body>
+</html>

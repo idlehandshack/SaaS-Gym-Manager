@@ -1,90 +1,637 @@
-{% extends "base.html" %}
+<!doctype html>
 {% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enrollment — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />
 
-{% block title %}Enrollment for GYM{% endblock %}
+  <!-- PWA -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/icon.png' %}" />
+  <link rel="manifest" href="{% static 'js/manifest.json' %}" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="EnterGYM" />
 
-{% block link %}
-<link rel="stylesheet" href="{% static 'css/enrollment.css' %}" />
-{% endblock %}
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
 
-{% block heading %}
-<header class="hero-header">
-  <h1>GYM REGISTRATION FORM</h1>
-  <p>
-    Please complete this form to register for gym membership and gain access to
-    all our fitness services.
-  </p>
-</header>
-{% endblock %}
+  <style>
+    /* ── TOKENS ── */
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #181818;
+      --surface-3:   #1e1e1e;
+      --border:      rgba(255,255,255,.06);
+      --border-2:    rgba(255,255,255,.11);
+      --orange:      #ff5a00;
+      --orange-dim:  rgba(255,90,0,.10);
+      --orange-bdr:  rgba(255,90,0,.28);
+      --orange-glow: rgba(255,90,0,.20);
+      --green:       #5de87c;
+      --green-dim:   rgba(93,232,124,.10);
+      --green-bdr:   rgba(93,232,124,.28);
+      --red:         #ef5350;
+      --text-hi:     #f5f5f5;
+      --text-mid:    #888;
+      --text-lo:     #444;
+      --text-muted:  #9ca3af;
+      --font-d:      "Barlow Condensed", sans-serif;
+      --font-b:      "Barlow", sans-serif;
+      --ease:        cubic-bezier(.4,0,.2,1);
+      --t:           .22s;
+      --radius-lg:   18px;
+      --radius-md:   12px;
+      --radius-sm:   8px;
+      --radius-pill: 40px;
+      --nav-h:       60px;
+    }
 
-{% block message %}
-<div id="message-container">
-  {% for message in messages %}
-  <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}">
-    <span>{{ message }}</span>
-    <button class="close-btn">×</button>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ── FLASH MESSAGES ── */
+    #message-container {
+      position: fixed;
+      top: calc(var(--nav-h) + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      width: 100%;
+      max-width: 420px;
+      padding: 0 16px;
+    }
+    .flash-message {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 18px;
+      margin-bottom: 10px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-d);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      border-left: 3px solid;
+      backdrop-filter: blur(16px);
+      animation: slideIn .25s var(--ease);
+    }
+    @keyframes slideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+    .flash-message.success {
+      background: rgba(93,232,124,.08);
+      border-color: var(--green);
+      color: var(--green);
+    }
+    .flash-message.error {
+      background: rgba(239,83,80,.08);
+      border-color: var(--red);
+      color: var(--red);
+    }
+    .flash-message.default {
+      background: var(--orange-dim);
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: inherit;
+      font-size: 18px;
+      cursor: pointer;
+      opacity: .7;
+      flex-shrink: 0;
+      transition: opacity var(--t);
+    }
+    .close-btn:hover { opacity: 1; }
+
+    /* ── STICKY NAV ── */
+    .store-nav {
+      position: sticky; top: 0; z-index: 200;
+      height: var(--nav-h);
+      background: rgba(8,8,8,.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .nav-inner {
+      width: 100%; padding: 0 clamp(16px,4vw,40px);
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .nav-brand {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.1rem,3vw,1.5rem);
+      text-transform: uppercase; text-decoration: none;
+      color: var(--text-hi); letter-spacing: -.01em;
+      white-space: nowrap; display: flex; align-items: center; gap: 8px;
+      transition: color var(--t);
+    }
+    .nav-brand .acc { color: var(--orange); }
+    .back-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; flex-shrink: 0;
+      transition: background var(--t);
+    }
+    .nav-brand:hover .back-icon { background: var(--orange-dim); }
+    .nav-brand:hover { color: var(--text-hi); }
+    .nav-badge {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      background: var(--orange-dim); color: var(--orange);
+      border: 1px solid var(--orange-bdr);
+      padding: 5px 14px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      position: relative;
+      padding: clamp(40px,7vw,72px) 0 clamp(28px,5vw,48px);
+      text-align: center; overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: clamp(24px,4vw,40px);
+    }
+    .page-header::before {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .header-inner {
+      position: relative; z-index: 1;
+      padding: 0 clamp(16px,4vw,40px);
+    }
+    .header-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
+      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 10px;
+      padding: 5px 14px;
+      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
+      background: var(--orange-dim);
+    }
+    .page-header h1 {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(2rem,7vw,3.8rem); line-height: .92;
+      letter-spacing: -.01em; text-transform: uppercase;
+      margin-bottom: 8px; color: var(--text-hi);
+    }
+    .page-header h1 .accent { color: var(--orange); }
+    .header-sub {
+      font-family: var(--font-b);
+      font-size: clamp(.8rem,2vw,.95rem);
+      color: var(--text-mid);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── MAIN CONTENT ── */
+    .enroll-page {
+      max-width: 760px; margin: 0 auto;
+      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
+    }
+
+    /* ── SECTION LABEL (same as attendance) ── */
+    .section-label {
+      display: flex; align-items: center; gap: 10px;
+      margin: clamp(20px,4vw,32px) 0 clamp(14px,2.5vw,20px);
+    }
+    .section-label span {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .2em; text-transform: uppercase;
+      color: var(--text-lo); white-space: nowrap;
+    }
+    .section-label::after {
+      content: ""; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── FORM CARD ── */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-lg);
+      padding: clamp(24px,5vw,40px) clamp(20px,5vw,36px);
+      box-shadow: 0 25px 70px rgba(0,0,0,.55), 0 0 40px rgba(255,90,0,.07);
+      animation: fadeUp .45s var(--ease) both;
+    }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(20px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── GRID ── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(10px,2.5vw,16px);
+    }
+    .col-full { grid-column: 1 / -1; }
+
+    /* ── FIELDS ── */
+    .field {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      color: var(--text-hi);
+      border-radius: var(--radius-md);
+      padding: 13px 16px;
+      font-family: var(--font-b);
+      font-size: 15px;
+      outline: none;
+      transition: border-color var(--t), box-shadow var(--t);
+      -webkit-appearance: none;
+    }
+    .field::placeholder { color: var(--text-lo); }
+    .field:hover,
+    .field:focus {
+      border-color: var(--orange-bdr);
+      box-shadow: 0 0 0 3px var(--orange-glow);
+    }
+    .field:read-only {
+      opacity: .55;
+      cursor: default;
+    }
+    .field:read-only:hover {
+      border-color: var(--border-2);
+      box-shadow: none;
+    }
+    .field:-webkit-autofill,
+    .field:-webkit-autofill:hover,
+    .field:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--text-hi);
+      -webkit-box-shadow: 0 0 0 1000px #181818 inset;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    textarea.field {
+      resize: vertical;
+      min-height: 88px;
+    }
+
+    /* ── DATE INPUT ── */
+    input[type="date"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      color: var(--text-hi);
+      border-radius: var(--radius-md);
+      padding: 13px 16px;
+      font-family: var(--font-b);
+      font-size: 15px;
+      outline: none;
+      cursor: pointer;
+      color-scheme: dark;
+      box-sizing: border-box;
+      line-height: 1.5;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+    input[type="date"]:hover,
+    input[type="date"]:focus {
+      border-color: var(--orange-bdr);
+      box-shadow: 0 0 0 3px var(--orange-glow);
+    }
+    input[type="date"]::-webkit-datetime-edit { color: var(--text-hi); }
+    input[type="date"]:invalid { color: var(--text-lo); }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) sepia(1) saturate(5) hue-rotate(10deg);
+      cursor: pointer; opacity: .7;
+    }
+    input[type="date"]::-webkit-inner-spin-button,
+    input[type="date"]::-webkit-clear-button { display: none; }
+    input, button { touch-action: manipulation; }
+
+    .dob-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .dob-label {
+      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+      letter-spacing: .18em; text-transform: uppercase;
+      color: var(--text-lo);
+    }
+
+    /* ── CUSTOM DROPDOWNS ── */
+    .dropdown-wrap { position: relative; width: 100%; }
+
+    .dropdown-btn {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      color: var(--text-hi);
+      border-radius: var(--radius-md);
+      padding: 13px 16px;
+      font-family: var(--font-b);
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+    .dropdown-btn:hover,
+    .dropdown-btn.open {
+      border-color: var(--orange-bdr);
+      box-shadow: 0 0 0 3px var(--orange-glow);
+    }
+    .dropdown-btn .placeholder { color: var(--text-lo); }
+    .dropdown-btn .arrow {
+      color: var(--orange); font-size: 10px;
+      flex-shrink: 0;
+      transition: transform var(--t);
+    }
+    .dropdown-btn.open .arrow { transform: rotate(180deg); }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0; right: 0;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      z-index: 100;
+      box-shadow: 0 16px 40px rgba(0,0,0,.7);
+      animation: ddFade .15s var(--ease);
+    }
+    .dropdown-menu.open { display: block; }
+    @keyframes ddFade {
+      from { opacity:0; transform:translateY(-6px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .dropdown-item {
+      padding: 12px 16px;
+      font-family: var(--font-b);
+      font-size: 14px;
+      color: var(--text-mid);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background var(--t), color var(--t);
+      border-bottom: 1px solid var(--border);
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover {
+      background: var(--orange-dim);
+      color: var(--orange);
+    }
+    .color-price {
+      font-family: var(--font-d); font-weight: 700;
+      font-size: .9rem; color: var(--orange);
+    }
+
+    /* ── AGREE ROW ── */
+    .agree-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-top: 16px;
+      font-family: var(--font-b); font-size: 13px;
+      color: var(--text-mid);
+    }
+    .agree-row input[type="checkbox"] {
+      accent-color: var(--orange);
+      width: 16px; height: 16px;
+      cursor: pointer; flex-shrink: 0;
+    }
+
+    /* ── SUBMIT BUTTON ── */
+    .submit-btn {
+      margin-top: 28px;
+      width: 100%;
+      background: var(--orange);
+      color: #000;
+      font-family: var(--font-d);
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: var(--radius-pill);
+      padding: 15px;
+      cursor: pointer;
+      transition: background var(--t), transform .15s, box-shadow var(--t);
+      box-shadow: 0 0 28px rgba(255,90,0,.4);
+    }
+    .submit-btn:hover {
+      background: #ff6a1a;
+      box-shadow: 0 0 44px rgba(255,90,0,.65);
+      transform: translateY(-1px);
+    }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── TRANSFER MODAL ── */
+    .transfer-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.78);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    .transfer-modal-overlay[hidden] { display: none; }
+
+    .transfer-modal {
+      background: var(--surface);
+      border: 1px solid var(--orange-bdr);
+      border-radius: var(--radius-lg);
+      padding: clamp(20px,4vw,28px);
+      max-width: 440px;
+      width: calc(100% - 32px);
+      color: var(--text-hi);
+      box-shadow: 0 24px 60px rgba(0,0,0,.7), 0 0 30px rgba(255,90,0,.1);
+      animation: fadeUp .3s var(--ease);
+    }
+    .transfer-modal h3 {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: 1.3rem; letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--orange); margin-bottom: 10px;
+    }
+    .transfer-modal p {
+      font-family: var(--font-b); font-size: 13px;
+      color: var(--text-mid); line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .transfer-details {
+      list-style: none;
+      margin: 12px 0;
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .transfer-details li {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-b); font-size: 13px;
+    }
+    .transfer-details li:last-child { border-bottom: none; }
+    .transfer-details li span:first-child { color: var(--text-lo); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
+    .transfer-details li span:last-child  { color: var(--text-hi); font-weight: 600; }
+    .transfer-note {
+      font-size: 12px !important;
+      color: var(--text-lo) !important;
+      background: var(--surface-2);
+      border-left: 3px solid var(--orange-bdr);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 9px 13px;
+      margin-top: 12px !important;
+    }
+    .transfer-modal-actions {
+      display: flex; gap: 10px; margin-top: 20px;
+    }
+    .transfer-modal-actions button {
+      flex: 1; padding: 11px;
+      border-radius: var(--radius-pill);
+      border: none; cursor: pointer;
+      font-family: var(--font-d); font-size: 15px;
+      font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+      transition: opacity var(--t), transform .15s;
+    }
+    .transfer-modal-actions button:hover { opacity: .88; transform: translateY(-1px); }
+    .btn-secondary {
+      background: var(--surface-3);
+      color: var(--text-mid);
+      border: 1px solid var(--border-2) !important;
+    }
+    .btn-primary {
+      background: var(--orange);
+      color: #000;
+      box-shadow: 0 0 20px rgba(255,90,0,.35);
+    }
+
+    /* ── ANIMATIONS ── */
+    .hero-animate {
+      opacity: 0; transform: translateY(24px);
+      animation: fadeUp .45s var(--ease) forwards;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .col-full { grid-column: auto; }
+      .field, .dropdown-btn, input[type="date"] {
+        min-height: 50px; font-size: 16px;
+      }
+      .submit-btn { padding: 16px; font-size: 17px; }
+    }
+    @supports (padding: env(safe-area-inset-left)) {
+      .nav-inner {
+        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
+        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── STICKY NAV ── -->
+  <nav class="store-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/">
+        <span class="back-icon">←</span>
+        {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
+        <span class="acc">Registration</span>
+      </a>
+      <div class="nav-badge">New Member</div>
+    </div>
+  </nav>
+
+  <!-- ── FLASH MESSAGES ── -->
+  <div id="message-container">
+    {% for message in messages %}
+    <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}">
+      <span>{{ message }}</span>
+      <button class="close-btn">×</button>
+    </div>
+    {% endfor %}
   </div>
-  {% endfor %}
-</div>
-{% endblock %}
 
-{% block content %}
-<div class="page-body hero-animate">
-  <div class="form-card">
-
-    {# FIX 1: action="#" → actual URL so the form always posts to the right endpoint #}
-    {# FIX 2: novalidate — disables browser native validation on hidden required     #}
-    {#         fields (gender, plan). JS in enrollment.js handles validation instead. #}
-    <form id="enrollForm" method="POST" action="/enrollment/" novalidate>
-      {% csrf_token %}
-
-      <!-- ── Personal Information ── -->
-      <h2 class="section-title">Personal Information</h2>
-
-      <div class="grid-2">
-        <input
-          class="field col-full"
-          type="text"
-          name="name"
-          placeholder="Full Name"
-          required
-        />
-        <input
-          class="field"
-          type="email"
-          name="email"
-          placeholder="Email Address"
-          required
-        />
-        {# Phone is pre-filled from username (phone number) and is read-only #}
-        <input
-          class="field"
-          type="tel"
-          name="phone"
-          value="{{ user.username }}"
-          readonly
-        />
-
-        <!-- Gender custom dropdown -->
-        <div class="dropdown-wrap">
-          <button type="button" class="dropdown-btn" id="genderBtn">
-            <span id="selectedGender" class="placeholder">Select Gender</span>
-            <span class="arrow">▼</span>
-          </button>
-          <div class="dropdown-menu" id="genderDropdown">
-            <div class="dropdown-item" data-value="M">Male</div>
-            <div class="dropdown-item" data-value="F">Female</div>
-          </div>
-          {# Hidden — populated by enrollment.js when user picks a gender #}
-          <input type="hidden" name="gender" id="genderInput" />
-        </div>
+  <!-- ── PAGE HEADER ── -->
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-eyebrow">
+        ◈ Gym Membership
       </div>
+      <h1>Registration <span class="accent">Form</span></h1>
+      <p class="header-sub">Complete this form to activate your membership and access all fitness services.</p>
+    </div>
+  </header>
 
-      <!-- ── Membership Details ── -->
-      <div class="membership-section">
-        <h2 class="section-title">Membership Details</h2>
+  <!-- ── MAIN ── -->
+  <main class="enroll-page">
+    <div class="form-card hero-animate">
 
-        <!-- Plan custom dropdown -->
+      <form id="enrollForm" method="POST" action="/enrollment/" novalidate>
+        {% csrf_token %}
+
+        <!-- ── Personal Information ── -->
+        <div class="section-label"><span>◈ Personal Information</span></div>
+
+        <div class="grid-2">
+          <input
+            class="field col-full"
+            type="text"
+            name="name"
+            placeholder="Full Name"
+            required
+          />
+          <input
+            class="field"
+            type="email"
+            name="email"
+            placeholder="Email Address"
+            required
+          />
+          <input
+            class="field"
+            type="tel"
+            name="phone"
+            value="{{ user.username }}"
+            readonly
+          />
+
+          <!-- Gender dropdown -->
+          <div class="dropdown-wrap">
+            <button type="button" class="dropdown-btn" id="genderBtn">
+              <span id="selectedGender" class="placeholder">Select Gender</span>
+              <span class="arrow">▼</span>
+            </button>
+            <div class="dropdown-menu" id="genderDropdown">
+              <div class="dropdown-item" data-value="M">Male</div>
+              <div class="dropdown-item" data-value="F">Female</div>
+            </div>
+            <input type="hidden" name="gender" id="genderInput" />
+          </div>
+        </div>
+
+        <!-- ── Membership Details ── -->
+        <div class="section-label" style="margin-top: clamp(24px,4vw,36px);"><span>◈ Membership Details</span></div>
+
+        <!-- Plan dropdown -->
         <div class="dropdown-wrap">
           <button type="button" class="dropdown-btn" id="planBtn">
             <span id="selectedPlan" class="placeholder">Select Membership Plan</span>
@@ -102,17 +649,14 @@
               <span class="color-price">₹{{ p.price }}</span>
             </div>
             {% empty %}
-            <div class="dropdown-item" style="pointer-events:none; opacity:0.5;">
-              No plans available
-            </div>
+            <div class="dropdown-item" style="pointer-events:none; opacity:.4;">No plans available</div>
             {% endfor %}
           </div>
-          {# Hidden — populated by enrollment.js when user picks a plan #}
           <input type="hidden" name="plan" id="planInput" />
         </div>
 
-        <!-- Trainer custom dropdown -->
-        <div class="dropdown-wrap mt-field">
+        <!-- Trainer dropdown -->
+        <div class="dropdown-wrap" style="margin-top: 12px;">
           <button type="button" class="dropdown-btn" id="trainerBtn">
             <span id="selectedTrainer" class="placeholder">Select Personal Trainer</span>
             <span class="arrow">▼</span>
@@ -127,24 +671,23 @@
               {{ t.name }}
             </div>
             {% empty %}
-            <div class="dropdown-item" style="pointer-events:none; opacity:0.5;">
-              No trainers available
-            </div>
+            <div class="dropdown-item" style="pointer-events:none; opacity:.4;">No trainers available</div>
             {% endfor %}
           </div>
-          {# Trainer is optional — no required attribute #}
           <input type="hidden" name="trainer" id="trainerInput" />
         </div>
 
         <input
-          class="field mt-field"
+          class="field"
+          style="margin-top: 12px;"
           type="text"
           name="reference"
           placeholder="Referred By (Optional)"
         />
 
         <textarea
-          class="field mt-field"
+          class="field"
+          style="margin-top: 12px;"
           name="address"
           placeholder="Address"
           required
@@ -154,16 +697,218 @@
           <input type="checkbox" id="agreeCheck" required />
           <label for="agreeCheck">I agree to gym terms and conditions.</label>
         </div>
+
+        <button type="submit" id="enrollBtn" class="submit-btn">
+          Enroll Now
+        </button>
+      </form>
+
+      <!-- ── Transfer Confirmation Modal ── -->
+      <div id="transferModal" class="transfer-modal-overlay" hidden>
+        <div class="transfer-modal">
+          <h3>⚠ Existing Membership</h3>
+          <p>Our records show you're currently enrolled at another gym. Review the details before continuing.</p>
+          <ul class="transfer-details">
+            <li><span>Gym Name</span><span id="tmGymName"></span></li>
+            <li><span>Member ID</span><span id="tmMemberId"></span></li>
+            <li><span>Due Date</span><span id="tmDueDate"></span></li>
+            <li><span>Pending Amount</span><span id="tmPending"></span></li>
+            <li><span>Last Payment</span><span id="tmLastPayment"></span></li>
+            <li><span>Last Payment Date</span><span id="tmLastPaymentDate"></span></li>
+          </ul>
+          <p>If you continue, a new enrollment will be created at this gym.</p>
+          <p class="transfer-note">
+            Your previous gym retains access to your old enrollment record and may choose to keep it inactive or remove it.
+          </p>
+          <div class="transfer-modal-actions">
+            <button type="button" id="transferCancelBtn" class="btn-secondary">Cancel</button>
+            <button type="button" id="transferContinueBtn" class="btn-primary">Continue</button>
+          </div>
+        </div>
       </div>
 
-      <button type="submit" id="enrollBtn" class="submit-btn">
-        Enroll Now
-      </button>
-    </form>
+    </div><!-- /.form-card -->
+  </main>
 
-  </div>
-</div>
+  <!-- ── ENROLLMENT JS (dropdown logic) ── -->
+  <script nonce="{{ request.csp_nonce }}">
+  /* ── Close all dropdowns ── */
+  function closeAll() {
+    ["gender", "plan", "trainer"].forEach(function (id) {
+      document.getElementById(id + "Dropdown")?.classList.remove("open");
+      document.getElementById(id + "Btn")?.classList.remove("open");
+    });
+  }
 
-<script src="{% static 'js/enrollment.js' %}"></script>
-<script src="{% static 'js/messages.js' %}"></script>
-{% endblock %}
+  /* ── Toggle dropdown ── */
+  function toggleDropdown(id) {
+    const menu = document.getElementById(id + "Dropdown");
+    const btn  = document.getElementById(id + "Btn");
+    const isOpen = menu.classList.contains("open");
+    closeAll();
+    if (!isOpen) {
+      menu.classList.add("open");
+      btn.classList.add("open");
+    }
+  }
+
+  /* ── Outside click closes dropdowns ── */
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".dropdown-wrap")) closeAll();
+  });
+
+  /* ── Plan select ── */
+  function selectPlan(id, name, price) {
+    const label = document.getElementById("selectedPlan");
+    label.innerText = name + " — ₹" + price;
+    label.classList.remove("placeholder");
+    document.getElementById("planInput").value = id;
+    closeAll();
+  }
+
+  /* ── Trainer select ── */
+  function selectTrainer(id, name) {
+    const label = document.getElementById("selectedTrainer");
+    label.innerText = name;
+    label.classList.remove("placeholder");
+    document.getElementById("trainerInput").value = id;
+    closeAll();
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    /* Dropdown button bindings */
+    document.getElementById("genderBtn").addEventListener("click",  function () { toggleDropdown("gender"); });
+    document.getElementById("planBtn").addEventListener("click",    function () { toggleDropdown("plan"); });
+    document.getElementById("trainerBtn").addEventListener("click", function () { toggleDropdown("trainer"); });
+
+    /* Gender select */
+    document.querySelectorAll("#genderDropdown .dropdown-item").forEach(function (item) {
+      item.addEventListener("click", function () {
+        const val   = item.dataset.value;
+        const label = document.getElementById("selectedGender");
+        label.textContent = val === "M" ? "Male" : "Female";
+        label.classList.remove("placeholder");
+        document.getElementById("genderInput").value = val;
+        closeAll();
+      });
+    });
+
+    /* Plan select via delegation */
+    document.getElementById("planDropdown").addEventListener("click", function (e) {
+      const item = e.target.closest(".dropdown-item");
+      if (!item) return;
+      selectPlan(item.dataset.id, item.dataset.name, item.dataset.price);
+    });
+
+    /* Trainer select via delegation */
+    document.getElementById("trainerDropdown").addEventListener("click", function (e) {
+      const item = e.target.closest(".dropdown-item");
+      if (!item) return;
+      selectTrainer(item.dataset.id, item.dataset.name);
+    });
+
+    /* Date of Birth */
+    const dobInput = document.getElementById("dobInput");
+    if (dobInput) {
+      const today = new Date().toISOString().split("T")[0];
+      dobInput.setAttribute("max", today);
+      const minYear = new Date();
+      minYear.setFullYear(minYear.getFullYear() - 100);
+      dobInput.setAttribute("min", minYear.toISOString().split("T")[0]);
+      dobInput.addEventListener("click", function () {
+        this.showPicker && this.showPicker();
+      });
+    }
+
+    /* Submit loading state */
+    document.getElementById("enrollForm").addEventListener("submit", function () {
+      const btn = document.getElementById("enrollBtn");
+      if (this.checkValidity()) {
+        btn.textContent = "Processing...";
+        btn.disabled = true;
+      }
+    });
+  });
+  </script>
+
+  <!-- ── TRANSFER MODAL + AJAX SUBMIT LOGIC ── -->
+  <script nonce="{{ request.csp_nonce }}">
+  (function () {
+    const form      = document.getElementById('enrollForm');
+    if (!form) return;
+
+    const modal       = document.getElementById('transferModal');
+    const cancelBtn   = document.getElementById('transferCancelBtn');
+    const continueBtn = document.getElementById('transferContinueBtn');
+
+    let pendingFormData        = null;
+    let pendingOldEnrollmentId = null;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      submitEnrollment(new FormData(form));
+    });
+
+    function submitEnrollment(formData) {
+      fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      })
+        .then(function (res) {
+          return res.json().then(function (data) { return { status: res.status, data: data }; });
+        })
+        .then(function ({ status, data }) {
+          if (status === 200 && data.transfer_check) {
+            pendingFormData        = formData;
+            pendingOldEnrollmentId = data.existing.old_enrollment_id;
+            showTransferModal(data.existing);
+          } else if (data.redirect) {
+            window.location.href = data.redirect;
+          } else if (data.error) {
+            alert(data.error);
+          }
+        })
+        .catch(function () {
+          alert('Something went wrong. Please try again.');
+        });
+    }
+
+    function showTransferModal(info) {
+      document.getElementById('tmGymName').textContent         = info.gym_name;
+      document.getElementById('tmMemberId').textContent        = info.member_id;
+      document.getElementById('tmDueDate').textContent         = info.due_date;
+      document.getElementById('tmPending').textContent         = '₹' + info.pending_amount;
+      document.getElementById('tmLastPayment').textContent     = '₹' + info.last_payment_amount;
+      document.getElementById('tmLastPaymentDate').textContent = info.last_payment_date || '—';
+      modal.hidden = false;
+    }
+
+    cancelBtn.addEventListener('click', function () {
+      modal.hidden = true;
+      pendingFormData        = null;
+      pendingOldEnrollmentId = null;
+    });
+
+    continueBtn.addEventListener('click', function () {
+      if (!pendingFormData) return;
+      pendingFormData.set('confirm_transfer', '1');
+      pendingFormData.set('old_enrollment_id', pendingOldEnrollmentId);
+      modal.hidden = true;
+      submitEnrollment(pendingFormData);
+    });
+  })();
+  </script>
+
+  <!-- ── FLASH MESSAGE CLOSE + AUTO-DISMISS ── -->
+  <script src="{% static 'js/messages.js' %}"></script>
+  <script nonce="{{ request.csp_nonce }}">
+    document.querySelectorAll('.close-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        b.closest('.flash-message').remove();
+      });
+    });
+  </script>
+
+</body>
+</html>

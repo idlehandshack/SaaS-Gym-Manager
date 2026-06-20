@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Transferred Members — {{ request.gym.gym_name|default:"EnterGYM" }}</title>
+<link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"/>
+<style>
+:root {
+  --bg:#080808; --surface:#111111; --surface-2:#1a1a1a;
+  --border:rgba(255,255,255,.06); --border-2:rgba(255,255,255,.12);
+  --orange:#ff5a00; --orange-dim:rgba(255,90,0,.10); --orange-glow:rgba(255,90,0,.25);
+  --green:#5de87c; --green-bg:#1a3d25; --green-border:rgba(93,232,124,.2);
+  --gold:#e6b800; --gold-bg:rgba(230,184,0,.12); --gold-bdr:rgba(230,184,0,.25);
+  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12); --blue-bdr:rgba(59,130,246,.25);
+  --red:#e53935; --red-bg:rgba(229,57,53,.12); --red-bdr:rgba(229,57,53,.25);
+  --text-hi:#f5f5f5; --text-mid:#999; --text-lo:#555;
+  --font-d:"Barlow Condensed",sans-serif; --font-b:"Barlow",sans-serif;
+  --ease:cubic-bezier(.4,0,.2,1); --t:.22s;
+  --radius-lg:18px; --radius-md:12px; --radius-pill:40px;
+  --nav-h:60px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text-hi);font-family:var(--font-b);-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;}
+
+/* ── NAV ── */
+.store-nav{position:sticky;top:0;z-index:200;height:var(--nav-h);background:rgba(8,8,8,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border);display:flex;align-items:center;}
+.nav-inner{width:100%;padding:0 clamp(16px,4vw,40px);display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.nav-brand{font-family:var(--font-d);font-weight:900;font-size:clamp(1.1rem,3vw,1.5rem);text-transform:uppercase;text-decoration:none;color:var(--text-hi);letter-spacing:-.01em;white-space:nowrap;display:flex;align-items:center;gap:8px;transition:color var(--t);}
+.nav-brand .acc{color:var(--orange);}
+.nav-brand .back-icon{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;transition:background var(--t);}
+.nav-brand:hover .back-icon{background:rgba(255,90,0,.15);}
+.nav-brand:hover{color:var(--text-hi);}
+
+/* ── PAGE HEADER ── */
+.page-header{position:relative;padding:clamp(48px,8vw,88px) 0 clamp(36px,6vw,60px);text-align:center;overflow:hidden;border-bottom:1px solid var(--border);margin-bottom:clamp(28px,4vw,48px);}
+.page-header::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(255,90,0,.10) 0%,transparent 70%);z-index:0;}
+.header-inner{position:relative;z-index:1;padding:0 clamp(16px,4vw,40px);max-width:620px;margin:0 auto;}
+.header-eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-d);font-size:clamp(.68rem,1.8vw,.82rem);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);margin-bottom:clamp(10px,2vw,16px);padding:6px 16px;border:1px solid rgba(255,90,0,.3);border-radius:var(--radius-pill);background:rgba(255,90,0,.07);}
+.page-header h1{font-family:var(--font-d);font-weight:900;font-size:clamp(2.2rem,7vw,4rem);line-height:.92;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:clamp(10px,2vw,14px);}
+.page-header h1 .accent{color:var(--orange);}
+.page-header p{color:var(--text-mid);font-size:clamp(.88rem,2vw,1rem);max-width:360px;margin:0 auto;line-height:1.65;}
+
+/* ── MAIN ── */
+.page-main{max-width:1400px;margin:0 auto;padding:0 clamp(16px,4vw,40px) clamp(48px,6vw,80px);}
+.section-label{font-family:var(--font-d);font-size:.72rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--text-lo);margin-bottom:clamp(16px,2.5vw,28px);display:flex;align-items:center;gap:12px;}
+.section-label::after{content:"";flex:1;height:1px;background:var(--border);}
+
+/* ── SUMMARY CARDS ── */
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(10px,2vw,16px);margin-bottom:clamp(24px,4vw,40px);}
+@media(max-width:760px){.summary-grid{grid-template-columns:repeat(2,1fr);}}
+.summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:clamp(14px,2vw,20px) clamp(16px,2vw,22px);display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden;animation:fadeUp .4s var(--ease) both;}
+.summary-card::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;border-radius:0;}
+.summary-card.c-total::before{background:var(--orange);}
+.summary-card.c-pending::before{background:var(--gold);}
+.summary-card.c-inactive::before{background:var(--blue);}
+.summary-card.c-deleted::before{background:var(--red);}
+.summary-card:nth-child(1){animation-delay:.04s;}
+.summary-card:nth-child(2){animation-delay:.08s;}
+.summary-card:nth-child(3){animation-delay:.12s;}
+.summary-card:nth-child(4){animation-delay:.16s;}
+.summary-value{font-family:var(--font-d);font-size:clamp(1.8rem,4vw,2.4rem);font-weight:900;color:var(--text-hi);letter-spacing:-.02em;line-height:1;}
+.summary-label{font-family:var(--font-d);font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-mid);}
+
+/* ── TOOLBAR ── */
+.transfer-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px;}
+.transfer-search{flex:1;min-width:220px;background:var(--surface);border:1px solid var(--border-2);border-radius:var(--radius-md);padding:10px 16px;color:var(--text-hi);font-family:var(--font-b);font-size:.9rem;outline:none;transition:border-color var(--t);}
+.transfer-search:focus{border-color:rgba(255,90,0,.5);}
+.transfer-search::placeholder{color:var(--text-lo);}
+.status-filters{display:flex;gap:8px;flex-wrap:wrap;}
+.filter-btn{font-family:var(--font-d);font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--surface);border:1px solid var(--border-2);color:var(--text-mid);border-radius:var(--radius-pill);padding:7px 18px;cursor:pointer;transition:background var(--t),border-color var(--t),color var(--t);}
+.filter-btn:hover{color:var(--text-hi);border-color:rgba(255,255,255,.2);}
+.filter-btn.active{background:var(--orange);border-color:var(--orange);color:#fff;}
+
+/* ── TABLE ── */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;animation:fadeUp .5s var(--ease) .2s both;}
+.table-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:1160px;}
+th,td{padding:12px 14px;text-align:left;font-size:.83rem;border-bottom:1px solid var(--border);white-space:nowrap;}
+th{font-family:var(--font-d);font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);background:var(--surface-2);}
+tbody tr{transition:background var(--t);}
+tbody tr:hover{background:rgba(255,255,255,.03);}
+tbody tr:last-child td{border-bottom:none;}
+
+/* ── STATUS BADGES ── */
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:var(--radius-pill);font-family:var(--font-d);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+.badge-pending{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-bdr);}
+.badge-inactive{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bdr);}
+.badge-deleted{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bdr);}
+
+/* ── ACTION INFO ── */
+.action-info{display:flex;flex-direction:column;gap:2px;}
+.action-info span:first-child{font-size:.82rem;color:var(--text-hi);}
+.muted{font-size:.76rem;color:var(--text-lo);}
+
+/* ── ACTION BUTTONS ── */
+.btn-inactive,.btn-delete{font-family:var(--font-d);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 12px;border-radius:var(--radius-md);border:1px solid;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:opacity var(--t),transform var(--t);}
+.btn-inactive,.btn-delete{background:transparent;}
+.btn-inactive:hover,.btn-delete:hover{opacity:.8;transform:translateY(-1px);}
+.btn-inactive:active,.btn-delete:active{transform:translateY(0);}
+.btn-inactive{color:var(--blue);border-color:var(--blue-bdr);}
+.btn-delete{color:var(--red);border-color:var(--red-bdr);}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+{% csrf_token %}
+
+<!-- ── STICKY NAV ── -->
+<nav class="store-nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="/">
+      <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
+      {{ request.gym.gym_name|default:"EnterGYM" }}
+      <span class="acc">Admin</span>
+    </a>
+  </div>
+</nav>
+
+<!-- ── PAGE HEADER ── -->
+<header class="page-header">
+  <div class="header-inner">
+    <div class="header-eyebrow">
+      <i class="bi bi-arrow-left-right"></i> Member Management
+    </div>
+    <h1>Transferred <span class="accent">Members</span></h1>
+    <p>Members who joined another gym while still enrolled here.</p>
+  </div>
+</header>
+
+<main class="page-main">
+
+  <!-- SUMMARY -->
+  <p class="section-label">Overview</p>
+  <div class="summary-grid">
+    <div class="summary-card c-total">
+      <span class="summary-value">{{ summary.total }}</span>
+      <span class="summary-label">Total Transfers</span>
+    </div>
+    <div class="summary-card c-pending">
+      <span class="summary-value">{{ summary.pending }}</span>
+      <span class="summary-label">Pending</span>
+    </div>
+    <div class="summary-card c-inactive">
+      <span class="summary-value">{{ summary.inactive }}</span>
+      <span class="summary-label">Inactive</span>
+    </div>
+    <div class="summary-card c-deleted">
+      <span class="summary-value">{{ summary.deleted }}</span>
+      <span class="summary-label">Deleted</span>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="transfer-toolbar">
+    <input type="text" id="transferSearch" class="transfer-search"
+      placeholder="Search by name, mobile number, or member ID…"/>
+    <div class="status-filters">
+      <button type="button" class="filter-btn active" data-filter="all">All</button>
+      <button type="button" class="filter-btn" data-filter="pending">Pending</button>
+      <button type="button" class="filter-btn" data-filter="inactive">Inactive</button>
+      <button type="button" class="filter-btn" data-filter="deleted">Deleted</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-scroll">
+      <table id="transferTable">
+        <thead>
+          <tr>
+            <th>Member Name</th>
+            <th>Mobile</th>
+            <th>Prev. Member ID</th>
+            <th>Prev. Plan</th>
+            <th>Prev. Joining Date</th>
+            <th>New Gym</th>
+            <th>New Gym Joined</th>
+            <th>Prev. Due Date</th>
+            <th>Pending</th>
+            <th>Last Payment</th>
+            <th>Last Payment Date</th>
+            <th>Status</th>
+            <th>Action Info</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr
+            data-transfer-id="{{ r.id }}"
+            data-status="{{ r.status }}"
+            data-name="{{ r.member_name|lower }}"
+            data-mobile="{{ r.mobile_number }}"
+            data-memberid="{{ r.member_id|lower }}"
+          >
+            <td>{{ r.member_name }}</td>
+            <td>{{ r.mobile_number }}</td>
+            <td>{{ r.member_id }}</td>
+            <td>{{ r.plan_name }}</td>
+            <td>{{ r.joining_date }}</td>
+            <td>{{ r.new_gym_name }}</td>
+            <td>{{ r.new_gym_joining_date }}</td>
+            <td>{{ r.previous_due_date }}</td>
+            <td>₹{{ r.pending_amount }}</td>
+            <td>₹{{ r.last_payment_amount }}</td>
+            <td>{{ r.last_payment_date }}</td>
+            <td class="status-cell">
+              <span class="status-badge badge-{{ r.status }}">{{ r.status|title }}</span>
+            </td>
+            <td class="action-info-cell">
+              {% if r.action_by %}
+                <div class="action-info">
+                  <span>{{ r.action_by }}</span>
+                  <span class="muted">{{ r.action_date }}</span>
+                </div>
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
+            </td>
+            <td class="actions-cell">
+              {% if r.status == "pending" %}
+              <button type="button" class="btn-inactive" data-action="mark-inactive" data-id="{{ r.id }}">
+                <i class="bi bi-pause-circle"></i> Keep Inactive
+              </button>
+              <button type="button" class="btn-delete" data-action="delete" data-id="{{ r.id }}">
+                <i class="bi bi-trash3"></i> Delete
+              </button>
+              {% else %}
+              <span class="muted">No action available</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="14" style="padding:40px;text-align:center;color:var(--text-lo);font-family:var(--font-d);letter-spacing:.08em;text-transform:uppercase;">No transferred members yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p id="noResultsMsg" class="muted" hidden
+       style="padding:32px;text-align:center;letter-spacing:.06em;text-transform:uppercase;font-family:var(--font-d);">
+      No transfers match your search / filter.
+    </p>
+  </div>
+
+</main>
+
+<script nonce="{{ request.csp_nonce }}">
+(function () {
+  const tbody       = document.querySelector('#transferTable tbody');
+  const searchInput = document.getElementById('transferSearch');
+  const filterBtns  = document.querySelectorAll('.filter-btn');
+  const noResults   = document.getElementById('noResultsMsg');
+  if (!tbody) return;
+
+  let activeFilter = 'all';
+
+  function dataRows() {
+    return tbody.querySelectorAll('tr[data-transfer-id]');
+  }
+
+  function applyFilters() {
+    const term = searchInput.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    dataRows().forEach((row) => {
+      const matchesStatus = activeFilter === 'all' || row.dataset.status === activeFilter;
+      const haystack = [row.dataset.name, row.dataset.mobile, row.dataset.memberid].join(' ');
+      const matchesSearch = !term || haystack.includes(term);
+      const visible = matchesStatus && matchesSearch;
+      row.style.display = visible ? '' : 'none';
+      if (visible) visibleCount++;
+    });
+
+    noResults.hidden = visibleCount !== 0;
+  }
+
+  searchInput.addEventListener('input', applyFilters);
+
+  filterBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      applyFilters();
+    });
+  });
+
+  tbody.addEventListener('click', function (e) {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+
+    const id     = btn.dataset.id;
+    const action = btn.dataset.action;
+
+    if (action === 'delete' && !confirm("Permanently delete this member's old enrollment? This cannot be undone.")) {
+      return;
+    }
+
+    const url = action === 'delete'
+      ? `/admin-tools/transferred-members/${id}/delete/`
+      : `/admin-tools/transferred-members/${id}/mark-inactive/`;
+
+    const csrfInput = document.querySelector('input[name=csrfmiddlewaretoken]');
+    const csrfToken = csrfInput ? csrfInput.value : '';
+
+    fetch(url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.ok) {
+          alert(data.error || 'Action failed.');
+          return;
+        }
+        const row = btn.closest('tr');
+        row.dataset.status = data.status;
+
+        const badge = row.querySelector('.status-badge');
+        badge.className = `status-badge badge-${data.status}`;
+        badge.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+
+        row.querySelector('.action-info-cell').innerHTML = `
+          <div class="action-info">
+            <span>${data.action_by}</span>
+            <span class="muted">${data.action_date}</span>
+          </div>`;
+
+        row.querySelector('.actions-cell').innerHTML =
+          '<span class="muted">No action available</span>';
+
+        applyFilters();
+      })
+      .catch(() => alert('Something went wrong. Please try again.'));
+  });
+})();
+</script>
+</body>
+</html>
