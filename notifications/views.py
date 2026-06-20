@@ -35,7 +35,6 @@ def save_subscription(request):
         endpoint = data.get("endpoint", "").strip()
         p256dh   = data.get("keys", {}).get("p256dh", "").strip()
         auth     = data.get("keys", {}).get("auth", "").strip()
-
         if not all([endpoint, p256dh, auth]):
             return JsonResponse({"error": "Missing fields: endpoint, p256dh, auth required."}, status=400)
 

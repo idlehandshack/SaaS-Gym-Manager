@@ -270,7 +270,26 @@
       }
       .btn-buy:active:not(:disabled) { transform: translateY(0); }
       .btn-buy:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
-
+      /* ─── MEMBERSHIP BLOCK STATE ──────────────────── */
+      .membership-block-wrap { display: flex; flex-direction: column; gap: 10px; }
+      .membership-warning {
+        display: flex; align-items: flex-start; gap: 9px;
+        background: rgba(255, 90, 0, .08);
+        border: 1px solid rgba(255, 90, 0, .22);
+        border-radius: var(--radius-md);
+        padding: 12px 14px;
+        font-size: .82rem; color: #ff9060; line-height: 1.5;
+      }
+      .membership-warning i { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+      .btn-buy--blocked {
+        background: var(--surface-2) !important;
+        border-color: var(--border) !important;
+        color: var(--text-lo) !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+      }
+      .btn-buy--blocked::after { display: none; }
       /* ─── TRUST STRIP ─────────────────────────────── */
       .trust-strip {
         display: flex; gap: 14px; flex-wrap: wrap;
@@ -465,6 +484,7 @@
               {% endif %}
             </div>
 
+            {% if can_order_products %}
             <form method="post" action="{% url 'confirm_order' product.id %}" id="form-buy">
               {% csrf_token %}
               <input type="hidden" name="flavor" id="buy-flavor-input"
@@ -473,7 +493,6 @@
               <button type="submit" class="btn-buy"
                 {% if not product.in_stock %}disabled{% endif %} aria-label="Buy now">
                 <i class="bi bi-lightning-fill"></i>
-                {# FIX: delivery mention uses gym name #}
                 {% if product.in_stock %}
                   Buy Now — Deliver to {% if gym %}{{ gym.gym_name }}{% else %}Gym{% endif %}
                 {% else %}
@@ -481,16 +500,30 @@
                 {% endif %}
               </button>
             </form>
-
-            <div class="trust-strip">
-              <div class="trust-item"><i class="bi bi-shield-check"></i> Authentic Product</div>
-              {# FIX: trust strip delivery line uses gym name #}
-              <div class="trust-item">
-                <i class="bi bi-building"></i>
-                {% if gym %}{{ gym.gym_name }}{% else %}Gym{% endif %} Delivery in 24h
+          {% else %}
+            {# Membership gate — button is purely decorative, no form wrapping it #}
+            <div class="membership-block-wrap">
+              {% if order_block_reason %}
+              <div class="membership-warning">
+                <i class="bi bi-shield-exclamation"></i>
+                {{ order_block_reason }}
               </div>
-              <div class="trust-item"><i class="bi bi-cash-coin"></i> Pay at Pickup</div>
+              {% endif %}
+              <button type="button" class="btn-buy btn-buy--blocked" disabled aria-disabled="true">
+                <i class="bi bi-lock-fill"></i>
+                Membership Required
+              </button>
             </div>
+          {% endif %}
+
+          <div class="trust-strip">
+            <div class="trust-item"><i class="bi bi-shield-check"></i> Authentic Product</div>
+            <div class="trust-item">
+              <i class="bi bi-building"></i>
+              {% if gym %}{{ gym.gym_name }}{% else %}Gym{% endif %} Delivery in 24h
+            </div>
+            <div class="trust-item"><i class="bi bi-cash-coin"></i> Pay at Pickup</div>
+          </div>
 
           </div>
         </div>

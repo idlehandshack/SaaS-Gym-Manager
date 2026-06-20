@@ -185,7 +185,7 @@ class Enrollment(models.Model):
     @property
     def is_expired(self):
         if self.DueDate:
-            return timezone.now().date() >= self.DueDate
+            return timezone.now().date() > self.DueDate
         return False
 
     @property

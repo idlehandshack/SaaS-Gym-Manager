@@ -74,3 +74,15 @@ def get_attempts(ip: str, phone: str) -> dict:
         }
     except Exception:
         return {"phone": 0, "ip": 0, "phone_max": MAX_ATTEMPTS, "ip_max": MAX_IP_ATTEMPTS}
+    
+def get_client_ip(request) -> str:
+    """
+    Extracts the real client IP behind Render/Railway reverse proxy.
+    X-Forwarded-For can be spoofed by clients — we take the LAST
+    entry which is set by Render's own proxy, not the client.
+    """
+    forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if forwarded_for:
+        # Last entry is set by Render's proxy — trustworthy
+        return forwarded_for.split(",")[-1].strip()
+    return request.META.get("REMOTE_ADDR", "")

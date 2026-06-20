@@ -21,14 +21,14 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from .models import StaffDevice
-
+from django.views.decorators.csrf import csrf_exempt
 logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
 # register_device
 # ---------------------------------------------------------------------------
-
+@csrf_exempt
 @login_required
 @require_POST
 def register_device(request):
@@ -80,7 +80,7 @@ def register_device(request):
             'active':      True,
         },
     )
-
+    
     logger.info(
         "register_device: user_id=%s gym=%s fcm_token=%.20s… created=%s",
         request.user.id,
@@ -94,7 +94,7 @@ def register_device(request):
 # ---------------------------------------------------------------------------
 # unregister_device
 # ---------------------------------------------------------------------------
-
+@csrf_exempt
 @login_required
 @require_POST
 def unregister_device(request):

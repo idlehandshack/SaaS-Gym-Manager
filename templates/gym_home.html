@@ -90,9 +90,9 @@
       {% endfor %}
     </div>
 
-    {% if request.user.is_staff and VAPID_PUBLIC_KEY %}
-      <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}" style="display:none;"></div>
-    {% endif %}
+   {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
+    <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
+{% endif %}
 
     <!-- HERO -->
     <section class="hero" id="home">
@@ -189,7 +189,9 @@
             <li><a href="#Price">Free Trial</a></li>
             <li><a href="#About">About</a></li>
             <li><a href="/contact/">Contact</a></li>
-            <li><a href="/products/">Supplements</a></li>
+            {% if enrolled %}
+             <li><a href="/products/">Supplements</a></li>
+            {% endif %}
             {% endif %}
           </ul>
 
@@ -310,7 +312,9 @@
           <li><a href="/admin/AuthFit/contact/">Queries <span>↗</span></a></li>
           {% else %}
           <li class="active"><a href="/">Home <span>↗</span></a></li>
+          {% if enrolled %}
           <li><a href="/products/">Supplements <span>↗</span></a></li>
+          {% endif %}
           {% if not enrolled %}
           {# FIX: was `isEnrolled` — undefined variable, always falsy #}
           <li><a href="#Price">Free Trial <span>↗</span></a></li>
@@ -706,7 +710,7 @@
     </script>
     <script src="{% static 'js/loc_permission.js' %}"></script>
     <script src="{% static 'js/geo_attendance.js' %}"></script>
-    {% if request.user.is_staff %}
+    {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
     <script src="{% static 'js/push_subscribe.js' %}"></script>
     {% endif %}
   </body>

@@ -791,6 +791,7 @@ body {
   width: fit-content;
 }
 .cta-btn-ghost {
+  margin-top: 23px;
   display: inline-flex;
   align-items: center;
   gap: 8px;

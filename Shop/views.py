@@ -19,7 +19,32 @@ from .models import Order, Product, ProductFlavor
 
 logger = logging.getLogger(__name__)
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Membership eligibility guard
+# ──────────────────────────────────────────────────────────────────────────────
 
+def can_user_order_products(user, gym=None):
+    """
+    Returns (True, enrollment) if the user may place a product order,
+    or (False, error_message_str) if any condition fails.
+
+    Conditions checked (all must pass):
+      1. User has an Enrollment at this gym
+      2. Membership has not expired  (DueDate >= today)
+      3. Payment is completed        (paymentStatus == "Done")
+    """
+    enrollment = _get_enrollment(user, gym=gym)
+
+    if enrollment is None:
+        return False, "You must enroll in a membership plan before ordering products."
+
+    if enrollment.is_expired:
+        return False, "Your membership has expired. Please renew your plan to continue."
+
+    if enrollment.paymentStatus != "Done":
+        return False, "Complete your membership payment before ordering products."
+
+    return True, enrollment
 # ──────────────────────────────────────────────────────────────────────────────
 # Shared helpers
 # ──────────────────────────────────────────────────────────────────────────────
@@ -132,9 +157,11 @@ def _status_counts(base_qs):
 def product_list(request):
     gym      = getattr(request, 'gym', None)
     products = Product.objects.filter(active=True).prefetch_related('flavors')
+    allowed, _ = can_user_order_products(request.user, gym=gym)
     return render(request, 'shop/product_list.html', {
-        'products': products,
-        'gym':      gym,        # FIX: pass gym so template can use gym.gym_name
+        'products':          products,
+        'gym':               gym,
+        'can_order_products': allowed,
     })
 
 
@@ -142,9 +169,13 @@ def product_list(request):
 def product_detail(request, product_id):
     gym     = getattr(request, 'gym', None)
     product = _get_active_product(product_id)
+    allowed, result = can_user_order_products(request.user, gym=gym)
     return render(request, 'shop/product_detail.html', {
-        'product': product,
-        'gym':     gym,        # FIX: pass gym so template shows gym.gym_name
+        'product':            product,
+        'gym':                gym,
+        'can_order_products': allowed,
+        # Pass the denial reason so the template can show it inline
+        'order_block_reason': result if not allowed else None,
     })
 
 
@@ -159,6 +190,14 @@ def confirm_order(request, product_id):
     if request.method != 'POST':
         return redirect('product_detail', product_id=product_id)
 
+    # ── Membership gate ───────────────────────────────────────────────────────
+    allowed, result = can_user_order_products(request.user, gym=gym)
+    if not allowed:
+        messages.error(request, result)
+        return redirect('product_detail', product_id=product_id)
+    enrollment = result  # (True, enrollment) → result IS the enrollment
+    # ─────────────────────────────────────────────────────────────────────────
+
     flavor, ok = _resolve_flavor(request, product)
     if not ok:
         return redirect('product_detail', product_id=product_id)
@@ -170,8 +209,8 @@ def confirm_order(request, product_id):
     unit_price  = flavor.final_price if flavor else product.discounted_price
     total_price = unit_price * Decimal(quantity)
 
-    enrollment = _get_enrollment(request.user, gym=gym)
-    image_url  = _get_profile_image(request.user, enrollment)
+    # enrollment already fetched above — skip the second _get_enrollment call
+    image_url = _get_profile_image(request.user, enrollment)
 
     return render(request, 'shop/confirm_order.html', {
         'product':     product,
@@ -181,7 +220,7 @@ def confirm_order(request, product_id):
         'total_price': total_price,
         'enrollment':  enrollment,
         'image_url':   image_url,
-        'gym':         gym,  
+        'gym':         gym,
     })
 
 
@@ -191,19 +230,31 @@ def confirm_order(request, product_id):
 
 @login_required
 @transaction.atomic
+@login_required
+@transaction.atomic
 def place_order(request):
     if request.method != 'POST':
         return redirect('product_list')
- 
+
     gym        = getattr(request, 'gym', None)
     product_id = request.POST.get('product_id')
     product    = _get_active_product(product_id)
-    quantity   = int(request.POST.get('quantity', 1))
- 
+
+    # ── Membership gate (hard backend check — rejects even raw POST requests) ─
+    allowed, result = can_user_order_products(request.user, gym=gym)
+    if not allowed:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': result}, status=403)
+        messages.error(request, result)
+        return redirect('product_detail', product_id=product_id)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    quantity = int(request.POST.get('quantity', 1))
+
     flavor, ok = _resolve_flavor(request, product)
     if not ok:
         return redirect('product_detail', product_id=product_id)
- 
+
     # Hard stock check with row lock
     if flavor:
         flavor     = ProductFlavor.objects.select_for_update().get(id=flavor.id)
@@ -211,14 +262,14 @@ def place_order(request):
     else:
         flavors    = list(ProductFlavor.objects.select_for_update().filter(product=product))
         real_stock = sum(f.stock for f in flavors)
- 
+
     if quantity < 1 or quantity > real_stock:
         messages.error(request, f"Sorry, only {real_stock} unit(s) left.")
         return redirect('product_detail', product_id=product_id)
- 
+
     unit_price  = flavor.final_price if flavor else product.discounted_price
     total_price = unit_price * Decimal(quantity)
- 
+
     order = Order.objects.create(
         gym=gym,
         user=request.user,
@@ -228,15 +279,14 @@ def place_order(request):
         total_price=total_price,
         status=Order.Status.PENDING,
     )
- 
+
     if flavor:
         ProductFlavor.objects.filter(id=flavor.id).update(stock=flavor.stock - quantity)
- 
+
+    # Notification fires only after order is committed — membership already validated above
     from .notifications import notify_staff_new_order
     transaction.on_commit(lambda: notify_staff_new_order(order))
- 
-    # FIX: PRG pattern — redirect to GET endpoint instead of rendering directly
-    # Without this, browser refresh replays the POST and creates a duplicate order
+
     return redirect('order_success', order_id=order.id)
 
 # In views.py — replace your order_success view
@@ -412,3 +462,5 @@ def order_update(request, order_id):
 
     messages.success(request, f'Order #{order.id} updated to "{new_status}".')
     return redirect(request.META.get('HTTP_REFERER', 'admin_orders'))
+
+

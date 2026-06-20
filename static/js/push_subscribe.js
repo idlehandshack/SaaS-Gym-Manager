@@ -18,9 +18,10 @@ function getCookie(name) {
 }
 
 async function subscribeToWebPush() {
-    // Only subscribe if user is staff (vapid key is present)
+    // Read VAPID key from meta element — injected for ALL authenticated users,
+    // not just staff. If missing, the user is unauthenticated; skip silently.
     const metaEl = document.getElementById('vapid-meta');
-    if (!metaEl) return;  // not injected = not staff, skip
+    if (!metaEl) return;
 
     const vapidKey = metaEl.dataset.key;
     if (!vapidKey) return;
@@ -31,7 +32,7 @@ async function subscribeToWebPush() {
         return;
     }
 
-    // Don't ask again if already subscribed
+    // Don't ask again if user already denied
     if (Notification.permission === 'denied') return;
 
     try {
@@ -40,7 +41,8 @@ async function subscribeToWebPush() {
         // Check if already subscribed
         const existing = await reg.pushManager.getSubscription();
         if (existing) {
-            // Already subscribed — make sure server has it
+            // Already subscribed — make sure server has it (handles re-logins,
+            // new devices, and subscription rotation)
             await syncSubscriptionToServer(existing);
             return;
         }

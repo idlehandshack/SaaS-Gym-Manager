@@ -25,18 +25,18 @@ from cloudinary.utils import cloudinary_url
 from PIL import Image
 import io
 import logging
-
+from urllib.parse import urlencode
 from Gym.models import Gym                          
 from AuthFit.models import (
     Contact, Enrollment, MembershipPlan, Trainer,
     Attendence as Attendence_model, GymNotification
 )
-from AuthFit.rate_limit import check_login_attempt, reset_attempt, record_failed_attempt
+from AuthFit.rate_limit import check_login_attempt, reset_attempt, record_failed_attempt ,get_client_ip
 from .attendance import mark_attendance
 from .forms import UserLogin
 from urllib.parse import quote
 from Shop.notifications import notify_staff_new_enrollment
-
+from django.contrib.auth.hashers import check_password
 logger = logging.getLogger(__name__)
 
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
@@ -289,7 +289,7 @@ def loginPage(request):
 
         if not check_login_attempt(ip, phone):
             messages.error(request, "Too many failed login attempts. Try again later.")
-            return redirect(f'/login/?next={next_url}')
+            return redirect(f'/login/?{urlencode({"next": next_url})}')
 
         user = authenticate(request, username=phone, password=password)
         if user is not None:
@@ -298,9 +298,10 @@ def loginPage(request):
             messages.success(request, "Logged in successfully!")
             return redirect(_safe_next(next_url, request))
         else:
+            check_password(password, "pbkdf2_sha256$600000$dummy$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=")
             record_failed_attempt(ip, phone)
             messages.error(request, "Incorrect phone number or password.")
-            return redirect(f'/login/?next={next_url}')
+            return redirect(f'/login/?{urlencode({"next": next_url})}')
 
     return render(request, 'registration/login.html', {'next': next_url})
 

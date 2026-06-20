@@ -1,4 +1,3 @@
-# ✅ REPLACE WITH THIS
 import os
 from pathlib import Path
 import dj_database_url
@@ -14,20 +13,33 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 API_KEY = os.environ.get("INTERNAL_API_KEY", "")
 
 # ── ALLOWED_HOSTS ─────────────────────────────────────────────────────────
-# Never use ["*"] in production — it accepts requests spoofing any Host header
+# Multi-tenant: each gym gets a subdomain like gym1.saas-gym-manager.onrender.com
+# Never use ["*"] — even in DEBUG it masks misconfiguration
 if DEBUG:
-    ALLOWED_HOSTS = ['.localhost', '127.0.0.1', '0.0.0.0','saas-gym-manager.onrender.com',"localhost","*"]
+    ALLOWED_HOSTS = [
+        '.localhost',
+        '127.0.0.1',
+        '0.0.0.0',
+        'localhost',
+        'saas-gym-manager.onrender.com',
+        '*'
+    ]
 else:
     ALLOWED_HOSTS = [
         'saas-gym-manager.onrender.com',
         'www.saas-gym-manager.onrender.com',
+        '.saas-gym-manager.onrender.com',   # wildcard: covers all gym subdomains
     ]
 
+# ── CSRF ──────────────────────────────────────────────────────────────────
+# Must cover every gym subdomain or members will get 403 on form POSTs
 CSRF_TRUSTED_ORIGINS = [
     "https://saas-gym-manager.onrender.com",
+    "https://*.saas-gym-manager.onrender.com",   # gym subdomains
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]
+
 INSTALLED_APPS = [
     'jazzmin',
 
@@ -38,7 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Third-party apps
+    # Third-party
     'rest_framework',
     'cloudinary',
     'cloudinary_storage',
@@ -101,11 +113,11 @@ cloudinary.config(
     cloud_name=os.environ['CLOUDINARY_CLOUD_NAME'],
     api_key=os.environ['CLOUDINARY_API_KEY'],
     api_secret=os.environ['CLOUDINARY_API_SECRET'],
-    secure=True, 
+    secure=True,
 )
 
-DEFAULT_FILE_STORAGE   = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-STATICFILES_STORAGE    = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+STATICFILES_STORAGE  = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DATABASES = {
     'default': dj_database_url.parse(os.environ['DATABASE_URL'])
@@ -123,11 +135,10 @@ TIME_ZONE     = 'Asia/Kolkata'
 USE_I18N      = True
 USE_TZ        = True
 
-STATIC_URL      = '/static/'
+STATIC_URL       = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATIC_ROOT     = os.path.join(BASE_DIR, "staticfiles_build")
-WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365  # 1 year, in seconds
-
+STATIC_ROOT      = os.path.join(BASE_DIR, "staticfiles_build")
+WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365  # 1 year — safe because WhiteNoise uses content-hashed filenames
 
 REDIS_URL = os.environ['REDIS_URL']
 
@@ -143,36 +154,42 @@ CACHES = {
     }
 }
 
-VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY")
+VAPID_PUBLIC_KEY  = os.environ.get("VAPID_PUBLIC_KEY")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY")
-VAPID_CLAIMS = {"sub": f"mailto:{os.environ.get('VAPID_EMAIL')}"}
+VAPID_CLAIMS      = {"sub": f"mailto:{os.environ.get('VAPID_EMAIL')}"}
 
 LOGIN_URL           = '/login/'
 LOGIN_REDIRECT_URL  = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 # ── Session & Cookie Security ─────────────────────────────────────────────
-SESSION_ENGINE       = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS  = 'default'
-SESSION_COOKIE_AGE   = 86400        # 24 hours
+# cached_db: reads from Redis (fast), falls back to DB if Redis is down.
+# Pure cache backend loses all sessions on Redis restart — bad for a SaaS.
+SESSION_ENGINE      = 'django.contrib.sessions.backends.cached_db'
+SESSION_CACHE_ALIAS = 'default'
+SESSION_COOKIE_AGE      = 86400   # 24 hours
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SECURE   = not DEBUG  # True in production (HTTPS only)
+SESSION_COOKIE_SECURE   = not DEBUG
 
-CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_HTTPONLY = False   # JS needs to read it for AJAX
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE   = not DEBUG
 
 # ── File upload limits ────────────────────────────────────────────────────
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024   # 5 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ── Gym Config (server-side only — never sent to browser directly) ────────
-GYM_LATITUDE      = float(os.environ.get('GYM_LATITUDE',      21.2179))
-GYM_LONGITUDE     = float(os.environ.get('GYM_LONGITUDE',     81.3311))
-GYM_RADIUS_METERS = float(os.environ.get('GYM_RADIUS_METERS', 100))
+# ── Gym geo-defaults ──────────────────────────────────────────────────────
+# NOTE: These are fallback defaults only.
+# In a multi-tenant setup each Gym object should store its own
+# latitude, longitude, and radius in the database.
+# GymMiddleware should read from request.gym, not from these settings.
+GYM_LATITUDE_DEFAULT      = float(os.environ.get('GYM_LATITUDE',      21.2179))
+GYM_LONGITUDE_DEFAULT     = float(os.environ.get('GYM_LONGITUDE',     81.3311))
+GYM_RADIUS_METERS_DEFAULT = float(os.environ.get('GYM_RADIUS_METERS', 100))
 
 FIREBASE_CREDENTIALS_PATH = os.getenv(
     "FIREBASE_CREDENTIALS_PATH",
@@ -190,7 +207,7 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
-        'django.security': {        # log security events
+        'django.security': {
             'handlers': ['console'],
             'level': 'WARNING',
         },
@@ -198,11 +215,11 @@ LOGGING = {
 }
 
 if not DEBUG:
-    SECURE_HSTS_SECONDS        = 31536000   # 1 year
+    SECURE_HSTS_SECONDS            = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD        = True
-    SECURE_SSL_REDIRECT        = True
-    SECURE_PROXY_SSL_HEADER    = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_HSTS_PRELOAD            = True
+    SECURE_SSL_REDIRECT            = True
+    SECURE_PROXY_SSL_HEADER        = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 JAZZMIN_SETTINGS = {
@@ -227,20 +244,20 @@ JAZZMIN_SETTINGS = {
         "AuthFit.contact", "AuthFit.gymnotification", "auth",
     ],
     "icons": {
-        "AuthFit":                   "fas fa-dumbbell",
-        "AuthFit.attendence":        "fas fa-clipboard-user",
-        "AuthFit.contact":           "fas fa-address-book",
-        "AuthFit.enrollment":        "fas fa-id-card",
-        "AuthFit.gymnotification":   "fas fa-bell",
-        "AuthFit.membershipplan":    "fas fa-layer-group",
-        "AuthFit.trainer":           "fas fa-user-tie",
-        "auth":                      "fas fa-users-cog",
-        "auth.user":                 "fas fa-user",
-        "auth.group":                "fas fa-users",
+        "AuthFit":                 "fas fa-dumbbell",
+        "AuthFit.attendence":      "fas fa-clipboard-user",
+        "AuthFit.contact":         "fas fa-address-book",
+        "AuthFit.enrollment":      "fas fa-id-card",
+        "AuthFit.gymnotification": "fas fa-bell",
+        "AuthFit.membershipplan":  "fas fa-layer-group",
+        "AuthFit.trainer":         "fas fa-user-tie",
+        "auth":                    "fas fa-users-cog",
+        "auth.user":               "fas fa-user",
+        "auth.group":              "fas fa-users",
     },
-    "changeform_format":     "horizontal_tabs",
-    "related_modal_active":  False,
-    "custom_css":            "css/admin_custom.css",
+    "changeform_format":    "horizontal_tabs",
+    "related_modal_active": False,
+    "custom_css":           "css/admin_custom.css",
     "custom_links": {
         "EnterGYM": [
             {

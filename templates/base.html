@@ -60,12 +60,8 @@
       <link rel="stylesheet" href="{% static 'css/loc_modal.css' %}" />
     </noscript>
     {% block link %}{% endblock %} 
-    {% if request.user.is_staff and VAPID_PUBLIC_KEY %}
-    <div
-      id="vapid-meta"
-      data-key="{{ VAPID_PUBLIC_KEY }}"
-      style="display: none"
-    ></div>
+    {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
+    <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
     {% endif %}
   </head>
 
@@ -126,7 +122,7 @@
     </script>
     <script src="{% static 'js/loc_permission.js' %}" defer></script>
     <script src="{% static 'js/geo_attendance.js' %}" defer></script>
-    {% if request.user.is_staff %}
+    {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
     <script src="{% static 'js/push_subscribe.js' %}"></script>
     {% endif %}
   </body>

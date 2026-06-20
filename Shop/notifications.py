@@ -45,6 +45,7 @@ def send_push_to_tokens(
     Returns the number of successes.
     Silently deactivates tokens FCM reports as invalid/expired.
     """
+    
     if not tokens:
         return 0
 
@@ -100,7 +101,7 @@ def _prune_bad_tokens(tokens: list[str], response) -> None:
     if bad:
         removed_staff = StaffDevice.objects.filter(fcm_token__in=bad).update(active=False)
         removed_user  = UserDevice.objects.filter(fcm_token__in=bad).update(active=False)
-        logger.info(
+        logger.warning(
             "Deactivated stale FCM tokens — staff:%d user:%d",
             removed_staff, removed_user,
         )
@@ -220,6 +221,7 @@ def notify_staff_new_enrollment(enrollment) -> None:
 
     # ── FCM push → staff mobile app ───────────────────────────────────────
     tokens = _get_staff_tokens(gym)
+    
     if not tokens:
         logger.debug(
             "notify_staff_new_enrollment: no active staff devices for gym=%s",
