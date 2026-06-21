@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — EnterGYM</title>
+<link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: radial-gradient(circle at 80% 20%, #1a1a2e 0%, #0d0d17 50%, #0a0a12 100%);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 20px 40px;
+  }
+  .nav .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .nav .logo span { color:#5b5fff; }
+  .nav a.back-link {
+    color: rgba(255,255,255,0.7); font-size: 14px; text-decoration: none; transition: color .2s;
+  }
+  .nav a.back-link:hover { color:#fff; }
+
+  #message-container {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 9999; width:100%; max-width:420px; padding:0 16px;
+  }
+  .flash-message {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 20px; margin-bottom:12px; border-radius:12px;
+    font-size:14px; font-weight:500; color:#fff;
+    box-shadow:0 10px 25px rgba(0,0,0,.3); backdrop-filter:blur(10px);
+  }
+  .flash-message.success { background:linear-gradient(to right,#22c55e,#059669); }
+  .flash-message.error { background:linear-gradient(to right,#ef4444,#b91c1c); }
+  .flash-message.default { background:#1f2937; }
+  .close-btn { margin-left:10px; font-size:18px; font-weight:bold; border:none; background:none; color:#fff; cursor:pointer; }
+
+  .container {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    padding: 20px; gap: 60px; flex-wrap: wrap;
+  }
+
+  .pitch {
+    max-width: 420px;
+    animation: fadeUp .6s ease-out forwards;
+  }
+  .pitch .badge {
+    display:inline-block; background: rgba(28, 41, 97, 0.66); color:#5b5fff;
+    font-size:12px; font-weight:700; letter-spacing:0.5px; padding:6px 14px;
+    border-radius:999px; border:1px solid rgba(8, 6, 51, 0.64); margin-bottom:18px;
+    text-transform:uppercase;
+  }
+  .pitch h1 { font-size: 36px; line-height: 1.25; font-weight: 800; margin-bottom: 16px; }
+  .pitch h1 span { color:#5b5fff; }
+  .pitch p { color: rgba(255,255,255,0.65); font-size: 15px; line-height: 1.7; }
+
+  .card {
+    width: 100%; max-width: 400px; padding: 36px 32px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(96, 4, 243, 0.2);
+    border-radius: 18px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.5), 0 0 40px rgba(33, 3, 228, 0.12);
+    animation: fadeUp .6s ease-out .1s forwards;
+    opacity:0;
+  }
+  .card h2 { font-size: 24px; font-weight:800; margin-bottom:6px; }
+  .card .sub { color:rgba(255,255,255,0.55); font-size:13px; margin-bottom:26px; }
+
+  .form-group { margin-bottom: 18px; }
+  .form-group label {
+    display:block; font-size:13px; font-weight:600; color:rgba(255,255,255,0.75); margin-bottom:7px;
+  }
+  .form-group input {
+    width:100%; padding:12px 14px; font-size:15px; font-weight:500;
+    border-radius:10px; border:1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.35); color:#fff; outline:none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .form-group input:focus { border-color:#5b5fff; box-shadow: 0 0 0 3px rgba(71, 22, 249, 0.15); }
+  small.error { display:block; color:#DB221D; font-size:12px; margin-top:6px; font-weight:500; }
+
+  .forget-text { font-size:13px; text-align:center; color:rgba(255,255,255,0.5); margin-top: 4px; }
+  .forget-text a { color:#5b5fff; text-decoration:none; }
+
+  .submit-btn {
+    width:100%; padding:13px; font-size:15px; font-weight:700;
+    border:none; border-radius:999px; background:#5b5fff; color:#0d0d17;
+    cursor:pointer; transition:.25s; box-shadow:0 0 25px rgba(90, 22, 249, 0.4);
+    margin-top: 18px;
+  }
+  .submit-btn:hover { background:#0E27CF; transform: translateY(-1px); }
+  .submit-btn:disabled { background:#1468C4; cursor:not-allowed; opacity:.6; box-shadow:none; transform:none; }
+
+  .bottom-text { text-align:center; font-size:13.5px; margin-top:22px; color:rgba(255,255,255,0.55); }
+  .bottom-text a { color:#5b5fff; font-weight:600; text-decoration:none; }
+  .bottom-text a:hover { text-decoration:underline; }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(24px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+
+  @media (max-width: 900px) { .pitch { text-align:center; } }
+  @media (max-width: 500px) {
+    .nav { padding:16px 20px; }
+    .card { padding:28px 22px; }
+    .pitch h1 { font-size:28px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="logo">Enter<span>GYM</span></div>
+  <a class="back-link" href="/">← Back to home</a>
+</nav>
+
+<div id="message-container">
+  {% for message in messages %}
+  <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}">
+    <span>{{ message }}</span>
+    <button class="close-btn">×</button>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="container">
+
+  <div class="pitch">
+    <span class="badge">Gym Owner Portal</span>
+    <h1>Welcome back to <span>EnterGYM</span></h1>
+    <p>Log in to manage your gym, track members, and grow your business — all from your dashboard.</p>
+  </div>
+
+  <div class="card">
+    <h2>Login to your account</h2>
+    <p class="sub">Enter your credentials to continue.</p>
+
+    <form method="POST" action="/login/" class="login-form">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input
+          type="tel"
+          name="username"
+          value="{{ form.username.value|default:'' }}"
+          required
+          pattern="[0-9]{10}"
+          maxlength="10"
+          minlength="10"
+        />
+        {% if form.username.errors %}<small class="error">{{ form.username.errors.0 }}</small>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" required />
+      </div>
+
+      <p class="forget-text">For password reset, please contact the <a href="/contact/">administrator</a>.</p>
+
+      <button type="submit" class="submit-btn" id="login-btn">Login</button>
+
+      <p class="bottom-text">Don't have an account? <a href="/signup/">Sign Up</a></p>
+    </form>
+  </div>
+
+</div>
+
+{% load static %}
+<script src="{% static 'js/messages.js' %}"></script>
+<script nonce="{{ request.csp_nonce }}">
+  document.querySelector('.login-form').addEventListener('submit', function () {
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.textContent = 'Logging in...';
+  });
+</script>
+</body>
+</html>

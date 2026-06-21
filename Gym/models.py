@@ -8,7 +8,10 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-
+from cloudinary.models import CloudinaryField
+from django.core.cache import cache
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Subscription Plans (SaaS tiers defined by the software owner)
@@ -56,7 +59,7 @@ class Gym(models.Model):
     trainer_limit   = models.PositiveIntegerField(default=5)
 
     # ── White-label settings ──────────────────────────────────────────────
-    logo            = models.ImageField(upload_to='gym_logos/', null=True, blank=True)
+    logo            = CloudinaryField('gym_logo', null=True, blank=True)
     contact_email   = models.EmailField(blank=True)
     contact_phone   = models.CharField(max_length=15, blank=True)
     whatsapp_number = models.CharField(max_length=15, blank=True)
@@ -91,13 +94,17 @@ class Gym(models.Model):
 
     def __str__(self):
         return f"{self.gym_name} ({self.gym_code})"
-
+    
     class Meta:
         ordering  = ['gym_name']
         indexes   = [models.Index(fields=['gym_code'])]
         verbose_name        = 'Gym'
         verbose_name_plural = 'Gyms'
 
+
+@receiver([post_save, post_delete], sender=Gym)
+def clear_gym_logo_cache(sender, instance, **kwargs):
+    cache.delete(f"gym_logo_{instance.pk}")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Staff Profile  (links a User to a Gym with a role)

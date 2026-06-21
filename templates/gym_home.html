@@ -22,27 +22,23 @@
   </title>
     <meta
       name="description"
-      content="EnterGYM Bhilai - Transform your body with expert coaches, modern equipment & personalized plans. Start your 2-day free trial today!"
+      content="{{gym.gym_name}} Bhilai - Transform your body with expert coaches, modern equipment & personalized plans. Start your 2-day free trial today!"
     />
     <meta
       name="keywords"
-      content="gym Bhilai, fitness center Chhattisgarh, personal trainer Bhilai, EnterGym"
+      content="gym Bhilai, fitness center Chhattisgarh, personal trainer {{gym.city}}, {{gym.gym_name}}"
     />
 
     <!-- WhatsApp/Facebook preview -->
-    <meta property="og:title" content="EnterGYM | Fitness Center Bhilai" />
+    <meta property="og:title" content="{{gym.gym_name}} | Fitness Center {{gym.city}}" />
     <meta
       property="og:description"
-      content="Crush your health and fitness goals with EnterGYM. Start a 2-day free trial!"
+      content="Crush your health and fitness goals with {{gym.gym_name}}. Start a 2-day free trial!"
     />
-    <meta property="og:url" content="https://entergym.com" />
+    <meta property="og:url" content="https://{{gym.gym_name}}.com" />
     <meta property="og:type" content="website" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
-    />
     <link rel="stylesheet" href="{% static 'css/home.css' %}" />
     <link rel="stylesheet" href="{% static 'css/loc_modal.css' %}">
     <!-- Preload mobile image for small screens -->
@@ -92,7 +88,7 @@
 
    {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
     <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
-{% endif %}
+  {% endif %}
 
     <!-- HERO -->
     <section class="hero" id="home">
@@ -109,7 +105,7 @@
               height="1080"
               loading="eager"
               fetchpriority="high"
-              alt="EnterGYM fitness center Bhilai">
+              alt="{{gym.gym_name}} fitness center {{gym.city}}">
       </picture>
 
       <div class="overlay"></div>
@@ -132,7 +128,7 @@
             {% if gym and gym.logo %}
                 <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }} logo" class="logo-img" />
               {% else %}
-                <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM Logo" class="logo-img" />
+                <img src="{% static 'images/Logo1s.png' %}" alt="{{gym.gym_name}} Logo" class="logo-img" />
               {% endif %}
           </a>
 
@@ -141,7 +137,7 @@
             <li class="dropdown">
               <a href="#">Attendance ▼</a>
               <ul class="dropdown-menu">
-                <li><a href="/admin/attendance/">Attendance Analytics</a></li>
+                <li><a href="/ad/attendance/">Attendance Analytics</a></li>
                 <li><a href="/admin-tools/today-attendance/">Attendance Records</a></li>
               </ul>
             </li>
@@ -151,7 +147,7 @@
             <li class="dropdown">
               <a href="#">Payment ▼</a>
               <ul class="dropdown-menu">
-                <li><a href="/admin/revenue/">Revenue Insights</a></li>
+                <li><a href="/ad/revenue/">Revenue Insights</a></li>
                 <li><a href="{% url 'whatsapp_pending' %}">Due Payments</a></li>
               </ul>
             </li>
@@ -159,13 +155,13 @@
               <a href="#">Member's ▼</a>
               <ul class="dropdown-menu">
                 <li><a href="/freeze-membership/">Members</a></li>
-                <li><a href="/admin/AuthFit/membershipplan/">MemberShip Plans</a></li>
+                <li><a href="/membership-plans/">MemberShip Plans</a></li>
                 <li><a href="/admin-tools/transferred-members/">Member Transferred</a></li>
               </ul>
             </li>
 
             <li><a href="/manage/orders/">Order Management</a></li>
-            <li><a href="/admin/AuthFit/contact/">Support Requests</a></li>
+            <li><a href="/contact-inquiries/">Support Requests</a></li>
             {% else %}
             <li class="dropdown">
               <a href="#">Membership ▼</a>
@@ -308,15 +304,15 @@
         <ul class="menu-nav">
 
           {% if isStaff %}
-          <li><a href="/admin/revenue/">Revenue Insights <span>↗</span></a></li>
+          <li><a href="/ad/revenue/">Revenue Insights <span>↗</span></a></li>
           <li><a href="/manage/orders/">Order Management<span>↗</span></a></li>
           <li><a href="/admin-tools/today-attendance/">Attendance Records<span>↗</span></a></li>
-          <li><a href="/admin/attendance/">Attendance Analytics <span>↗</span></a></li>
+          <li><a href="/ad/attendance/">Attendance Analytics <span>↗</span></a></li>
           <li><a href="/freeze-membership/">Members <span>↗</span></a></li>
           <li><a href="/admin-tools/transferred-members/">Member Transferred <span>↗</span></a></li>
           <li><a href="{% url 'whatsapp_pending' %}">Due Payments<span>↗</span></a></li>
-          <li><a href="/admin/AuthFit/membershipplan/">Membership Plans<span>↗</span></a></li>
-          <li><a href="/admin/AuthFit/contact/">Support Requests<span>↗</span></a></li>
+          <li><a href="/membership-plans/">Membership Plans<span>↗</span></a></li>
+          <li><a href="/contact-inquiries/">Support Requests<span>↗</span></a></li>
           {% else %}
           <li class="active"><a href="/">Home <span>↗</span></a></li>
           {% if enrolled %}
@@ -377,7 +373,7 @@
               <div class="icon-box">
                 <img
                   src="{% static 'images/features/barbell.png' %}"
-                  alt="Modern gym barbells and free weights at EnterGYM"
+                  alt="Modern gym barbells and free weights at {{gym.gym_name}}"
                   loading="lazy"
                 />
               </div>
@@ -435,7 +431,7 @@
               <div class="icon-box">
                 <img
                   src="{% static 'images/features/trainer.png' %}"
-                  alt="Professional personal trainer at EnterGYM Bhilai"
+                  alt="Professional personal trainer at {{gym.gym_name}} {{gym.city}}"
                   loading="lazy"
                 />
               </div>
@@ -498,11 +494,15 @@
         <div class="offer-grid">
           <div class="offer-card">
             <img
-              src="{% static 'images/offer/machine_1.webp' %}"
-              width="179"
-              height="220"
+              src="{% static 'images/offer/strength_desktop.webp' %}"
+              srcset="{% static 'images/offer/strength_desktop.webp' %} 360w,
+                      {% static 'images/offer/strength_desktop.webp' %} 700w"
+              sizes="(min-width: 768px) 33vw, 50vw"
+              width="700"
+              height="757"
               loading="lazy"
-              alt="Weightlifting machines at EnterGYM"
+              decoding="async"
+              alt="Member weightlifting with a barbell at {{gym.gym_name}}"
             />
             <div class="overlay"></div>
             <div class="skew-box"></div>
@@ -514,11 +514,15 @@
 
           <div class="offer-card">
             <img
-              src="{% static 'images/offer/machine_2.webp' %}"
-              width="179"
-              height="220"
+              src="{% static 'images/offer/cardio.webp' %}"
+              srcset="{% static 'images/offer/cardio.webp' %} 360w,
+                      {% static 'images/offer/cardio.webp' %} 700w"
+              sizes="(min-width: 768px) 33vw, 50vw"
+              width="900"
+              height="600"
               loading="lazy"
-              alt="Indoor cycling cardio equipment at EnterGYM"
+              decoding="async"
+              alt="Members on stationary bikes during an indoor cycling class at {{gym.gym_name}}"
             />
             <div class="overlay"></div>
             <div class="skew-box"></div>
@@ -530,11 +534,15 @@
 
           <div class="offer-card center-card">
             <img
-              src="{% static 'images/offer/trainer.webp' %}"
-              width="455"
-              height="291"
+              src="{% static 'images/offer/offer_trainer_1400.webp' %}"
+              srcset="{% static 'images/offer/offer_trainer_700.webp' %} 700w,
+                      {% static 'images/offer/offer_trainer_1400.webp' %} 1400w"
+              sizes="(min-width: 768px) 33vw, 100vw"
+              width="1400"
+              height="933"
               loading="lazy"
-              alt="Certified personal trainer at EnterGYM Bhilai"
+              decoding="async"
+              alt="Certified personal trainer guiding a member through a battle rope exercise at {{gym.gym_name}}"
             />
             <div class="overlay"></div>
             <div class="skew-box"></div>
@@ -548,11 +556,20 @@
     </section>
 
     <section id="Price" class="cta-section">
-      <img
-        src="{% static 'images/Registration.webp' %}"
-        class="cta-bg"
-        alt="Join EnterGYM fitness center Bhilai"
-      />
+      <picture>
+          <source
+              media="(max-width:768px)"
+              srcset="{% static 'images/Registration_mobile.webp' %}">
+
+          <img
+              src="{% static 'images/Registration_desktop.webp' %}"
+              class="cta-bg"
+              width="1920"
+              height="1080"
+              loading="eager"
+              fetchpriority="high"
+              alt="Join {{gym.gym_name}} fitness center Bhilai">
+      </picture>
       <div class="cta-overlay"></div>
       <div class="cta-content">
         <p class="cta-top-text">ARE YOU READY TO</p>
@@ -622,7 +639,7 @@
             <div class="footer-icon">
               <img
                 src="{% static 'images/footer/placeholder.png' %}"
-                alt="EnterGYM location Bhilai Chhattisgarh"
+                alt="{{gym.gym_name}} location Bhilai Chhattisgarh"
               />
             </div>
             {% if gym %}
@@ -633,7 +650,7 @@
             <div class="footer-icon">
               <img
                 src="{% static 'images/footer/email.png' %}"
-                alt="Email EnterGYM support"
+                alt="Email {{gym.gym_name}} support"
               />
             </div>
             {% if gym %}
@@ -653,8 +670,8 @@
             equipment and expert fitness coaching.
           </p>
           <div class="footer-social">
-            <img src="{% static 'images/footer/instagram.png' %}" alt="EnterGYM Instagram" />
-            <img src="{% static 'images/footer/email.png' %}" alt="EnterGYM Email" />
+            <img src="{% static 'images/footer/instagram.png' %}" alt="{{gym.gym_name}} Instagram" />
+            <img src="{% static 'images/footer/email.png' %}" alt="{{gym.gym_name}} Email" />
           </div>
         </div>
 

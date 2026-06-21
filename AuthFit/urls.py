@@ -2,9 +2,14 @@ from django.urls import path, include
 from AuthFit import views
 from AuthFit.geo_views import geo_mark_attendance, serve_sw ,attendance_status
 from . import device_views
+from django.contrib.auth import views as auth_views
+
 urlpatterns = [
     path('', views.homePage, name='home'),
-    path('accounts/', include('django.contrib.auth.urls')),
+    path('accounts/password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
+    path('accounts/password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('accounts/reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
     path('signup/', views.signupPage, name='signPage'),
     path('login/', views.loginPage, name='login'),
     path('workout/', views.workout, name='workout'),
@@ -17,6 +22,8 @@ urlpatterns = [
     path('renew-membership/', views.renew_membership, name='renew_membership'),
     path('freeze-membership/', views.freeze_membership,       name='freeze_membership'),
     path('freeze-membership/apply/',views.freeze_membership_apply, name='freeze_membership_apply'),
+    path('membership-plans/', views.membership_plans, name='membership_plans'),
+    path('contact-inquiries/', views.contact_inquiries, name='contact_inquiries'),
 
     # ── Existing APIs ──────────────────────────────────────────
     path('api/mark-attendance/', views.mark_attendance_api),
@@ -42,4 +49,6 @@ urlpatterns = [
     path('user-devices/register/',   device_views.register_user_device,   name='register_user_device'),
     path('user-devices/unregister/', device_views.unregister_user_device, name='unregister_user_device'),
     path('internal/run-expiry-check/', views.run_expiry_check, name='run_expiry_check'),
+    path('ad/attendance/', views.attendance_analytics, name='attendance_analytics'),
+    path('ad/revenue/', views.revenue_view, name='revenue'),
 ]

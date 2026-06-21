@@ -1,0 +1,322 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact Inquiries — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #181818;
+      --border:      rgba(255,255,255,.06);
+      --border-2:    rgba(255,255,255,.11);
+      --orange:      #ff5a00;
+      --orange-dim:  rgba(255,90,0,.10);
+      --orange-bdr:  rgba(255,90,0,.28);
+      --green:       #5de87c;
+      --green-dim:   rgba(93,232,124,.10);
+      --green-bdr:   rgba(93,232,124,.28);
+      --red:         #ef5350;
+      --red-dim:     rgba(239,83,80,.10);
+      --red-bdr:     rgba(239,83,80,.28);
+      --blue:        #60a5fa;
+      --blue-dim:    rgba(96,165,250,.10);
+      --blue-bdr:    rgba(96,165,250,.28);
+      --text-hi:     #f5f5f5;
+      --text-mid:    #888;
+      --text-lo:     #444;
+      --font-d:      "Barlow Condensed", sans-serif;
+      --font-b:      "Barlow", sans-serif;
+      --ease:        cubic-bezier(.4,0,.2,1);
+      --t:           .22s;
+      --radius-lg:   18px;
+      --radius-md:   12px;
+      --radius-sm:   8px;
+      --radius-pill: 40px;
+      --nav-h:       60px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    .store-nav {
+      position: sticky; top: 0; z-index: 200;
+      height: var(--nav-h);
+      background: rgba(8,8,8,.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .nav-inner {
+      width: 100%; padding: 0 clamp(16px,4vw,40px);
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .nav-brand {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.1rem,3vw,1.5rem);
+      text-transform: uppercase; text-decoration: none;
+      color: var(--text-hi); letter-spacing: -.01em;
+      white-space: nowrap; display: flex; align-items: center; gap: 8px;
+      transition: color var(--t);
+    }
+    .nav-brand .acc { color: var(--orange); }
+    .back-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; flex-shrink: 0;
+      transition: background var(--t);
+    }
+    .nav-brand:hover .back-icon { background: var(--orange-dim); }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-badge {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      background: var(--orange-dim); color: var(--orange);
+      border: 1px solid var(--orange-bdr);
+      padding: 5px 14px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+
+    .page-header {
+      position: relative;
+      padding: clamp(36px,6vw,60px) 0 clamp(24px,4vw,36px);
+      text-align: center; overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: clamp(20px,3vw,32px);
+    }
+    .page-header::before {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .header-inner { position: relative; z-index: 1; padding: 0 clamp(16px,4vw,40px); }
+    .header-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
+      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 10px;
+      padding: 5px 14px;
+      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
+      background: var(--orange-dim);
+    }
+    .page-header h1 {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.8rem,6vw,3.2rem); line-height: .92;
+      letter-spacing: -.01em; text-transform: uppercase;
+      margin-bottom: 8px; color: var(--text-hi);
+    }
+    .page-header h1 .accent { color: var(--orange); }
+    .header-sub {
+      font-family: var(--font-d); font-size: clamp(.85rem,2.2vw,.98rem);
+      font-weight: 700; letter-spacing: .08em; color: var(--text-mid);
+    }
+
+    .inquiries-page {
+      max-width: 980px; margin: 0 auto;
+      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
+    }
+
+    .messages { margin-bottom: clamp(14px,2.5vw,20px); display: flex; flex-direction: column; gap: 8px; }
+    .msg {
+      font-family: var(--font-d); font-size: .8rem; font-weight: 700;
+      letter-spacing: .04em; padding: 12px 16px; border-radius: var(--radius-sm);
+      border: 1px solid;
+    }
+    .msg-success { color: var(--green); background: var(--green-dim); border-color: var(--green-bdr); }
+    .msg-error   { color: var(--red);   background: var(--red-dim);   border-color: var(--red-bdr); }
+
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: clamp(16px,3vw,22px); flex-wrap: wrap;
+    }
+    .search-box {
+      flex: 1; min-width: 220px; max-width: 360px;
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 1px solid var(--border-2);
+      border-radius: var(--radius-pill); padding: 9px 16px;
+    }
+    .search-box input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--text-hi); font-family: var(--font-b); font-size: .88rem;
+    }
+    .search-box input::placeholder { color: var(--text-lo); }
+    .search-icon { color: var(--text-lo); font-size: .85rem; }
+
+    .inquiry-list { display: flex; flex-direction: column; gap: 10px; }
+    .inquiry-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--orange);
+      border-radius: var(--radius-md); padding: clamp(14px,2.5vw,18px) clamp(16px,3vw,22px);
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+      transition: border-color var(--t), background var(--t);
+      animation: fadeUp .35s var(--ease) both;
+    }
+    .inquiry-card:hover { background: var(--surface-2); border-color: var(--border-2); }
+    .inquiry-main { flex: 1; min-width: 0; }
+    .inquiry-name {
+      font-family: var(--font-d); font-weight: 800; font-size: 1.05rem;
+      color: var(--text-hi); letter-spacing: .01em; margin-bottom: 4px;
+    }
+    .inquiry-meta {
+      display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px;
+      font-family: var(--font-d); font-size: .75rem; font-weight: 600;
+      letter-spacing: .04em; color: var(--text-mid);
+    }
+    .inquiry-meta a { color: var(--blue); text-decoration: none; }
+    .inquiry-meta a:hover { text-decoration: underline; }
+    .inquiry-desc {
+      font-family: var(--font-b); font-size: .88rem; color: #ccc;
+      line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+    }
+    .inquiry-time {
+      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+      letter-spacing: .08em; color: var(--text-lo); white-space: nowrap;
+      margin-top: 2px;
+    }
+    .inquiry-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
+    .btn-delete {
+      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--red); border: 1px solid var(--red-bdr); background: transparent;
+      padding: 7px 14px; border-radius: var(--radius-pill); cursor: pointer;
+      transition: background var(--t); white-space: nowrap;
+    }
+    .btn-delete:hover { background: var(--red-dim); }
+
+    .empty-state {
+      font-family: var(--font-d); color: var(--text-lo); font-size: .85rem;
+      letter-spacing: .15em; text-align: center; padding: 60px 0;
+      font-weight: 700; text-transform: uppercase;
+    }
+
+    .pagination {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: clamp(24px,4vw,36px);
+    }
+    .page-link, .page-current {
+      font-family: var(--font-d); font-size: .78rem; font-weight: 700;
+      letter-spacing: .04em; padding: 8px 14px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border-2); text-decoration: none;
+    }
+    .page-link { color: var(--text-mid); transition: background var(--t); }
+    .page-link:hover { background: var(--surface-2); color: var(--text-hi); }
+    .page-current { color: #080808; background: var(--orange); border-color: var(--orange); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      .inquiry-card { flex-direction: column; }
+      .inquiry-side { flex-direction: row; align-items: center; width: 100%; justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="store-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/">
+        <span class="back-icon">&#8592;</span>
+        {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
+        <span class="acc">Inquiries</span>
+      </a>
+      <div class="nav-right">
+        <div class="nav-badge">{{ total }} Total</div>
+      </div>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-eyebrow">&#128231; Leads</div>
+      <h1>Contact <span class="accent">Inquiries</span></h1>
+      <div class="header-sub">
+        {% if gym %}{{ gym.gym_name }}{% if gym.city %} · {{ gym.city }}{% endif %}{% else %}EnterGYM{% endif %}
+        &nbsp;·&nbsp; Contact Form Submissions
+      </div>
+    </div>
+  </header>
+
+  <main class="inquiries-page">
+
+    {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <div class="msg {% if message.tags == 'error' %}msg-error{% else %}msg-success{% endif %}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="toolbar">
+      <form class="search-box" method="get">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" name="q" value="{{ query }}" placeholder="Search name, phone, or email">
+      </form>
+    </div>
+
+    {% if page_obj %}
+    <div class="inquiry-list">
+      {% for c in page_obj %}
+      <div class="inquiry-card">
+        <div class="inquiry-main">
+          <div class="inquiry-name">{{ c.name }}</div>
+          <div class="inquiry-meta">
+            <span>&#128222; {{ c.phonenumber }}</span>
+            <a href="mailto:{{ c.email }}">&#9993; {{ c.email }}</a>
+          </div>
+          <div class="inquiry-desc">{{ c.description }}</div>
+        </div>
+        <div class="inquiry-side">
+          <span class="inquiry-time">{{ c.timestamp|date:"d M Y, h:i A" }}</span>
+          <form method="post" onsubmit="return confirm('Delete this inquiry from {{ c.name|escapejs }}? This cannot be undone.');">
+            {% csrf_token %}
+            <input type="hidden" name="contact_id" value="{{ c.id }}">
+            <button type="submit" class="btn-delete">Delete</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">&laquo; Prev</a>
+      {% endif %}
+      <span class="page-current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Next &raquo;</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      {% if query %}No inquiries match "{{ query }}"{% else %}No contact inquiries yet{% endif %}
+    </div>
+    {% endif %}
+
+  </main>
+
+</body>
+</html>

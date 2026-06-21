@@ -3,10 +3,11 @@
 import secrets
 import os
 import json
+from django.db.models import Q
 import functools
 from datetime import date, timedelta
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.contrib import messages
@@ -22,6 +23,7 @@ from django.db import transaction ,IntegrityError
 import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
 from PIL import Image
+from django.db.models import Count, Max
 import io
 import logging
 from urllib.parse import urlencode
@@ -30,6 +32,10 @@ from AuthFit.models import (
     Contact, Enrollment, EnrollmentTransfer, MembershipPlan, Trainer,
     Attendence as Attendence_model, GymNotification
 )
+from django.db.models import Sum, Count
+from django.db.models.functions import ExtractWeekDay, ExtractHour, TruncMonth,TruncDay 
+from collections import defaultdict
+from django.views.decorators.cache import cache_page
 from AuthFit.rate_limit import check_login_attempt, reset_attempt, record_failed_attempt ,get_client_ip
 from .attendance import mark_attendance
 from .forms import UserLogin
@@ -59,8 +65,6 @@ def _check_internal_key(request):
     return secrets.compare_digest(provided, INTERNAL_API_KEY)
 
 
-def is_staff(user):
-    return user.is_staff or user.is_superuser
 
 
 def get_client_ip(request):
@@ -92,11 +96,30 @@ def _gym_staff_required(view_fn):
     @login_required
     @functools.wraps(view_fn)
     def wrapped(request, *args, **kwargs):
-        if not (request.user.is_staff or request.user.is_superuser):
+        # OLD ❌
+        # if not (request.user.is_staff or request.user.is_superuser):
+
+        # NEW ✅
+        if not getattr(request, 'is_gym_staff', False):
             return HttpResponseForbidden("Staff access required.")
         return view_fn(request, *args, **kwargs)
     return wrapped
 
+
+def _gym_role_required(*allowed_roles):
+    """
+    Stricter than _gym_staff_required: restricts to specific staff_role values
+    within the current gym. Super admins always pass.
+    """
+    def decorator(view_fn):
+        @_gym_staff_required
+        @functools.wraps(view_fn)
+        def wrapped(request, *args, **kwargs):
+            if not (request.is_super_admin or request.staff_role in allowed_roles):
+                return HttpResponseForbidden("You don't have permission for this action.")
+            return view_fn(request, *args, **kwargs)
+        return wrapped
+    return decorator
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Internal API views (called by face recognition service / cron jobs)
@@ -251,7 +274,41 @@ def run_expiry_check(request):
         logger.exception("Error in run_expiry_check")
         return JsonResponse({"error": "Internal error"}, status=500)
 
+@_gym_staff_required
+def contact_inquiries(request):
+    gym = getattr(request, 'gym', None)
+    if gym is None:
+        return HttpResponseForbidden("No gym context available.")
 
+    if request.method == "POST":
+        contact_id = request.POST.get("contact_id", "").strip()
+        contact_obj = Contact.objects.filter(id=contact_id, gym=gym).first()
+        if not contact_obj:
+            messages.error(request, "Inquiry not found.")
+            return redirect('/contact-inquiries/')
+
+        contact_obj.delete()
+        messages.success(request, "Inquiry deleted.")
+        return redirect('/contact-inquiries/')
+
+    query = request.GET.get("q", "").strip()
+    qs = Contact.objects.filter(gym=gym).order_by('-timestamp')
+    if query:
+        qs = qs.filter(
+            Q(name__icontains=query) |
+            Q(phonenumber__icontains=query) |
+            Q(email__icontains=query)
+        )
+
+    paginator = Paginator(qs, 20)
+    page_obj  = paginator.get_page(request.GET.get("page", 1))
+
+    return render(request, "contact_inquiries.html", {
+        "gym":      gym,
+        "page_obj": page_obj,
+        "query":    query,
+        "total":    qs.count(),
+    })
 # ──────────────────────────────────────────────────────────────────────────────
 # Auth views
 # ──────────────────────────────────────────────────────────────────────────────
@@ -272,7 +329,12 @@ def signupPage(request):
     else:
         form = UserLogin(gym=gym)
 
-    return render(request, 'registration/signup.html', {'form': form})
+    signup_template = (
+        "registration/saas_signup.html" if gym is None
+        else "registration/signup.html"
+    )
+
+    return render(request, signup_template, {'form': form, 'gym': gym})
 
 
 def loginPage(request):
@@ -280,6 +342,7 @@ def loginPage(request):
         return redirect('/')
 
     next_url = request.GET.get('next') or request.POST.get('next', '/')
+    gym = getattr(request, 'gym', None)
 
     if request.method == "POST":
         ip       = get_client_ip(request)
@@ -302,7 +365,12 @@ def loginPage(request):
             messages.error(request, "Incorrect phone number or password.")
             return redirect(f'/login/?{urlencode({"next": next_url})}')
 
-    return render(request, 'registration/login.html', {'next': next_url})
+    login_template = (
+        "registration/saas_login.html" if gym is None
+        else "registration/login.html"
+    )
+
+    return render(request, login_template, {'next': next_url, 'gym': gym})
 
 
 def handlelogout(request):
@@ -314,7 +382,6 @@ def handlelogout(request):
 # ──────────────────────────────────────────────────────────────────────────────
 # Public / member views
 # ──────────────────────────────────────────────────────────────────────────────
-
 def homePage(request):
     gym = getattr(request, 'gym', None)
 
@@ -351,8 +418,8 @@ def homePage(request):
     isSuperuser = False
 
     if request.user.is_authenticated:
-        isStaff     = request.user.is_staff
-        isSuperuser = request.user.is_superuser
+        isStaff     = getattr(request, 'is_gym_staff', False)
+        isSuperuser = getattr(request, 'is_super_admin', False)
 
         cache_key = f"enrolled_{request.user.id}_{gym.pk}"
         enrolled  = cache.get(cache_key)
@@ -414,7 +481,10 @@ def contact(request):
 
 
 def workout(request):
-    return render(request, 'workout.html')
+    gym = getattr(request, 'gym', None)
+    return render(request, 'workout.html',{
+        "gym":gym
+    })
 
 
 def download_app(request):
@@ -435,6 +505,85 @@ def download_app(request):
         'gym_short': gym_short,
     })
 
+
+@_gym_role_required('gym_owner', 'receptionist')
+def membership_plans(request):
+    gym = getattr(request, 'gym', None)
+    if gym is None:
+        return HttpResponseForbidden("No gym context available.")
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "delete":
+            plan_id = request.POST.get("plan_id")
+            plan = MembershipPlan.objects.filter(id=plan_id, gym=gym).first()
+            if not plan:
+                messages.error(request, "Plan not found.")
+                return redirect('/membership-plans/')
+            if Enrollment.objects.filter(selectPlan=plan).exists():
+                messages.error(
+                    request,
+                    f"Cannot delete '{plan.plan}' — it is in use by existing enrollments."
+                )
+                return redirect('/membership-plans/')
+            plan.delete()
+            cache.delete(f"membership_plans_{gym.pk}")
+            messages.success(request, "Plan deleted.")
+            return redirect('/membership-plans/')
+
+        plan_id       = request.POST.get("plan_id", "").strip()
+        plan_name     = request.POST.get("plan", "").strip()
+        price_raw     = request.POST.get("price", "").strip()
+        duration_raw  = request.POST.get("duration_days", "").strip()
+
+        def fail(msg):
+            messages.error(request, msg)
+            return redirect('/membership-plans/')
+
+        if not plan_name:
+            return fail("Plan name is required.")
+
+        try:
+            price = int(price_raw)
+            if price < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            return fail("Enter a valid price.")
+
+        try:
+            duration_days = int(duration_raw) if duration_raw else 30
+            if duration_days <= 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            return fail("Enter a valid duration in days.")
+
+        if plan_id:
+            plan = MembershipPlan.objects.filter(id=plan_id, gym=gym).first()
+            if not plan:
+                return fail("Plan not found.")
+            plan.plan          = plan_name
+            plan.price         = price
+            plan.duration_days = duration_days
+            plan.save(update_fields=["plan", "price", "duration_days"])
+            messages.success(request, f"'{plan_name}' updated.")
+        else:
+            MembershipPlan.objects.create(
+                gym=gym,
+                plan=plan_name,
+                price=price,
+                duration_days=duration_days,
+            )
+            messages.success(request, f"'{plan_name}' created.")
+
+        cache.delete(f"membership_plans_{gym.pk}")
+        return redirect('/membership-plans/')
+
+    plans = MembershipPlan.objects.filter(gym=gym).order_by('price')
+    return render(request, "membership_plans.html", {
+        "gym":   gym,
+        "plans": plans,
+    })
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Member views
@@ -942,8 +1091,7 @@ def payment_management(request):
     })
 
 
-@login_required
-@user_passes_test(is_staff)
+@_gym_staff_required
 @require_POST
 def update_payment(request):
     gym = getattr(request, 'gym', None)
@@ -1261,4 +1409,279 @@ def transfer_delete_enrollment(request, transfer_id):
         "status":      transfer.status,
         "action_by":   _action_label(request.user),
         "action_date": _format_action_date(transfer.action_date),
+    })
+
+
+@_gym_staff_required
+def attendance_analytics(request):
+    gym = getattr(request, 'gym', None)
+ 
+    cache_key = f"admin_attendance_data_{gym.pk if gym else 'super'}"
+    cached = cache.get(cache_key)
+ 
+    if cached is None:
+        from django.db.models import Count, Max
+        from django.db.models.functions import ExtractWeekDay, ExtractHour, TruncMonth
+        from collections import defaultdict
+ 
+        now    = timezone.now()
+        today  = timezone.localdate()
+        last_30 = now - timedelta(days=30)
+ 
+        qs        = Attendence_model.objects.all()
+        enroll_qs = Enrollment.objects.all()
+        if gym:
+            qs        = qs.filter(gym=gym)
+            enroll_qs = enroll_qs.filter(gym=gym)
+ 
+        # ── Today vs yesterday ────────────────────────────────────────────
+        today_count     = qs.filter(date=today).count()
+        yesterday_count = qs.filter(date=today - timedelta(days=1)).count()
+        today_delta     = today_count - yesterday_count
+ 
+        # ── Day-of-week traffic ───────────────────────────────────────────
+        ordered_dow = [2, 3, 4, 5, 6, 7, 1]
+        day_labels  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        dow = (
+            qs.filter(date__gte=last_30.date())
+            .annotate(dow=ExtractWeekDay('date'))
+            .values('dow')
+            .annotate(total=Count('id'))
+            .order_by('dow')
+        )
+        dow_lookup = {d['dow']: d['total'] for d in dow}
+        day_data   = [dow_lookup.get(d, 0) for d in ordered_dow]
+ 
+        # ── Hourly traffic ────────────────────────────────────────────────
+        hourly = (
+            qs.filter(date__gte=last_30.date())
+            .annotate(hr=ExtractHour('timestamp'))
+            .values('hr')
+            .annotate(total=Count('id'))
+            .order_by('hr')
+        )
+        hour_lookup = {h['hr']: h['total'] for h in hourly}
+        hour_range  = list(range(5, 12)) + list(range(16, 23))
+ 
+        def _fmt(h):
+            hh  = h if h <= 12 else h - 12
+            suf = 'am' if h < 12 else 'pm'
+            return f"{hh}{suf}" if h != 12 else '12p'
+ 
+        hour_labels   = [_fmt(h) for h in hour_range]
+        hour_data     = [hour_lookup.get(h, 0) for h in hour_range]
+ 
+        if hour_lookup:
+            peak_hr       = max(hour_lookup, key=hour_lookup.get)
+            next_hr       = peak_hr + 1
+            peak_hr_label = (
+                f"{peak_hr if peak_hr <= 12 else peak_hr - 12}"
+                f"{'am' if peak_hr < 12 else 'pm'}"
+                f" – "
+                f"{next_hr if next_hr <= 12 else next_hr - 12}"
+                f"{'am' if next_hr < 12 else 'pm'}"
+            )
+        else:
+            peak_hr_label = '—'
+ 
+        busiest_day = day_labels[day_data.index(max(day_data))] if any(day_data) else '—'
+ 
+        # ── Heatmap ───────────────────────────────────────────────────────
+        heatmap_raw = (
+            qs.filter(date__gte=last_30.date())
+            .annotate(dow=ExtractWeekDay('date'), hr=ExtractHour('timestamp'))
+            .values('dow', 'hr')
+            .annotate(total=Count('id'))
+        )
+        hm = defaultdict(lambda: defaultdict(int))
+        for row in heatmap_raw:
+            hm[row['dow']][row['hr']] = row['total']
+ 
+        hm_hour_range = list(range(5, 12)) + list(range(16, 23))
+        heatmap = {
+            label: [hm[db_dow].get(h, 0) for h in hm_hour_range]
+            for label, db_dow in zip(day_labels, ordered_dow)
+        }
+ 
+        # ── Monthly trend ─────────────────────────────────────────────────
+        six_months_ago = now - timedelta(days=180)
+        monthly = (
+            qs.filter(date__gte=six_months_ago.date())
+            .annotate(month=TruncMonth('date'))
+            .values('month')
+            .annotate(total=Count('id'))
+            .order_by('month')
+        )
+        month_labels = [m['month'].strftime("%b %Y") for m in monthly if m['month']]
+        month_data   = [m['total'] for m in monthly]
+ 
+        # ── At-risk members (no N+1) ──────────────────────────────────────
+        all_last_seen   = qs.values('user_id').annotate(last_date=Max('date'))
+        absent_rows     = [r for r in all_last_seen if (today - r['last_date']).days >= 5]
+        absent_user_ids = [r['user_id'] for r in absent_rows]
+        enrollment_map  = {
+            e.user_id: e
+            for e in enroll_qs.filter(user_id__in=absent_user_ids)
+        }
+ 
+        at_risk = []
+        for row in absent_rows:
+            enroll = enrollment_map.get(row['user_id'])
+            if not enroll:
+                continue
+            days_absent = (today - row['last_date']).days
+            status = (
+                'danger'  if days_absent >= 14 else
+                'warning' if days_absent >= 7  else
+                'notice'
+            )
+            at_risk.append({
+                'name':   enroll.fullname,
+                'uid':    enroll.unique_id,
+                'last':   row['last_date'].strftime("%b %d"),
+                'days':   days_absent,
+                'status': status,
+            })
+ 
+        at_risk.sort(key=lambda x: -x['days'])
+        at_risk = at_risk[:10]
+ 
+        # ── Retention ─────────────────────────────────────────────────────
+        total_enrolled    = enroll_qs.count()
+        active_this_month = (
+            qs.filter(date__year=today.year, date__month=today.month)
+            .values('user').distinct().count()
+        )
+        retention_pct = (
+            round(active_this_month / total_enrolled * 100, 1)
+            if total_enrolled else 0
+        )
+ 
+        cached = {
+            "today_count":       today_count,
+            "today_delta":       today_delta,
+            "peak_hr_label":     peak_hr_label,
+            "busiest_day":       busiest_day,
+            "at_risk_count":     len([m for m in at_risk if m['status'] == 'danger']),
+            "day_labels":        day_labels,
+            "day_data":          day_data,
+            "hour_labels":       hour_labels,
+            "hour_data":         hour_data,
+            "month_labels":      month_labels,
+            "month_data":        month_data,
+            "heatmap":           heatmap,
+            "at_risk":           at_risk,
+            "total_enrolled":    total_enrolled,
+            "active_this_month": active_this_month,
+            "retention_pct":     retention_pct,
+        }
+        cache.set(cache_key, cached, timeout=120)
+ 
+    return render(request, "attendance_analysis.html", {
+        "gym":               gym,
+        "today_count":       cached["today_count"],
+        "today_delta":       cached["today_delta"],
+        "peak_hr_label":     cached["peak_hr_label"],
+        "busiest_day":       cached["busiest_day"],
+        "at_risk_count":     cached["at_risk_count"],
+        "at_risk":           cached["at_risk"],
+        "total_enrolled":    cached["total_enrolled"],
+        "active_this_month": cached["active_this_month"],
+        "retention_pct":     cached["retention_pct"],
+        "day_labels":        json.dumps(cached["day_labels"]),
+        "day_data":          json.dumps(cached["day_data"]),
+        "hour_labels":       json.dumps(cached["hour_labels"]),
+        "hour_data":         json.dumps(cached["hour_data"]),
+        "month_labels":      json.dumps(cached["month_labels"]),
+        "month_data":        json.dumps(cached["month_data"]),
+        "heatmap_json":      json.dumps(cached["heatmap"]),
+    })
+ 
+
+@_gym_staff_required
+def revenue_view(request):
+    gym = getattr(request, 'gym', None)
+
+    cache_key = f"admin_revenue_{gym.pk if gym else 'super'}"
+    data = cache.get(cache_key)
+
+    if data is None:
+        qs = Enrollment.objects.all()
+        if gym:
+            qs = qs.filter(gym=gym)
+
+        monthly = (
+            qs.annotate(month=TruncMonth('created_at'))
+            .values('month')
+            .annotate(total=Sum('Amount'))
+            .order_by('month')
+        )
+        last_7_days = timezone.now() - timedelta(days=7)
+        daily = (
+            qs.filter(created_at__gte=last_7_days)
+            .annotate(day=TruncDay('created_at'))
+            .values('day')
+            .annotate(total=Sum('Amount'))
+            .order_by('day')
+        )
+        members = (
+            qs.annotate(month=TruncMonth('created_at'))
+            .values('month')
+            .annotate(count=Count('id'))
+            .order_by('month')
+        )
+        payments = (
+            qs.exclude(paymentStatus__isnull=True)
+            .values('paymentStatus')
+            .annotate(count=Count('id'))
+        )
+        pending_qs = qs.filter(pendingAmount__gt=0, paymentStatus="Pending")
+        pending_count = pending_qs.count()
+        pending_amount = pending_qs.aggregate(
+            total=Sum('pendingAmount'))['total'] or 0
+
+        plan_revenue = (
+            qs.values('selectPlan__plan')
+            .annotate(total=Sum('Amount'), count=Count('id'))
+            .order_by('-total')
+        )
+
+        data = {
+            "monthly_labels": [x['month'].strftime("%b %Y") for x in monthly if x['month']],
+            "monthly_data":   [float(x['total'] or 0) for x in monthly],
+            "daily_labels":   [x['day'].strftime("%d %b") for x in daily if x['day']],
+            "daily_data":     [float(x['total'] or 0) for x in daily],
+            "member_labels":  [x['month'].strftime("%b %Y") for x in members if x['month']],
+            "member_data":    [x['count'] for x in members],
+            "payment_labels": [x['paymentStatus'] for x in payments],
+            "payment_data":   [x['count'] for x in payments],
+            "plan_labels":    [x['selectPlan__plan'] or 'Unknown' for x in plan_revenue],
+            "plan_revenue":   [float(x['total'] or 0) for x in plan_revenue],
+            "plan_count":     [x['count'] for x in plan_revenue],
+            "total_revenue":  sum(float(x['total'] or 0) for x in monthly),
+            "today_revenue":  sum(float(x['total'] or 0) for x in daily),
+            "total_members":  qs.count(),
+            "pending_count":  pending_count,
+            "pending_amount": float(pending_amount),
+        }
+        cache.set(cache_key, data, timeout=60)
+
+    return render(request, "revenue.html", {
+        "gym": gym,
+        "monthly_labels": json.dumps(data["monthly_labels"]),
+        "monthly_data":   json.dumps(data["monthly_data"]),
+        "daily_labels":   json.dumps(data["daily_labels"]),
+        "daily_data":     json.dumps(data["daily_data"]),
+        "member_labels":  json.dumps(data["member_labels"]),
+        "member_data":    json.dumps(data["member_data"]),
+        "payment_labels": json.dumps(data["payment_labels"]),
+        "payment_data":   json.dumps(data["payment_data"]),
+        "plan_labels":    json.dumps(data["plan_labels"]),
+        "plan_revenue":   json.dumps(data["plan_revenue"]),
+        "plan_count":     json.dumps(data["plan_count"]),
+        "total_revenue":  data["total_revenue"],
+        "today_revenue":  data["today_revenue"],
+        "total_members":  data["total_members"],
+        "pending_count":  data["pending_count"],
+        "pending_amount": data["pending_amount"],
     })

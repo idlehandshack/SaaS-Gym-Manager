@@ -41,6 +41,11 @@ html {
   scroll-behavior: smooth;
 }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   font-family: var(--sans);
   background: var(--bg);
@@ -48,7 +53,6 @@ body {
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
 }
 
 a {
@@ -57,6 +61,10 @@ a {
 }
 ul {
   list-style: none;
+}
+
+img, svg {
+  max-width: 100%;
 }
 
 /* ── Shared buttons ────────────────────────────────────────────── */
@@ -103,6 +111,7 @@ ul {
 .btn-ghost {
   background: transparent;
   color: var(--text-lo);
+  font: inherit;
 }
 .btn-ghost:hover {
   color: var(--text-hi);
@@ -139,11 +148,12 @@ ul {
   left: 0;
   right: 0;
   z-index: 100;
-  height: var(--nav-h);
+  min-height: var(--nav-h);
   display: flex;
   align-items: center;
-  padding: 0 40px;
-  gap: 32px;
+  flex-wrap: wrap;
+  padding: 10px 40px;
+  gap: 16px 32px;
   transition:
     background 0.25s ease,
     border-color 0.25s ease;
@@ -163,6 +173,7 @@ ul {
 .brand-mark {
   width: 28px;
   height: 28px;
+  flex-shrink: 0;
 }
 .brand-name {
   font-family: var(--display);
@@ -191,6 +202,10 @@ ul {
   align-items: center;
   gap: 8px;
   margin-left: 24px;
+  flex-shrink: 0;
+}
+.nav-actions form {
+  display: inline-flex;
 }
 
 /* ── TICKER ────────────────────────────────────────────────────── */
@@ -321,8 +336,8 @@ ul {
 .hero-heading {
   font-family: var(--display);
   font-weight: 800;
-  font-size: clamp(2.6rem, 5vw, 4rem);
-  line-height: 1.05;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1.08;
   letter-spacing: -0.03em;
   color: var(--text-hi);
   margin-bottom: 22px;
@@ -344,11 +359,15 @@ ul {
   gap: 12px;
   margin-bottom: 48px;
 }
+.hero-cta a {
+  flex: 0 1 auto;
+}
 
 /* Proof strip */
 .hero-proof {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0;
 }
 .proof-item {
@@ -380,11 +399,16 @@ ul {
 }
 
 /* ── Terminal card ─────────────────────────────────────────────── */
+.hero-right {
+  width: 100%;
+  min-width: 0;
+}
 .terminal-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  width: 100%;
   box-shadow:
     0 32px 80px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(91, 95, 255, 0.08);
@@ -425,6 +449,9 @@ ul {
   flex: 1;
   text-align: center;
   margin-left: -24px; /* optical center */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .terminal-badge {
   font-family: var(--mono);
@@ -432,6 +459,7 @@ ul {
   color: var(--green);
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 .pulse-badge {
   animation: badge-pulse 2s ease-in-out infinite;
@@ -480,6 +508,7 @@ ul {
   color: var(--text-faint);
   min-width: 38px;
   font-size: 0.68rem;
+  flex-shrink: 0;
 }
 .feed-tag {
   font-size: 0.62rem;
@@ -490,6 +519,7 @@ ul {
   min-width: 72px;
   text-align: center;
   font-weight: 500;
+  flex-shrink: 0;
 }
 .feed-tag.checkin {
   background: rgba(16, 185, 129, 0.15);
@@ -511,6 +541,10 @@ ul {
 .feed-msg {
   color: var(--text-mid);
   font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .terminal-footer {
@@ -526,6 +560,7 @@ ul {
   gap: 1px;
   flex: 1;
   text-align: center;
+  min-width: 0;
 }
 .tfooter-val {
   font-family: var(--mono);
@@ -544,6 +579,7 @@ ul {
   width: 1px;
   height: 28px;
   background: var(--border);
+  flex-shrink: 0;
 }
 
 /* ── FEATURES ──────────────────────────────────────────────────── */
@@ -636,6 +672,7 @@ ul {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
 }
 
 .fv-card {
@@ -688,6 +725,9 @@ ul {
   font-size: 0.875rem;
   color: var(--text-hi);
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .member-info span {
   display: block;
@@ -695,6 +735,9 @@ ul {
   font-size: 0.65rem;
   color: var(--text-lo);
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-pill {
@@ -729,6 +772,7 @@ ul {
 .fv-stat {
   flex: 1;
   text-align: center;
+  min-width: 0;
 }
 .fv-stat span {
   display: block;
@@ -948,6 +992,7 @@ ul {
   padding: 48px 40px;
   border-right: 1px solid var(--border);
   transition: background 0.2s ease;
+  min-width: 0;
 }
 .feat-mini:last-child {
   border-right: none;
@@ -1008,6 +1053,7 @@ ul {
   border-radius: var(--radius);
   padding: 32px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  min-width: 0;
 }
 .cc-label {
   font-family: var(--mono);
@@ -1033,6 +1079,7 @@ ul {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
@@ -1045,10 +1092,12 @@ ul {
   letter-spacing: 0.06em;
   color: var(--text-lo);
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 .cc-val {
   font-size: 0.875rem;
   color: var(--text-mid);
+  text-align: right;
 }
 .cc-val:hover {
   color: var(--text-hi);
@@ -1073,7 +1122,7 @@ ul {
 
 .gyms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
   margin-top: 40px;
 }
@@ -1085,6 +1134,7 @@ ul {
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
+  min-width: 0;
 }
 .gym-card:hover {
   transform: translateY(-3px);
@@ -1098,6 +1148,7 @@ ul {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 10px;
   margin-bottom: 16px;
 }
 .gc-name {
@@ -1105,6 +1156,8 @@ ul {
   font-weight: 700;
   font-size: 1rem;
   color: var(--text-hi);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .gc-code {
   font-family: var(--mono);
@@ -1114,6 +1167,7 @@ ul {
   background: rgba(255, 255, 255, 0.05);
   padding: 2px 7px;
   border-radius: 4px;
+  flex-shrink: 0;
 }
 .gc-mid {
   display: flex;
@@ -1149,6 +1203,7 @@ ul {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+  flex-wrap: wrap;
 }
 .footer-brand {
   display: flex;
@@ -1208,14 +1263,39 @@ ul {
   }
 }
 
-/* ── Responsive ────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — laptop / tablet / phone breakpoints
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Laptop / small desktop (≤1100px): tighten side padding ──── */
+@media (max-width: 1100px) {
+  .hero-section,
+  .features-section,
+  .contact-section,
+  .gyms-section {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+  .site-nav {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+}
+
+/* ── Tablet (≤960px): stack hero/feat/contact columns ─────────── */
 @media (max-width: 960px) {
+  .hero-section {
+    min-height: auto;
+    padding-top: 56px;
+    padding-bottom: 56px;
+  }
   .hero-inner {
     grid-template-columns: 1fr;
     gap: 48px;
   }
   .hero-right {
-    max-width: 500px;
+    max-width: 560px;
+    margin: 0 auto;
   }
   .feat-row {
     grid-template-columns: 1fr;
@@ -1224,9 +1304,19 @@ ul {
   .feat-row--flip {
     direction: ltr;
   }
+  .feat-visual {
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
   .contact-inner {
     grid-template-columns: 1fr;
     gap: 48px;
+  }
+  .contact-right {
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
   }
   .feat-mini-row {
     grid-template-columns: 1fr;
@@ -1239,38 +1329,179 @@ ul {
   .feat-mini:last-child {
     border-bottom: none;
   }
+  .features-header {
+    margin-bottom: 56px;
+  }
 }
 
-@media (max-width: 640px) {
-  .site-nav {
-    padding: 0 20px;
-  }
+/* ── Nav collapses earlier (≤780px): hide center links, keep actions usable ── */
+@media (max-width: 780px) {
   .nav-links {
     display: none;
   }
+  .nav-actions {
+    margin-left: auto;
+  }
+}
+
+/* ── Large phone / small tablet (≤640px) ──────────────────────── */
+@media (max-width: 640px) {
+  .site-nav {
+    padding: 10px 16px;
+    gap: 10px 16px;
+  }
+  .brand-name {
+    font-size: 0.95rem;
+  }
+  .nav-actions {
+    gap: 6px;
+  }
+  .nav-actions .btn-ghost,
+  .nav-actions .btn-solid {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .ticker-rail {
+    height: 32px;
+  }
+  .tick-item {
+    font-size: 0.65rem;
+    padding: 0 22px;
+  }
+
   .hero-section,
   .features-section,
   .contact-section,
-  .gyms-section {
-    padding-left: 20px;
-    padding-right: 20px;
+  .gyms-section,
+  .site-footer {
+    padding-left: 16px;
+    padding-right: 16px;
   }
+
+  .hero-eyebrow {
+    margin-bottom: 14px;
+  }
+  .hero-heading {
+    font-size: clamp(1.9rem, 8vw, 2.6rem);
+    margin-bottom: 16px;
+  }
+  .hero-body {
+    font-size: 0.95rem;
+    margin-bottom: 28px;
+  }
+  .hero-cta {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 36px;
+  }
+  .hero-cta a {
+    justify-content: center;
+    width: 100%;
+  }
+
   .hero-proof {
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 16px 0;
+  }
+  .proof-item {
+    padding-right: 18px;
+    min-width: 30%;
+  }
+  .proof-num {
+    font-size: 1.4rem;
   }
   .proof-divider {
     display: none;
   }
+
+  .terminal-title {
+    margin-left: 0;
+    font-size: 0.62rem;
+  }
+  .terminal-header {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+  .terminal-body {
+    min-height: 0;
+  }
+  .feed-tag {
+    min-width: 58px;
+    font-size: 0.58rem;
+  }
+  .feed-msg {
+    font-size: 0.7rem;
+  }
+  .terminal-footer {
+    flex-wrap: wrap;
+    gap: 10px 0;
+  }
+  .tfooter-divider {
+    display: none;
+  }
+
+  .features-header h2 {
+    font-size: clamp(1.7rem, 7vw, 2.2rem);
+  }
+  .features-header {
+    margin-bottom: 40px;
+  }
+  .feat-row {
+    gap: 28px;
+    padding: 40px 0;
+  }
+  .feat-text h3 {
+    font-size: 1.35rem;
+  }
+  .feat-mini {
+    padding: 30px 18px;
+  }
+
+  .map-bg {
+    height: 130px;
+  }
+
+  .contact-left h2 {
+    font-size: clamp(1.6rem, 7vw, 2rem);
+  }
+  .contact-card {
+    padding: 24px;
+  }
+  .cc-row {
+    flex-wrap: wrap;
+  }
+
+  .gyms-grid {
+    grid-template-columns: 1fr;
+  }
+
   .footer-inner {
     flex-direction: column;
     text-align: center;
+    gap: 14px;
   }
-  .feat-row {
-    gap: 32px;
-    padding: 48px 0;
+}
+
+/* ── Small phones (≤400px) ─────────────────────────────────────── */
+@media (max-width: 400px) {
+  .nav-actions .btn-ghost,
+  .nav-actions .btn-solid {
+    padding: 7px 10px;
+    font-size: 0.74rem;
   }
-  .features-header {
-    margin-bottom: 48px;
+  .hero-heading {
+    font-size: 1.7rem;
+  }
+  .proof-item {
+    min-width: 45%;
+  }
+  .terminal-card {
+    border-radius: 10px;
+  }
+  .feed-tag {
+    min-width: 0;
+    padding: 2px 5px;
   }
 }

@@ -18,7 +18,9 @@ from django.http import Http404
 from django.db.models import Manager, QuerySet
 from rest_framework.exceptions import NotFound
 from rest_framework.exceptions import PermissionDenied as DrfDenied
-
+import functools
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 # ──────────────────────────────────────────────────────────────────────────────
 # Manager / QuerySet helpers
 # ──────────────────────────────────────────────────────────────────────────────
@@ -131,3 +133,13 @@ class GymScopedMixin:
                
                 raise NotFound
         return obj
+    
+
+def gym_staff_required(view_fn):
+    @login_required
+    @functools.wraps(view_fn)
+    def wrapped(request, *args, **kwargs):
+        if not (request.is_super_admin or request.staff_role in ('gym_owner', 'trainer', 'receptionist')):
+           return HttpResponseForbidden("Staff access required.")
+        return view_fn(request, *args, **kwargs)
+    return wrapped

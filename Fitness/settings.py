@@ -102,6 +102,7 @@ TEMPLATES = [
                 'AuthFit.context_processors.gym_config',
                 'AuthFit.context_processors.saas_config',
                 'notifications.context_processors.vapid_key',
+                "Gym.context_processors.gym_branding",
             ],
         },
     }
@@ -119,9 +120,21 @@ cloudinary.config(
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 STATICFILES_STORAGE  = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-DATABASES = {
-    'default': dj_database_url.parse(os.environ['DATABASE_URL'])
-}
+if DEBUG:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+else:
+    DATABASES = {
+        "default": dj_database_url.parse(os.environ["DATABASE_URL"])
+    }
+
+# DATABASES = {
+#     'default': dj_database_url.parse(os.environ['DATABASE_URL'])
+# }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -142,17 +155,27 @@ WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365  # 1 year — safe because WhiteNoise us
 
 REDIS_URL = os.environ['REDIS_URL']
 
-CACHES = {
-    "default": {
-        "BACKEND":  "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            **({"CONNECTION_POOL_KWARGS": {"ssl_cert_reqs": None}}
-               if REDIS_URL.startswith('rediss://') else {})
+if DEBUG:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                **(
+                    {"CONNECTION_POOL_KWARGS": {"ssl_cert_reqs": None}}
+                    if REDIS_URL.startswith("rediss://")
+                    else {}
+                ),
+            },
+        }
+    }
 
 VAPID_PUBLIC_KEY  = os.environ.get("VAPID_PUBLIC_KEY")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY")
@@ -165,7 +188,10 @@ LOGOUT_REDIRECT_URL = '/'
 # ── Session & Cookie Security ─────────────────────────────────────────────
 # cached_db: reads from Redis (fast), falls back to DB if Redis is down.
 # Pure cache backend loses all sessions on Redis restart — bad for a SaaS.
-SESSION_ENGINE      = 'django.contrib.sessions.backends.cached_db'
+if DEBUG:
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+else:
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SESSION_CACHE_ALIAS = 'default'
 SESSION_COOKIE_AGE      = 86400   # 24 hours
 SESSION_COOKIE_HTTPONLY = True
@@ -220,7 +246,6 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD            = True
     SECURE_SSL_REDIRECT            = True
     SECURE_PROXY_SSL_HEADER        = ('HTTP_X_FORWARDED_PROTO', 'https')
-
 
 JAZZMIN_SETTINGS = {
     "site_title":   "EnterGYM Admin",

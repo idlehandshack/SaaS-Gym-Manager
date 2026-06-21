@@ -1,71 +1,155 @@
-{% extends "base.html" %} {% load static %} {% block title %}Login{% endblock%}
-{% block heading %}Login{% endblock %}
-{% block link %}
-<link rel="stylesheet" href="{% static "css/login.css" %}">
-{% endblock %}
-{% block message %}
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login{% if gym %} — {{ gym.name }}{% endif %}</title>
+<link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body>
+
 <div id="message-container">
-      {% for message in messages %}
-      <div
-        class="flash-message {% if message.tags == 'success' %} success {% elif message.tags == 'error' %} error {% else %} default {% endif %}"
-      >
-        <span>{{ message }}</span>
+  {% for message in messages %}
+  <div class="flash-message {% if message.tags == 'success' %} success {% elif message.tags == 'error' %} error {% else %} default {% endif %}">
+    <span>{{ message }}</span>
+    <button class="close-btn">×</button>
+  </div>
+  {% endfor %}
+</div>
 
-        <button class="close-btn">×</button>
+<div class="auth-shell">
+
+  <!-- ══ LEFT: VISUAL PANEL ══ -->
+  <aside class="auth-visual">
+    <picture>
+          {% if gym %}
+          <source
+          media="(max-width:768px)"
+          srcset="{% static 'images/authimage_mobile.webp' %}">
+          
+          <img
+          src="{% static 'images/authimage_desktop.webp' %}"
+          class="auth-visual-bg"
+          width="1920"
+          height="1080"
+          loading="eager"
+          fetchpriority="high"
+          alt="{{ gym.gym_name }} Gym and Fitness Center in {{ gym.city }}">
+          {% endif %}
+    </picture>
+    <div class="auth-visual-overlay"></div>
+
+    <div class="auth-visual-content">
+      <div class="auth-brand">
+        {% if gym and gym.logo %}
+          <img src="{{ gym.logo.url }}" alt="{{ gym.name }}">
+        {% else %}
+          <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM">
+        {% endif %}
+        <span class="auth-brand-name">{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</span>
       </div>
-      {% endfor %}
-</div>
-{% endblock %}
-{% block content %}
-<div class="hero-container hero-animate">
-  <form method="POST" action="/login/" class="glass-form">
-    {% csrf_token %}
-    <input type="hidden" name="next" value="{{ request.GET.next }}">
-
-    <!-- Phone Number -->
-    <div class="form-group">
-      <label>Phone Number</label>
-      <input 
-        type="tel" 
-        name="username" 
-        class="text"
-        value="{{ form.username.value|default:'' }}"
-        required
-        pattern="[0-9]{10}"
-        maxlength="10"
-        minlength="10"
-      />
-      {% if form.username.errors %}
-        <small class="error">{{ form.username.errors.0 }}</small>
-      {% endif %}
     </div>
 
-    <!-- Password -->
-    <div class="form-group">
-      <label>Password</label>
-      <input 
-        type="password" 
-        name="password" 
-        class="text" 
-        required 
-      />
+    <div class="auth-hero-copy">
+      <div class="auth-eyebrow"><i>●</i> Member Access</div>
+      <h1>Welcome <span class="accent">Back</span></h1>
+      <p>Pick up where you left off — track attendance, manage your plan, and keep moving toward your goals.</p>
     </div>
+  </aside>
 
-    <p class="forget-text">
-      For password reset, please contact the
-      <a href="/contact/"> administrator.</a>
-    </p>
+  <!-- ══ RIGHT: FORM PANEL ══ -->
+  <main class="auth-form-col">
+    <div class="glow-blob b1"></div>
+    <div class="glow-blob b2"></div>
 
-    <button type="submit" class="submit-btn" id="signup-btn">LogIn</button>
+    <div class="auth-card">
 
-    <p class="bottom-text">
-      Don't Have an account?
-      <a href="/signup/">SignUp</a>
-    </p>
-  </form>
+      <div class="auth-mobile-brand">
+        {% if gym and gym.logo %}
+          <img src="{{ gym.logo.url }}" alt="{{ gym.name }}">
+        {% else %}
+          <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM">
+        {% endif %}
+        <span>{% if gym %}{{ gym.name }}{% else %}EnterGYM{% endif %}</span>
+      </div>
+
+      <div class="auth-card-head">
+        <div class="auth-card-eyebrow">Sign In</div>
+        <h2>Login</h2>
+        <p>Enter your phone number and password to continue.</p>
+      </div>
+
+      <form method="POST" action="/login/" class="glass-form" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+        <!-- Phone Number -->
+        <div class="form-group">
+          <label for="login-username">Phone Number</label>
+          <div class="input-wrap">
+            <input
+              type="tel"
+              id="login-username"
+              name="username"
+              class="text"
+              placeholder="10-digit mobile number"
+              value="{{ form.username.value|default:'' }}"
+              required
+              pattern="[0-9]{10}"
+              maxlength="10"
+              minlength="10"
+              autocomplete="tel"
+              inputmode="numeric"
+            />
+          </div>
+          {% if form.username.errors %}
+            <small class="error">{{ form.username.errors.0 }}</small>
+          {% endif %}
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <div class="input-wrap">
+            <input
+              type="password"
+              id="login-password"
+              name="password"
+              class="text"
+              placeholder="Your password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+        </div>
+
+        <p class="forget-text">
+          For password reset, please contact the
+          <a href="/contact/">administrator</a>.
+        </p>
+
+        <button type="submit" class="submit-btn" id="signup-btn">Log In</button>
+
+        <p class="bottom-text">
+          Don't have an account?
+          <a href="/signup/">Sign Up</a>
+        </p>
+      </form>
+    </div>
+  </main>
+
 </div>
+
 <script src="{% static 'js/messages.js' %}"></script>
-<script nonce="{{ request.csp_nonce }}" >
+<script src="{% static 'js/auth.js' %}"></script>
+<script nonce="{{ request.csp_nonce }}">
   document.querySelector('.glass-form').addEventListener('submit', function () {
     const btn = document.getElementById('signup-btn');
     btn.disabled = true;
@@ -74,4 +158,5 @@
     btn.style.cursor = 'not-allowed';
   });
 </script>
-{% endblock %}
+</body>
+</html>

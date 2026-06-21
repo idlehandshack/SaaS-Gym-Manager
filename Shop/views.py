@@ -11,10 +11,10 @@ from django.db.models import Count, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-from django.contrib.admin.views.decorators import staff_member_required
 from cloudinary.utils import cloudinary_url
 
 from AuthFit.models import Enrollment
+from Gym.mixins import gym_staff_required
 from .models import Order, Product, ProductFlavor
 
 logger = logging.getLogger(__name__)
@@ -351,7 +351,8 @@ def my_orders(request):
 # Staff order dashboard
 # ──────────────────────────────────────────────────────────────────────────────
 
-@staff_member_required
+
+@gym_staff_required
 def order_dashboard(request):
 
     gym           = getattr(request, 'gym', None)
@@ -412,7 +413,7 @@ def order_dashboard(request):
 # Order status update (staff AJAX/POST)
 # ──────────────────────────────────────────────────────────────────────────────
 
-@staff_member_required
+@gym_staff_required
 @require_POST
 def order_update(request, order_id):
     gym    = getattr(request, 'gym', None)

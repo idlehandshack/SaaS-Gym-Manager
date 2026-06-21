@@ -26,14 +26,16 @@ class GymMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
-
+        
     def __call__(self, request):
         request.gym            = None
         request.staff_role     = None
         request.is_super_admin = False
+        request.is_gym_staff   = False  # ← ADD
 
         if request.user.is_authenticated and request.user.is_superuser:
             request.is_super_admin = True
+            request.is_gym_staff   = True  # ← ADD
             return self.get_response(request)
 
         gym = self._resolve_gym(request)
@@ -46,6 +48,11 @@ class GymMiddleware:
                     raise PermissionDenied("Your gym subscription has expired.")
 
             self._resolve_role(request, gym)
+
+            # ← ADD — _resolve_role ke baad
+            request.is_gym_staff = request.staff_role in (
+                'gym_owner', 'trainer', 'receptionist'
+            )
 
         return self.get_response(request)
 

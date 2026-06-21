@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up — EnterGYM</title>
+<link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: radial-gradient(circle at 20% 20%, #1a1a2e 0%, #0d0d17 50%, #0a0a12 100%);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== NAV ===== */
+  .nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 20px 40px;
+  }
+  .nav .logo {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+  }
+  .nav .logo span { color:#5b5fff; }
+  .nav a.back-link {
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    text-decoration: none;
+    transition: color .2s;
+  }
+  .nav a.back-link:hover { color:#fff; }
+
+  /* ===== MESSAGES ===== */
+  #message-container {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 9999; width:100%; max-width:420px; padding:0 16px;
+  }
+  .flash-message {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 20px; margin-bottom:12px; border-radius:12px;
+    font-size:14px; font-weight:500; color:#fff;
+    box-shadow:0 10px 25px rgba(0,0,0,.3); backdrop-filter:blur(10px);
+  }
+  .flash-message.success { background:linear-gradient(to right,#22c55e,#059669); }
+  .flash-message.error { background:linear-gradient(to right,#ef4444,#b91c1c); }
+  .flash-message.default { background:#1f2937; }
+  .close-btn { margin-left:10px; font-size:18px; font-weight:bold; border:none; background:none; color:#fff; cursor:pointer; }
+
+  /* ===== MAIN LAYOUT ===== */
+  .container {
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+    gap: 60px;
+    flex-wrap: wrap;
+  }
+
+  /* ===== MARKETING SIDE ===== */
+  .pitch {
+    max-width: 420px;
+    animation: fadeUp .6s ease-out forwards;
+  }
+  .pitch .badge {
+    display:inline-block;
+    background: rgba(73, 9, 249, 0.12);
+    color:#0006F2;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    padding:6px 14px;
+    border-radius:999px;
+    border:1px solid rgba(54, 4, 254, 0.3);
+    margin-bottom:18px;
+    text-transform:uppercase;
+  }
+  .pitch h1 {
+    font-size: 36px;
+    line-height: 1.25;
+    font-weight: 800;
+    margin-bottom: 16px;
+  }
+  .pitch h1 span { color:#5b5fff; }
+  .pitch p {
+    color: rgba(255,255,255,0.65);
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+  .pitch ul { list-style:none; }
+  .pitch li {
+    display:flex; align-items:center; gap:10px;
+    font-size:14px; color:rgba(255,255,255,0.8);
+    margin-bottom:12px;
+  }
+  .pitch li .tick {
+    width:20px; height:20px; flex-shrink:0;
+    border-radius:50%;
+    background:rgba(0, 13, 250, 0.15);
+    color:#5b5fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700;
+  }
+
+  /* ===== FORM CARD ===== */
+  .card {
+    width: 100%;
+    max-width: 400px;
+    padding: 36px 32px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(10, 99, 243, 0.2);
+    border-radius: 18px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.5), 0 0 40px rgba(10, 13, 171, 0.12);
+    animation: fadeUp .6s ease-out .1s forwards;
+    opacity:0;
+  }
+  .card h2 { font-size: 24px; font-weight:800; margin-bottom:6px; }
+  .card .sub { color:rgba(255,255,255,0.55); font-size:13px; margin-bottom:26px; }
+
+  .form-group { margin-bottom: 18px; }
+  .form-group label {
+    display:block; font-size:13px; font-weight:600;
+    color:rgba(255,255,255,0.75); margin-bottom:7px;
+  }
+  .form-group input {
+    width:100%; padding:12px 14px; font-size:15px; font-weight:500;
+    border-radius:10px; border:1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.35); color:#fff; outline:none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .form-group input:focus {
+    border-color:#5b5fff;
+    box-shadow: 0 0 0 3px rgba(46, 9, 194, 0.15);
+  }
+  .password-hint {
+    display:block; margin-top:6px; font-size:11.5px;
+    color:rgba(255,255,255,0.45); line-height:1.5;
+  }
+  .password-hint strong { color:#5b5fff; font-weight:700; }
+  small.error {
+    display:block; color:#5b5fff; font-size:12px; margin-top:6px; font-weight:500;
+  }
+
+  .submit-btn {
+    width:100%; padding:13px; font-size:15px; font-weight:700;
+    border:none; border-radius:999px; background:#5b5fff; color:#0d0d17;
+    cursor:pointer; transition:.25s;
+    box-shadow:0 0 25px rgba(52, 4, 241, 0.4);
+    margin-top: 6px;
+  }
+  .submit-btn:hover { background:#1D1296; transform: translateY(-1px); }
+  .submit-btn:disabled { background:#1468C4; cursor:not-allowed; opacity:.6; box-shadow:none; transform:none; }
+
+  .login-text {
+    text-align:center; font-size:13.5px; margin-top:22px;
+    color:rgba(255,255,255,0.55);
+  }
+  .login-text a { color:#5b5fff; font-weight:600; text-decoration:none; }
+  .login-text a:hover { text-decoration:underline; }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(24px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+
+  @media (max-width: 900px) {
+    .pitch { text-align:center; }
+    .pitch ul { display:inline-block; text-align:left; }
+  }
+  @media (max-width: 500px) {
+    .nav { padding:16px 20px; }
+    .card { padding:28px 22px; }
+    .pitch h1 { font-size:28px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="logo">Enter<span>GYM</span></div>
+  <a class="back-link" href="/">← Back to home</a>
+</nav>
+
+<div id="message-container">
+  {% for message in messages %}
+  <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}">
+    <span>{{ message }}</span>
+    <button class="close-btn">×</button>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="container">
+
+  <div class="pitch">
+    <span class="badge">For Gym Owners</span>
+    <h1>Run your gym smarter with <span>EnterGYM</span></h1>
+    <p>Join thousands of gym owners who manage memberships, payments, attendance, and growth — all from one powerful platform.</p>
+  </div>
+
+  <div class="card">
+    <h2>Create your account</h2>
+    <p class="sub">Start managing your gym in minutes.</p>
+
+    <form method="POST" action="" class="signup-form">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input
+          type="tel"
+          name="username"
+          value="{{ form.username.value|default:'' }}"
+          required
+          pattern="[0-9]{10}"
+          maxlength="10"
+          minlength="10"
+        />
+        {% if form.username.errors %}<small class="error">{{ form.username.errors.0 }}</small>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password1" required />
+        <small class="password-hint">Must be <strong>8 characters</strong> long · letters &amp; numbers only</small>
+        {% if form.password1.errors %}<small class="error">{{ form.password1.errors.0 }}</small>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" name="password2" required />
+        {% if form.password2.errors %}<small class="error">{{ form.password2.errors.0 }}</small>{% endif %}
+      </div>
+
+      <button type="submit" class="submit-btn" id="signup-btn">Create Account</button>
+
+      <p class="login-text">Already have an account? <a href="{% url 'login' %}">Login</a></p>
+    </form>
+  </div>
+
+</div>
+
+{% load static %}
+<script src="{% static 'js/messages.js' %}"></script>
+<script nonce="{{ request.csp_nonce }}">
+  document.querySelector('.signup-form').addEventListener('submit', function () {
+    const btn = document.getElementById('signup-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating Account...';
+  });
+</script>
+</body>
+</html>

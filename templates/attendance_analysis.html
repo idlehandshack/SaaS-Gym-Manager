@@ -1,0 +1,784 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance Analytics — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── DESIGN TOKENS — identical to today_attendance.html ── */
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #181818;
+      --surface-3:   #1e1e1e;
+      --border:      rgba(255,255,255,.06);
+      --border-2:    rgba(255,255,255,.11);
+      --orange:      #ff5a00;
+      --orange-dim:  rgba(255,90,0,.10);
+      --orange-bdr:  rgba(255,90,0,.28);
+      --green:       #5de87c;
+      --green-dim:   rgba(93,232,124,.10);
+      --green-bdr:   rgba(93,232,124,.28);
+      --red:         #ef5350;
+      --red-dim:     rgba(239,83,80,.10);
+      --red-bdr:     rgba(239,83,80,.28);
+      --blue:        #60a5fa;
+      --blue-dim:    rgba(96,165,250,.10);
+      --blue-bdr:    rgba(96,165,250,.28);
+      --amber:       #f59e0b;
+      --amber-dim:   rgba(245,158,11,.10);
+      --amber-bdr:   rgba(245,158,11,.28);
+      --purple:      #a855f7;
+      --purple-dim:  rgba(168,85,247,.10);
+      --purple-bdr:  rgba(168,85,247,.28);
+      --text-hi:     #f5f5f5;
+      --text-mid:    #888;
+      --text-lo:     #444;
+      --font-d:      "Barlow Condensed", sans-serif;
+      --font-b:      "Barlow", sans-serif;
+      --ease:        cubic-bezier(.4,0,.2,1);
+      --t:           .22s;
+      --radius-lg:   18px;
+      --radius-md:   12px;
+      --radius-sm:   8px;
+      --radius-pill: 40px;
+      --nav-h:       60px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ── STICKY NAV — same as today_attendance.html ── */
+    .store-nav {
+      position: sticky; top: 0; z-index: 200;
+      height: var(--nav-h);
+      background: rgba(8,8,8,.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .nav-inner {
+      width: 100%; padding: 0 clamp(16px,4vw,40px);
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .nav-brand {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.1rem,3vw,1.5rem);
+      text-transform: uppercase; text-decoration: none;
+      color: var(--text-hi); letter-spacing: -.01em;
+      white-space: nowrap; display: flex; align-items: center; gap: 8px;
+      transition: color var(--t);
+    }
+    .nav-brand .acc { color: var(--orange); }
+    .back-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; flex-shrink: 0;
+      transition: background var(--t);
+    }
+    .nav-brand:hover .back-icon { background: var(--orange-dim); }
+    .nav-brand:hover { color: var(--text-hi); }
+
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-badge {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      background: var(--orange-dim); color: var(--orange);
+      border: 1px solid var(--orange-bdr);
+      padding: 5px 14px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+    .live-dot {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--orange); white-space: nowrap;
+    }
+    .live-dot::before {
+      content: ''; width: 7px; height: 7px;
+      background: var(--orange); border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(255,90,0,.4); }
+      50%      { opacity:.7; transform:scale(1.25); box-shadow:0 0 0 5px rgba(255,90,0,0); }
+    }
+
+    /* ── PAGE HEADER — same as today_attendance.html ── */
+    .page-header {
+      position: relative;
+      padding: clamp(40px,7vw,72px) 0 clamp(28px,5vw,48px);
+      text-align: center; overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: clamp(24px,4vw,40px);
+    }
+    .page-header::before {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .header-inner { position: relative; z-index: 1; padding: 0 clamp(16px,4vw,40px); }
+    .header-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
+      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 10px;
+      padding: 5px 14px;
+      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
+      background: var(--orange-dim);
+    }
+    .page-header h1 {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(2rem,7vw,3.8rem); line-height: .92;
+      letter-spacing: -.01em; text-transform: uppercase;
+      margin-bottom: 8px; color: var(--text-hi);
+    }
+    .page-header h1 .accent { color: var(--orange); }
+    .header-sub {
+      font-family: var(--font-d); font-size: clamp(.85rem,2.2vw,.98rem);
+      font-weight: 700; letter-spacing: .08em; color: var(--text-mid);
+    }
+    .header-clock {
+      font-family: var(--font-d); font-size: clamp(.75rem,2vw,.85rem);
+      font-weight: 700; letter-spacing: .06em; color: var(--green);
+      margin-top: 6px;
+    }
+
+    /* ── MAIN CONTAINER ── */
+    .analytics-page {
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
+    }
+
+    /* ── SECTION LABEL — same as today_attendance.html ── */
+    .section-label {
+      display: flex; align-items: center; gap: 10px;
+      margin: clamp(20px,4vw,32px) 0 clamp(10px,2vw,16px);
+    }
+    .section-label span {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .2em; text-transform: uppercase;
+      color: var(--text-lo); white-space: nowrap;
+    }
+    .section-label::after {
+      content: ""; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── KPI STRIP ── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: clamp(8px,2vw,12px);
+      margin-bottom: clamp(16px,3vw,24px);
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--kpi-color, var(--orange));
+      border-radius: var(--radius-md);
+      padding: clamp(14px,3vw,20px) clamp(12px,2.5vw,18px);
+      position: relative; overflow: hidden;
+      transition: border-color var(--t), background var(--t), transform var(--t);
+      animation: fadeUp .35s var(--ease) both;
+    }
+    .kpi-card::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at top left, var(--kpi-tint, rgba(255,90,0,.05)) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .kpi-card:hover { background: var(--surface-2); transform: translateY(-3px); }
+    .kpi-label {
+      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+      letter-spacing: .2em; text-transform: uppercase;
+      color: var(--text-lo); margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.6rem,5vw,2.4rem); line-height: 1;
+      color: var(--kpi-color, var(--orange)); margin-bottom: 6px;
+    }
+    .kpi-sub {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 600;
+      color: var(--text-mid); letter-spacing: .04em;
+    }
+    .kpi-icon {
+      position: absolute; right: 12px; bottom: 10px;
+      font-size: 2rem; opacity: .06; line-height: 1;
+      transition: opacity var(--t);
+    }
+    .kpi-card:hover .kpi-icon { opacity: .12; }
+
+    /* delta badge */
+    .delta {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+      padding: 2px 8px; border-radius: var(--radius-pill);
+      letter-spacing: .08em;
+    }
+    .delta-up   { background: var(--green-dim); color: var(--green); border: 1px solid var(--green-bdr); }
+    .delta-down { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-bdr); }
+    .delta-neu  { background: var(--border); color: var(--text-mid); }
+
+    /* ── ALERT BANNER ── */
+    .alert-banner {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--red-dim); border: 1px solid var(--red-bdr);
+      border-radius: var(--radius-md); padding: 14px 18px;
+      margin-bottom: clamp(16px,3vw,24px);
+      animation: fadeUp .35s var(--ease) both;
+    }
+    .alert-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .alert-text {
+      font-family: var(--font-d); font-size: clamp(.85rem,2.5vw,1rem);
+      font-weight: 700; color: #fca5a5; letter-spacing: .02em;
+    }
+    .alert-text strong { color: var(--red); }
+    .alert-pill {
+      margin-left: auto; flex-shrink: 0;
+      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--red); border: 1px solid var(--red-bdr);
+      background: var(--red-dim); padding: 4px 12px;
+      border-radius: var(--radius-pill); white-space: nowrap;
+    }
+
+    /* ── CHART GRID ── */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(10px,2vw,14px);
+    }
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: clamp(16px,3vw,22px);
+      overflow: hidden;
+      transition: border-color var(--t);
+      animation: fadeUp .4s var(--ease) both;
+    }
+    .chart-card:hover { border-color: var(--border-2); }
+    .chart-card.wide { grid-column: span 2; }
+    .chart-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: clamp(14px,2.5vw,18px);
+      padding-bottom: clamp(10px,2vw,14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .chart-title {
+      font-family: var(--font-d); font-size: clamp(.9rem,2.5vw,1.05rem);
+      font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--text-hi);
+    }
+    .chart-badge {
+      font-family: var(--font-d); font-size: .62rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: var(--radius-pill);
+      border: 1px solid; white-space: nowrap;
+    }
+    .badge-orange { color: var(--orange); border-color: var(--orange-bdr); background: var(--orange-dim); }
+    .badge-green  { color: var(--green);  border-color: var(--green-bdr);  background: var(--green-dim); }
+    .badge-blue   { color: var(--blue);   border-color: var(--blue-bdr);   background: var(--blue-dim); }
+    .badge-purple { color: var(--purple); border-color: var(--purple-bdr); background: var(--purple-dim); }
+    .badge-amber  { color: var(--amber);  border-color: var(--amber-bdr);  background: var(--amber-dim); }
+    canvas { max-height: 240px; }
+
+    /* ── HEATMAP ── */
+    .hm-zone-labels {
+      display: flex; gap: 6px;
+      font-family: var(--font-d); font-size: .62rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--text-lo); padding-left: 54px;
+      margin-bottom: 6px;
+    }
+    .hm-zone-labels span { flex: 7; text-align: center; }
+    .hm-zone-labels .gap { width: 10px; flex: none; }
+    .hm-scroll { overflow-x: auto; }
+    .hm-grid {
+      display: grid;
+      gap: 3px; min-width: 500px;
+    }
+    .hm-cell {
+      height: 26px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-d); font-size: 9px; font-weight: 700;
+      color: transparent; transition: color var(--t), transform var(--t);
+      cursor: default;
+    }
+    .hm-cell:hover { color: rgba(255,255,255,.85); transform: scale(1.1); }
+    .hm-row-label {
+      display: flex; align-items: center;
+      font-family: var(--font-d); font-size: .7rem; font-weight: 700;
+      color: var(--text-mid); letter-spacing: .06em;
+    }
+    .hm-col-label {
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-d); font-size: .58rem; font-weight: 700;
+      color: var(--text-lo); height: 20px; letter-spacing: .04em;
+    }
+    .hm-legend {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 12px;
+      font-family: var(--font-d); font-size: .65rem;
+      font-weight: 700; letter-spacing: .1em; color: var(--text-lo);
+    }
+    .hm-legend-bar {
+      height: 8px; width: 120px; border-radius: 4px;
+      background: linear-gradient(to right, rgba(96,165,250,.2), rgba(255,90,0,.9));
+    }
+
+    /* ── ABSENTEE TABLE ── */
+    .abs-table { width: 100%; border-collapse: collapse; }
+    .abs-table th {
+      font-family: var(--font-d); font-size: .65rem; font-weight: 700;
+      letter-spacing: .18em; text-transform: uppercase;
+      color: var(--text-lo); padding: 0 10px 12px; text-align: left;
+    }
+    .abs-table td {
+      padding: 9px 10px; border-top: 1px solid var(--border);
+      font-family: var(--font-b); font-size: .8rem; color: var(--text-mid);
+      transition: background var(--t);
+    }
+    .abs-table td:first-child { font-weight: 600; color: var(--text-hi); }
+    .abs-table tr:hover td { background: var(--surface-2); }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: var(--font-d); font-size: .62rem; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      padding: 3px 10px; border-radius: var(--radius-pill); border: 1px solid;
+    }
+    .status-pill::before {
+      content: ''; width: 5px; height: 5px; border-radius: 50%;
+      background: currentColor;
+    }
+    .pill-danger  { color: var(--red);   border-color: var(--red-bdr);   background: var(--red-dim); }
+    .pill-warning { color: var(--amber); border-color: var(--amber-bdr); background: var(--amber-dim); }
+    .pill-notice  { color: var(--blue);  border-color: var(--blue-bdr);  background: var(--blue-dim); }
+    .empty-state {
+      font-family: var(--font-d); color: var(--text-lo); font-size: .75rem;
+      letter-spacing: .2em; text-align: center; padding: 28px 0;
+      font-weight: 700; text-transform: uppercase;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .chart-grid { grid-template-columns: 1fr; }
+      .chart-card.wide { grid-column: span 1; }
+      .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .kpi-strip { grid-template-columns: 1fr 1fr; }
+    }
+    @supports (padding: env(safe-area-inset-left)) {
+      .nav-inner {
+        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
+        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── STICKY NAV ── -->
+  <nav class="store-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/">
+        <span class="back-icon">&#8592;</span>
+        {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
+        <span class="acc">Analytics</span>
+      </a>
+      <div class="nav-right">
+        <span class="live-dot">Live</span>
+        <div class="nav-badge">{{ today_count }} Today</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── PAGE HEADER ── -->
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-eyebrow">&#128200; Intelligence</div>
+      <h1>Attendance <span class="accent">Analytics</span></h1>
+      <div class="header-sub">
+        {% if gym %}{{ gym.gym_name }}{% if gym.city %} · {{ gym.city }}{% endif %}{% else %}EnterGYM{% endif %}
+        &nbsp;·&nbsp; Footfall &amp; Engagement
+      </div>
+      <div class="header-clock" id="liveClock">—</div>
+    </div>
+  </header>
+
+  <!-- ── MAIN ── -->
+  <main class="analytics-page">
+
+    <!-- KPI STRIP -->
+    <div class="section-label"><span>&#128200; Key Metrics</span></div>
+
+    <div class="kpi-strip">
+
+      <div class="kpi-card" style="--kpi-color:var(--blue);--kpi-tint:rgba(96,165,250,.06)" data-delay="0">
+        <div class="kpi-label">Today's Check-ins</div>
+        <div class="kpi-value">{{ today_count|default:"0" }}</div>
+        <div class="kpi-sub">
+          {% if today_delta >= 0 %}
+            <span class="delta delta-up">&#9650; +{{ today_delta }} vs yesterday</span>
+          {% else %}
+            <span class="delta delta-down">&#9660; {{ today_delta }} vs yesterday</span>
+          {% endif %}
+        </div>
+        <span class="kpi-icon">&#127947;</span>
+      </div>
+
+      <div class="kpi-card" style="--kpi-color:var(--orange);--kpi-tint:rgba(255,90,0,.06)" data-delay="1">
+        <div class="kpi-label">Peak Hour</div>
+        <div class="kpi-value" style="font-size:clamp(1.1rem,3.5vw,1.5rem);padding-top:4px">
+          {{ peak_hr_label|default:"—" }}
+        </div>
+        <div class="kpi-sub">Highest traffic window</div>
+        <span class="kpi-icon">&#9201;</span>
+      </div>
+
+      <div class="kpi-card" style="--kpi-color:var(--green);--kpi-tint:rgba(93,232,124,.06)" data-delay="2">
+        <div class="kpi-label">Busiest Day</div>
+        <div class="kpi-value">{{ busiest_day|default:"—" }}</div>
+        <div class="kpi-sub">Last 30 days</div>
+        <span class="kpi-icon">&#128197;</span>
+      </div>
+
+      <div class="kpi-card" style="--kpi-color:var(--purple);--kpi-tint:rgba(168,85,247,.06)" data-delay="3">
+        <div class="kpi-label">Monthly Retention</div>
+        <div class="kpi-value">{{ retention_pct|default:"0" }}%</div>
+        <div class="kpi-sub">{{ active_this_month }} / {{ total_enrolled }} active</div>
+        <span class="kpi-icon">&#128260;</span>
+      </div>
+
+      <div class="kpi-card" style="--kpi-color:var(--amber);--kpi-tint:rgba(245,158,11,.06)" data-delay="4">
+        <div class="kpi-label">At-Risk Members</div>
+        <div class="kpi-value">{{ at_risk_count|default:"0" }}</div>
+        <div class="kpi-sub">14+ days absent</div>
+        <span class="kpi-icon">&#9888;</span>
+      </div>
+
+    </div>
+
+    <!-- ALERT BANNER -->
+    {% if at_risk_count %}
+    <div class="alert-banner">
+      <span class="alert-icon">&#128276;</span>
+      <span class="alert-text">
+        <strong>{{ at_risk_count }} member{{ at_risk_count|pluralize }}</strong>
+        have not visited in 14+ days — consider sending a re-engagement message.
+      </span>
+      <span class="alert-pill">Action Required</span>
+    </div>
+    {% endif %}
+
+    <!-- CHARTS ROW 1 -->
+    <div class="section-label"><span>&#128200; Traffic Patterns</span></div>
+
+    <div class="chart-grid">
+
+      <!-- Day of week -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <span class="chart-title">Day-of-Week Traffic</span>
+          <span class="chart-badge badge-blue">Bar · 30 days</span>
+        </div>
+        <canvas id="dayChart"></canvas>
+      </div>
+
+      <!-- Hourly -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <span class="chart-title">Hourly Traffic Pattern</span>
+          <span class="chart-badge badge-green">Line · 30 days</span>
+        </div>
+        <canvas id="hourChart"></canvas>
+      </div>
+
+      <!-- Heatmap -->
+      <div class="chart-card wide">
+        <div class="chart-head">
+          <span class="chart-title">Day × Hour Heatmap</span>
+          <span class="chart-badge badge-amber">Heatmap · 30 days</span>
+        </div>
+        <div class="hm-zone-labels">
+          <span>Morning (5am – 11am)</span>
+          <div class="gap"></div>
+          <span>Evening (4pm – 10pm)</span>
+        </div>
+        <div class="hm-scroll">
+          <div class="hm-grid" id="heatmapGrid"></div>
+        </div>
+        <div class="hm-legend">
+          <span>Low</span>
+          <div class="hm-legend-bar"></div>
+          <span>High</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CHARTS ROW 2 -->
+    <div class="section-label" style="margin-top:clamp(20px,4vw,32px)"><span>&#128203; Member Health</span></div>
+
+    <div class="chart-grid">
+
+      <!-- Monthly trend -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <span class="chart-title">Monthly Visit Trend</span>
+          <span class="chart-badge badge-blue">Line · 6 months</span>
+        </div>
+        <canvas id="monthChart"></canvas>
+      </div>
+
+      <!-- Absentee watch list -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <span class="chart-title">Absentee Watch List</span>
+          <span class="chart-badge badge-orange">Members · 5d+</span>
+        </div>
+        <table class="abs-table">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>ID</th>
+              <th>Last Visit</th>
+              <th>Days Out</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in at_risk %}
+            <tr>
+              <td>{{ m.name }}</td>
+              <td style="color:var(--text-lo);font-family:var(--font-d);letter-spacing:.1em">{{ m.uid }}</td>
+              <td>{{ m.last }}</td>
+              <td style="font-variant-numeric:tabular-nums;font-family:var(--font-d);font-weight:700">{{ m.days }}d</td>
+              <td>
+                {% if m.status == 'danger' %}
+                  <span class="status-pill pill-danger">At Risk</span>
+                {% elif m.status == 'warning' %}
+                  <span class="status-pill pill-warning">Watch</span>
+                {% else %}
+                  <span class="status-pill pill-notice">Notice</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="empty-state">All members attended recently ✓</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script nonce="{{ request.csp_nonce }}">
+  /* ── LIVE CLOCK ── */
+  (function tick() {
+    const el = document.getElementById('liveClock');
+    const now = new Date();
+    el.textContent = now.toLocaleString('en-IN', {
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true
+    });
+    setTimeout(tick, 1000);
+  })();
+
+  /* ── KPI CARD STAGGER ── */
+  document.querySelectorAll('.kpi-card').forEach((card, i) => {
+    card.style.animationDelay = (i * 0.07) + 's';
+  });
+
+  /* ── CHART DEFAULTS ── */
+  Chart.defaults.color       = '#444';
+  Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+  Chart.defaults.font.family = "'Barlow', sans-serif";
+  Chart.defaults.font.size   = 11;
+
+  const gridStyle = { color: 'rgba(255,255,255,0.05)', drawBorder: false };
+  const tickStyle = { color: '#444', font: { size: 11 } };
+  const tooltipStyle = {
+    backgroundColor: 'rgba(8,8,8,0.95)',
+    borderColor: 'rgba(255,255,255,0.10)', borderWidth: 1,
+    titleColor: '#f5f5f5', bodyColor: '#888',
+    padding: 10, cornerRadius: 8,
+    titleFont: { family: "'Barlow Condensed'", size: 14, weight: '900' },
+    bodyFont:  { family: "'Barlow'", size: 12 },
+  };
+
+  /* ── DATA ── */
+  const dayLabels  = {{ day_labels|safe }};
+  const dayData    = {{ day_data|safe }};
+  const hourLabels = {{ hour_labels|safe }};
+  const hourData   = {{ hour_data|safe }};
+  const peakDayIdx = dayData.length  ? dayData.indexOf(Math.max(...dayData))   : -1;
+  const peakHrIdx  = hourData.length ? hourData.indexOf(Math.max(...hourData)) : -1;
+
+  /* ── DAY OF WEEK CHART ── */
+  new Chart(document.getElementById('dayChart'), {
+    type: 'bar',
+    data: {
+      labels: dayLabels,
+      datasets: [{
+        label: 'Check-ins',
+        data: dayData,
+        backgroundColor: dayData.map((_, i) =>
+          i === peakDayIdx ? 'rgba(255,90,0,0.85)' : 'rgba(96,165,250,0.55)'
+        ),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...tooltipStyle, callbacks: { label: c => ' ' + c.parsed.y + ' check-ins' } }
+      },
+      scales: {
+        x: { grid: gridStyle, ticks: tickStyle },
+        y: { grid: gridStyle, ticks: tickStyle }
+      }
+    }
+  });
+
+  /* ── HOURLY CHART ── */
+  new Chart(document.getElementById('hourChart'), {
+    type: 'line',
+    data: {
+      labels: hourLabels,
+      datasets: [{
+        label: 'Members',
+        data: hourData,
+        borderColor: '#5de87c',
+        backgroundColor: 'rgba(93,232,124,0.07)',
+        borderWidth: 2, tension: 0.4, fill: true,
+        pointBackgroundColor: hourData.map((_, i) => i === peakHrIdx ? '#ff5a00' : '#5de87c'),
+        pointBorderColor: 'rgba(8,8,8,0.8)',
+        pointBorderWidth: 2,
+        pointRadius: hourData.map((_, i) => i === peakHrIdx ? 6 : 3),
+        pointHoverRadius: 7,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...tooltipStyle, callbacks: { label: c => ' ' + c.parsed.y + ' members' } }
+      },
+      scales: {
+        x: { grid: gridStyle, ticks: { ...tickStyle, maxTicksLimit: 9, maxRotation: 0 } },
+        y: { grid: gridStyle, ticks: tickStyle }
+      }
+    }
+  });
+
+  /* ── MONTHLY TREND CHART ── */
+  new Chart(document.getElementById('monthChart'), {
+    type: 'line',
+    data: {
+      labels: {{ month_labels|safe }},
+      datasets: [{
+        label: 'Total Visits',
+        data: {{ month_data|safe }},
+        borderColor: '#60a5fa',
+        backgroundColor: 'rgba(96,165,250,0.07)',
+        borderWidth: 2, tension: 0.4, fill: true,
+        pointBackgroundColor: '#60a5fa',
+        pointBorderColor: 'rgba(8,8,8,0.8)',
+        pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 7,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...tooltipStyle, callbacks: { label: c => ' ' + c.parsed.y + ' visits' } }
+      },
+      scales: {
+        x: { grid: gridStyle, ticks: tickStyle },
+        y: { grid: gridStyle, ticks: tickStyle }
+      }
+    }
+  });
+
+  /* ── HEATMAP ── */
+  (function buildHeatmap() {
+    const heatmap   = {{ heatmap_json|safe }};
+    const hourRange = [5,6,7,8,9,10,11, 16,17,18,19,20,21,22];
+    const days      = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const MORNING   = 7;
+    const EVENING   = 7;
+
+    function fmtHr(h) {
+      const hh = h > 12 ? h - 12 : h;
+      return h < 12 ? hh + 'a' : (h === 12 ? '12p' : hh + 'p');
+    }
+    const hLabels = hourRange.map(fmtHr);
+
+    let maxVal = 1;
+    days.forEach(d => { (heatmap[d] || []).forEach(v => { if (v > maxVal) maxVal = v; }); });
+
+    function heatColor(v) {
+      const t = v / maxVal;
+      const r = Math.round(255 * t + 96  * (1 - t));
+      const g = Math.round(90  * t + 165 * (1 - t));
+      const b = Math.round(0   * t + 250 * (1 - t));
+      return `rgba(${r},${g},${b},${(0.15 + t * 0.78).toFixed(2)})`;
+    }
+
+    const hmEl = document.getElementById('heatmapGrid');
+    hmEl.style.gridTemplateColumns = `54px repeat(${MORNING},1fr) 10px repeat(${EVENING},1fr)`;
+
+    let html = '<div></div>';
+    hLabels.forEach((l, i) => {
+      if (i === MORNING) html += '<div></div>';
+      html += `<div class="hm-col-label">${l}</div>`;
+    });
+
+    days.forEach(d => {
+      html += `<div class="hm-row-label">${d}</div>`;
+      const row = heatmap[d] || new Array(14).fill(0);
+      row.forEach((v, i) => {
+        if (i === MORNING) html += '<div></div>';
+        html += `<div class="hm-cell" style="background:${heatColor(v)}" title="${d} ${hLabels[i]}: ${v} members">${v || ''}</div>`;
+      });
+    });
+
+    hmEl.innerHTML = html;
+  })();
+  </script>
+
+</body>
+</html>
