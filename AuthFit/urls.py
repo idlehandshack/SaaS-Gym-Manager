@@ -3,6 +3,7 @@ from AuthFit import views
 from AuthFit.geo_views import geo_mark_attendance, serve_sw ,attendance_status
 from . import device_views
 from django.contrib.auth import views as auth_views
+from Gym.views import saas_dashboard
 
 urlpatterns = [
     path('', views.homePage, name='home'),
@@ -24,6 +25,8 @@ urlpatterns = [
     path('freeze-membership/apply/',views.freeze_membership_apply, name='freeze_membership_apply'),
     path('membership-plans/', views.membership_plans, name='membership_plans'),
     path('contact-inquiries/', views.contact_inquiries, name='contact_inquiries'),
+    path('superadmin/dashboard/', saas_dashboard,  name='saas_dashboard'),
+    
 
     # ── Existing APIs ──────────────────────────────────────────
     path('api/mark-attendance/', views.mark_attendance_api),

@@ -152,7 +152,7 @@
           </p>
           <div class="hero-cta">
             {% if request.user.is_authenticated %}
-            <a href="/admin/" class="btn-primary">Open Dashboard</a>
+            <a href="superadmin/dashboard/" class="btn-primary">Open Dashboard</a>
             {% else %}
             <a href="/login/" class="btn-primary">Start free trial</a>
             {% endif %}

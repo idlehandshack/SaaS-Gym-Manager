@@ -1,0 +1,1418 @@
+{% load static %}
+{% load tz %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EnterGYM — Platform Control</title>
+<link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset & Base ─────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0c;color:#e2e2e6;min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+img{display:block;max-width:100%}
+
+/* ── Design Tokens ────────────────────────────────────── */
+:root{
+  --bg-base:#0a0a0c;
+  --bg-surface:#111115;
+  --bg-elevated:#18181e;
+  --bg-card:#1c1c24;
+  --border:#2a2a38;
+  --border-subtle:#1f1f2b;
+  --orange:#ff7a00;
+  --orange-dim:#ff7a0018;
+  --orange-glow:0 0 24px #ff7a0030;
+  --green:#22c55e;
+  --green-dim:#22c55e18;
+  --red:#ef4444;
+  --red-dim:#ef444418;
+  --yellow:#f59e0b;
+  --yellow-dim:#f59e0b18;
+  --blue:#3b82f6;
+  --blue-dim:#3b82f618;
+  --purple:#a855f7;
+  --text-primary:#f0f0f4;
+  --text-secondary:#8b8b9e;
+  --text-muted:#4a4a5e;
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:14px;
+  --radius-xl:18px;
+  --transition:all .18s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#111115}
+::-webkit-scrollbar-thumb{background:#2a2a38;border-radius:2px}
+
+/* ── Layout ───────────────────────────────────────────── */
+.layout{display:flex;min-height:100vh}
+
+/* ── Sidebar ──────────────────────────────────────────── */
+.sidebar{
+  width:220px;min-width:220px;
+  background:var(--bg-surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;
+  overflow-y:auto;z-index:100;
+  transition:var(--transition);
+}
+.sidebar-logo{
+  padding:20px 20px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.sidebar-logo svg{flex-shrink:0}
+.logo-name{font-size:.85rem;font-weight:700;letter-spacing:.04em;color:var(--text-primary)}
+.logo-badge{font-size:.6rem;background:var(--orange);color:#000;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.05em;margin-left:auto}
+
+.nav-section{padding:16px 12px 8px}
+.nav-label{font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:0 8px 8px}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:var(--radius-sm);
+  font-size:.82rem;font-weight:500;color:var(--text-secondary);
+  cursor:pointer;transition:var(--transition);
+  border:1px solid transparent;
+}
+.nav-item:hover{background:var(--bg-elevated);color:var(--text-primary)}
+.nav-item.active{background:var(--orange-dim);color:var(--orange);border-color:#ff7a0025}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+
+.sidebar-footer{
+  margin-top:auto;padding:16px;border-top:1px solid var(--border);
+  font-size:.75rem;color:var(--text-muted);
+}
+.sidebar-user{display:flex;align-items:center;gap:8px}
+.user-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--orange-dim);border:1px solid var(--orange);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;font-weight:700;color:var(--orange);flex-shrink:0
+}
+
+/* ── Main Content ─────────────────────────────────────── */
+.main{flex:1;overflow-x:hidden;min-width:0}
+.topbar{
+  background:var(--bg-surface);border-bottom:1px solid var(--border);
+  padding:0 28px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:90;
+}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.hamburger{display:none;flex-direction:column;gap:4px;padding:6px;cursor:pointer}
+.hamburger span{display:block;width:18px;height:2px;background:var(--text-secondary);border-radius:2px;transition:var(--transition)}
+.breadcrumb{font-size:.8rem;color:var(--text-muted)}
+.breadcrumb b{color:var(--text-primary)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-time{font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted)}
+
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
+
+.content{padding:28px;max-width:1600px}
+
+/* ── Section headers ──────────────────────────────────── */
+.section-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+.section-title{font-size:1rem;font-weight:600;color:var(--text-primary)}
+.section-sub{font-size:.75rem;color:var(--text-muted);margin-top:2px}
+.section-action{font-size:.75rem;color:var(--orange);cursor:pointer;transition:var(--transition)}
+.section-action:hover{opacity:.75}
+
+/* ── KPI Cards ────────────────────────────────────────── */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+  margin-bottom:28px;
+}
+.kpi-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:18px 20px;
+  position:relative;overflow:hidden;
+  transition:var(--transition);
+}
+.kpi-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 100% 0%,var(--kpi-accent,#ff7a0008) 0%,transparent 65%);
+  pointer-events:none;
+}
+.kpi-card:hover{border-color:#3a3a4a;transform:translateY(-1px)}
+.kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.kpi-icon{
+  width:34px;height:34px;border-radius:var(--radius-sm);
+  background:var(--kpi-bg,var(--orange-dim));
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-icon svg{width:16px;height:16px;color:var(--kpi-color,var(--orange))}
+.kpi-trend{
+  display:flex;align-items:center;gap:4px;
+  font-size:.7rem;font-weight:600;
+  padding:3px 7px;border-radius:20px;
+}
+.kpi-trend.up{background:var(--green-dim);color:var(--green)}
+.kpi-trend.down{background:var(--red-dim);color:var(--red)}
+.kpi-trend.neutral{background:var(--bg-elevated);color:var(--text-muted)}
+.kpi-value{font-size:1.9rem;font-weight:700;color:var(--text-primary);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.kpi-label{font-size:.73rem;color:var(--text-muted)}
+
+/* ── Two-column grid ──────────────────────────────────── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:28px}
+
+/* ── Glass Cards ──────────────────────────────────────── */
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+.card-header{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+.card-body{padding:20px}
+
+/* ── Health Metrics ───────────────────────────────────── */
+.health-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.health-metric{display:flex;flex-direction:column;gap:8px}
+.health-label{font-size:.73rem;color:var(--text-secondary);display:flex;align-items:center;justify-content:space-between}
+.health-val{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+.progress-bar{height:5px;background:var(--bg-elevated);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.progress-fill.orange{background:var(--orange)}
+.progress-fill.green{background:var(--green)}
+.progress-fill.red{background:var(--red)}
+.progress-fill.blue{background:var(--blue)}
+.progress-fill.yellow{background:var(--yellow)}
+
+/* ── Table ────────────────────────────────────────────── */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.data-table{width:100%;border-collapse:collapse;font-size:.78rem;white-space:nowrap}
+.data-table thead{background:var(--bg-elevated)}
+.data-table th{
+  padding:10px 14px;text-align:left;
+  font-size:.67rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--text-muted);border-bottom:1px solid var(--border);
+  cursor:pointer;user-select:none;
+}
+.data-table th:hover{color:var(--text-secondary)}
+.data-table td{
+  padding:11px 14px;border-bottom:1px solid var(--border-subtle);
+  color:var(--text-secondary);vertical-align:middle;
+}
+.data-table tbody tr{transition:var(--transition);cursor:pointer}
+.data-table tbody tr:hover{background:var(--bg-elevated)}
+.data-table tbody tr:last-child td{border-bottom:none}
+
+/* Row status coloring */
+.row-healthy td:first-child{border-left:2px solid var(--green)}
+.row-warning td:first-child{border-left:2px solid var(--yellow)}
+.row-danger td:first-child{border-left:2px solid var(--red)}
+
+.gym-logo-cell{display:flex;align-items:center;gap:10px}
+.gym-logo-thumb{
+  width:30px;height:30px;border-radius:var(--radius-sm);
+  object-fit:cover;background:var(--bg-elevated);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;font-weight:700;color:var(--text-secondary);border:1px solid var(--border);
+}
+.gym-name-cell{font-weight:600;color:var(--text-primary)}
+.gym-code{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-muted)}
+.gym-owner-name{color:var(--text-primary)}
+
+/* ── Badges / Pills ───────────────────────────────────── */
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:20px;
+  font-size:.67rem;font-weight:600;letter-spacing:.03em;
+}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.badge.active{background:var(--green-dim);color:var(--green)}
+.badge.inactive{background:var(--red-dim);color:var(--red)}
+.badge.expiring{background:var(--yellow-dim);color:var(--yellow)}
+.badge.expired{background:var(--red-dim);color:var(--red)}
+
+/* Usage bar in table */
+.usage-cell{min-width:120px}
+.usage-nums{display:flex;justify-content:space-between;font-size:.68rem;color:var(--text-muted);margin-bottom:4px}
+.usage-nums b{color:var(--text-secondary)}
+.usage-bar{height:3px;background:var(--bg-elevated);border-radius:2px;overflow:hidden}
+.usage-bar .fill{height:100%;border-radius:2px}
+
+/* ── Action Buttons ───────────────────────────────────── */
+.action-btns{display:flex;gap:6px}
+.btn-icon{
+  width:28px;height:28px;border-radius:var(--radius-sm);
+  background:var(--bg-elevated);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  transition:var(--transition);color:var(--text-secondary);
+}
+.btn-icon:hover{background:var(--bg-surface);border-color:#3a3a4a;color:var(--text-primary)}
+.btn-icon svg{width:13px;height:13px}
+.btn-icon.danger:hover{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+.btn-icon.success:hover{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+.btn-icon.warn:hover{background:var(--yellow-dim);border-color:var(--yellow);color:var(--yellow)}
+
+/* ── Subscription Monitor ─────────────────────────────── */
+.expiry-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.expiry-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);overflow:hidden;
+}
+.expiry-header{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.expiry-label{font-size:.78rem;font-weight:600;color:var(--text-primary)}
+.expiry-count{
+  font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;
+}
+.expiry-count.red{background:var(--red-dim);color:var(--red)}
+.expiry-count.yellow{background:var(--yellow-dim);color:var(--yellow)}
+.expiry-count.orange{background:var(--orange-dim);color:var(--orange)}
+.expiry-count.muted{background:var(--bg-elevated);color:var(--text-muted)}
+.expiry-body{padding:12px 0}
+.expiry-item{
+  padding:8px 16px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border-subtle);
+}
+.expiry-item:last-child{border-bottom:none}
+.expiry-gym{font-size:.75rem;font-weight:500;color:var(--text-secondary)}
+.expiry-days{font-size:.7rem;font-family:'JetBrains Mono',monospace}
+.expiry-empty{padding:20px 16px;text-align:center;font-size:.75rem;color:var(--text-muted)}
+
+/* ── Insights ─────────────────────────────────────────── */
+.insights-list{display:flex;flex-direction:column;gap:8px}
+.insight-card{
+  padding:12px 16px;border-radius:var(--radius-md);
+  border:1px solid var(--border);
+  display:flex;align-items:flex-start;gap:10px;
+  background:var(--bg-elevated);
+  animation:slideIn .3s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.insight-icon{width:28px;height:28px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.insight-icon svg{width:14px;height:14px}
+.insight-icon.info{background:var(--blue-dim);color:var(--blue)}
+.insight-icon.warn{background:var(--yellow-dim);color:var(--yellow)}
+.insight-icon.danger{background:var(--red-dim);color:var(--red)}
+.insight-icon.success{background:var(--green-dim);color:var(--green)}
+.insight-text{font-size:.78rem;color:var(--text-secondary);line-height:1.5;flex:1}
+.insight-text b{color:var(--text-primary)}
+
+/* ── Leaderboard ──────────────────────────────────────── */
+.leaderboard{display:flex;flex-direction:column;gap:0}
+.leader-row{
+  display:grid;grid-template-columns:36px 1fr 90px 70px 80px;
+  align-items:center;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--border-subtle);
+  transition:var(--transition);
+}
+.leader-row:hover{background:var(--bg-elevated)}
+.leader-row:last-child{border-bottom:none}
+.leader-rank{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;
+}
+.rank-1{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000}
+.rank-2{background:linear-gradient(135deg,#9ca3af,#6b7280);color:#000}
+.rank-3{background:linear-gradient(135deg,#b45309,#92400e);color:#fff}
+.rank-other{background:var(--bg-elevated);color:var(--text-muted);border:1px solid var(--border)}
+.leader-gym{font-size:.8rem;font-weight:600;color:var(--text-primary)}
+.leader-plan{font-size:.68rem;color:var(--text-muted)}
+.leader-stat{font-size:.78rem;font-weight:600;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.leader-stat.primary{color:var(--text-primary)}
+
+/* ── Growth Cards ─────────────────────────────────────── */
+.growth-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.growth-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:16px 18px;
+  transition:var(--transition);
+}
+.growth-card:hover{border-color:#3a3a4a;transform:translateY(-1px)}
+.growth-gym{font-size:.83rem;font-weight:600;color:var(--text-primary);margin-bottom:4px}
+.growth-sub{font-size:.72rem;color:var(--text-muted);margin-bottom:14px}
+.growth-stats{display:flex;gap:16px}
+.growth-stat{display:flex;flex-direction:column}
+.growth-stat-val{font-size:1.1rem;font-weight:700;color:var(--text-primary)}
+.growth-stat-val.positive{color:var(--green)}
+.growth-stat-label{font-size:.65rem;color:var(--text-muted);margin-top:1px}
+
+/* ── Revenue Metrics ──────────────────────────────────── */
+.revenue-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.rev-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:18px 20px;
+  position:relative;overflow:hidden;
+}
+.rev-card::after{
+  content:'';position:absolute;
+  bottom:-20px;right:-20px;
+  width:80px;height:80px;border-radius:50%;
+  background:radial-gradient(var(--orange-dim),transparent 70%);
+  pointer-events:none;
+}
+.rev-label{font-size:.7rem;color:var(--text-muted);margin-bottom:8px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.rev-value{font-size:1.6rem;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;line-height:1}
+.rev-sub{font-size:.72rem;color:var(--text-muted);margin-top:6px}
+
+/* ── Modal ────────────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;background:#00000088;backdrop-filter:blur(6px);
+  z-index:500;display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-xl);width:100%;max-width:680px;
+  max-height:90vh;overflow:hidden;display:flex;flex-direction:column;
+  animation:modalIn .2s cubic-bezier(.4,0,.2,1);
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:none}}
+.modal-header{
+  padding:20px 24px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-title{font-size:1rem;font-weight:700;color:var(--text-primary)}
+.modal-close{
+  width:30px;height:30px;border-radius:var(--radius-sm);
+  background:var(--bg-elevated);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  transition:var(--transition);color:var(--text-secondary);
+}
+.modal-close:hover{color:var(--text-primary);border-color:#3a3a4a}
+.modal-close svg{width:14px;height:14px}
+.modal-body{padding:24px;overflow-y:auto;flex:1}
+.modal-section{margin-bottom:24px}
+.modal-section:last-child{margin-bottom:0}
+.modal-section-title{
+  font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:12px;padding-bottom:8px;
+  border-bottom:1px solid var(--border);
+}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-field{display:flex;flex-direction:column;gap:3px}
+.modal-field-label{font-size:.67rem;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.modal-field-val{font-size:.82rem;color:var(--text-primary);font-weight:500}
+.modal-actions{
+  padding:16px 24px;border-top:1px solid var(--border);
+  display:flex;gap:8px;flex-wrap:wrap;
+}
+.btn-sm{
+  padding:7px 14px;border-radius:var(--radius-sm);font-size:.75rem;font-weight:600;
+  border:1px solid var(--border);background:var(--bg-elevated);
+  color:var(--text-secondary);transition:var(--transition);cursor:pointer;
+}
+.btn-sm:hover{color:var(--text-primary);border-color:#3a3a4a}
+.btn-sm.primary{background:var(--orange);border-color:var(--orange);color:#000}
+.btn-sm.primary:hover{background:#e06d00;border-color:#e06d00}
+.btn-sm.danger{border-color:var(--red);color:var(--red)}
+.btn-sm.danger:hover{background:var(--red-dim)}
+.btn-sm.success{border-color:var(--green);color:var(--green)}
+.btn-sm.success:hover{background:var(--green-dim)}
+
+/* ── Search & Filters ─────────────────────────────────── */
+.table-controls{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border)}
+.search-input{
+  flex:1;max-width:260px;
+  background:var(--bg-elevated);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:7px 12px;
+  font:inherit;font-size:.78rem;color:var(--text-primary);
+  outline:none;transition:var(--transition);
+}
+.search-input::placeholder{color:var(--text-muted)}
+.search-input:focus{border-color:#3a3a4a;background:var(--bg-card)}
+.filter-select{
+  background:var(--bg-elevated);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:7px 10px;
+  font:inherit;font-size:.75rem;color:var(--text-secondary);
+  outline:none;cursor:pointer;
+}
+.filter-select:focus{border-color:#3a3a4a}
+.table-count{font-size:.72rem;color:var(--text-muted);margin-left:auto}
+
+/* ── Misc ─────────────────────────────────────────────── */
+.divider{height:1px;background:var(--border);margin:28px 0}
+.empty-state{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:.8rem}
+
+/* Color tag helpers */
+.text-green{color:var(--green)}
+.text-red{color:var(--red)}
+.text-yellow{color:var(--yellow)}
+.text-orange{color:var(--orange)}
+.text-blue{color:var(--blue)}
+.text-muted{color:var(--text-muted)}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width:1100px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .expiry-grid{grid-template-columns:repeat(2,1fr)}
+  .revenue-grid{grid-template-columns:repeat(2,1fr)}
+  .growth-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col{grid-template-columns:1fr}
+  .three-col{grid-template-columns:1fr}
+}
+@media (max-width:768px){
+  .sidebar{
+    position:fixed;left:-220px;top:0;bottom:0;z-index:200;
+    transition:left .25s cubic-bezier(.4,0,.2,1);
+  }
+  .sidebar.mobile-open{left:0}
+  .sidebar-overlay{
+    position:fixed;inset:0;background:#00000060;z-index:190;
+    display:none;
+  }
+  .sidebar-overlay.open{display:block}
+  .hamburger{display:flex}
+  .topbar{padding:0 16px}
+  .content{padding:16px}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .expiry-grid{grid-template-columns:1fr 1fr}
+  .revenue-grid{grid-template-columns:1fr 1fr}
+  .growth-grid{grid-template-columns:1fr}
+  .leader-row{grid-template-columns:30px 1fr 80px}
+}
+@media (max-width:480px){
+  .kpi-grid{grid-template-columns:1fr}
+  .expiry-grid{grid-template-columns:1fr}
+  .revenue-grid{grid-template-columns:1fr}
+  .modal-grid{grid-template-columns:1fr}
+  .modal{max-height:100vh;border-radius:0}
+  .modal-overlay{padding:0}
+}
+</style>
+</head>
+<body>
+
+<!-- Django: Compute all stats server-side -->
+{% now "U" as now_ts %}
+{% with today=request.user.last_login|date:"Y-m-d" %}{% endwith %}
+
+<div class="layout">
+
+<!-- ── Sidebar ───────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="6" fill="#ff7a00"/>
+      <rect x="5" y="11" width="8" height="6" rx="1.5" fill="white" opacity="0.9"/>
+      <rect x="15" y="8" width="8" height="12" rx="1.5" fill="white"/>
+    </svg>
+    <span class="logo-name">EnterGYM</span>
+    <span class="logo-badge">SAAS</span>
+  </div>
+
+  <div class="nav-section">
+    <p class="nav-label">Platform</p>
+    <a class="nav-item active" onclick="scrollTo('overview')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="nav-item" onclick="scrollTo('gyms')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      All Gyms
+    </a>
+    <a class="nav-item" onclick="scrollTo('subscriptions')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Subscriptions
+    </a>
+    <a class="nav-item" onclick="scrollTo('insights')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Insights
+    </a>
+    <a class="nav-item" onclick="scrollTo('leaderboard')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Top Gyms
+    </a>
+    <a class="nav-item" onclick="scrollTo('revenue')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Revenue
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <p class="nav-label">System</p>
+    <a class="nav-item" href="/admin/">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Django Admin
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar">SA</div>
+      <div>
+        <div style="font-size:.73rem;color:var(--text-primary);font-weight:500">{{ request.user.username }}</div>
+        <div style="font-size:.65rem;margin-top:1px;color:var(--green)">● Super Admin</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ── Main ──────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="hamburger" id="hamburger" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="breadcrumb">EnterGYM <span style="color:var(--border)">·</span> <b>Platform Dashboard</b></div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot"></div>
+      <span class="topbar-time" id="liveTime">--:--:--</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── Overview Section ─────────────────────────────────── -->
+    <div id="overview" style="margin-bottom:28px">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Platform Overview</div>
+          <div class="section-sub">Real-time snapshot of the entire EnterGYM network</div>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      {% with total=gyms|length %}
+      {% comment %}
+        Django-computed values passed via view context:
+        total_gyms, active_gyms, inactive_gyms, expiring_7, expiring_15, expiring_30,
+        expired_gyms, total_members, total_revenue, avg_revenue, total_owners,
+        active_pct, near_limit_count, new_this_month
+      {% endcomment %}
+      <div class="kpi-grid">
+
+        <!-- Total Gyms -->
+        <div class="kpi-card" style="--kpi-accent:#ff7a0010;--kpi-bg:var(--orange-dim);--kpi-color:var(--orange)">
+          <div class="kpi-header">
+            <div class="kpi-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+            </div>
+            <span class="kpi-trend up">↑ All time</span>
+          </div>
+          <div class="kpi-value">{{ total_gyms }}</div>
+          <div class="kpi-label">Total Gyms on Platform</div>
+        </div>
+
+        <!-- Active Gyms -->
+        <div class="kpi-card" style="--kpi-accent:#22c55e10;--kpi-bg:var(--green-dim);--kpi-color:var(--green)">
+          <div class="kpi-header">
+            <div class="kpi-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <span class="kpi-trend up">{{ active_pct|default:"0" }}% rate</span>
+          </div>
+          <div class="kpi-value" style="color:var(--green)">{{ active_gyms }}</div>
+          <div class="kpi-label">Active & Subscribed</div>
+        </div>
+
+        <!-- Inactive Gyms -->
+        <div class="kpi-card" style="--kpi-accent:#ef444410;--kpi-bg:var(--red-dim);--kpi-color:var(--red)">
+          <div class="kpi-header">
+            <div class="kpi-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
+            {% if inactive_gyms > 0 %}<span class="kpi-trend down">Needs attention</span>{% else %}<span class="kpi-trend neutral">All clear</span>{% endif %}
+          </div>
+          <div class="kpi-value" style="color:var(--red)">{{ inactive_gyms }}</div>
+          <div class="kpi-label">Inactive / Expired</div>
+        </div>
+
+        <!-- Expiring Soon -->
+        <div class="kpi-card" style="--kpi-accent:#f59e0b10;--kpi-bg:var(--yellow-dim);--kpi-color:var(--yellow)">
+          <div class="kpi-header">
+            <div class="kpi-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            {% if expiring_7 > 0 %}<span class="kpi-trend down">Act now</span>{% else %}<span class="kpi-trend neutral">All good</span>{% endif %}
+          </div>
+          <div class="kpi-value" style="color:var(--yellow)">{{ expiring_7 }}</div>
+          <div class="kpi-label">Expiring in 7 Days</div>
+        </div>
+
+        <!-- Total Members -->
+        <div class="kpi-card" style="--kpi-accent:#3b82f610;--kpi-bg:var(--blue-dim);--kpi-color:var(--blue)">
+          <div class="kpi-header">
+            <div class="kpi-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <span class="kpi-trend up">Across all gyms</span>
+          </div>
+          <div class="kpi-value">{{ total_members|default:"0" }}</div>
+          <div class="kpi-label">Total Members Platform-wide</div>
+        </div>
+
+        <!-- Total Revenue -->
+        <div class="kpi-card" style="--kpi-accent:#ff7a0010;--kpi-bg:var(--orange-dim);--kpi-color:var(--orange)">
+          <div class="kpi-header">
+            <div class="kpi-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <span class="kpi-trend up">Lifetime</span>
+          </div>
+          <div class="kpi-value">₹{{ total_revenue|default:"0" }}</div>
+          <div class="kpi-label">Total Revenue Generated</div>
+        </div>
+
+        <!-- Avg Revenue Per Gym -->
+        <div class="kpi-card" style="--kpi-accent:#a855f710;--kpi-bg:#a855f718;--kpi-color:var(--purple)">
+          <div class="kpi-header">
+            <div class="kpi-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <span class="kpi-trend neutral">Per active gym</span>
+          </div>
+          <div class="kpi-value">₹{{ avg_revenue|default:"0" }}</div>
+          <div class="kpi-label">Avg Revenue per Gym</div>
+        </div>
+
+        <!-- Total Gym Owners -->
+        <div class="kpi-card" style="--kpi-accent:#10b98110;--kpi-bg:#10b98118;--kpi-color:#10b981">
+          <div class="kpi-header">
+            <div class="kpi-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span class="kpi-trend neutral">Registered owners</span>
+          </div>
+          <div class="kpi-value">{{ total_owners|default:total_gyms }}</div>
+          <div class="kpi-label">Total Gym Owners</div>
+        </div>
+
+      </div><!-- /.kpi-grid -->
+      {% endwith %}
+    </div><!-- /#overview -->
+
+    <!-- ── Platform Health ──────────────────────────────────── -->
+    <div class="two-col" style="margin-bottom:28px">
+
+      <!-- Health card -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Platform Health</span>
+          <span style="font-size:.7rem;color:var(--green)">● All systems operational</span>
+        </div>
+        <div class="card-body">
+          <div class="health-grid">
+            <div class="health-metric">
+              <span class="health-label">Active Subscriptions<span class="health-val">{{ active_pct|default:"0" }}%</span></span>
+              <div class="progress-bar"><div class="progress-fill green" style="width:{{ active_pct|default:0 }}%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Expired / Inactive<span class="health-val text-red">{{ inactive_pct|default:"0" }}%</span></span>
+              <div class="progress-bar"><div class="progress-fill red" style="width:{{ inactive_pct|default:0 }}%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Near Member Limit<span class="health-val text-yellow">{{ near_member_limit|default:"0" }}</span></span>
+              <div class="progress-bar"><div class="progress-fill yellow" style="width:{% if total_gyms %}{% widthratio near_member_limit total_gyms 100 %}{% else %}0{% endif %}%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">New Gyms This Month<span class="health-val text-orange">{{ new_this_month|default:"0" }}</span></span>
+              <div class="progress-bar"><div class="progress-fill orange" style="width:{% if total_gyms %}{% widthratio new_this_month total_gyms 100 %}{% else %}0{% endif %}%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Platform Capacity Used<span class="health-val">{% if total_member_limit %}{% widthratio total_members total_member_limit 100 %}{% else %}0{% endif %}%</span></span>
+              <div class="progress-bar"><div class="progress-fill blue" style="width:{% if total_member_limit %}{% widthratio total_members total_member_limit 100 %}{% else %}0{% endif %}%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Expiring in 30d<span class="health-val text-yellow">{{ expiring_30|default:"0" }} gyms</span></span>
+              <div class="progress-bar"><div class="progress-fill yellow" style="width:{% if total_gyms %}{% widthratio expiring_30|default:0 total_gyms 100 %}{% else %}0{% endif %}%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Subscription Distribution</span>
+        </div>
+        <div class="card-body">
+          {% for plan_stat in plan_stats %}
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:.78rem;font-weight:500;color:var(--text-secondary)">{{ plan_stat.name }}</span>
+              <span style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--text-primary)">{{ plan_stat.count }} gyms · ₹{{ plan_stat.monthly }}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill orange" style="width:{% if total_gyms %}{% widthratio plan_stat.count total_gyms 100 %}{% else %}0{% endif %}%"></div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty-state">No plan data available</div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Revenue Section ──────────────────────────────────── -->
+    <div id="revenue" style="margin-bottom:28px">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Platform Revenue</div>
+          <div class="section-sub">Aggregated across all gym enrollments</div>
+        </div>
+      </div>
+      <div class="revenue-grid">
+        <div class="rev-card">
+          <div class="rev-label">Total Revenue</div>
+          <div class="rev-value">₹{{ total_revenue|default:"0" }}</div>
+          <div class="rev-sub">All-time enrollment payments</div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-label">Monthly Revenue</div>
+          <div class="rev-value">₹{{ monthly_revenue|default:"0" }}</div>
+          <div class="rev-sub">This calendar month</div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-label">Estimated MRR</div>
+          <div class="rev-value">₹{{ estimated_mrr|default:"0" }}</div>
+          <div class="rev-sub">Based on active subscriptions</div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-label">Avg Revenue / Gym</div>
+          <div class="rev-value">₹{{ avg_revenue|default:"0" }}</div>
+          <div class="rev-sub">Per active gym</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Gym Analytics Table ──────────────────────────────── -->
+    <div id="gyms" class="card" style="margin-bottom:28px">
+      <div class="card-header">
+        <span class="card-title">All Gyms</span>
+        <span style="font-size:.72rem;color:var(--text-muted)">{{ total_gyms }} total</span>
+      </div>
+
+      <div class="table-controls">
+        <input class="search-input" type="text" id="gymSearch" placeholder="Search gym, owner, code…" oninput="filterTable()"/>
+        <select class="filter-select" id="statusFilter" onchange="filterTable()">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="expiring">Expiring Soon</option>
+          <option value="expired">Expired</option>
+        </select>
+        <select class="filter-select" id="planFilter" onchange="filterTable()">
+          <option value="">All Plans</option>
+          {% for plan_stat in plan_stats %}
+          <option value="{{ plan_stat.name }}">{{ plan_stat.name }}</option>
+          {% endfor %}
+        </select>
+        <span class="table-count" id="tableCount"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="gymTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable(0)">#</th>
+              <th onclick="sortTable(1)">Gym</th>
+              <th onclick="sortTable(2)">Code</th>
+              <th onclick="sortTable(3)">Owner</th>
+              <th onclick="sortTable(4)">Plan</th>
+              <th onclick="sortTable(5)">Status</th>
+              <th onclick="sortTable(6)">Members</th>
+              <th onclick="sortTable(7)">Usage</th>
+              <th onclick="sortTable(8)">Revenue</th>
+              <th onclick="sortTable(9)">Trainers</th>
+              <th onclick="sortTable(10)">Expiry</th>
+              <th onclick="sortTable(11)">Days Left</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="gymTableBody">
+          {% for gym in gyms %}
+          {% with days=gym.days_until_expiry %}
+          {% with usage_pct=gym.member_count|default:0 %}
+          <tr
+            class="{% if gym.active and gym.is_subscription_active %}row-healthy{% elif days != None and days >= 0 and days <= 7 %}row-warning{% else %}row-danger{% endif %}"
+            data-gym-id="{{ gym.id }}"
+            data-status="{% if gym.active and gym.is_subscription_active %}active{% elif not gym.active %}inactive{% elif days != None and days < 0 %}expired{% elif days != None and days <= 7 %}expiring{% else %}active{% endif %}"
+            data-plan="{{ gym.plan.name|default:'' }}"
+            data-search="{{ gym.gym_name|lower }} {{ gym.gym_code|lower }} {{ gym.owner.get_full_name|lower }} {{ gym.owner.username|lower }} {{ gym.city|lower }}"
+            onclick="openModal(this)"
+            style="cursor:pointer"
+            {# data attributes for modal #}
+            data-name="{{ gym.gym_name }}"
+            data-code="{{ gym.gym_code }}"
+            data-owner="{{ gym.owner.get_full_name|default:gym.owner.username }}"
+            data-email="{{ gym.contact_email }}"
+            data-phone="{{ gym.contact_phone }}"
+            data-website="{{ gym.website }}"
+            data-city="{{ gym.city }}"
+            data-address="{{ gym.address }}"
+            data-plan="{{ gym.plan.name|default:'—' }}"
+            data-plan-price="{{ gym.plan.price_monthly|default:'0' }}"
+            data-sub-start="{{ gym.subscription_start|default:'—' }}"
+            data-sub-end="{{ gym.subscription_end|default:'—' }}"
+            data-days="{{ days|default:'—' }}"
+            data-members="{{ gym.member_count|default:0 }}"
+            data-member-limit="{{ gym.member_limit }}"
+            data-trainers="{{ gym.trainer_count|default:0 }}"
+            data-trainer-limit="{{ gym.trainer_limit }}"
+            data-revenue="{{ gym.revenue|default:0 }}"
+            data-theme="{{ gym.theme_color }}"
+            data-logo="{{ gym.logo.url|default:'' }}"
+            data-created="{{ gym.created_at|date:'d M Y' }}"
+            data-updated="{{ gym.updated_at|date:'d M Y' }}"
+            data-active="{{ gym.active }}"
+          >
+            <td style="color:var(--text-muted);font-size:.7rem">{{ forloop.counter }}</td>
+            <td>
+              <div class="gym-logo-cell">
+                {% if gym.logo %}
+                <img src="{{ gym.logo.url }}" alt="" class="gym-logo-thumb"/>
+                {% else %}
+                <div class="gym-logo-thumb">{{ gym.gym_name|slice:":2"|upper }}</div>
+                {% endif %}
+                <span class="gym-name-cell">{{ gym.gym_name }}</span>
+              </div>
+            </td>
+            <td><span class="gym-code">{{ gym.gym_code }}</span></td>
+            <td><span class="gym-owner-name">{{ gym.owner.get_full_name|default:gym.owner.username }}</span></td>
+            <td style="color:var(--text-muted)">{{ gym.plan.name|default:"—" }}</td>
+            <td>
+              {% if gym.active and gym.is_subscription_active %}
+                <span class="badge active">Active</span>
+              {% elif days != None and days >= 0 and days <= 7 %}
+                <span class="badge expiring">Expiring</span>
+              {% elif not gym.is_subscription_active %}
+                <span class="badge expired">Expired</span>
+              {% else %}
+                <span class="badge inactive">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="usage-cell">
+                <div class="usage-nums"><b>{{ gym.member_count|default:0 }}</b> / {{ gym.member_limit }}</div>
+                <div class="usage-bar">
+                  {% with pct=gym.member_count|default:0 %}
+                  {% if gym.member_limit %}
+                  {% widthratio pct gym.member_limit 100 as fill_pct %}
+                  <div class="fill {% if fill_pct >= 90 %}{% if fill_pct >= 100 %}{% else %}{% endif %}{% endif %}"
+                    style="width:{{ fill_pct }}%;background:{% if fill_pct >= 90 %}var(--red){% elif fill_pct >= 70 %}var(--yellow){% else %}var(--green){% endif %}">
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+                </div>
+              </div>
+            </td>
+            <td>
+              {% with pct=gym.member_count|default:0 %}
+              {% if gym.member_limit %}{% widthratio pct gym.member_limit 100 as fill_pct %}
+              <span style="font-size:.72rem;color:{% if fill_pct >= 90 %}var(--red){% elif fill_pct >= 70 %}var(--yellow){% else %}var(--green){% endif %}">{{ fill_pct }}%</span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+              {% endwith %}
+            </td>
+            <td style="font-weight:600;color:var(--text-primary)">₹{{ gym.revenue|default:0 }}</td>
+            <td style="color:var(--text-muted)">{{ gym.trainer_count|default:0 }} / {{ gym.trainer_limit }}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-muted)">{{ gym.subscription_end|default:"—" }}</td>
+            <td>
+              {% if days != None %}
+                <span style="font-weight:600;font-size:.78rem;color:{% if days < 0 %}var(--red){% elif days <= 7 %}var(--yellow){% elif days <= 30 %}var(--orange){% else %}var(--green){% endif %}">
+                  {% if days < 0 %}Expired{% else %}{{ days }}d{% endif %}
+                </span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td onclick="event.stopPropagation()">
+              <div class="action-btns">
+                <button class="btn-icon" title="View Gym" onclick="openGym('{{ gym.gym_code }}')">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button class="btn-icon success" title="Activate" onclick="gymAction('{{ gym.id }}','activate')">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </button>
+                <button class="btn-icon danger" title="Suspend" onclick="gymAction('{{ gym.id }}','suspend')">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                </button>
+                <button class="btn-icon warn" title="Edit" onclick="gymAction('{{ gym.id }}','edit')">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endwith %}
+          {% endwith %}
+          {% empty %}
+          <tr><td colspan="13"><div class="empty-state">No gyms found on this platform yet.</div></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Subscription Monitor ─────────────────────────────── -->
+    <div id="subscriptions" style="margin-bottom:28px">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Subscription Monitor</div>
+          <div class="section-sub">Track upcoming renewals and expired accounts</div>
+        </div>
+      </div>
+      <div class="expiry-grid">
+
+        <!-- 7 days -->
+        <div class="expiry-card">
+          <div class="expiry-header">
+            <span class="expiry-label" style="color:var(--red)">Expiring in 7 days</span>
+            <span class="expiry-count red">{{ expiring_7 }}</span>
+          </div>
+          <div class="expiry-body">
+            {% for gym in gyms %}
+            {% with days=gym.days_until_expiry %}
+            {% if days != None and days >= 0 and days <= 7 %}
+            <div class="expiry-item">
+              <span class="expiry-gym">{{ gym.gym_name }}</span>
+              <span class="expiry-days text-red">{{ days }}d left</span>
+            </div>
+            {% endif %}
+            {% endwith %}
+            {% empty %}{% endfor %}
+            {% if not expiring_7 %}<div class="expiry-empty">No gyms expiring in 7 days</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- 15 days -->
+        <div class="expiry-card">
+          <div class="expiry-header">
+            <span class="expiry-label" style="color:var(--yellow)">Expiring in 15 days</span>
+            <span class="expiry-count yellow">{{ expiring_15 }}</span>
+          </div>
+          <div class="expiry-body">
+            {% for gym in gyms %}
+            {% with days=gym.days_until_expiry %}
+            {% if days != None and days > 7 and days <= 15 %}
+            <div class="expiry-item">
+              <span class="expiry-gym">{{ gym.gym_name }}</span>
+              <span class="expiry-days text-yellow">{{ days }}d left</span>
+            </div>
+            {% endif %}
+            {% endwith %}
+            {% empty %}{% endfor %}
+            {% if not expiring_15 %}<div class="expiry-empty">No gyms expiring in 8–15 days</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- 30 days -->
+        <div class="expiry-card">
+          <div class="expiry-header">
+            <span class="expiry-label" style="color:var(--orange)">Expiring in 30 days</span>
+            <span class="expiry-count orange">{{ expiring_30 }}</span>
+          </div>
+          <div class="expiry-body">
+            {% for gym in gyms %}
+            {% with days=gym.days_until_expiry %}
+            {% if days != None and days > 15 and days <= 30 %}
+            <div class="expiry-item">
+              <span class="expiry-gym">{{ gym.gym_name }}</span>
+              <span class="expiry-days text-orange">{{ days }}d left</span>
+            </div>
+            {% endif %}
+            {% endwith %}
+            {% empty %}{% endfor %}
+            {% if not expiring_30 %}<div class="expiry-empty">No gyms expiring in 16–30 days</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- Expired -->
+        <div class="expiry-card">
+          <div class="expiry-header">
+            <span class="expiry-label" style="color:var(--text-muted)">Already Expired</span>
+            <span class="expiry-count muted">{{ expired_count|default:0 }}</span>
+          </div>
+          <div class="expiry-body">
+            {% for gym in gyms %}
+            {% if not gym.is_subscription_active %}
+            <div class="expiry-item">
+              <span class="expiry-gym">{{ gym.gym_name }}</span>
+              <span class="expiry-days text-red">Expired</span>
+            </div>
+            {% endif %}
+            {% empty %}{% endfor %}
+            {% if not expired_count %}<div class="expiry-empty">No expired gyms</div>{% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Business Insights ────────────────────────────────── -->
+    <div id="insights" class="two-col" style="margin-bottom:28px">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Business Insights</span>
+          <span style="font-size:.7rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace">Auto-generated</span>
+        </div>
+        <div class="card-body">
+          <div class="insights-list" id="insightsList">
+            <!-- Rendered by JS using data from the table -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Fastest Growing -->
+      <div class="card" id="growth">
+        <div class="card-header"><span class="card-title">Fastest Growing Gyms</span></div>
+        <div class="card-body" style="padding:0">
+          {% for gym in top_growing %}
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:.82rem;font-weight:600;color:var(--text-primary)">{{ gym.gym_name }}</div>
+              <div style="font-size:.7rem;color:var(--text-muted);margin-top:2px">{{ gym.city|default:"—" }} · {{ gym.plan.name|default:"—" }}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:.85rem;font-weight:700;color:var(--green)">+{{ gym.member_count|default:0 }}</div>
+              <div style="font-size:.67rem;color:var(--text-muted)">members</div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty-state">No data available yet</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Leaderboard ──────────────────────────────────────── -->
+    <div id="leaderboard" class="card" style="margin-bottom:28px">
+      <div class="card-header">
+        <span class="card-title">Top Performing Gyms</span>
+        <span style="font-size:.72rem;color:var(--text-muted)">By revenue</span>
+      </div>
+      <div style="padding:0 0 4px">
+        <div style="display:grid;grid-template-columns:36px 1fr 90px 70px 80px;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">
+          <span style="font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Rank</span>
+          <span style="font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Gym</span>
+          <span style="font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Revenue</span>
+          <span style="font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Members</span>
+          <span style="font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Plan</span>
+        </div>
+        <div class="leaderboard">
+          {% for gym in top_gyms %}
+          <div class="leader-row">
+            <div class="leader-rank {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-other{% endif %}">{{ forloop.counter }}</div>
+            <div>
+              <div class="leader-gym">{{ gym.gym_name }}</div>
+              <div class="leader-plan">{{ gym.city|default:"—" }}</div>
+            </div>
+            <div class="leader-stat primary">₹{{ gym.revenue|default:0 }}</div>
+            <div class="leader-stat">{{ gym.member_count|default:0 }}</div>
+            <div class="leader-stat">{{ gym.plan.name|default:"—" }}</div>
+          </div>
+          {% empty %}
+          <div class="empty-state">Revenue data will appear here once enrollments are processed.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.content -->
+</main>
+</div><!-- /.layout -->
+
+<!-- ── Gym Detail Modal ──────────────────────────────────────── -->
+<div class="modal-overlay" id="gymModal" onclick="closeModalOutside(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="modalLogo" style="width:36px;height:36px;border-radius:8px;background:var(--bg-elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--text-secondary)"></div>
+        <div>
+          <div class="modal-title" id="modalTitle">Gym Name</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:1px;font-family:'JetBrains Mono',monospace" id="modalCode"></div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+
+      <div class="modal-section">
+        <div class="modal-section-title">Business Info</div>
+        <div class="modal-grid">
+          <div class="modal-field"><span class="modal-field-label">Owner</span><span class="modal-field-val" id="mOwner">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">City</span><span class="modal-field-val" id="mCity">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Email</span><span class="modal-field-val" id="mEmail">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Phone</span><span class="modal-field-val" id="mPhone">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Website</span><span class="modal-field-val" id="mWebsite">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Address</span><span class="modal-field-val" id="mAddress">—</span></div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Subscription</div>
+        <div class="modal-grid">
+          <div class="modal-field"><span class="modal-field-label">Plan</span><span class="modal-field-val" id="mPlan">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Monthly Price</span><span class="modal-field-val" id="mPrice">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Start Date</span><span class="modal-field-val" id="mSubStart">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">End Date</span><span class="modal-field-val" id="mSubEnd">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Days Remaining</span><span class="modal-field-val" id="mDays">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Status</span><span class="modal-field-val" id="mStatus">—</span></div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Capacity</div>
+        <div class="modal-grid">
+          <div class="modal-field"><span class="modal-field-label">Members</span><span class="modal-field-val" id="mMembers">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Member Limit</span><span class="modal-field-val" id="mMemberLimit">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Trainers</span><span class="modal-field-val" id="mTrainers">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Trainer Limit</span><span class="modal-field-val" id="mTrainerLimit">—</span></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="font-size:.67rem;color:var(--text-muted);margin-bottom:6px">Member Capacity Usage</div>
+          <div class="progress-bar" style="height:7px"><div class="progress-fill" id="mUsageBar" style="background:var(--green)"></div></div>
+          <div style="font-size:.68rem;color:var(--text-muted);margin-top:4px" id="mUsagePct"></div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Branding & System</div>
+        <div class="modal-grid">
+          <div class="modal-field">
+            <span class="modal-field-label">Theme Color</span>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+              <div id="mColorSwatch" style="width:18px;height:18px;border-radius:4px;border:1px solid var(--border)"></div>
+              <span class="modal-field-val" id="mTheme">—</span>
+            </div>
+          </div>
+          <div class="modal-field"><span class="modal-field-label">Revenue (Total)</span><span class="modal-field-val" id="mRevenue">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Created At</span><span class="modal-field-val" id="mCreated">—</span></div>
+          <div class="modal-field"><span class="modal-field-label">Last Updated</span><span class="modal-field-val" id="mUpdated">—</span></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm primary" id="mBtnView">View Gym →</button>
+      <button class="btn-sm" onclick="gymAction(currentGymId,'edit')">Edit Gym</button>
+      <button class="btn-sm success" onclick="gymAction(currentGymId,'activate')">Activate</button>
+      <button class="btn-sm danger" onclick="gymAction(currentGymId,'suspend')">Suspend</button>
+      <button class="btn-sm" onclick="gymAction(currentGymId,'owner')">View Owner</button>
+    </div>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+(function(){
+
+/* Live clock */
+const timeEl = document.getElementById('liveTime');
+function tick(){
+  const n=new Date();
+  timeEl.textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+}
+tick();setInterval(tick,1000);
+
+/* Sidebar */
+window.toggleSidebar=function(){
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+};
+window.closeSidebar=function(){
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+};
+
+/* Scroll to section */
+window.scrollTo=function(id){
+  const el=document.getElementById(id);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+  // update active nav
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  closeSidebar();
+};
+
+/* Table search + filter */
+window.filterTable=function(){
+  const q=document.getElementById('gymSearch').value.toLowerCase();
+  const st=document.getElementById('statusFilter').value;
+  const pl=document.getElementById('planFilter').value.toLowerCase();
+  const rows=document.querySelectorAll('#gymTableBody tr[data-gym-id]');
+  let vis=0;
+  rows.forEach(r=>{
+    const matchQ=!q||r.dataset.search.includes(q);
+    const matchSt=!st||r.dataset.status===st;
+    const matchPl=!pl||r.dataset.plan.toLowerCase()===pl;
+    const show=matchQ&&matchSt&&matchPl;
+    r.style.display=show?'':'none';
+    if(show)vis++;
+  });
+  document.getElementById('tableCount').textContent=vis+' gym'+(vis===1?'':'s')+' shown';
+};
+filterTable();
+
+/* Table sort */
+let sortDir={};
+window.sortTable=function(col){
+  const tbody=document.getElementById('gymTableBody');
+  const rows=[...tbody.querySelectorAll('tr[data-gym-id]')];
+  const dir=sortDir[col]=!(sortDir[col]);
+  rows.sort((a,b)=>{
+    const at=a.cells[col]?.textContent.trim()||'';
+    const bt=b.cells[col]?.textContent.trim()||'';
+    const an=parseFloat(at.replace(/[^0-9.-]/g,'')),bn=parseFloat(bt.replace(/[^0-9.-]/g,''));
+    if(!isNaN(an)&&!isNaN(bn))return dir?an-bn:bn-an;
+    return dir?at.localeCompare(bt):bt.localeCompare(at);
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+};
+
+/* Modal */
+let currentGymId=null;
+window.openModal=function(row){
+  const d=row.dataset;
+  currentGymId=d.gymId;
+  const logo=d.logo;
+  const logoEl=document.getElementById('modalLogo');
+  if(logo){logoEl.innerHTML=`<img src="${logo}" style="width:100%;height:100%;object-fit:cover;border-radius:7px">`}
+  else{logoEl.textContent=(d.name||'?').slice(0,2).toUpperCase()}
+  document.getElementById('modalTitle').textContent=d.name||'—';
+  document.getElementById('modalCode').textContent=d.code||'—';
+  document.getElementById('mOwner').textContent=d.owner||'—';
+  document.getElementById('mCity').textContent=d.city||'—';
+  document.getElementById('mEmail').textContent=d.email||'—';
+  document.getElementById('mPhone').textContent=d.phone||'—';
+  document.getElementById('mWebsite').textContent=d.website||'—';
+  document.getElementById('mAddress').textContent=d.address||'—';
+  document.getElementById('mPlan').textContent=d.plan||'—';
+  document.getElementById('mPrice').textContent=d.planPrice?'₹'+d.planPrice+'/mo':'—';
+  document.getElementById('mSubStart').textContent=d.subStart||'—';
+  document.getElementById('mSubEnd').textContent=d.subEnd||'—';
+  const days=parseInt(d.days);
+  document.getElementById('mDays').textContent=isNaN(days)?'—':(days<0?'Expired':days+'d');
+  document.getElementById('mStatus').textContent=d.active==='True'?'Active':'Inactive';
+  document.getElementById('mMembers').textContent=d.members||'0';
+  document.getElementById('mMemberLimit').textContent=d.memberLimit||'—';
+  document.getElementById('mTrainers').textContent=d.trainers||'0';
+  document.getElementById('mTrainerLimit').textContent=d.trainerLimit||'—';
+  const pct=d.memberLimit?Math.round((d.members/d.memberLimit)*100):0;
+  document.getElementById('mUsageBar').style.width=pct+'%';
+  document.getElementById('mUsageBar').style.background=pct>=90?'var(--red)':pct>=70?'var(--yellow)':'var(--green)';
+  document.getElementById('mUsagePct').textContent=pct+'% of capacity used';
+  document.getElementById('mRevenue').textContent='₹'+(d.revenue||'0');
+  document.getElementById('mTheme').textContent=d.theme||'—';
+  document.getElementById('mColorSwatch').style.background=d.theme||'#333';
+  document.getElementById('mCreated').textContent=d.created||'—';
+  document.getElementById('mUpdated').textContent=d.updated||'—';
+  document.getElementById('mBtnView').onclick=()=>openGym(d.code);
+  document.getElementById('gymModal').classList.add('open');
+  document.body.style.overflow='hidden';
+};
+window.closeModal=function(){
+  document.getElementById('gymModal').classList.remove('open');
+  document.body.style.overflow='';
+};
+window.closeModalOutside=function(e){
+  if(e.target===document.getElementById('gymModal'))closeModal();
+};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+window.openGym=function(code){
+  if(code)window.open('//'+code+'.{{ BASE_DOMAIN|default:"entergym.in" }}/','_blank');
+};
+
+window.gymAction=function(id,action){
+  const actions={
+    activate:'/superadmin/gym/'+id+'/activate/',
+    suspend:'/superadmin/gym/'+id+'/suspend/',
+    edit:'/admin/gyms/gym/'+id+'/change/',
+    owner:'/admin/auth/user/'
+  };
+  if(actions[action])window.location.href=actions[action];
+};
+
+/* Generate insights from DOM data */
+function generateInsights(){
+  const rows=[...document.querySelectorAll('#gymTableBody tr[data-gym-id]')];
+  const insights=[];
+
+  // Top revenue gym
+  let topRev=null,topRevVal=0;
+  rows.forEach(r=>{
+    const rev=parseInt(r.dataset.revenue||0);
+    if(rev>topRevVal){topRevVal=rev;topRev=r.dataset.name}
+  });
+  if(topRev&&topRevVal>0)insights.push({type:'success',text:`<b>${topRev}</b> generated the highest revenue — ₹${topRevVal.toLocaleString('en-IN')} total.`});
+
+  // Near capacity
+  const nearCap=rows.filter(r=>{
+    const m=parseInt(r.dataset.members||0),l=parseInt(r.dataset.memberLimit||0);
+    return l>0&&(m/l)>=0.9;
+  });
+  nearCap.forEach(r=>{
+    const pct=Math.round((parseInt(r.dataset.members)/parseInt(r.dataset.memberLimit))*100);
+    insights.push({type:'warn',text:`<b>${r.dataset.name}</b> is using <b>${pct}%</b> of member capacity — consider upgrading their plan.`});
+  });
+
+  // Expiring soon
+  const exp7=rows.filter(r=>parseInt(r.dataset.days)>=0&&parseInt(r.dataset.days)<=7);
+  if(exp7.length)insights.push({type:'danger',text:`<b>${exp7.length} gym${exp7.length>1?'s':''}</b> will expire within 7 days. Send renewal reminders now.`});
+
+  // Inactive gyms
+  const inactive=rows.filter(r=>r.dataset.status==='inactive'||r.dataset.status==='expired');
+  if(inactive.length)insights.push({type:'danger',text:`<b>${inactive.length} inactive gym${inactive.length>1?'s':''}</b> require${inactive.length===1?'s':''} attention. Review and re-engage.`});
+
+  // All healthy
+  if(insights.length===0)insights.push({type:'success',text:'All gyms are healthy. Platform is running smoothly.'});
+
+  // Total members insight
+  const totalM=rows.reduce((a,r)=>a+parseInt(r.dataset.members||0),0);
+  if(totalM>0)insights.push({type:'info',text:`The platform is serving <b>${totalM.toLocaleString('en-IN')} members</b> across all gyms.`});
+
+  const iconMap={
+    success:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    warn:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    danger:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    info:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+  };
+
+  const list=document.getElementById('insightsList');
+  list.innerHTML=insights.map(i=>`
+    <div class="insight-card">
+      <div class="insight-icon ${i.type}">${iconMap[i.type]}</div>
+      <div class="insight-text">${i.text}</div>
+    </div>
+  `).join('');
+}
+generateInsights();
+
+/* Animate progress bars on load */
+setTimeout(()=>{
+  document.querySelectorAll('.progress-fill').forEach(el=>{
+    const w=el.style.width;el.style.width='0';
+    setTimeout(()=>{el.style.width=w;},50);
+  });
+},100);
+
+})();
+</script>
+</body>
+</html>
