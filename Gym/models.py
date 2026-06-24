@@ -63,8 +63,6 @@ class Gym(models.Model):
     contact_email   = models.EmailField(blank=True)
     contact_phone   = models.CharField(max_length=15, blank=True)
     whatsapp_number = models.CharField(max_length=15, blank=True)
-    theme_color     = models.CharField(max_length=7, default='#007bff')  # hex
-    receipt_footer  = models.TextField(blank=True)
     address         = models.TextField(blank=True)
     city            = models.CharField(max_length=60, blank=True)
     website         = models.URLField(blank=True)
@@ -73,6 +71,18 @@ class Gym(models.Model):
     latitude        = models.FloatField(default=0.0)
     longitude       = models.FloatField(default=0.0)
     radius_meters   = models.FloatField(default=100.0)
+
+    # Add this inside the Gym model, after the geo-fence fields and before created_at
+
+    # ── Module feature flags (per-gym toggles) ────────────────────────────
+    enable_store            = models.BooleanField(default=True,
+        help_text="Supplement store & order management.")
+    enable_attendance       = models.BooleanField(default=True,
+        help_text="Geo-attendance and attendance analytics.")
+    enable_face_recognition = models.BooleanField(default=True,
+        help_text="Face recognition enrollment and auto check-in.")
+    enable_trainers         = models.BooleanField(default=True,
+        help_text="Trainer management module.")
 
     created_at      = models.DateTimeField(auto_now_add=True)
     updated_at      = models.DateTimeField(auto_now=True)

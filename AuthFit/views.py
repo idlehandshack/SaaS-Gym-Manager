@@ -585,6 +585,94 @@ def membership_plans(request):
         "plans": plans,
     })
 
+@_gym_role_required('gym_owner', 'receptionist')
+def trainers(request):
+    gym = getattr(request, 'gym', None)
+    if gym is None:
+        return HttpResponseForbidden("No gym context available.")
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "delete":
+            trainer_id = request.POST.get("trainer_id")
+            trainer = Trainer.objects.filter(id=trainer_id, gym=gym).first()
+            if not trainer:
+                messages.error(request, "Trainer not found.")
+                return redirect('/trainers/')
+            trainer.delete()
+            cache.delete(f"trainers_{gym.pk}")
+            messages.success(request, "Trainer deleted successfully.")
+            return redirect('/trainers/')
+
+        trainer_id  = request.POST.get("trainer_id", "").strip()
+        name        = request.POST.get("name", "").strip()
+        gender      = request.POST.get("gender", "").strip()
+        phone       = request.POST.get("phone", "").strip()
+        address     = request.POST.get("address", "").strip()
+        salary_raw  = request.POST.get("salary", "").strip()
+
+        def fail(msg):
+            messages.error(request, msg)
+            return redirect('/trainers/')
+
+        # ── Validation ────────────────────────────────────────────────────
+        if not name:
+            return fail("Trainer name is required.")
+        if len(name) > 30:
+            return fail("Trainer name cannot exceed 30 characters.")
+
+        if gender not in ("M", "F", "O"):
+            return fail("Select a valid gender.")
+
+        if not phone:
+            return fail("Phone number is required.")
+        if not phone.isdigit() or len(phone) != 10:
+            return fail("Phone number must be exactly 10 digits.")
+
+        if not address:
+            return fail("Address is required.")
+
+        try:
+            salary = int(salary_raw)
+            if salary < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            return fail("Enter a valid non-negative salary.")
+
+        # ── Create or Update ──────────────────────────────────────────────
+        if trainer_id:
+            trainer = Trainer.objects.filter(id=trainer_id, gym=gym).first()
+            if not trainer:
+                return fail("Trainer not found.")
+            trainer.name    = name
+            trainer.gender  = gender
+            trainer.phone   = phone
+            trainer.address = address
+            trainer.salary  = salary
+            trainer.save(update_fields=["name", "gender", "phone", "address", "salary"])
+            messages.success(request, "Trainer updated successfully.")
+        else:
+            Trainer.objects.create(
+                gym=gym,
+                name=name,
+                gender=gender,
+                phone=phone,
+                address=address,
+                salary=salary,
+            )
+            messages.success(request, "Trainer created successfully.")
+
+        cache.delete(f"trainers_{gym.pk}")
+        return redirect('/trainers/')
+
+    # ── GET ───────────────────────────────────────────────────────────────
+    trainers = Trainer.objects.filter(gym=gym).order_by("name")
+    return render(request, "trainers.html", {
+        "gym":      gym,
+        "trainers": trainers,
+    })
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Member views
 # ──────────────────────────────────────────────────────────────────────────────

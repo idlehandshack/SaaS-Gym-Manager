@@ -53,6 +53,14 @@ document.addEventListener("DOMContentLoaded", () => {
       item.addEventListener("click", closeMobileMenu);
     });
   }
+  document.querySelectorAll('.nav-group-trigger').forEach(trigger => {
+    trigger.addEventListener('click', () => {
+      const group = trigger.closest('.nav-group');
+      const isOpen = group.classList.contains('open');
+      document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
+      if (!isOpen) group.classList.add('open');
+    });
+  });
 
   /* =========================
      LAYOUT OFFSET ENGINE

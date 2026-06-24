@@ -12,7 +12,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from cloudinary.utils import cloudinary_url
-
+from Gym.decorators import store_enabled_required
 from AuthFit.models import Enrollment
 from Gym.mixins import gym_staff_required
 from .models import Order, Product, ProductFlavor
@@ -154,6 +154,7 @@ def _status_counts(base_qs):
 # ──────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@store_enabled_required
 def product_list(request):
     gym      = getattr(request, 'gym', None)
     products = Product.objects.filter(active=True).prefetch_related('flavors')
@@ -166,6 +167,7 @@ def product_list(request):
 
 
 @login_required
+@store_enabled_required
 def product_detail(request, product_id):
     gym     = getattr(request, 'gym', None)
     product = _get_active_product(product_id)
@@ -184,6 +186,7 @@ def product_detail(request, product_id):
 # ──────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@store_enabled_required
 def confirm_order(request, product_id):
     gym     = getattr(request, 'gym', None)
     product = _get_active_product(product_id)
@@ -228,9 +231,9 @@ def confirm_order(request, product_id):
 # Place order (POST — atomic, decrements stock)
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 @login_required
-@transaction.atomic
-@login_required
+@store_enabled_required
 @transaction.atomic
 def place_order(request):
     if request.method != 'POST':
@@ -285,13 +288,15 @@ def place_order(request):
 
     # Notification fires only after order is committed — membership already validated above
     from .notifications import notify_staff_new_order
-    transaction.on_commit(lambda: notify_staff_new_order(order))
+    if gym and gym.enable_store:
+        transaction.on_commit(lambda: notify_staff_new_order(order))
 
     return redirect('order_success', order_id=order.id)
 
 # In views.py — replace your order_success view
 
 @login_required
+@store_enabled_required
 def order_success(request, order_id):
     """
     GET-only success page. Safe to refresh — just re-fetches the existing order.
@@ -327,6 +332,7 @@ def order_success(request, order_id):
 # ──────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@store_enabled_required
 def my_orders(request):
     gym = getattr(request, 'gym', None)
 
@@ -353,6 +359,7 @@ def my_orders(request):
 
 
 @gym_staff_required
+@store_enabled_required
 def order_dashboard(request):
 
     gym           = getattr(request, 'gym', None)
@@ -414,6 +421,7 @@ def order_dashboard(request):
 # ──────────────────────────────────────────────────────────────────────────────
 
 @gym_staff_required
+@store_enabled_required
 @require_POST
 def order_update(request, order_id):
     gym    = getattr(request, 'gym', None)

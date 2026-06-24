@@ -140,6 +140,14 @@ def notify_staff_new_order(order) -> None:
     order.gym is now available because Order model has gym FK.
     """
     gym         = order.gym
+
+    if gym and not gym.enable_store:
+        logger.debug(
+            "notify_staff_new_order: store disabled for gym=%s, skipping",
+            getattr(gym, 'gym_code', None),
+        )
+        return
+    
     flavor_part = f" ({order.flavor.name})" if order.flavor else ""
     customer    = order.user.get_full_name().strip() or order.user.username
 

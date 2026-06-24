@@ -21,11 +21,13 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
 # ──────────────────────────────────────────────────────────────────────────────
 @admin.register(Gym)
 class GymAdmin(admin.ModelAdmin):
-    list_display    = ('gym_name', 'gym_code', 'logo_preview', 'active', 'plan')
-    list_filter      = ['active', 'plan']
-    search_fields    = ['gym_name', 'gym_code', 'owner__username']
-    readonly_fields  = ['id', 'logo_preview_large', 'days_until_expiry', 'created_at', 'updated_at']
-    ordering         = ['gym_name']
+    list_display    = ('gym_name', 'gym_code', 'logo_preview', 'active', 'plan',
+                       'enable_store', 'enable_attendance', 'enable_trainers')
+    list_editable   = ('enable_store', 'enable_attendance', 'enable_trainers')
+    list_filter     = ['active', 'plan']
+    search_fields   = ['gym_name', 'gym_code', 'owner__username']
+    readonly_fields = ['id', 'logo_preview_large', 'days_until_expiry', 'created_at', 'updated_at']
+    ordering        = ['gym_name']
     prepopulated_fields = {'gym_code': ('gym_name',)}
     fieldsets = (
         ('Identity', {
@@ -35,10 +37,21 @@ class GymAdmin(admin.ModelAdmin):
             'fields': ('plan', 'active', 'subscription_start', 'subscription_end',
                        'days_until_expiry', 'member_limit', 'trainer_limit'),
         }),
+        ('Module Flags', {
+            'fields': (
+                'enable_store',
+                'enable_attendance',
+                'enable_face_recognition',
+                'enable_trainers',
+            ),
+            'description': (
+                'Toggle individual modules on/off for this gym. '
+                'Disabling a module blocks all URLs and hides UI for that feature.'
+            ),
+        }),
         ('White-label', {
-            'fields': ('logo', 'logo_preview_large', 'theme_color', 'contact_email',
-                       'contact_phone', 'whatsapp_number', 'address', 'city', 'website',
-                       'receipt_footer'),
+            'fields': ('logo', 'logo_preview_large', 'contact_email',
+                       'contact_phone', 'whatsapp_number', 'address', 'city', 'website'),
             'classes': ('collapse',),
         }),
         ('Geo-fence', {
@@ -50,7 +63,7 @@ class GymAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
-
+    
     @admin.display(boolean=True, description='Subscription Active')
     def subscription_status(self, obj):
         return obj.is_subscription_active

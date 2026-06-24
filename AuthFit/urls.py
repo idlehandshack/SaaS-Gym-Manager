@@ -24,6 +24,7 @@ urlpatterns = [
     path('freeze-membership/', views.freeze_membership,       name='freeze_membership'),
     path('freeze-membership/apply/',views.freeze_membership_apply, name='freeze_membership_apply'),
     path('membership-plans/', views.membership_plans, name='membership_plans'),
+    path("trainers/",views.trainers, name="trainers",),
     path('contact-inquiries/', views.contact_inquiries, name='contact_inquiries'),
     path('superadmin/dashboard/', saas_dashboard,  name='saas_dashboard'),
     
