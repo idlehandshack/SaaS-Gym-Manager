@@ -7,9 +7,59 @@
     <title>EnterGYM | Gym Infrastructure Platform</title>
     <meta
       name="description"
-      content="EnterGYM — Multi-tenant gym management SaaS. Manage members, attendance, payments and more."
+      content="EnterGYM — Multi-tenant gym management SaaS platform. Manage members, attendance, face recognition, GPS check-in, payments and supplements. Built for serious gyms."
     />
-    <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />
+
+    <meta
+      name="keywords"
+      content="gym management software, gym SaaS, member management, attendance tracking, face recognition gym, gym billing software India"
+    />
+    <meta name="author" content="Arrow SoftTech" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://entergym.in/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://entergym.in/" />
+    <meta property="og:title" content="EnterGYM — Gym Management Platform" />
+    <meta
+      property="og:description"
+      content="Replace spreadsheets with EnterGYM. Members, attendance, payments, and supplements — one platform."
+    />
+    <meta
+      property="og:image"
+      content="https://entergym.in/static/images/og-preview.png"
+    />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="EnterGYM — Gym Management Platform" />
+    <meta
+      name="twitter:description"
+      content="Multi-tenant gym management SaaS. Face ID, GPS attendance, member billing and more."
+    />
+    <meta
+      name="twitter:image"
+      content="https://entergym.in/static/images/og-preview.png"
+    />
+    <link rel="shortcut icon" href="{% static 'images/favicons.ico' %}" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="{% static 'images/favicons32x32.png' %}"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="{% static 'images/favicons16x16.png' %}"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="{% static 'images/favicons180x180.png' %}"
+    />
+    <link rel="manifest" href="{% static 'manifest.json' %}" />
+    <meta name="theme-color" content="#5B5FFF" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -20,7 +70,6 @@
     <link rel="stylesheet" href="{% static 'css/saas_home.css' %}" />
   </head>
   <body>
-    <!-- ─── NAV ─────────────────────────────────────────────────────────── -->
     <header class="site-nav" id="siteNav">
       <a href="/" class="nav-brand">
         <svg
@@ -51,7 +100,7 @@
 
       <div class="nav-actions">
         {% if request.user.is_authenticated %} 
-        {% if request.user.is_superuser %}
+        {% if request.user.is_superuser%}
         <a href="/admin/" class="btn-ghost">Admin Panel</a>
         {% endif %}
         <form action="{% url 'logout' %}" method="POST" style="display: inline">
@@ -65,7 +114,6 @@
       </div>
     </header>
 
-    <!-- ─── LIVE TICKER ──────────────────────────────────────────────────── -->
     <div class="ticker-rail" aria-hidden="true">
       <div class="ticker-track">
         <span class="tick-item"
@@ -101,7 +149,6 @@
           Studio</span
         >
 
-        <!-- duplicate for seamless loop -->
         <span class="tick-item"
           ><span class="tick-dot green"></span>Alpha Fitness — 18 members
           checked in</span
@@ -137,7 +184,6 @@
       </div>
     </div>
 
-    <!-- ─── HERO ─────────────────────────────────────────────────────────── -->
     <section class="hero-section">
       <div class="hero-inner">
         <div class="hero-left">
@@ -151,11 +197,6 @@
             yours.
           </p>
           <div class="hero-cta">
-            {% if request.user.is_authenticated %}
-            <a href="superadmin/dashboard/" class="btn-primary">Open Dashboard</a>
-            {% else %}
-            <a href="/login/" class="btn-primary">Start free trial</a>
-            {% endif %}
             <a
               href="https://wa.me/917000032565"
               class="btn-secondary"
@@ -183,7 +224,6 @@
         </div>
 
         <div class="hero-right" aria-hidden="true">
-          <!-- Live activity terminal -->
           <div class="terminal-card">
             <div class="terminal-header">
               <div class="terminal-dots">
@@ -236,7 +276,6 @@
                 ><span class="feed-msg">₹1,800 · IronZone Gym</span>
               </div>
             </div>
-            <!-- Mini metrics strip -->
             <div class="terminal-footer">
               <div class="tfooter-item">
                 <span class="tfooter-val">247</span
@@ -258,8 +297,182 @@
       </div>
     </section>
 
-    <!-- ─── FEATURES ─────────────────────────────────────────────────────── -->
-    {% if not request.user.is_superuser %}
+    <section class="problem-section">
+      <div class="problem-inner">
+        <div class="problem-header">
+          <p class="section-eyebrow">The reality check</p>
+          <h2>
+            Running a gym on<br />WhatsApp and Excel<br />is holding you back.
+          </h2>
+        </div>
+        <div class="problem-grid">
+          <div class="problem-col problem-col--before">
+            <div class="pcol-header">
+              <span class="pcol-badge pcol-badge--before">Before EnterGYM</span>
+            </div>
+            <ul class="problem-list">
+              <li class="problem-item problem-item--pain">
+                <span class="pitem-icon">✕</span>
+                <div>
+                  <strong>Chasing payments on WhatsApp</strong>
+                  <span
+                    >Sending "bhai renewal ho gaya?" to 200 members every
+                    month.</span
+                  >
+                </div>
+              </li>
+              <li class="problem-item problem-item--pain">
+                <span class="pitem-icon">✕</span>
+                <div>
+                  <strong>Expired members still walking in</strong>
+                  <span
+                    >No system catches it. Staff can't check every face at the
+                    door.</span
+                  >
+                </div>
+              </li>
+              <li class="problem-item problem-item--pain">
+                <span class="pitem-icon">✕</span>
+                <div>
+                  <strong>Attendance register you can't find</strong>
+                  <span
+                    >Paper log, shared Google Sheet, or a spreadsheet nobody
+                    updates.</span
+                  >
+                </div>
+              </li>
+              <li class="problem-item problem-item--pain">
+                <span class="pitem-icon">✕</span>
+                <div>
+                  <strong>Staff with no system</strong>
+                  <span
+                    >Every person does things differently. Nothing is
+                    consistent.</span
+                  >
+                </div>
+              </li>
+              <li class="problem-item problem-item--pain">
+                <span class="pitem-icon">✕</span>
+                <div>
+                  <strong>No idea what last month's revenue was</strong>
+                  <span
+                    >You guess. The number lives inside your UPI app
+                    history.</span
+                  >
+                </div>
+              </li>
+            </ul>
+            <div class="wa-mockup">
+              <div class="wa-header">
+                <span class="wa-avatar">👥</span>
+                <div>
+                  <span class="wa-name">GYM MEMBERS 🏋️</span>
+                  <span class="wa-sub">312 members</span>
+                </div>
+              </div>
+              <div class="wa-body">
+                <div class="wa-msg wa-msg--out">
+                  Ravi bhai renewal kab karoge? 🙏
+                </div>
+                <div class="wa-msg wa-msg--in">Kal karta hoon bhaiya</div>
+                <div class="wa-msg wa-msg--out">
+                  Priya ji 3 mahine se pending hai payment
+                </div>
+                <div class="wa-msg wa-msg--system">
+                  You sent this message to 14 people
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="problem-col problem-col--after">
+            <div class="pcol-header">
+              <span class="pcol-badge pcol-badge--after">After EnterGYM</span>
+            </div>
+            <ul class="problem-list">
+              <li class="problem-item problem-item--solved">
+                <span class="pitem-icon">✓</span>
+                <div>
+                  <strong>Automated renewal reminders</strong>
+                  <span
+                    >Push notifications go out 7 days, 3 days, and 1 day before
+                    expiry. Automatically.</span
+                  >
+                </div>
+              </li>
+              <li class="problem-item problem-item--solved">
+                <span class="pitem-icon">✓</span>
+                <div>
+                  <strong>Face recognition blocks expired members</strong>
+                  <span
+                    >Camera doesn't match — no entry. Zero manual checking
+                    needed.</span
+                  >
+                </div>
+              </li>
+              <li class="problem-item problem-item--solved">
+                <span class="pitem-icon">✓</span>
+                <div>
+                  <strong>Every check-in logged with timestamp</strong>
+                  <span
+                    >Face ID, GPS, or manual — all synced in real time,
+                    forever.</span
+                  >
+                </div>
+              </li>
+              <li class="problem-item problem-item--solved">
+                <span class="pitem-icon">✓</span>
+                <div>
+                  <strong>Staff dashboard with clear workflows</strong>
+                  <span
+                    >Enroll, renew, check in — every action is guided and
+                    auditable.</span
+                  >
+                </div>
+              </li>
+              <li class="problem-item problem-item--solved">
+                <span class="pitem-icon">✓</span>
+                <div>
+                  <strong>Live revenue dashboard, always current</strong>
+                  <span
+                    >MTD collections, pending dues, and plan-wise breakdown —
+                    one screen.</span
+                  >
+                </div>
+              </li>
+            </ul>
+            <div class="dash-mockup">
+              <div class="dash-row">
+                <span class="dm-label">Revenue — June</span>
+                <span class="dm-val dm-val--green">₹2,40,000</span>
+              </div>
+              <div class="dash-divider"></div>
+              <div class="dash-row">
+                <span class="dm-label">Pending dues</span>
+                <span class="dm-val dm-val--yellow">₹18,400</span>
+              </div>
+              <div class="dash-divider"></div>
+              <div class="dash-row">
+                <span class="dm-label">Expiring this week</span>
+                <div class="dm-pill-row">
+                  <span class="dm-pill">14 members</span>
+                  <span class="dm-action">Remind all →</span>
+                </div>
+              </div>
+              <div class="dash-divider"></div>
+              <div class="dash-row">
+                <span class="dm-label">Today's check-ins</span>
+                <span class="dm-val">247</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="problem-cta">
+          <a href="/login/" class="btn-primary">See how it works →</a>
+        </div>
+      </div>
+    </section>
+
     <section class="features-section" id="features">
       <div class="features-inner">
         <div class="features-header">
@@ -271,7 +484,6 @@
           </p>
         </div>
 
-        <!-- Feature 1 — large left -->
         <div class="feat-row feat-row--flip">
           <div class="feat-text">
             <span class="feat-index">01</span>
@@ -343,7 +555,6 @@
           </div>
         </div>
 
-        <!-- Feature 2 -->
         <div class="feat-row">
           <div class="feat-text">
             <span class="feat-index">02</span>
@@ -375,7 +586,6 @@
           </div>
         </div>
 
-        <!-- Feature 3 -->
         <div class="feat-row feat-row--flip">
           <div class="feat-text">
             <span class="feat-index">03</span>
@@ -408,7 +618,6 @@
           </div>
         </div>
 
-        <!-- Feature row — 3 smaller cards -->
         <div class="feat-mini-row">
           <div class="feat-mini">
             <span class="feat-index">04</span>
@@ -438,7 +647,1334 @@
       </div>
     </section>
 
-    <!-- ─── CONTACT ───────────────────────────────────────────────────────── -->
+    <section class="how-section">
+      <div class="how-inner">
+        <div class="how-header">
+          <p class="section-eyebrow">Setup process</p>
+          <h2>Up and running<br />in 24 hours.</h2>
+          <p class="section-sub">
+            We handle the technical setup. You share your member list. That's
+            it.
+          </p>
+        </div>
+        <div class="how-steps">
+          <div class="how-step reveal">
+            <span class="how-num">01</span>
+            <div class="how-icon">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 28 28"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  width="28"
+                  height="28"
+                  rx="6"
+                  fill="rgba(91,95,255,0.12)"
+                />
+                <rect x="6" y="9" width="16" height="2" rx="1" fill="#5B5FFF" />
+                <rect
+                  x="6"
+                  y="13"
+                  width="12"
+                  height="2"
+                  rx="1"
+                  fill="#5B5FFF"
+                  opacity="0.6"
+                />
+                <rect
+                  x="6"
+                  y="17"
+                  width="9"
+                  height="2"
+                  rx="1"
+                  fill="#5B5FFF"
+                  opacity="0.3"
+                />
+              </svg>
+            </div>
+            <h3>Share your member data</h3>
+            <p>
+              Send us your existing member list — Excel, CSV, or even a WhatsApp
+              contact export. We import everything.
+            </p>
+            <span class="how-tag">CSV · Excel · WhatsApp list</span>
+          </div>
+          <div class="how-connector" aria-hidden="true">
+            <div class="how-line"></div>
+            <div class="how-arrow">→</div>
+          </div>
+          <div class="how-step reveal">
+            <span class="how-num">02</span>
+            <div class="how-icon">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 28 28"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  width="28"
+                  height="28"
+                  rx="6"
+                  fill="rgba(91,95,255,0.12)"
+                />
+                <rect
+                  x="5"
+                  y="8"
+                  width="18"
+                  height="12"
+                  rx="2"
+                  stroke="#5B5FFF"
+                  stroke-width="1.5"
+                  fill="none"
+                />
+                <rect
+                  x="9"
+                  y="12"
+                  width="10"
+                  height="1.5"
+                  rx="0.75"
+                  fill="#5B5FFF"
+                  opacity="0.5"
+                />
+                <rect
+                  x="9"
+                  y="15"
+                  width="6"
+                  height="1.5"
+                  rx="0.75"
+                  fill="#5B5FFF"
+                  opacity="0.3"
+                />
+                <circle cx="21" cy="19" r="4" fill="#10b981" />
+                <path
+                  d="M19 19l1.2 1.2L23 17.5"
+                  stroke="white"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <h3>We configure your gym</h3>
+            <p>
+              Our team sets up your branded dashboard, configures face
+              recognition on your cameras, and runs a full test.
+            </p>
+            <span class="how-tag">Done by Arrow SoftTech team</span>
+          </div>
+          <div class="how-connector" aria-hidden="true">
+            <div class="how-line"></div>
+            <div class="how-arrow">→</div>
+          </div>
+          <div class="how-step reveal">
+            <span class="how-num">03</span>
+            <div class="how-icon">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 28 28"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  width="28"
+                  height="28"
+                  rx="6"
+                  fill="rgba(16,185,129,0.12)"
+                />
+                <circle
+                  cx="14"
+                  cy="14"
+                  r="7"
+                  stroke="#10b981"
+                  stroke-width="1.5"
+                  fill="none"
+                />
+                <path
+                  d="M10.5 14l2.5 2.5L18 11"
+                  stroke="#10b981"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <h3>Go live before your next session</h3>
+            <p>
+              Members walk in, the camera marks them present. Staff enroll new
+              members on the dashboard. You watch it all happen.
+            </p>
+            <span class="how-tag">Live within 24 hours · guaranteed</span>
+          </div>
+        </div>
+        <div class="how-reassurance">
+          <span class="how-re-dot"></span>
+          <p>
+            No IT team needed. No technical knowledge required. If something
+            doesn't work, we fix it — same day.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="faceid-section">
+      <div class="faceid-inner">
+        <div class="faceid-left">
+          <div class="fv-card face-card faceid-card">
+            <div class="face-scan">
+              <div class="scan-ring outer"></div>
+              <div class="scan-ring inner"></div>
+              <div class="scan-avatar">AP</div>
+              <div class="scan-line"></div>
+            </div>
+            <div class="scan-result">
+              <span class="scan-name">Arjun Patil</span>
+              <span class="scan-conf">98.4% match</span>
+              <span class="scan-time">✓ Checked in · 06:51 AM</span>
+            </div>
+            <div class="faceid-flow">
+              <div class="faceid-flow-step">
+                <div class="fflow-icon">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect
+                      width="20"
+                      height="20"
+                      rx="4"
+                      fill="rgba(91,95,255,0.15)"
+                    />
+                    <rect
+                      x="3"
+                      y="6"
+                      width="14"
+                      height="8"
+                      rx="1.5"
+                      stroke="#5B5FFF"
+                      stroke-width="1.2"
+                      fill="none"
+                    />
+                    <circle cx="10" cy="10" r="2" fill="#5B5FFF" />
+                  </svg>
+                </div>
+                <span>Camera detects face</span>
+              </div>
+              <span class="fflow-arrow">→</span>
+              <div class="faceid-flow-step">
+                <div class="fflow-icon">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect
+                      width="20"
+                      height="20"
+                      rx="4"
+                      fill="rgba(91,95,255,0.15)"
+                    />
+                    <path
+                      d="M6 10a4 4 0 014-4m4 4a4 4 0 01-4 4"
+                      stroke="#5B5FFF"
+                      stroke-width="1.2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </div>
+                <span>Matches member DB</span>
+              </div>
+              <span class="fflow-arrow">→</span>
+              <div class="faceid-flow-step faceid-flow-step--verified">
+                <div class="fflow-icon">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect
+                      width="20"
+                      height="20"
+                      rx="4"
+                      fill="rgba(16,185,129,0.15)"
+                    />
+                    <path
+                      d="M5.5 10l3 3L14.5 7"
+                      stroke="#10b981"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <span>Attendance logged</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="faceid-right">
+          <p class="section-eyebrow">Face recognition</p>
+          <h2>Members walk in.<br />The camera marks<br />them present.</h2>
+          <p class="faceid-body">
+            No app to open. No fob to tap. No QR code to scan. Face recognition
+            runs passively in the background — members just walk through the
+            door.
+          </p>
+
+          <ul class="faceid-bullets">
+            <li>
+              <span class="fb-tag">HARDWARE</span>
+              <span
+                >Works on standard IP cameras already installed in your gym. No
+                new equipment to buy.</span
+              >
+            </li>
+            <li>
+              <span class="fb-tag">ACCURACY</span>
+              <span
+                >Members enroll once with 3–5 reference photos. Every subsequent
+                entry is matched with a confidence score.</span
+              >
+            </li>
+            <li>
+              <span class="fb-tag">FALLBACK</span>
+              <span
+                >Camera offline? Members can check in via GPS or manual entry —
+                no attendance gaps ever.</span
+              >
+            </li>
+            <li>
+              <span class="fb-tag">PRIVACY</span>
+              <span
+                >Face data is stored encrypted, scoped to your gym only. Never
+                shared across tenants.</span
+              >
+            </li>
+          </ul>
+
+          <div class="faceid-reassurance">
+            <span class="faceid-check">✓</span>
+            <span
+              >Works on standard CCTV cameras. No extra hardware required.</span
+            >
+          </div>
+
+          <a
+            href="https://wa.me/917000032565"
+            class="btn-primary"
+            target="_blank"
+            rel="noopener"
+            >Ask how it works on your cameras →</a
+          >
+        </div>
+      </div>
+    </section>
+    <section class="testimonials-section">
+      <div class="testimonials-inner">
+        <div class="testi-header">
+          <p class="section-eyebrow">Real gym owners</p>
+          <h2>Switched. Haven't looked back.</h2>
+        </div>
+        <div class="testi-grid">
+          <div class="testi-card reveal">
+            <div class="testi-stars">★★★★★</div>
+            <p class="testi-quote">
+              "We were running three registers and a WhatsApp group for 400
+              members. EnterGYM replaced all of it in two days. The face
+              recognition alone saves my staff 45 minutes every morning."
+            </p>
+            <div class="testi-author">
+              <div
+                class="avatar"
+                style="
+                  background: #5b5fff20;
+                  color: #5b5fff;
+                  width: 40px;
+                  height: 40px;
+                  font-size: 0.78rem;
+                "
+              >
+                RK
+              </div>
+              <div class="testi-info">
+                <strong>Rajesh Kumar</strong>
+                <span class="testi-gym"
+                  >PowerHouse Gym <span class="testi-city">· Pune</span></span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="testi-card reveal">
+            <div class="testi-stars">★★★★★</div>
+            <p class="testi-quote">
+              "Before this, I had no idea how many members were actually paying
+              versus just walking in. Now I can see it live. Collections went up
+              22% in the first month just from automated reminders."
+            </p>
+            <div class="testi-author">
+              <div
+                class="avatar"
+                style="
+                  background: #10b98120;
+                  color: #10b981;
+                  width: 40px;
+                  height: 40px;
+                  font-size: 0.78rem;
+                "
+              >
+                SM
+              </div>
+              <div class="testi-info">
+                <strong>Sunita Marathe</strong>
+                <span class="testi-gym"
+                  >FitFirst Studio
+                  <span class="testi-city">· Nagpur</span></span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="testi-card reveal">
+            <div class="testi-stars">★★★★★</div>
+            <p class="testi-quote">
+              "I have four branches. Managing them separately was a nightmare.
+              EnterGYM gives me one dashboard for all four. I can see which
+              location is underperforming from my phone at 7 AM."
+            </p>
+            <div class="testi-author">
+              <div
+                class="avatar"
+                style="
+                  background: #f59e0b20;
+                  color: #f59e0b;
+                  width: 40px;
+                  height: 40px;
+                  font-size: 0.78rem;
+                "
+              >
+                VP
+              </div>
+              <div class="testi-info">
+                <strong>Vikram Patil</strong>
+                <span class="testi-gym"
+                  >Alpha Fitness Group
+                  <span class="testi-city">· Mumbai</span></span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+  
+    <section class="s5-pricing" id="pricing">
+      <div class="s5-pricing__inner">
+        <div class="s5-head">
+          <p class="s5-eyebrow">Pricing</p>
+          <h2 class="s5-heading">Choose Your <span>Plan</span></h2>
+          <p class="s5-body">
+            Every plan includes full Premium+ features. No feature lock-ins, no
+            surprises. Pick what fits your gym best.
+          </p>
+        </div>
+        <!-- ============ TAB SWITCHER ============ -->
+        <div class="s5-tabs" role="tablist" aria-label="Pricing plans">
+          <button
+            class="s5-tab"
+            type="button"
+            role="tab"
+            data-panel="s5-panel-launchpad"
+          >
+            <span class="s5-tab__icon">
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                <path
+                  d="M9 2.5l1.6 3.4 3.7.5-2.7 2.6.7 3.7L9 10.9l-3.3 1.8.7-3.7-2.7-2.6 3.7-.5L9 2.5z"
+                  stroke="#8b8fff"
+                  stroke-width="1.3"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            <span class="s5-tab__name">Launchpad</span>
+            <span class="s5-tab__sub">Free Tier</span>
+          </button>
+          <button
+            class="s5-tab is-active"
+            type="button"
+            role="tab"
+            data-panel="s5-panel-payg"
+          >
+            <span class="s5-tab__icon">
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                <path
+                  d="M3 12.5a6 6 0 1112 0"
+                  stroke="#8b8fff"
+                  stroke-width="1.3"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M9 9.5L11.3 7"
+                  stroke="#8b8fff"
+                  stroke-width="1.3"
+                  stroke-linecap="round"
+                />
+                <circle cx="9" cy="9.5" r="1" fill="#8b8fff" />
+              </svg>
+            </span>
+            <span class="s5-tab__name">Pay-as-you-Go</span>
+            <span class="s5-tab__sub">Postpaid</span>
+          </button>
+          <button
+            class="s5-tab"
+            type="button"
+            role="tab"
+            data-panel="s5-panel-fixed"
+          >
+            <span class="s5-tab__icon">
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                <path
+                  d="M9 2.5l5.5 2.6v3.4c0 3.7-2.4 6-5.5 7-3.1-1-5.5-3.3-5.5-7V5.1L9 2.5z"
+                  stroke="#8b8fff"
+                  stroke-width="1.3"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            <span class="s5-tab__name">Fixed Subscription</span>
+            <span class="s5-tab__sub">Prepaid</span>
+          </button>
+          <button
+            class="s5-tab"
+            type="button"
+            role="tab"
+            data-panel="s5-panel-chain"
+          >
+            <span class="s5-tab__icon">
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                <rect
+                  x="3"
+                  y="7"
+                  width="4.5"
+                  height="7.5"
+                  rx="1"
+                  stroke="#8b8fff"
+                  stroke-width="1.3"
+                />
+                <rect
+                  x="10.5"
+                  y="3.5"
+                  width="4.5"
+                  height="11"
+                  rx="1"
+                  stroke="#8b8fff"
+                  stroke-width="1.3"
+                />
+              </svg>
+            </span>
+            <span class="s5-tab__name">Chain Pro</span>
+            <span class="s5-tab__sub">Enterprise</span>
+          </button>
+        </div>
+        <!-- ============ PANEL: LAUNCHPAD ============ -->
+        <div class="s5-panel" id="s5-panel-launchpad">
+          <div class="s5-card">
+            <span class="s5-badge">Free Forever</span>
+            <h3 class="s5-card__title">Launchpad</h3>
+            <div class="s5-card__price">
+              <span class="s5-card__price-amount">₹0</span>
+              <span class="s5-card__price-unit">/month</span>
+            </div>
+            <p class="s5-card__price-note">
+              Up to 25 members &mdash; perfect for new gyms testing the waters.
+            </p>
+            <ul class="s5-checklist">
+              <li class="s5-check-item">
+                <span class="s5-check-icon">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2.8 7.2l2.6 2.6L11.2 4"
+                      stroke="#10b981"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                Core member management
+              </li>
+              <li class="s5-check-item">
+                <span class="s5-check-icon">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2.8 7.2l2.6 2.6L11.2 4"
+                      stroke="#10b981"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                Manual attendance log
+              </li>
+              <li class="s5-check-item">
+                <span class="s5-check-icon">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2.8 7.2l2.6 2.6L11.2 4"
+                      stroke="#10b981"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                No card required
+              </li>
+            </ul>
+            <a href="/login/" class="s5-btn s5-btn--primary">Start for free</a>
+            <p class="s5-foot-note">Upgrade anytime as your gym grows</p>
+          </div>
+        </div>
+        <!-- ============ PANEL: PAY-AS-YOU-GO ============ -->
+        <div class="s5-panel is-active" id="s5-panel-payg">
+          <div class="s5-card">
+            <span class="s5-badge">Most Flexible</span>
+            <h3 class="s5-card__title">Pay-as-you-Go</h3>
+            <div class="s5-card__price">
+              <span class="s5-card__price-amount">₹4.99</span>
+              <span class="s5-card__price-unit"
+                >&ndash; ₹6.99 /member/month</span
+              >
+            </div>
+            <p class="s5-card__price-note">
+              Flat rate per member &mdash; growing your gym always lowers your
+              rate.
+            </p>
+            <div class="s5-tier-list">
+              <div class="s5-tier-row">
+                <span>Up to 100 members</span>
+                <span class="s5-tier-rate">₹6.99/member</span>
+              </div>
+              <div class="s5-tier-row">
+                <span>101&ndash;300 members</span>
+                <span class="s5-tier-rate">₹5.99/member</span>
+              </div>
+              <div class="s5-tier-row">
+                <span>301+ members</span>
+                <span class="s5-tier-rate">₹4.99/member</span>
+              </div>
+            </div>
+            <ul class="s5-checklist">
+              <li class="s5-check-item">
+                <span class="s5-check-icon">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2.8 7.2l2.6 2.6L11.2 4"
+                      stroke="#10b981"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                1-month free trial on first signup
+              </li>
+              <li class="s5-check-item">
+                <span class="s5-check-icon">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2.8 7.2l2.6 2.6L11.2 4"
+                      stroke="#10b981"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                No contract &mdash; cancel or switch anytime
+              </li>
+              <li class="s5-check-item">
+                <span class="s5-check-icon">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2.8 7.2l2.6 2.6L11.2 4"
+                      stroke="#10b981"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                Per-branch independent billing
+              </li>
+              <li class="s5-check-item">
+                <span class="s5-check-icon">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2.8 7.2l2.6 2.6L11.2 4"
+                      stroke="#10b981"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                Free data migration
+              </li>
+            </ul>
+            <a href="https://wa.me/917000032565" class="s5-btn s5-btn--primary">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M8 2.7a5.3 5.3 0 00-4.5 8.1L3 13.3l2.6-.5A5.3 5.3 0 108 2.7z"
+                  stroke="currentColor"
+                  stroke-width="1.3"
+                />
+              </svg>
+              Contact Sales
+            </a>
+            <div class="s5-terms-wrap">
+              <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
+            </div>
+          </div>
+        </div>
+        <!-- ============ PANEL: FIXED SUBSCRIPTION ============ -->
+        <div class="s5-panel" id="s5-panel-fixed">
+          <div class="s5-grid">
+            <div class="s5-grid-card">
+              <span class="s5-badge">Starter</span>
+              <h4 class="s5-grid-card__title">3 Months</h4>
+              <div class="s5-grid-card__price">₹3,499</div>
+              <span class="s5-extra-branch">
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M7 3v8M3 7h8"
+                    stroke="#10b981"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                ₹1,750 per additional branch
+              </span>
+              <ul class="s5-checklist">
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  1 month free trial included
+                </li>
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  No member count limit
+                </li>
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  All Premium+ features
+                </li>
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  Free migration
+                </li>
+              </ul>
+              <a href="/login/" class="s5-btn s5-btn--primary">Subscribe</a>
+              <div class="s5-terms-wrap">
+                <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
+              </div>
+            </div>
+            <div class="s5-grid-card s5-grid-card--popular">
+              <span class="s5-badge">Popular</span>
+              <h4 class="s5-grid-card__title">6 Months</h4>
+              <div class="s5-grid-card__price">₹5,999</div>
+              <span class="s5-extra-branch">
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M7 3v8M3 7h8"
+                    stroke="#10b981"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                ₹3,000 per additional branch
+              </span>
+              <ul class="s5-checklist">
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  1 month free trial included
+                </li>
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  No member count limit
+                </li>
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  All Premium+ features
+                </li>
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  Free migration
+                </li>
+              </ul>
+              <a href="/login/" class="s5-btn s5-btn--primary">Subscribe</a>
+              <div class="s5-terms-wrap">
+                <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
+              </div>
+            </div>
+            <div class="s5-grid-card">
+              <span class="s5-badge">Best Value</span>
+              <h4 class="s5-grid-card__title">12 Months</h4>
+              <div class="s5-grid-card__price">₹9,999</div>
+              <span class="s5-extra-branch">
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M7 3v8M3 7h8"
+                    stroke="#10b981"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                ₹5,000 per additional branch
+              </span>
+              <ul class="s5-checklist">
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  1 month free trial included
+                </li>
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  No member count limit
+                </li>
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  All Premium+ features
+                </li>
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  Free migration
+                </li>
+              </ul>
+              <a href="/login/" class="s5-btn s5-btn--primary">Subscribe</a>
+              <div class="s5-terms-wrap">
+                <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ============ PANEL: CHAIN PRO ============ -->
+        <div class="s5-panel" id="s5-panel-chain">
+          <div class="s5-card">
+            <span class="s5-badge">Enterprise</span>
+            <h3 class="s5-card__title">Chain Pro</h3>
+            <div class="s5-card__price">
+              <span class="s5-card__price-amount">Custom</span>
+              <span class="s5-card__price-unit">pricing</span>
+            </div>
+            <p class="s5-card__price-note">
+              Built for multi-branch chains with centralized reporting and
+              dedicated support.
+            </p>
+            <ul class="s5-checklist">
+              <li class="s5-check-item">
+                <span class="s5-check-icon">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2.8 7.2l2.6 2.6L11.2 4"
+                      stroke="#10b981"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                Unlimited branches, unified dashboard
+              </li>
+              <li class="s5-check-item">
+                <span class="s5-check-icon">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2.8 7.2l2.6 2.6L11.2 4"
+                      stroke="#10b981"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                Dedicated account manager
+              </li>
+              <li class="s5-check-item">
+                <span class="s5-check-icon">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2.8 7.2l2.6 2.6L11.2 4"
+                      stroke="#10b981"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                Custom integrations &amp; SLA
+              </li>
+            </ul>
+            <a href="https://wa.me/917000032565" class="s5-btn s5-btn--primary">
+              Contact Sales
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="s6-calc" id="calculator">
+      <div class="s6-calc__inner">
+        <div class="s6-head">
+          <p class="s6-eyebrow">Plan Calculator</p>
+          <h2 class="s6-heading">Find your <span>perfect plan</span></h2>
+          <p class="s6-subhead">
+            Enter your gym details to get a personalised cost comparison and
+            plan recommendation.
+          </p>
+        </div>
+        <div class="s6-layout reveal">
+          <!-- ====== INPUT PANEL ====== -->
+          <div class="s6-input-panel">
+            <div class="s6-panel-title">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 18 18"
+                fill="none"
+                aria-hidden="true"
+              >
+                <rect
+                  x="3"
+                  y="3"
+                  width="12"
+                  height="12"
+                  rx="2.5"
+                  stroke="#8b8fff"
+                  stroke-width="1.4"
+                />
+                <path
+                  d="M6 9h6M6 6.5h6M6 11.5h3.5"
+                  stroke="#8b8fff"
+                  stroke-width="1.3"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Gym Details
+            </div>
+            <div class="s6-field">
+              <label class="s6-label" for="calc-gym-name">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="2"
+                    y="2"
+                    width="10"
+                    height="10"
+                    rx="2"
+                    stroke="#9898b0"
+                    stroke-width="1.3"
+                  />
+                  <path
+                    d="M5 7h4"
+                    stroke="#9898b0"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                Gym Name
+              </label>
+              <input
+                class="s6-input"
+                id="calc-gym-name"
+                type="text"
+                placeholder="e.g. FitZone Gym"
+                autocomplete="off"
+              />
+            </div>
+            <div class="s6-field">
+              <label class="s6-label" for="calc-branches">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="5"
+                    stroke="#9898b0"
+                    stroke-width="1.3"
+                  />
+                  <path
+                    d="M7 4.5v2.5l2 1"
+                    stroke="#9898b0"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                Number of Branches
+              </label>
+              <div class="s6-slider-row">
+                <input
+                  class="s6-slider"
+                  id="calc-branches"
+                  type="range"
+                  min="1"
+                  max="10"
+                  value="1"
+                  step="1"
+                />
+                <div class="s6-slider-val" id="calc-branches-display">1</div>
+              </div>
+              <div class="s6-slider-marks">
+                <span class="s6-slider-mark">1</span>
+                <span class="s6-slider-mark">5</span>
+                <span class="s6-slider-mark">10</span>
+                <span class="s6-slider-mark">10+</span>
+              </div>
+            </div>
+            <div class="s6-field">
+              <label class="s6-label">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="6"
+                    cy="5.5"
+                    r="2"
+                    stroke="#9898b0"
+                    stroke-width="1.3"
+                  />
+                  <path
+                    d="M3 11.5c0-2 1.3-3 3-3s3 1 3 3"
+                    stroke="#9898b0"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M9 4c.7.3 1.2 1 1.2 1.8s-.5 1.5-1.2 1.7"
+                    stroke="#9898b0"
+                    stroke-width="1.2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M10.5 11.5c0-1.8-1-2.8-2-3"
+                    stroke="#9898b0"
+                    stroke-width="1.2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                Active Members per Branch
+              </label>
+              <div class="s6-branches-grid" id="calc-branches-grid">
+                <div class="s6-branch-row">
+                  <span class="s6-branch-label">Branch 1</span>
+                  <input
+                    class="s6-branch-input"
+                    type="number"
+                    min="1"
+                    max="2000"
+                    value=""
+                    placeholder="Approx. active members"
+                    data-branch="0"
+                  />
+                </div>
+              </div>
+            </div>
+            <button class="s6-calc-btn" id="calc-run-btn" type="button">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+              >
+                <rect
+                  x="2"
+                  y="2"
+                  width="12"
+                  height="12"
+                  rx="2.5"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                />
+                <path
+                  d="M5 8h6M8 5v6"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Calculate &amp; Recommend
+            </button>
+          </div>
+          <!-- ====== RESULT PANEL ====== -->
+          <div class="s6-result-panel">
+            <!-- Empty state -->
+            <div class="s6-result-empty" id="calc-empty">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect
+                  x="6"
+                  y="6"
+                  width="28"
+                  height="28"
+                  rx="6"
+                  stroke="#5b5fff"
+                  stroke-width="1.6"
+                />
+                <path
+                  d="M13 20h14M20 13v14"
+                  stroke="#5b5fff"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <p>Enter your gym details and hit Calculate</p>
+            </div>
+            <!-- Result card -->
+            <div class="s6-result-card" id="calc-result">
+              <div id="calc-gym-display" class="s6-result-gym"></div>
+              <div class="s6-result-sub" id="calc-result-sub"></div>
+              <div id="calc-recommend-badge" class="s6-recommend">
+                <span class="s6-recommend-dot"></span>
+                <span id="calc-recommend-text">Recommended plan</span>
+              </div>
+              <!-- Plan tabs -->
+              <div class="s6-plan-tabs" role="tablist">
+                <button
+                  class="s6-plan-tab"
+                  data-plan="payg"
+                  role="tab"
+                  type="button"
+                >
+                  Pay-as-you-Go
+                </button>
+                <button
+                  class="s6-plan-tab"
+                  data-plan="fixed3"
+                  role="tab"
+                  type="button"
+                >
+                  3 Months
+                </button>
+                <button
+                  class="s6-plan-tab"
+                  data-plan="fixed6"
+                  role="tab"
+                  type="button"
+                >
+                  6 Months
+                </button>
+                <button
+                  class="s6-plan-tab"
+                  data-plan="fixed12"
+                  role="tab"
+                  type="button"
+                >
+                  12 Months
+                </button>
+              </div>
+              <!-- PAYG detail -->
+              <div class="s6-plan-detail" id="detail-payg">
+                <div id="payg-rows"></div>
+                <div class="s6-cost-total">
+                  <span class="s6-cost-total-label">Est. monthly cost</span>
+                  <span class="s6-cost-total-val" id="payg-total"></span>
+                </div>
+              </div>
+              <!-- Fixed 3m detail -->
+              <div class="s6-plan-detail" id="detail-fixed3">
+                <div id="fixed3-rows"></div>
+                <div class="s6-cost-total">
+                  <span class="s6-cost-total-label">Total for 3 months</span>
+                  <span class="s6-cost-total-val" id="fixed3-total"></span>
+                </div>
+              </div>
+              <!-- Fixed 6m detail -->
+              <div class="s6-plan-detail" id="detail-fixed6">
+                <div id="fixed6-rows"></div>
+                <div class="s6-cost-total">
+                  <span class="s6-cost-total-label">Total for 6 months</span>
+                  <span class="s6-cost-total-val" id="fixed6-total"></span>
+                </div>
+              </div>
+              <!-- Fixed 12m detail -->
+              <div class="s6-plan-detail" id="detail-fixed12">
+                <div id="fixed12-rows"></div>
+                <div class="s6-cost-total">
+                  <span class="s6-cost-total-label">Total for 12 months</span>
+                  <span class="s6-cost-total-val" id="fixed12-total"></span>
+                </div>
+              </div>
+            </div>
+            <!-- Savings comparison -->
+            <div class="s6-savings-card" id="calc-savings">
+              <div class="s6-savings-head">Cost Comparison — all plans</div>
+              <div class="s6-savings-grid" id="savings-grid"></div>
+            </div>
+            <!-- CTAs -->
+            <div class="s6-result-cta" id="calc-cta">
+              <a href="/login/" class="s6-cta-btn s6-cta-btn--primary">
+                Start Free Trial
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3.5 8h9M8.5 3.5L13 8l-4.5 4.5"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </a>
+              <a
+                href="https://wa.me/917000032565"
+                class="s6-cta-btn s6-cta-btn--ghost"
+              >
+                Talk to Sales
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
     <section class="contact-section" id="about">
       <div class="contact-inner">
         <div class="contact-left">
@@ -481,76 +2017,98 @@
         </div>
       </div>
     </section>
-    {% endif %}
 
-    <!-- ─── SUPERUSER GYM LIST ─────────────────────────────────────────────── -->
-    {% if request.user.is_superuser and gyms %}
-    <section class="gyms-section">
-      <div class="gyms-inner">
-        <p class="section-eyebrow">Superuser view</p>
-        <h2>Active gyms</h2>
-        <p class="section-sub">All gyms running on EnterGYM.</p>
-        <div class="gyms-grid">
-          {% for g in gyms %}
-          <div
-            class="gym-card {% if not g.is_subscription_active %}gym-card--expired{% endif %}"
-          >
-            <div class="gc-top">
-              <span class="gc-name">{{ g.gym_name }}</span>
-              <span class="gc-code">{{ g.gym_code }}</span>
-            </div>
-            <div class="gc-mid">
-              {% if g.is_subscription_active %}
-              <span class="status-pill active">Active</span>
-              {% else %}
-              <span class="status-pill expired">Expired</span>
-              {% endif %}
-              <span class="gc-expiry"
-                >{{ g.subscription_end|default:"—" }}</span
-              >
-            </div>
-            <a href="//{{ g.gym_code }}.{{ BASE_DOMAIN }}/" class="gc-link"
-              >Visit gym →</a
+    <footer class="site-footer site-footer--expanded">
+      <div class="footer-inner footer-inner--grid">
+        <div class="footer-col footer-col--brand">
+          <a href="/" class="footer-brand-link">
+            <svg
+              class="brand-mark"
+              viewBox="0 0 28 28"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
             >
-          </div>
-          {% endfor %}
+              <rect width="28" height="28" rx="6" fill="#5B5FFF" />
+              <rect
+                x="5"
+                y="11"
+                width="8"
+                height="6"
+                rx="1.5"
+                fill="white"
+                opacity="0.9"
+              />
+              <rect x="15" y="8" width="8" height="12" rx="1.5" fill="white" />
+            </svg>
+            <span class="brand-name">EnterGYM</span>
+          </a>
+          <p class="footer-tagline">
+            The operating system for serious gyms. Built for Indian gym owners
+            who mean business.
+          </p>
+          <p class="footer-copy">
+            © 2026 EnterGYM by
+            <a href="https://wa.me/917000032565">Arrow SoftTech</a>.
+          </p>
         </div>
-      </div>
-    </section>
-    {% endif %}
 
-    <!-- ─── FOOTER ────────────────────────────────────────────────────────── -->
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <div class="footer-brand">
-          <svg
-            class="brand-mark"
-            viewBox="0 0 28 28"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="28" height="28" rx="6" fill="#5B5FFF" />
-            <rect
-              x="5"
-              y="11"
-              width="8"
-              height="6"
-              rx="1.5"
-              fill="white"
-              opacity="0.9"
-            />
-            <rect x="15" y="8" width="8" height="12" rx="1.5" fill="white" />
-          </svg>
-          <span>EnterGYM</span>
+        <div class="footer-col">
+          <p class="footer-col-head">Product</p>
+          <ul class="footer-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="/login/">Free Trial</a></li>
+            <li><a href="https://wa.me/917000032565">Book Demo</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+          </ul>
         </div>
-        <p class="footer-copy">
-          © 2026 EnterGYM by
-          <a href="https://wa.me/917000032565">Arrow SoftTech</a>. All rights
-          reserved.
-        </p>
+
+        <div class="footer-col">
+          <p class="footer-col-head">Company</p>
+          <ul class="footer-links">
+            <li><a href="#about">About</a></li>
+            <li><a href="https://wa.me/917000032565">Contact</a></li>
+            <li><a href="https://wa.me/917000032565">Partners</a></li>
+            <li><a href="https://wa.me/917000032565">Press</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <p class="footer-col-head">Legal</p>
+          <ul class="footer-links">
+            <li><a href="/privacy/">Privacy Policy</a></li>
+            <li><a href="/terms/">Terms of Service</a></li>
+            <li><a href="/refund/">Refund Policy</a></li>
+          </ul>
+          <div class="footer-uptime">
+            <span class="uptime-dot"></span>
+            <span>All systems normal · 99.9% uptime</span>
+          </div>
+        </div>
       </div>
     </footer>
 
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "EnterGYM",
+        "applicationCategory": "BusinessApplication",
+        "description": "Multi-tenant gym management SaaS platform for member management, attendance, payments, and supplements.",
+        "url": "https://entergym.in",
+        "operatingSystem": "Web, Android, iOS",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "INR"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Arrow SoftTech",
+          "telephone": "+917000032565"
+        }
+      }
+    </script>
+    <script src="{% static 'js/saas_home.js' %}"></script>
     <script nonce="{{ request.csp_nonce }}">
       (function () {
         /* Nav scroll */
@@ -656,8 +2214,9 @@
 
         /* Scroll reveal */
         if ("IntersectionObserver" in window) {
+          /* Updated selector to include new dynamic elements */
           const els = document.querySelectorAll(
-            ".feat-row, .feat-mini, .gym-card",
+            ".feat-row, .feat-mini, .gym-card, .how-step, .testi-card",
           );
           els.forEach((el) => el.classList.add("reveal"));
           const obs = new IntersectionObserver(
