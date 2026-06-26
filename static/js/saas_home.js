@@ -394,3 +394,96 @@ function onEnter(elements, callback, options) {
   });
 
 })();
+
+/* -----------------------------------------------------------------------------
+   TESTIMONIALS CAROUSEL — #testiCarousel
+   Single-card fade carousel. Auto-advances every 5s with a cross-fade,
+   pauses on hover/touch/focus. Arrows + dots also switch with the fade.
+----------------------------------------------------------------------------- */
+(function () {
+  var carousel = document.getElementById("testiCarousel");
+  var stage    = document.getElementById("testiStage");
+  var prevBtn  = document.getElementById("testiPrev");
+  var nextBtn  = document.getElementById("testiNext");
+  var dotsWrap = document.getElementById("testiDots");
+  if (!carousel || !stage) return;
+
+  var cards = Array.from(stage.children);
+  if (!cards.length) return;
+
+  var AUTOPLAY_MS = 5000;
+  var autoplayTimer = null;
+  var current = cards.findIndex(function (c) { return c.classList.contains("is-active"); });
+  if (current < 0) current = 0;
+
+  /* ── Dots ──────────────────────────────────────────────────────────── */
+  function buildDots() {
+    if (!dotsWrap) return;
+    dotsWrap.innerHTML = "";
+    cards.forEach(function (_, i) {
+      var dot = document.createElement("button");
+      dot.className = "testi-dot";
+      dot.setAttribute("aria-label", "Go to testimonial " + (i + 1));
+      dot.addEventListener("click", function () {
+        goTo(i);
+        restartAutoplay();
+      });
+      dotsWrap.appendChild(dot);
+    });
+    updateDots();
+  }
+
+  function updateDots() {
+    if (!dotsWrap) return;
+    Array.from(dotsWrap.children).forEach(function (d, i) {
+      d.classList.toggle("is-active", i === current);
+    });
+  }
+
+  /* ── Core transition ──────────────────────────────────────────────── */
+  function goTo(index) {
+    var next = ((index % cards.length) + cards.length) % cards.length;
+    if (next === current) return;
+
+    cards[current].classList.remove("is-active");
+    cards[next].classList.add("is-active");
+    current = next;
+    updateDots();
+  }
+
+  function goNext() { goTo(current + 1); }
+  function goPrev() { goTo(current - 1); }
+
+  if (prevBtn) prevBtn.addEventListener("click", function () { goPrev(); restartAutoplay(); });
+  if (nextBtn) nextBtn.addEventListener("click", function () { goNext(); restartAutoplay(); });
+
+  /* ── Autoplay ──────────────────────────────────────────────────────── */
+  function startAutoplay() {
+    stopAutoplay();
+    autoplayTimer = setInterval(goNext, AUTOPLAY_MS);
+  }
+  function stopAutoplay() {
+    if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null; }
+  }
+  function restartAutoplay() { stopAutoplay(); startAutoplay(); }
+
+  carousel.addEventListener("mouseenter", stopAutoplay);
+  carousel.addEventListener("mouseleave", startAutoplay);
+  carousel.addEventListener("touchstart", stopAutoplay, { passive: true });
+  carousel.addEventListener("focusin", stopAutoplay);
+  carousel.addEventListener("focusout", startAutoplay);
+
+  /* Pause when tab/section isn't visible, so timers don't pile up */
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) startAutoplay();
+        else stopAutoplay();
+      });
+    }, { threshold: 0.2 }).observe(carousel);
+  } else {
+    startAutoplay();
+  }
+
+  buildDots();
+})();
