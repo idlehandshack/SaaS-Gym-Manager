@@ -243,7 +243,83 @@
       font-size: 11px; color: #fff; font-weight: 700; letter-spacing: 0.5px;
       text-transform: uppercase;
     }
-
+    /* ── INVOICE HISTORY ── */
+    .invoices-section {
+      width: 100%;
+      max-width: 750px;
+      margin: 28px auto 0;
+    }
+    .invoices-heading {
+      font-family: var(--font-d);
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--text-mid);
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+    .invoice-card {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .invoice-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .invoice-row:last-child { border-bottom: none; }
+    .invoice-info { display: flex; flex-direction: column; gap: 3px; }
+    .invoice-number {
+      font-family: var(--font-d);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-hi);
+      letter-spacing: .3px;
+    }
+    .invoice-meta {
+      font-size: 12px;
+      color: var(--text-mid);
+    }
+    .invoice-amount {
+      font-family: var(--font-d);
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--orange);
+      white-space: nowrap;
+    }
+    .invoice-download {
+      font-family: var(--font-d);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--orange);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 8px 16px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background var(--t);
+    }
+    .invoice-download:hover { background: #e04e00; color: #fff; }
+    .invoice-empty {
+      padding: 24px;
+      text-align: center;
+      color: var(--text-mid);
+      font-size: 13px;
+    }
+    @media (max-width: 600px) {
+      .invoice-row { flex-direction: column; align-items: flex-start; }
+      .invoice-download { width: 100%; text-align: center; }
+    }
     /* Camera badge */
     .camera-badge {
       position: absolute;
@@ -687,6 +763,28 @@
       </div><!-- /.info-card -->
 
     </div><!-- /.main -->
+    <!-- ══ INVOICE HISTORY ══ -->
+    <div class="invoices-section">
+      <div class="invoices-heading">Payment & Invoice History</div>
+      <div class="invoice-card">
+        {% for inv in invoices %}
+        <div class="invoice-row">
+          <div class="invoice-info">
+            <div class="invoice-number">{{ inv.invoice_number }}</div>
+            <div class="invoice-meta">{{ inv.invoice_date|date:"d M Y" }} &middot; {{ inv.get_invoice_type_display }}</div>
+          </div>
+          <div class="invoice-amount">₹{{ inv.grand_total }}</div>
+          {% if inv.pdf_url %}
+            <a class="invoice-download" href="{{ inv.pdf_url }}" target="_blank" rel="noopener">Download</a>
+          {% else %}
+            <a class="invoice-download" href="{% url 'billing:invoice_pdf' inv.pk %}" target="_blank" rel="noopener">Download</a>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="invoice-empty">No invoices yet. Once a payment is recorded, your invoice will appear here.</div>
+        {% endfor %}
+      </div>
+    </div>
   </main>
 
   <!-- ══ EXPIRY ALERT (unchanged logic) ══ -->

@@ -97,7 +97,7 @@
           <button type="submit" class="btn-ghost">Logout</button>
         </form>
         {% else %}
-        <a href="/login/" class="btn-ghost">Sign in</a>
+        <a href="/whychoseus/" class="btn-ghost">Why EnterGYM ?</a>
         <a href="/login/" class="btn-solid">Get started</a>
         {% endif %}
       </div>
@@ -515,6 +515,35 @@
               </div>
             </div>
           </div>
+          <div class="feat-extra-grid">
+ 
+            <div class="feat-extra-card">
+              <div class="fe-visual">
+                <img src="{% static 'images/features/attendancerecord.webp' %}"
+                    alt="Attendance records dashboard" class="fe-image" loading="lazy">
+              </div>
+              <h4 class="fe-title head-color"><span>Attendance Tracking</span></h4>
+              <p class="fe-desc">Complete attendance history with trainer-wise breakdown, due alerts, and exportable reports — all in one view.</p>
+            </div>
+  
+            <div class="feat-extra-card">
+              <div class="fe-visual">
+                <img src="{% static 'images/features/duepayment.webp' %}"
+                    alt="Due payments and WhatsApp reminders" class="fe-image" loading="lazy">
+              </div>
+              <h4 class="fe-title head-color"> <span>Due Payments &amp; WhatsApp</span></h4>
+              <p class="fe-desc">See overdue and upcoming dues at a glance, then send payment reminders straight to WhatsApp in one click.</p>
+            </div>
+  
+            <div class="feat-extra-card">
+              <div class="fe-visual">
+                <img src="{% static 'images/features/membershipplan.webp' %}"
+                    alt="Membership plans and discounts" class="fe-image" loading="lazy">
+              </div>
+              <h4 class="fe-title head-color"><span>Membership Plans</span></h4>
+              <p class="fe-desc">Set up tiered plans with custom pricing and discounts, so members can pick a plan and join in seconds.</p>
+            </div>
+           </div>
         </div>
       </div>
     </section>
@@ -853,7 +882,7 @@
             <div class="gw-app-mockup">
 
             <img
-                src="{% static 'images/icon.webp' %}"
+                src="{% static 'images/icon.png' %}"
                 alt="EnterGYM Mobile App"
                 class="gw-app-image"
             />

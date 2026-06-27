@@ -162,3 +162,33 @@ class StaffProfile(models.Model):
     @property
     def is_receptionist(self):
         return self.role == 'receptionist'
+
+
+class GymGSTProfile(models.Model):
+    """One-to-one GST/billing profile per gym tenant."""
+    gym = models.OneToOneField('Gym', on_delete=models.CASCADE, related_name='gst_profile') 
+    # Legal identity
+    legal_business_name = models.CharField(max_length=255, help_text="As per GST registration")
+    gstin = models.CharField(max_length=15, blank=True, help_text="15-char GSTIN, blank if unregistered")
+    is_gst_registered = models.BooleanField(default=False)
+
+    # Registered address (used as "Place of Supply" origin + invoice header)
+    address_line1 = models.CharField(max_length=255)
+    address_line2 = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    state_code = models.CharField(max_length=2, help_text="GST state code, e.g. '22' for Chhattisgarh")
+    pincode = models.CharField(max_length=6)
+
+    # Invoicing config
+    invoice_series_prefix = models.CharField(max_length=10, default='INV',
+        help_text="e.g. 'INV' -> INV/2026-27/0001")
+    default_sac_membership = models.CharField(max_length=8, default='999652',
+        help_text="SAC for gym/fitness services")
+    signature_image = models.URLField(blank=True, help_text="Cloudinary URL of signature/stamp")
+
+    composition_scheme = models.BooleanField(default=False,
+        help_text="If true, issue Bill of Supply instead of Tax Invoice — no GST shown")
+
+    class Meta:
+        verbose_name = "GST Profile"

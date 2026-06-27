@@ -3,7 +3,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from cloudinary.utils import cloudinary_url
-from .models import Gym, SubscriptionPlan, StaffProfile
+from .models import Gym, SubscriptionPlan, StaffProfile , GymGSTProfile
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -126,3 +126,59 @@ class StaffProfileAdmin(admin.ModelAdmin):
             return qs.filter(gym=request.user.staff_profile.gym)
         except StaffProfile.DoesNotExist:
             return qs.none()
+        
+
+@admin.register(GymGSTProfile)
+class GymGSTProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        'gym',
+        'legal_business_name',
+        'is_gst_registered',
+        'gstin',
+        'state',
+        'composition_scheme',
+    )
+    list_filter = (
+        'is_gst_registered',
+        'composition_scheme',
+        'state',
+    )
+    search_fields = (
+        'legal_business_name',
+        'gstin',
+        'gym__gym_name',
+        'gym__gym_code',
+    )
+    autocomplete_fields = ('gym',)
+    fieldsets = (
+        ('Gym', {
+            'fields': ('gym',)
+        }),
+        ('Business Details', {
+            'fields': (
+                'legal_business_name',
+                'is_gst_registered',
+                'composition_scheme',
+                'gstin',
+            )
+        }),
+        ('Address', {
+            'fields': (
+                'address_line1',
+                'address_line2',
+                'city',
+                'state',
+                'state_code',
+                'pincode',
+            )
+        }),
+        ('Invoice Settings', {
+            'fields': (
+                'invoice_series_prefix',
+                'default_sac_membership',
+            )
+        }),
+        ('Signature', {
+            'fields': ('signature_image',)
+        }),
+    )

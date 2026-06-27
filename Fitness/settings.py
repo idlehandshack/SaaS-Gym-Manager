@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'Shop',
     'notifications',
     'Gym',
+    'billing',
 ]
 
 JAZZMIN_UI_TWEAKS = {

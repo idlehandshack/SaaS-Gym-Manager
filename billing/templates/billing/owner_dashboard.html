@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Owner Dashboard — {{ gym.gym_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── Design Tokens ── */
+      :root {
+        --bg: #080808;
+        --surface: #111111;
+        --surface-2: #1a1a1a;
+        --border: #222222;
+        --border-2: #2e2e2e;
+        --accent: #ff4d00;
+        --accent-dim: rgba(255, 77, 0, 0.12);
+        --accent-glow: rgba(255, 77, 0, 0.25);
+        --green: #22c55e;
+        --green-dim: rgba(34, 197, 94, 0.1);
+        --red: #ef4444;
+        --red-dim: rgba(239, 68, 68, 0.1);
+        --text-1: #f5f5f5;
+        --text-2: #a3a3a3;
+        --text-3: #666666;
+        --radius: 10px;
+        --radius-lg: 14px;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text-1);
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+        min-height: 100vh;
+      }
+
+      /* ── Layout ── */
+      .page {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 28px 16px 60px;
+      }
+      /* Back button */
+      .back-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        margin-bottom: 20px; padding: 7px 14px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border-2);
+        background: var(--surface);
+        color: var(--text-2); font-size: 12px; font-weight: 500;
+        text-decoration: none;
+        transition: border-color .2s, color .2s, background .2s;
+      }
+      .back-btn:hover { border-color: var(--accent); color: var(--text-1); background: var(--accent-dim); }
+      .back-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      /* ── Header ── */
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 32px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .header-avatar {
+        width: 46px;
+        height: 46px;
+        background: var(--accent-dim);
+        border: 1.5px solid var(--accent);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+      .header-name {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-1);
+        line-height: 1.2;
+      }
+      .header-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+        flex-wrap: wrap;
+      }
+      .badge-owner {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 2px 8px;
+        border-radius: 20px;
+        background: rgba(250, 204, 21, 0.12);
+        color: #facc15;
+        border: 1px solid rgba(250, 204, 21, 0.25);
+      }
+      .gym-label {
+        font-size: 13px;
+        color: var(--text-2);
+      }
+
+      /* ── Section heading ── */
+      .section-label {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin-bottom: 14px;
+      }
+
+      /* ── KPI Grid ── */
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 32px;
+      }
+      @media (min-width: 600px) {
+        .kpi-grid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
+
+      .kpi-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        transition: border-color 0.2s;
+      }
+      .kpi-card:hover {
+        border-color: var(--border-2);
+      }
+      .kpi-label {
+        font-size: 11px;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 6px;
+      }
+      .kpi-value {
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1;
+      }
+      .kpi-value.green {
+        color: var(--green);
+      }
+      .kpi-value.red {
+        color: var(--red);
+      }
+      .kpi-value.white {
+        color: var(--text-1);
+      }
+
+      /* ── Action Cards ── */
+      .action-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: 32px;
+      }
+      @media (min-width: 600px) {
+        .action-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      .action-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        text-decoration: none;
+        color: inherit;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+      .action-card:hover {
+        border-color: var(--accent);
+        background: var(--accent-dim);
+      }
+      .action-icon {
+        font-size: 26px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      .action-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-1);
+      }
+      .action-sub {
+        font-size: 12px;
+        color: var(--text-2);
+        margin-top: 2px;
+      }
+      .action-arrow {
+        margin-left: auto;
+        color: var(--text-3);
+        font-size: 18px;
+      }
+
+      /* ── Month Picker ── */
+      .month-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 32px;
+      }
+      .month-pill {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 5px 14px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-2);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition:
+          border-color 0.2s,
+          color 0.2s;
+      }
+      .month-pill:hover {
+        border-color: var(--accent);
+        color: var(--text-1);
+      }
+      .month-pill .pill-badge {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--green);
+        border-radius: 10px;
+        padding: 1px 7px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      /* ── Invoice Table ── */
+      .table-wrap {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      thead tr {
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
+      }
+      thead th {
+        padding: 10px 14px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-3);
+        text-align: left;
+      }
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: background 0.15s;
+      }
+      tbody tr:last-child {
+        border-bottom: none;
+      }
+      tbody tr:hover {
+        background: var(--surface-2);
+      }
+      tbody td {
+        padding: 11px 14px;
+        font-size: 13px;
+        color: var(--text-2);
+        vertical-align: middle;
+      }
+      tbody td:first-child {
+        color: var(--text-1);
+      }
+
+      .inv-code {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--accent);
+        background: var(--accent-dim);
+        padding: 2px 7px;
+        border-radius: 4px;
+      }
+      .amount {
+        font-weight: 600;
+        color: var(--text-1);
+      }
+
+      .btn-pdf {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        background: transparent;
+        text-decoration: none;
+        transition:
+          background 0.15s,
+          color 0.15s;
+        white-space: nowrap;
+      }
+      .btn-pdf:hover {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      /* ── Responsive table scroll ── */
+      .table-scroll {
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <a href="/" class="back-btn">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </a>
+      <!-- Header -->
+      <div class="header">
+        <div class="header-avatar">{{ owner_username|first|upper }}</div>
+        <div>
+          <div class="header-name">{{ owner_username }}</div>
+          <div class="header-meta">
+            <span class="badge-owner">Gym Owner</span>
+            {% if gym %}<span class="gym-label">{{ gym.gym_name }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Cards — current month -->
+      <div class="section-label">{{ current_month_label }}</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Collected</div>
+          <div class="kpi-value green">
+            ₹{{ total_paid_this_month|floatformat:0 }}
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pending</div>
+          <div class="kpi-value red">
+            ₹{{ total_pending_this_month|floatformat:0 }}
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Payments</div>
+          <div class="kpi-value white">{{ total_payments_this_month }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Invoices</div>
+          <div class="kpi-value white">{{ total_invoices_this_month }}</div>
+        </div>
+      </div>
+
+      <!-- Action Cards -->
+      <div class="action-grid">
+        <a href="{% url 'owner:report_list' %}" class="action-card">
+          <span class="action-icon">📊</span>
+          <div>
+            <div class="action-title">Monthly Gym Revenue Report</div>
+            <div class="action-sub">
+              Detailed breakdown with charts &amp; exports
+            </div>
+          </div>
+          <span class="action-arrow">›</span>
+        </a>
+        <a href="{% url 'owner:invoice_list' %}" class="action-card">
+          <span class="action-icon">🧾</span>
+          <div>
+            <div class="action-title">Invoice Management</div>
+            <div class="action-sub">
+              Search, filter and download all invoices
+            </div>
+          </div>
+          <span class="action-arrow">›</span>
+        </a>
+      </div>
+
+      <!-- Month Picker -->
+      <div class="section-label">Recent Months</div>
+      <div class="month-pills">
+        {% for m in months_summary %}
+        <a
+          href="{% url 'owner:report_list' %}?year={{ m.year }}&month={{ m.month }}"
+          class="month-pill"
+        >
+          {{ m.month_label }} {% if m.total_paid %}
+          <span class="pill-badge">₹{{ m.total_paid|floatformat:0 }}</span>
+          {% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </body>
+</html>

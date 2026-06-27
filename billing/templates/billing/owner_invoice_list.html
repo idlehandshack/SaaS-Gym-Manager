@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoices — {{ gym.gym_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #1a1a1a;
+      --border:      #222222;
+      --border-2:    #2e2e2e;
+      --accent:      #ff4d00;
+      --accent-dim:  rgba(255, 77, 0, 0.12);
+      --green:       #22c55e;
+      --green-dim:   rgba(34, 197, 94, 0.12);
+      --text-1:      #f5f5f5;
+      --text-2:      #a3a3a3;
+      --text-3:      #555555;
+      --radius:      10px;
+      --radius-lg:   14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-1);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    .page { max-width: 1100px; margin: 0 auto; padding: 28px 16px 60px; }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text-3);
+      margin-bottom: 22px;
+      list-style: none;
+    }
+    .breadcrumb a { color: var(--text-2); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--accent); }
+    .breadcrumb-sep { color: var(--text-3); }
+    .breadcrumb-active { color: var(--text-3); }
+
+    /* ── Page title row ── */
+    .title-row {
+      display: flex; align-items: baseline; gap: 10px;
+      margin-bottom: 20px;
+    }
+    .page-title { font-size: 18px; font-weight: 700; color: var(--text-1); }
+    .total-count { font-size: 13px; color: var(--text-3); font-weight: 400; }
+
+    /* ── Search bar ── */
+    .search-row {
+      display: flex; gap: 8px; align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .search-wrap {
+      display: flex; gap: 0;
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius);
+      overflow: hidden;
+      max-width: 400px; width: 100%;
+    }
+    .search-wrap:focus-within { border-color: var(--accent); }
+
+    .search-input {
+      flex: 1;
+      background: var(--surface);
+      border: none; outline: none;
+      padding: 8px 12px;
+      font-size: 13px; color: var(--text-1);
+      font-family: 'Inter', sans-serif;
+    }
+    .search-input::placeholder { color: var(--text-3); }
+
+    .btn-search {
+      background: var(--accent);
+      border: none; cursor: pointer;
+      padding: 8px 16px;
+      font-size: 12px; font-weight: 600;
+      color: #fff; font-family: 'Inter', sans-serif;
+      transition: opacity .15s;
+    }
+    .btn-search:hover { opacity: .85; }
+
+    .btn-clear {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius);
+      padding: 7px 14px;
+      font-size: 12px; font-weight: 500; color: var(--text-2);
+      text-decoration: none; cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-clear:hover { border-color: var(--accent); color: var(--text-1); }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 700px; }
+
+    thead tr {
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+    }
+    thead th {
+      padding: 10px 14px;
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--text-3); text-align: left; white-space: nowrap;
+      user-select: none;
+    }
+
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody td { padding: 11px 14px; font-size: 13px; color: var(--text-2); vertical-align: middle; }
+
+    .inv-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px; color: var(--accent);
+      background: var(--accent-dim);
+      padding: 2px 7px; border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .member-name { color: var(--text-1); font-weight: 500; }
+    .amount-bold { color: var(--text-1); font-weight: 600; }
+
+    .status-badge {
+      display: inline-block;
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .05em;
+      padding: 3px 9px; border-radius: 20px;
+      background: var(--green-dim); color: var(--green);
+      border: 1px solid rgba(34,197,94,.2);
+      white-space: nowrap;
+    }
+
+    .btn-pdf {
+      font-size: 11px; font-weight: 600;
+      padding: 5px 11px; border-radius: 6px;
+      border: 1px solid var(--accent);
+      color: var(--accent); background: transparent;
+      text-decoration: none; white-space: nowrap;
+      transition: background .15s, color .15s;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-pdf:hover { background: var(--accent); color: #fff; }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex; align-items: center; gap: 6px;
+      list-style: none;
+    }
+    .page-link {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 34px; height: 34px; padding: 0 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px; color: var(--text-2);
+      text-decoration: none;
+      transition: border-color .15s, color .15s;
+    }
+    .page-link:hover { border-color: var(--accent); color: var(--text-1); }
+    .page-link.current {
+      border-color: var(--border-2); color: var(--text-3); cursor: default;
+      font-size: 12px; white-space: nowrap;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 56px 20px;
+      color: var(--text-3);
+      font-size: 14px;
+    }
+    .empty-icon { font-size: 36px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Breadcrumb -->
+  <ol class="breadcrumb">
+    <li><a href="{% url 'owner:dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-sep">›</li>
+    <li class="breadcrumb-active">Invoices</li>
+  </ol>
+
+  <!-- Title -->
+  <div class="title-row">
+    <h5 class="page-title">All Invoices</h5>
+    <span class="total-count">({{ total }})</span>
+  </div>
+
+  <!-- Search -->
+  <form method="get" class="search-row">
+    <div class="search-wrap">
+      <input class="search-input" type="text" name="q" value="{{ query }}"
+             placeholder="Invoice no, name or phone…" autocomplete="off" />
+      <button class="btn-search" type="submit">Search</button>
+    </div>
+    {% if query %}
+    <a href="{% url 'owner:invoice_list' %}" class="btn-clear">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if page_obj %}
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Invoice No ↑↓</th>
+            <th>Date</th>
+            <th>Member</th>
+            <th>Phone</th>
+            <th>Amount</th>
+            <th>GST</th>
+            <th>Grand Total</th>
+            <th>Status</th>
+            <th>PDF</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in page_obj %}
+          <tr>
+            <td><span class="inv-code">{{ inv.invoice_number }}</span></td>
+            <td>{{ inv.invoice_date|date:"d M Y" }}</td>
+            <td><span class="member-name">{{ inv.customer_name }}</span></td>
+            <td>{{ inv.customer_phone|default:"—" }}</td>
+            <td>₹{{ inv.taxable_value|floatformat:2 }}</td>
+            <td>₹{% with gst=inv.cgst_amount|add:inv.sgst_amount %}{{ gst|floatformat:2 }}{% endwith %}</td>
+            <td><span class="amount-bold">₹{{ inv.grand_total|floatformat:2 }}</span></td>
+            <td><span class="status-badge">{{ inv.get_status_display }}</span></td>
+            <td>
+              <a href="{% url 'owner:invoice_pdf' inv.pk %}" class="btn-pdf" target="_blank">
+                ⬇ PDF
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <nav aria-label="Invoice pagination">
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+      <li>
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}">‹</a>
+      </li>
+      {% endif %}
+      <li>
+        <span class="page-link current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      </li>
+      {% if page_obj.has_next %}
+      <li>
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}">›</a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <!-- Empty State -->
+  <div class="empty-state">
+    <div class="empty-icon">🧾</div>
+    No invoices found{% if query %} for "<strong>{{ query }}</strong>"{% endif %}.
+  </div>
+  {% endif %}
+
+</div>
+</body>
+</html>

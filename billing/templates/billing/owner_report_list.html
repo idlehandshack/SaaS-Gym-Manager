@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monthly Reports — {{ gym.gym_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #1a1a1a;
+      --border:      #222222;
+      --border-2:    #2e2e2e;
+      --accent:      #ff4d00;
+      --accent-dim:  rgba(255, 77, 0, 0.12);
+      --green:       #22c55e;
+      --green-dim:   rgba(34, 197, 94, 0.12);
+      --yellow:      #facc15;
+      --yellow-dim:  rgba(250, 204, 21, 0.10);
+      --text-1:      #f5f5f5;
+      --text-2:      #a3a3a3;
+      --text-3:      #555555;
+      --radius:      10px;
+      --radius-lg:   14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-1);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    .page { max-width: 1000px; margin: 0 auto; padding: 28px 16px 60px; }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; list-style: none;
+      margin-bottom: 22px;
+    }
+    .breadcrumb a { color: var(--text-2); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--accent); }
+    .breadcrumb-sep   { color: var(--text-3); }
+    .breadcrumb-active { color: var(--text-3); }
+
+    /* ── Title row ── */
+    .title-row {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; flex-wrap: wrap;
+      gap: 14px; margin-bottom: 24px;
+    }
+    .page-title { font-size: 18px; font-weight: 700; color: var(--text-1); margin-bottom: 3px; }
+    .page-sub   { font-size: 12px; color: var(--text-3); }
+
+    .btn-generate {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 8px 16px;
+      font-size: 12px; font-weight: 600; color: var(--accent);
+      text-decoration: none; white-space: nowrap;
+      transition: background .15s, color .15s;
+      flex-shrink: 0;
+    }
+    .btn-generate:hover { background: var(--accent); color: #fff; }
+
+    /* ── Flash messages ── */
+    .flash-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .flash {
+      padding: 11px 16px; border-radius: var(--radius);
+      font-size: 13px; border: 1px solid;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .flash.success { background: var(--green-dim);  border-color: rgba(34,197,94,.25); color: var(--green); }
+    .flash.warning { background: var(--yellow-dim); border-color: rgba(250,204,21,.25); color: var(--yellow); }
+    .flash.error   { background: rgba(239,68,68,.1); border-color: rgba(239,68,68,.25); color: #ef4444; }
+    .flash.info    { background: var(--accent-dim); border-color: rgba(255,77,0,.25);  color: var(--accent); }
+    .flash-close {
+      background: none; border: none; cursor: pointer;
+      color: inherit; opacity: .5; font-size: 16px; line-height: 1;
+      padding: 0 2px;
+    }
+    .flash-close:hover { opacity: 1; }
+
+    /* ── Report grid ── */
+    .report-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 560px) { .report-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 800px) { .report-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .report-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex; align-items: center; gap: 14px;
+      transition: border-color .2s;
+    }
+    .report-card:hover { border-color: var(--border-2); }
+
+    .report-icon { font-size: 28px; flex-shrink: 0; line-height: 1; }
+
+    .report-info { flex: 1; min-width: 0; }
+    .report-month { font-size: 14px; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
+    .report-meta  { font-size: 11px; color: var(--text-3); }
+    .report-meta .dot { margin: 0 4px; }
+
+    .report-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+
+    .btn-excel {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--green-dim);
+      border: 1px solid rgba(34,197,94,.3);
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 11px; font-weight: 600; color: var(--green);
+      text-decoration: none; white-space: nowrap;
+      transition: background .15s, color .15s;
+    }
+    .btn-excel:hover { background: var(--green); color: #000; }
+
+    .btn-regen {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 13px; color: var(--text-3);
+      text-decoration: none;
+      transition: border-color .15s, color .15s;
+      title: "Re-generate this report";
+    }
+    .btn-regen:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 64px 20px;
+      color: var(--text-3);
+    }
+    .empty-icon { font-size: 42px; margin-bottom: 14px; }
+    .empty-title { font-size: 15px; color: var(--text-2); margin-bottom: 8px; }
+    .empty-body  { font-size: 13px; line-height: 1.7; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Breadcrumb -->
+  <ol class="breadcrumb">
+    <li><a href="{% url 'owner:dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-sep">›</li>
+    <li class="breadcrumb-active">Monthly Reports</li>
+  </ol>
+
+  <!-- Title row -->
+  <div class="title-row">
+    <div>
+      <div class="page-title">Monthly Revenue Reports</div>
+      <div class="page-sub">Monthly revenue reports are automatically generated on the 1st of every month and archived in Cloudflare.</div>
+    </div>
+    {% comment %} <a href="{% url 'owner:report_generate' %}?year={{ today.year }}&month={{ today.month }}"
+       class="btn-generate">
+      ⚡ Generate {{ today|date:"F Y" }}
+    </a> {% endcomment %}
+  </div>
+
+  <!-- Flash messages -->
+  {% if messages %}
+  <div class="flash-list">
+    {% for msg in messages %}
+    <div class="flash {{ msg.tags }}">
+      <span>{{ msg }}</span>
+      <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if reports %}
+  <!-- Report cards -->
+  <div class="report-grid">
+    {% for report in reports %}
+    <div class="report-card">
+      <span class="report-icon">📊</span>
+      <div class="report-info">
+        <div class="report-month">{{ report.month_label }}</div>
+        <div class="report-meta">
+          {{ report.size_kb }} KB
+          <span class="dot">·</span>
+          {{ report.last_modified|date:"d M Y" }}
+        </div>
+      </div>
+      <div class="report-actions">
+        <a href="{{ report.url }}" target="_blank" class="btn-excel">⬇ Excel</a>
+        <a href="{% url 'owner:report_generate' %}?year={{ report.year }}&month={{ report.month }}&force=1"
+           class="btn-regen" title="Re-generate this report">↺</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <!-- Empty state -->
+  <div class="empty-state">
+    <div class="empty-icon">📂</div>
+    <div class="empty-title">No monthly reports are available yet.<br>
+        The first report will be generated automatically on the 1st day of the next month.</div>
+    <div class="empty-body">
+      Reports are auto-generated on the 1st of each month.<br>
+      You can also generate this month's report manually using the button above.
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</body>
+</html>

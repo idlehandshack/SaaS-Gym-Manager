@@ -27,7 +27,9 @@ urlpatterns = [
     path("trainers/",views.trainers, name="trainers",),
     path('contact-inquiries/', views.contact_inquiries, name='contact_inquiries'),
     path('superadmin/dashboard/', saas_dashboard,  name='saas_dashboard'),
-    
+    path('whychoseus/', views.feature_comp,  name='whychoseus'),
+    path('billing/', include('billing.urls')),
+    path('', include('billing.urls_owner')),
 
     # ── Existing APIs ──────────────────────────────────────────
     path('api/mark-attendance/', views.mark_attendance_api),

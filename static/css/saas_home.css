@@ -211,6 +211,10 @@ img, svg   { max-width: 100%; }
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 0.5s ease, transform 0.5s ease;
+  animation: reveal-fallback 0s 3s forwards;
+}
+@keyframes reveal-fallback {
+  to { opacity: 1; transform: none; }
 }
 .reveal.visible {
   opacity: 1;
@@ -462,7 +466,7 @@ img, svg   { max-width: 100%; }
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: #080810;
+  background: #000000;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
@@ -494,7 +498,7 @@ img, svg   { max-width: 100%; }
   font-size: 0.65rem;
   color: var(--green);
   letter-spacing: 0.1em;
-  animation: badge-pulse 2s ease-in-out infinite; /* reuse existing keyframe */
+  animation: badge-pulse 2s ease-in-out infinite;
   flex-shrink: 0;
 }
 
@@ -503,28 +507,26 @@ img, svg   { max-width: 100%; }
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 24px;
   padding: 20px;
   min-height: 320px;
-  background: #080810;
+  background: #000000;
 }
 
 .g-video {
-    width: 100%;
-    max-width: 420px;
-    height: 280px;
-    object-fit: cover;
-    border-radius: 12px;
-    margin-right: 100px;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 320px;
+  height: 280px;
+  object-fit: cover;
+  border-radius: 12px;
 }
 
 .g-stats {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
 }
 
 .g-stat {
@@ -552,18 +554,24 @@ img, svg   { max-width: 100%; }
   color: var(--text-lo);
   margin-top: 2px;
 }
+
 /* ── Responsive ── */
+@media (max-width: 860px) {
+  .g-video { max-width: 280px; height: 240px; }
+}
+
 @media (max-width: 640px) {
-  .g-body    { padding: 16px 12px; min-height: 260px; }
-  .g-stats   { right: 10px; gap: 8px; }
+  .g-body    { gap: 16px; padding: 16px 12px; min-height: 260px; }
+  .g-video   { max-width: 200px; height: 200px; }
+  .g-stats   { gap: 8px; }
   .g-stat    { padding: 8px 10px; min-width: 60px; }
   .g-stat-val { font-size: 0.85rem; }
 }
 
 @media (max-width: 400px) {
-  /* On very small phones collapse the side stats below the canvas */
-  .g-body    { flex-direction: column; min-height: auto; padding: 16px; }
-  .g-stats   { position: static; transform: none; flex-direction: row; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
+  .g-body    { flex-direction: column; min-height: auto; padding: 16px; gap: 12px; }
+  .g-video   { max-width: 220px; height: 180px; width: 100%; }
+  .g-stats   { flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; }
   .g-stat    { flex: 0 0 calc(50% - 6px); }
 }
 
@@ -652,7 +660,7 @@ img, svg   { max-width: 100%; }
 .problem-cta { margin-top: 48px; display: flex; justify-content: center; }
 
 .head-color span{
-  color: #080cf6;
+  color: #10b981;
   font-weight: 700;
 }
 
@@ -779,6 +787,7 @@ img, svg   { max-width: 100%; }
 
 .fv-card {
   width: 100%;
+  min-height: 240px;
   max-width: 560px;
   margin: 0 auto;
   background: var(--surface);
@@ -826,6 +835,92 @@ img, svg   { max-width: 100%; }
   font-size: 0.9rem;
   font-weight: 600;
 }
+
+/* ── Extra Features — 1 row / 3 columns, desktop only by default ──────── */
+.feat-extra-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 72px;
+  padding-top: 72px;
+  border-top: 1px solid var(--border);
+}
+
+.feat-extra-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.fe-visual {
+  width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  margin-bottom: 20px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.fe-visual:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,106,31,0.18);
+}
+
+.fe-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fe-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.05rem, 1rem + 0.2vw, 1.2rem);
+  letter-spacing: -0.01em;
+  color: var(--text-hi);
+  margin-bottom: 8px;
+  line-height: 1.25;
+}
+
+.fe-desc {
+  color: var(--text-lo);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  max-width: 42ch;
+}
+
+/* Tablets and below: stack the 3 columns into 1, same breakpoint the
+   rest of the section already switches to a stacked layout at */
+@media (max-width: 860px) {
+  .feat-extra-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    margin-top: 56px;
+    padding-top: 48px;
+  }
+}
+
+/* Large phones: tighten spacing to match the rest of the section */
+@media (max-width: 600px) {
+  .feat-extra-grid {
+    gap: 32px;
+    margin-top: 40px;
+    padding-top: 36px;
+  }
+  .fe-visual { border-radius: 12px; margin-bottom: 16px; }
+  .fe-desc { max-width: none; }
+}
+
+/* Small phones */
+@media (max-width: 400px) {
+  .feat-extra-grid { gap: 28px; margin-top: 32px; padding-top: 28px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .fe-visual { transition: none; }
+  .fe-visual:hover { transform: none; }
+}
+
 
 /* ─────────────────────────────────────────────────────────────────
    RESPONSIVE BREAKPOINTS
@@ -1118,6 +1213,7 @@ img, svg   { max-width: 100%; }
   border-radius: var(--radius-sm);
   overflow: hidden;
   position: relative;
+  min-height: 220px;
 }
 .gw-img-browser-bar {
   display: flex;
@@ -1183,7 +1279,9 @@ img, svg   { max-width: 100%; }
 .gw-img {
   display: block;
   width: 100%;
+  aspect-ratio: 16 / 10; /* match your actual screenshot's real ratio */
   height: auto;
+  object-fit: cover;
 }
 
 /* ── Feature list ── */
@@ -1327,7 +1425,6 @@ img, svg   { max-width: 100%; }
   .gw-section { padding: 80px 28px; }
   .gw-layout { grid-template-columns: 1fr; gap: 20px; }
   .gw-card { padding: 24px; }
-  .gw-mini-phone { width: 220px; }
   .gw-floating-badge--android { left: 0; }
   .gw-floating-badge--ios { right: 0; }
 }
@@ -1342,8 +1439,8 @@ img, svg   { max-width: 100%; }
   .gw-card { padding: 20px 16px; gap: 18px; }
   .gw-card-title { font-size: 1.05rem; }
   .gw-img-placeholder { min-height: 180px; }
-  .gw-mini-phone { width: 190px; }
-  .gw-app-hero { height: 85px; }
+  .gw-app-mockup { min-height: 220px; padding: 16px 0; }
+  .gw-app-image { width: 140px; height: 140px; }
   .gw-floating-badge { font-size: 0.55rem; padding: 5px 8px; }
   .gw-floating-badge--android { left: -4px; bottom: 50px; }
   .gw-floating-badge--ios { right: -4px; top: 30px; }

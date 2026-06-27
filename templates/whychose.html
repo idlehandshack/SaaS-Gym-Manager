@@ -1,0 +1,1951 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Why EnterGYM — Honest Comparison for Indian Gym Owners</title>
+    <meta
+      name="description"
+      content="EnterGYM — Multi-tenant gym management SaaS platform. Manage members, attendance, face recognition, GPS check-in, payments and supplements. Built for serious gyms."
+    />
+
+    <meta
+      name="keywords"
+      content="gym management software, gym SaaS, member management, attendance tracking, face recognition gym, gym billing software India"
+    />
+    <meta name="author" content="Arrow SoftTech" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://entergym.in/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://entergym.in/" />
+    <meta property="og:title" content="EnterGYM — Gym Management Platform" />
+    <meta
+      property="og:description"
+      content="Replace spreadsheets with EnterGYM. Members, attendance, payments, and supplements — one platform."
+    />
+    <meta
+      property="og:image"
+      content="https://entergym.in/static/images/og-preview.png"
+    />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="EnterGYM — Gym Management Platform" />
+    <meta
+      name="twitter:description"
+      content="Multi-tenant gym management SaaS. Face ID, GPS attendance, member billing and more."
+    />
+    <meta
+      name="twitter:image"
+      content="https://entergym.in/static/images/og-preview.png"
+    />
+
+    <link rel="shortcut icon" href="{% static 'images/favicons.ico' %}" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="{% static 'images/favicons32x32.png' %}"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="{% static 'images/favicons16x16.png' %}"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="{% static 'images/favicons180x180.png' %}"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #080810;
+        --bg-raised: #0d0d18;
+        --bg-card: #10101e;
+        --line: #1c1c30;
+        --line-soft: #15152400;
+        --accent: #5b5fff;
+        --accent-soft: #5b5fff22;
+        --accent-glow: #5b5fff55;
+        --text: #f4f4fb;
+        --text-dim: #9494b8;
+        --text-faint: #5e5e80;
+        --good: #3ddc97;
+        --good-soft: #3ddc9718;
+        --bad: #ff5c7a;
+        --bad-soft: #ff5c7a14;
+        --mid: #ffb14e;
+        --mid-soft: #ffb14e16;
+        --display: "Syne", sans-serif;
+        --body: "DM Sans", sans-serif;
+        --mono: "JetBrains Mono", monospace;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--body);
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+
+      /* ambient backdrop */
+      .glow-field {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            ellipse 900px 600px at 18% -8%,
+            var(--accent-glow),
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 700px 500px at 100% 18%,
+            #5b5fff2a,
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse 800px 500px at 50% 100%,
+            #5b5fff1a,
+            transparent 60%
+          );
+      }
+
+      .wrap {
+        position: relative;
+        z-index: 1;
+      }
+
+      .container {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      /* ===== BACK BUTTON ===== */
+      .back-bar {
+        padding: 24px 0 0;
+      }
+      .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 16px 9px 12px;
+        border-radius: 100px;
+        background: var(--bg-raised);
+        border: 1px solid var(--line);
+        color: var(--text-dim);
+        font-size: 13.5px;
+        font-weight: 500;
+        transition:
+          border-color 0.15s ease,
+          color 0.15s ease,
+          transform 0.15s ease;
+      }
+      .back-btn svg {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+      }
+      .back-btn:hover {
+        border-color: #3a3a5c;
+        color: var(--text);
+        transform: translateX(-2px);
+      }
+
+      /* ===== HERO ===== */
+      .hero {
+        padding: 56px 0 64px;
+        text-align: center;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 16px 7px 12px;
+        border-radius: 100px;
+        background: var(--accent-soft);
+        border: 1px solid #5b5fff3d;
+        color: #b9baff;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 36px;
+      }
+      .eyebrow svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+      }
+
+      /* matchup */
+      .matchup {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        margin-bottom: 40px;
+      }
+      .fighter {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: 128px;
+      }
+      .fighter-badge {
+        width: 76px;
+        height: 76px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: 26px;
+      }
+      .fighter-badge.us {
+        background: linear-gradient(145deg, #6a6dff, #4346d6);
+        box-shadow:
+          0 0 0 1px #ffffff14 inset,
+          0 16px 40px -10px #5b5fffaa;
+        color: #fff;
+      }
+      .fighter-badge.them {
+        background: var(--bg-card);
+        border: 1.5px dashed #33334d;
+        color: var(--text-faint);
+      }
+      .fighter-name {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--text-dim);
+        letter-spacing: 0.01em;
+      }
+      .fighter-name.us-name {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .vs-mark {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--text-faint);
+        background: var(--bg-raised);
+        border: 1px solid var(--line);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -30px;
+      }
+
+      h1.hero-title {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: clamp(34px, 5.4vw, 60px);
+        line-height: 1.08;
+        letter-spacing: -0.015em;
+        max-width: 780px;
+        margin: 0 auto 22px;
+      }
+      h1.hero-title .accent {
+        color: var(--accent);
+      }
+
+      .hero-sub {
+        font-size: 17px;
+        line-height: 1.6;
+        color: var(--text-dim);
+        max-width: 560px;
+        margin: 0 auto 36px;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 56px;
+      }
+      .trust-pill {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 14px;
+        border-radius: 100px;
+        background: var(--bg-raised);
+        border: 1px solid var(--line);
+        font-size: 13px;
+        color: var(--text-dim);
+        font-weight: 500;
+      }
+      .trust-pill svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+      }
+      .trust-pill.gold svg {
+        color: var(--mid);
+      }
+      .trust-pill.green svg {
+        color: var(--good);
+      }
+      .trust-pill.blue svg {
+        color: var(--accent);
+      }
+      .trust-pill.pin svg {
+        color: #ff8a65;
+      }
+
+      /* verdict card in hero */
+      .verdict-card {
+        max-width: 620px;
+        margin: 0 auto;
+        background: linear-gradient(180deg, var(--bg-raised), var(--bg-card));
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 28px 32px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        text-align: left;
+        box-shadow: 0 30px 60px -30px #000a;
+      }
+      .verdict-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: linear-gradient(145deg, #6a6dff, #4346d6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 10px 26px -8px #5b5fffaa;
+      }
+      .verdict-icon svg {
+        width: 26px;
+        height: 26px;
+        color: #fff;
+      }
+      .verdict-text {
+        font-size: 15px;
+        color: var(--text-dim);
+        line-height: 1.55;
+      }
+      .verdict-text strong {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      /* ===== SECTION HEADERS ===== */
+      .section-head {
+        text-align: center;
+        max-width: 600px;
+        margin: 0 auto 44px;
+      }
+      .section-label {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 14px;
+        display: block;
+      }
+      .section-title {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: clamp(26px, 3.4vw, 38px);
+        letter-spacing: -0.01em;
+        margin-bottom: 12px;
+      }
+      .section-sub {
+        color: var(--text-dim);
+        font-size: 15.5px;
+        line-height: 1.6;
+      }
+
+      /* ===== COMPARISON TABLE ===== */
+      .compare-section {
+        padding: 88px 0 100px;
+      }
+
+      .table-shell {
+        background: var(--bg-raised);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        overflow: hidden;
+      }
+
+      .col-heads {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr 1fr;
+        border-bottom: 1px solid var(--line);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: var(--bg-raised);
+      }
+      .col-head {
+        padding: 22px 20px;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .col-head.feature-col {
+        color: var(--text-dim);
+        font-weight: 600;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-family: var(--mono);
+      }
+      .col-head.us-col {
+        color: var(--text);
+        background: var(--accent-soft);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .col-head.us-col svg {
+        width: 16px;
+        height: 16px;
+        color: var(--good);
+        flex-shrink: 0;
+      }
+      .col-head.them-col {
+        color: var(--text-dim);
+      }
+
+      .cat-row {
+        padding: 13px 20px;
+        background: #0a0a14;
+        border-bottom: 1px solid var(--line);
+        border-top: 1px solid var(--line);
+      }
+      .cat-row span {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .feat-row {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr 1fr;
+        border-bottom: 1px solid var(--line);
+        transition: background 0.15s ease;
+      }
+      .feat-row:last-child {
+        border-bottom: none;
+      }
+      .feat-row:hover {
+        background: #0d0d1c;
+      }
+
+      .feat-name {
+        padding: 18px 20px;
+        font-size: 14.5px;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+      }
+
+      .feat-val {
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 14px;
+      }
+      .feat-val.us {
+        background: #5b5fff0c;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .feat-val.them {
+        color: var(--text-dim);
+      }
+
+      .status-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .status-icon svg {
+        width: 11px;
+        height: 11px;
+      }
+      .status-icon.good {
+        background: var(--good-soft);
+        color: var(--good);
+      }
+      .status-icon.bad {
+        background: var(--bad-soft);
+        color: var(--bad);
+      }
+      .status-icon.mid {
+        background: var(--mid-soft);
+        color: var(--mid);
+      }
+
+      /* ===== MOBILE COMPARISON (cards instead of grid) ===== */
+      .mobile-compare {
+        display: none;
+      }
+
+      /* ===== BOTTOM CTA ===== */
+      .cta-section {
+        padding: 0 0 110px;
+      }
+      .cta-card {
+        max-width: 780px;
+        margin: 0 auto;
+        text-align: center;
+        background: linear-gradient(165deg, #14142a, #0a0a16);
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        padding: 64px 40px;
+        position: relative;
+        overflow: hidden;
+      }
+      .cta-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse 500px 300px at 50% 0%,
+          #5b5fff33,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .cta-title {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: clamp(26px, 3.6vw, 36px);
+        margin-bottom: 14px;
+        position: relative;
+      }
+      .cta-sub {
+        color: var(--text-dim);
+        font-size: 15.5px;
+        max-width: 440px;
+        margin: 0 auto 32px;
+        position: relative;
+        line-height: 1.6;
+      }
+      .cta-buttons {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        flex-wrap: wrap;
+        position: relative;
+      }
+      .btn {
+        padding: 14px 28px;
+        border-radius: 11px;
+        font-weight: 600;
+        font-size: 15px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .btn-primary {
+        background: linear-gradient(145deg, #6a6dff, #4b4ee8);
+        color: #fff;
+        box-shadow: 0 14px 30px -10px #5b5fffaa;
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 36px -10px #5b5fffcc;
+      }
+      .btn-ghost {
+        background: transparent;
+        border: 1px solid var(--line);
+        color: var(--text-dim);
+      }
+      .btn-ghost:hover {
+        border-color: #3a3a5c;
+        color: var(--text);
+      }
+
+      .fine-note {
+        margin-top: 24px;
+        font-size: 12.5px;
+        color: var(--text-faint);
+        position: relative;
+      }
+
+      /* ===== RESPONSIVE ===== */
+      @media (max-width: 760px) {
+        .back-bar {
+          padding: 18px 0 0;
+        }
+        .hero {
+          padding: 28px 0 44px;
+        }
+        .matchup {
+          gap: 18px;
+          margin-bottom: 32px;
+        }
+        .fighter {
+          width: 96px;
+        }
+        .fighter-badge {
+          width: 60px;
+          height: 60px;
+          border-radius: 16px;
+          font-size: 20px;
+        }
+        .vs-mark {
+          width: 32px;
+          height: 32px;
+          font-size: 12px;
+          margin-top: -24px;
+        }
+        .hero-sub {
+          font-size: 15.5px;
+          padding: 0 8px;
+        }
+        .verdict-card {
+          flex-direction: column;
+          text-align: center;
+          padding: 26px 22px;
+          margin: 0 12px;
+        }
+        .verdict-text {
+          text-align: center;
+        }
+
+        .compare-section {
+          padding: 56px 0 72px;
+        }
+
+        /* hide grid table, show stacked cards on mobile */
+        .table-shell {
+          display: none;
+        }
+        .mobile-compare {
+          display: block;
+        }
+
+        .m-cat {
+          font-family: var(--mono);
+          font-size: 11.5px;
+          letter-spacing: 0.09em;
+          text-transform: uppercase;
+          color: var(--accent);
+          font-weight: 600;
+          margin: 30px 4px 14px;
+        }
+        .m-cat:first-child {
+          margin-top: 4px;
+        }
+
+        .m-card {
+          background: var(--bg-raised);
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          padding: 18px 18px 6px;
+          margin-bottom: 12px;
+        }
+        .m-feat-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text);
+          margin-bottom: 14px;
+        }
+        .m-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 11px 0;
+          border-top: 1px solid var(--line);
+          font-size: 13.5px;
+        }
+        .m-row-label {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          color: var(--text-faint);
+          font-family: var(--mono);
+          font-size: 11.5px;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+          min-width: 78px;
+        }
+        .m-row-label svg {
+          width: 13px;
+          height: 13px;
+        }
+        .m-row.us-row .m-row-label {
+          color: var(--accent);
+        }
+        .m-row-val {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-weight: 500;
+          color: var(--text-dim);
+          text-align: right;
+        }
+        .m-row.us-row .m-row-val {
+          color: var(--text);
+          font-weight: 700;
+        }
+
+        .cta-card {
+          padding: 48px 24px;
+          margin: 0 4px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow-field"></div>
+
+    <div class="wrap">
+      <!-- ============ BACK ============ -->
+      <div class="back-bar">
+        <div class="container">
+          <a href="/" class="back-btn">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.3"
+            >
+              <path d="M19 12H5M11 18l-6-6 6-6" />
+            </svg>
+            Back
+          </a>
+        </div>
+      </div>
+
+      <!-- ============ HERO ============ -->
+      <section class="hero">
+        <div class="container">
+          <div class="eyebrow">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M3 17l6-6 4 4 8-8" />
+              <path d="M17 7h4v4" />
+            </svg>
+            Honest Comparison — No Bias
+          </div>
+
+          <div class="matchup">
+            <div class="fighter">
+              <img
+                src="{% static 'images/Logo1s.png' %}"
+                alt="EnterGYM Logo"
+                class="brand-logo"
+                width="40"
+                height="40"
+              />
+              <span class="fighter-name us-name">EnterGYM</span>
+            </div>
+            <div class="vs-mark">VS</div>
+            <div class="fighter">
+              <div class="fighter-badge them">?</div>
+              <span class="fighter-name">Other Gym Software</span>
+            </div>
+          </div>
+
+          <h1 class="hero-title">
+            Why gym owners across India are switching to
+            <span class="accent">EnterGYM</span>
+          </h1>
+
+          <p class="hero-sub">
+            A feature-by-feature breakdown to help you decide with real
+            information — pricing, features, support, and ease of use. No fluff,
+            no sales spin.
+          </p>
+
+          <div class="pill-row">
+            <div class="trust-pill green">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Updated 2026
+            </div>
+            <div class="trust-pill gold">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"
+                />
+              </svg>
+              Unbiased Review
+            </div>
+            <div class="trust-pill pin">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 1118 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              Built for India
+            </div>
+            <div class="trust-pill blue">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="2" y="7" width="20" height="14" rx="2" />
+                <path d="M16 3v4M8 3v4M2 11h20" />
+              </svg>
+              Multi-Gym Ready
+            </div>
+          </div>
+
+          <div class="verdict-card">
+            <div class="verdict-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM5 9H3a2 2 0 002 2M19 9h2a2 2 0 01-2 2"
+                />
+              </svg>
+            </div>
+            <p class="verdict-text">
+              <strong>Our Verdict:</strong> EnterGYM wins on pricing, onboarding
+              speed, and multi-branch support for Indian gyms in 2026.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ COMPARISON TABLE ============ -->
+      <section class="compare-section">
+        <div class="container">
+          <div class="section-head">
+            <span class="section-label">Feature Comparison</span>
+            <h2 class="section-title">Every major capability, side by side</h2>
+            <p class="section-sub">
+              We compared real pricing, real features, and real limitations —
+              the things that actually affect your gym day to day.
+            </p>
+          </div>
+
+          <!-- Desktop table -->
+          <div class="table-shell">
+            <div class="col-heads">
+              <div class="col-head feature-col">Feature</div>
+              <div class="col-head us-col">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                EnterGYM
+              </div>
+              <div class="col-head them-col">Other Gym Software</div>
+            </div>
+
+            <!-- PRICING -->
+            <div class="cat-row"><span>Pricing</span></div>
+
+            <div class="feat-row">
+              <div class="feat-name">Free Tier for New Gyms</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Free onboarding support
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon bad"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                >Rarely offered
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">Pricing Model</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Simple per-gym plans
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon mid"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <circle cx="12" cy="12" r="9" /></svg></span
+                >Per-member or hidden fees
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">Multi-Branch Pricing</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >One dashboard, fair scaling
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon bad"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                >Separate accounts per branch
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">No Feature Lock-Ins</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Full access always
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon bad"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                >Tiered features by plan
+              </div>
+            </div>
+
+            <!-- CORE FEATURES -->
+            <div class="cat-row"><span>Core Features</span></div>
+
+            <div class="feat-row">
+              <div class="feat-name">Multi-Tenant / Multi-Gym Support</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Built in from day one
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon bad"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                >Often single-location only
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">Geo-Based Attendance</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Server-verified check-in
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon mid"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <circle cx="12" cy="12" r="9" /></svg></span
+                >Manual or biometric only
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">Mobile App for Members</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >iOS &amp; Android app
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon mid"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <circle cx="12" cy="12" r="9" /></svg></span
+                >Web-only or basic PWA
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">Push Notifications</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Real-time via FCM
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon bad"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                >Email only, often delayed
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">Role-Based Staff Access</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Granular, per-gym roles
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon mid"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <circle cx="12" cy="12" r="9" /></svg></span
+                >Basic admin/staff split
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">Supplement / Store Add-On</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Built-in storefront
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon bad"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                >Not available
+              </div>
+            </div>
+
+            <!-- SECURITY & RELIABILITY -->
+            <div class="cat-row"><span>Security &amp; Reliability</span></div>
+
+            <div class="feat-row">
+              <div class="feat-name">Data Isolation Between Gyms</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Strict per-tenant isolation
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon mid"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <circle cx="12" cy="12" r="9" /></svg></span
+                >Varies, often shared DB
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">Cloud Media Storage</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Cloudinary, no local risk
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon mid"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <circle cx="12" cy="12" r="9" /></svg></span
+                >Often local server storage
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">Uptime &amp; Hosting</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Dedicated VPS, Redis-cached
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon mid"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <circle cx="12" cy="12" r="9" /></svg></span
+                >Shared hosting, variable
+              </div>
+            </div>
+
+            <!-- SUPPORT -->
+            <div class="cat-row"><span>Support &amp; Onboarding</span></div>
+
+            <div class="feat-row">
+              <div class="feat-name">Setup &amp; Onboarding Help</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >Hands-on, direct support
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon mid"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <circle cx="12" cy="12" r="9" /></svg></span
+                >Self-serve docs only
+              </div>
+            </div>
+            <div class="feat-row">
+              <div class="feat-name">Built for the Indian Market</div>
+              <div class="feat-val us">
+                <span class="status-icon good"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg></span
+                >₹ pricing, local workflows
+              </div>
+              <div class="feat-val them">
+                <span class="status-icon bad"
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                >Often built for US/EU gyms
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile stacked cards -->
+          <div class="mobile-compare">
+            <div class="m-cat">Pricing</div>
+            <div class="m-card">
+              <div class="m-feat-name">Free Tier for New Gyms</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Free onboarding support
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon bad"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                  >Rarely offered
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">Pricing Model</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Simple per-gym plans
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon mid"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <circle cx="12" cy="12" r="9" /></svg></span
+                  >Per-member or hidden fees
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">Multi-Branch Pricing</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >One dashboard, fair scaling
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon bad"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                  >Separate accounts per branch
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">No Feature Lock-Ins</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Full access always
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon bad"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                  >Tiered features by plan
+                </div>
+              </div>
+            </div>
+
+            <div class="m-cat">Core Features</div>
+            <div class="m-card">
+              <div class="m-feat-name">Multi-Tenant / Multi-Gym Support</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Built in from day one
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon bad"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                  >Often single-location only
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">Geo-Based Attendance</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Server-verified check-in
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon mid"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <circle cx="12" cy="12" r="9" /></svg></span
+                  >Manual or biometric only
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">Mobile App for Members</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >iOS &amp; Android app
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon mid"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <circle cx="12" cy="12" r="9" /></svg></span
+                  >Web-only or basic PWA
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">Push Notifications</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Real-time via FCM
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon bad"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                  >Email only, often delayed
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">Role-Based Staff Access</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Granular, per-gym roles
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon mid"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <circle cx="12" cy="12" r="9" /></svg></span
+                  >Basic admin/staff split
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">Supplement / Store Add-On</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Built-in storefront
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon bad"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                  >Not available
+                </div>
+              </div>
+            </div>
+
+            <div class="m-cat">Security &amp; Reliability</div>
+            <div class="m-card">
+              <div class="m-feat-name">Data Isolation Between Gyms</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Strict per-tenant isolation
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon mid"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <circle cx="12" cy="12" r="9" /></svg></span
+                  >Varies, often shared DB
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">Cloud Media Storage</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Cloudinary, no local risk
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon mid"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <circle cx="12" cy="12" r="9" /></svg></span
+                  >Often local server storage
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">Uptime &amp; Hosting</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Dedicated VPS, Redis-cached
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon mid"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <circle cx="12" cy="12" r="9" /></svg></span
+                  >Shared hosting, variable
+                </div>
+              </div>
+            </div>
+
+            <div class="m-cat">Support &amp; Onboarding</div>
+            <div class="m-card">
+              <div class="m-feat-name">Setup &amp; Onboarding Help</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >Hands-on, direct support
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon mid"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <circle cx="12" cy="12" r="9" /></svg></span
+                  >Self-serve docs only
+                </div>
+              </div>
+            </div>
+            <div class="m-card">
+              <div class="m-feat-name">Built for the Indian Market</div>
+              <div class="m-row us-row">
+                <div class="m-row-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" /></svg
+                  >EnterGYM
+                </div>
+                <div class="m-row-val">
+                  <span class="status-icon good"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" /></svg></span
+                  >₹ pricing, local workflows
+                </div>
+              </div>
+              <div class="m-row">
+                <div class="m-row-label">Others</div>
+                <div class="m-row-val">
+                  <span class="status-icon bad"
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" /></svg></span
+                  >Often built for US/EU gyms
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CTA ============ -->
+      <section class="cta-section">
+        <div class="container">
+          <div class="cta-card">
+            <h2 class="cta-title">See the difference in your own gym</h2>
+            <p class="cta-sub">
+              Set up your gym on EnterGYM and decide for yourself — no card
+              required to start.
+            </p>
+            <div class="cta-buttons">
+              <a href="#" class="btn btn-primary">Get Started Free</a>
+              <a href="#" class="btn btn-ghost">Talk to Us</a>
+            </div>
+            <p class="fine-note">
+              Comparison based on publicly available pricing and feature
+              information as of 2026. Specific competitor features may vary by
+              plan.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

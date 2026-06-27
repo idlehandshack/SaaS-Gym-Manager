@@ -3,17 +3,19 @@
 import secrets
 import os
 import json
+import tempfile
+from datetime import date, datetime
 from django.db.models import Q
 import functools
 from datetime import date, timedelta
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST ,require_GET
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_log, logout
 from django.contrib.auth.models import User
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse, HttpResponseForbidden ,HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from django.conf import settings
@@ -42,18 +44,17 @@ from .forms import UserLogin
 from urllib.parse import quote
 from Shop.notifications import notify_staff_new_enrollment
 from django.contrib.auth.hashers import check_password
+from billing.models import Invoice, Payment
+from billing.services.gst_report import generate_gstr1_style_report
+from billing.services.invoice_generator import create_invoice_for_payment
+from billing.services.pdf_generator import generate_invoice_pdf
+from billing.services.cloudflare_storage import upload_file_to_r2
 logger = logging.getLogger(__name__)
 
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 ALLOWED_EXTENSIONS  = {'.jpg', '.jpeg', '.png', '.webp'}
 INTERNAL_API_KEY    = os.environ.get("INTERNAL_API_KEY", "")
 
-def test_gym(request):
-    return JsonResponse({
-        "gym": request.gym.gym_code if request.gym else None,
-        "role": request.staff_role,
-        "user": request.user.username if request.user.is_authenticated else None,
-    })
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ──────────────────────────────────────────────────────────────────────────────
@@ -85,7 +86,9 @@ def _safe_next(next_url: str, request) -> str:
         return next_url
     return '/'
 
-
+def _gym_from_request(request):
+    """Pull the current gym off request (set by GymMiddleware)."""
+    return getattr(request, 'gym', None)
 def _get_gym(request):
     if request.user.is_superuser:
         return None
@@ -864,7 +867,14 @@ def Profile(request):
                     cache.set(f"profile_image_{request.user.id}", image_url, timeout=3600)
             except Exception:
                 logger.exception("Cloudinary URL error for user %s", request.user.id)
-
+    invoices = []
+    if enrollment:
+        from billing.models import Invoice
+        invoices = (
+            Invoice.objects
+            .filter(member=enrollment, status='issued')
+            .order_by('-invoice_date', '-created_at')[:2]
+        )
     return render(request, "profile.html", {
         "enrollment":     enrollment,
         "image_url":      image_url,
@@ -872,6 +882,7 @@ def Profile(request):
         "days_remaining": enrollment.days_remaining if enrollment else 0,
         "plans":          plans,
         "gym":       gym,
+        "invoices":       invoices,
     })
 
 
@@ -1204,6 +1215,9 @@ def update_payment(request):
         paid_amount    = min(paid_amount, plan_price)
         pending_amount = max(plan_price - paid_amount, 0)
 
+        # ── NEW: how much MORE was paid in this transaction ──
+        amount_paid_now = paid_amount - float(enrollment.paidAmount)
+
         enrollment.paidAmount    = paid_amount
         enrollment.pendingAmount = pending_amount
         enrollment.paymentStatus = "Done" if pending_amount == 0 else "Pending"
@@ -1219,6 +1233,32 @@ def update_payment(request):
             "paymentMethod", "paymentDate",
         ])
 
+        from billing.models import Payment
+        from billing.services.invoice_generator import create_invoice_for_payment
+        from billing.services.pdf_generator import generate_invoice_pdf
+
+        if amount_paid_now > 0:    # ← changed from `if paid_amount > 0:`
+            payment = Payment.objects.create(
+                gym=gym,
+                enrollment=enrollment,
+                member_name=enrollment.fullname,
+                member_phone=enrollment.phone,
+                member_unique_id=enrollment.unique_id,
+                plan_name=enrollment.selectPlan.plan if enrollment.selectPlan else '',
+                plan_duration_days=enrollment.selectPlan.duration_days if enrollment.selectPlan else 30,
+                amount=plan_price,
+                paid_amount=amount_paid_now,    # ← changed from `paid_amount`
+                pending_amount=pending_amount,
+                payment_method=payment_method or None,
+                payment_date=enrollment.paymentDate or timezone.localdate(),
+                membership_start=enrollment.doj,
+                membership_end=enrollment.DueDate,
+            )
+            invoice = create_invoice_for_payment(payment)
+            try:
+                generate_invoice_pdf(invoice)
+            except Exception:
+                logger.exception("PDF generation failed for invoice %s", invoice.invoice_number)
         uid = enrollment.user_id
         gp  = gym.pk if gym else 'none'
         cache.delete(f"admin_revenue_{gp}")
@@ -1243,6 +1283,192 @@ def update_payment(request):
     except Exception:
         logger.exception("Error in update_payment")
         return JsonResponse({"error": "Internal error."}, status=500)
+
+@login_required
+@require_GET
+def invoice_pdf_view(request, pk):
+    """
+    Returns the PDF for an invoice.
+    If a cached R2 URL exists — redirects there.
+    Otherwise regenerates the PDF, uploads, then redirects.
+    """
+    from django.shortcuts import redirect
+ 
+    gym     = _gym_from_request(request)
+    invoice = get_object_or_404(Invoice, pk=pk, gym=gym)
+ 
+    if not invoice.pdf_url:
+        generate_invoice_pdf(invoice)
+ 
+    return redirect(invoice.pdf_url)
+ 
+ 
+# ── Regenerate PDF (force) ─────────────────────────────────────────────────────
+ 
+@login_required
+@require_GET
+def invoice_pdf_regenerate_view(request, pk):
+    gym     = _gym_from_request(request)
+    invoice = get_object_or_404(Invoice, pk=pk, gym=gym)
+ 
+    try:
+        url = generate_invoice_pdf(invoice)
+        return JsonResponse({'ok': True, 'pdf_url': url})
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+ 
+ 
+# ── GSTR-1 Export ─────────────────────────────────────────────────────────────
+ 
+@login_required
+@require_GET
+def gstr1_export_view(request):
+    """
+    Query params:
+        from  — YYYY-MM-DD  (default: start of current FY)
+        to    — YYYY-MM-DD  (default: today)
+ 
+    Streams the xlsx as a download AND saves a permanent copy to
+    Cloudflare R2 under reports/<gym_code>/<fy>/GSTR1_<fy>.xlsx, so it can
+    be re-downloaded later without regenerating.
+    """
+    gym = _gym_from_request(request)
+    if gym is None:
+        return HttpResponse('Gym not found', status=404)
+ 
+    today = date.today()
+    # Default: full current financial year
+    if today.month >= 4:
+        fy_start = date(today.year, 4, 1)
+    else:
+        fy_start = date(today.year - 1, 4, 1)
+ 
+    try:
+        start_date = datetime.strptime(request.GET.get('from', fy_start.isoformat()), '%Y-%m-%d').date()
+        end_date   = datetime.strptime(request.GET.get('to',   today.isoformat()),    '%Y-%m-%d').date()
+    except ValueError:
+        return HttpResponse('Invalid date format. Use YYYY-MM-DD.', status=400)
+ 
+    buf = generate_gstr1_style_report(gym, start_date, end_date)
+ 
+    fy_label = f"{start_date.year}-{str(start_date.year + 1)[-2:]}"
+    filename = f"GSTR1_{gym.gym_code}_{fy_label}.xlsx"
+ 
+    # ── Save a permanent copy to R2 (non-fatal if it fails) ───────────────
+    # We write the BytesIO to a temp file first since upload_file_to_r2
+    # expects a path on disk (matches how invoice PDFs are uploaded).
+    try:
+        buf.seek(0)
+        tmp_fd, tmp_path = tempfile.mkstemp(suffix='.xlsx')
+        with os.fdopen(tmp_fd, 'wb') as tmp_file:
+            tmp_file.write(buf.read())
+ 
+        key = f"reports/{gym.gym_code}/{fy_label}/{filename}"
+        upload_file_to_r2(
+            tmp_path,
+            key,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+    except Exception:
+        # Report still downloads fine even if the R2 save fails — just log it.
+        logger.exception("Failed to save GSTR-1 report to R2 for gym=%s", gym.gym_code)
+    finally:
+        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+            os.remove(tmp_path)
+ 
+    # ── Stream the original download to the browser ───────────────────────
+    buf.seek(0)
+    response = HttpResponse(
+        buf.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+ 
+ 
+# ── Record payment + create invoice ───────────────────────────────────────────
+ 
+@login_required
+@require_POST
+def create_payment_view(request):
+    """
+    JSON POST body:
+    {
+        "enrollment_id": 123,
+        "paid_amount": "1500.00",
+        "payment_method": "U",       // C / U / B
+        "payment_date": "2026-06-27" // optional, defaults to today
+    }
+    Returns: { "ok": true, "invoice_number": "INV/2026-27/0001", "pdf_url": "..." }
+    """
+    from AuthFit.models import Enrollment
+ 
+    gym = _gym_from_request(request)
+    if gym is None:
+        return JsonResponse({'ok': False, 'error': 'Gym not found'}, status=404)
+ 
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
+ 
+    enrollment_id = body.get('enrollment_id')
+    paid_amount   = body.get('paid_amount')
+    method        = body.get('payment_method', 'C')
+    payment_date_str = body.get('payment_date', date.today().isoformat())
+ 
+    if not enrollment_id or not paid_amount:
+        return JsonResponse({'ok': False, 'error': 'enrollment_id and paid_amount are required'}, status=400)
+ 
+    try:
+        enrollment = Enrollment.objects.get(pk=enrollment_id, gym=gym)
+    except Enrollment.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Enrollment not found'}, status=404)
+ 
+    try:
+        payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'ok': False, 'error': 'Invalid payment_date. Use YYYY-MM-DD.'}, status=400)
+ 
+    from decimal import Decimal, InvalidOperation
+    try:
+        paid_decimal = Decimal(str(paid_amount))
+    except InvalidOperation:
+        return JsonResponse({'ok': False, 'error': 'Invalid paid_amount'}, status=400)
+ 
+    payment = Payment.objects.create(
+        gym             = gym,
+        enrollment      = enrollment,
+        member_name     = enrollment.fullname,
+        member_phone    = enrollment.phone,
+        member_unique_id = enrollment.unique_id,
+        plan_name       = enrollment.selectPlan.plan,
+        plan_duration_days = enrollment.selectPlan.duration_days,
+        amount          = enrollment.Amount,
+        paid_amount     = paid_decimal,
+        pending_amount  = max(Decimal('0'), enrollment.pendingAmount - paid_decimal),
+        payment_method  = method,
+        payment_date    = payment_date,
+        membership_start = enrollment.doj,
+        membership_end   = enrollment.DueDate,
+    )
+ 
+    invoice = create_invoice_for_payment(payment)
+ 
+    # Generate PDF (synchronous — move to async if needed)
+    try:
+        generate_invoice_pdf(invoice)
+    except Exception as exc:
+        # PDF failure is non-fatal — invoice is still created
+        pass
+ 
+    return JsonResponse({
+        'ok': True,
+        'invoice_number': invoice.invoice_number,
+        'pdf_url': invoice.pdf_url or '',
+        'grand_total': str(invoice.grand_total),
+    })
+ 
 
 
 @_gym_staff_required
@@ -1773,3 +1999,6 @@ def revenue_view(request):
         "pending_count":  data["pending_count"],
         "pending_amount": data["pending_amount"],
     })
+
+def feature_comp(request):
+    return render(request, "whychose.html")

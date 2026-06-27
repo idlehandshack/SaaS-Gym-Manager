@@ -200,7 +200,7 @@
           <div class="nav-right">
             {% if request.user.is_authenticated %}
               {% if isStaff %}
-              <a href="/admin/" class="btn">Dashboard</a>
+              <a href="/dashboard/" class="btn">Dashboard</a>
               <a href="{% url 'payment_management' %}" class="btn">Registrations</a>
               {% else %}
               <a href="/profile/" class="btn">My Profile</a>

@@ -1,0 +1,668 @@
+billing/templates/billing/invoice.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+/* ═══════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  color: #2b2b2b;
+  background: #fff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PAGE WRAPPER
+═══════════════════════════════════════════════════════ */
+.page {
+  padding: 32px 38px 44px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 1 — TOP HEADER
+   Left: tagline badge + gym name + contact
+   Right: "Invoice" label + invoice number + issue date
+═══════════════════════════════════════════════════════ */
+table.t-header {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 22px;
+  table-layout: fixed;
+}
+table.t-header td { vertical-align: top; }
+table.t-header td.h-left  { width: 58%; padding-right: 12px; }
+table.t-header td.h-right { width: 42%; text-align: right; }
+
+.tagline-badge {
+  display: inline-block;
+  background: #f97316;
+  color: #fff;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  padding: 2px 7px 3px;
+  border-radius: 2px;
+  margin-bottom: 15px;
+  margin-top: -6px;
+}
+.gym-name {
+  font-size: 26px;
+  font-weight: 900;
+  color: #1a1a1a;
+  line-height: 1.1;
+  word-break: break-word;
+}
+.gym-contact {
+  font-size: 10px;
+  color: #888;
+  margin-top: 5px;
+  line-height: 1.6;
+}
+
+.inv-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+  color: #aaa;
+  margin-bottom: 3px;
+}
+.inv-number {
+  font-size: 22px;
+  font-weight: 900;
+  color: #f97316;
+  word-break: break-all;
+  line-height: 1.2;
+}
+.inv-issued {
+  font-size: 9px;
+  color: #bbb;
+  margin-top: 5px;
+}
+.inv-type-label {
+  font-size: 9px;
+  color: #888;
+  font-style: italic;
+  margin-top: 3px;
+}
+.cancelled-badge {
+  display: inline-block;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 2px 8px 3px;
+  border-radius: 2px;
+  margin-top: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DIVIDER
+═══════════════════════════════════════════════════════ */
+.rule-dark {
+  height: 2px;
+  background: #1a1a1a;
+  border: none;
+  margin-bottom: 22px;
+}
+.rule-light {
+  height: 1px;
+  background: #e8e8e8;
+  border: none;
+  margin: 20px 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   BILL OF SUPPLY NOTICE
+═══════════════════════════════════════════════════════ */
+.bos-notice {
+  background: #fffbeb;
+  border-left: 3px solid #f97316;
+  padding: 8px 12px;
+  font-size: 10px;
+  color: #78520a;
+  margin-bottom: 18px;
+  line-height: 1.55;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 2 — META BLOCK (Bill To / From / Invoice Details)
+   Uses table-layout:fixed + explicit widths so columns
+   never collapse regardless of content length.
+═══════════════════════════════════════════════════════ */
+table.t-meta {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin-bottom: 26px;
+}
+table.t-meta td { vertical-align: top; }
+table.t-meta td.m-col   { width: 29%; padding-right: 14px; }
+table.t-meta td.m-col-r { width: 34%; padding-left: 6px; }
+
+.meta-lbl {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.3px;
+  color: #bbb;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e8e8e8;
+  margin-bottom: 8px;
+}
+.meta-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.3;
+  word-break: break-word;
+  margin-bottom: 4px;
+}
+.meta-body {
+  font-size: 10px;
+  color: #555;
+  line-height: 1.75;
+  word-break: break-word;
+}
+
+/* Invoice details: use a 2-col inner table for alignment */
+table.t-inv-detail {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.t-inv-detail td {
+  vertical-align: top;
+  padding: 2px 0;
+  font-size: 10px;
+  line-height: 1.6;
+}
+table.t-inv-detail td.dl { color: #aaa; width: 44%; white-space: nowrap; padding-right: 6px; }
+table.t-inv-detail td.dv { color: #1a1a1a; font-weight: 600; word-break: break-word; }
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 3 — LINE ITEMS TABLE
+   Columns are fixed-width; Description gets remaining space.
+   Numeric columns are right-aligned with min-width guards.
+═══════════════════════════════════════════════════════ */
+table.t-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+  table-layout: fixed;
+}
+
+/* Column width assignments */
+table.t-items col.c-ref  { width: 8%; }
+table.t-items col.c-desc { /* auto — gets leftover */ }
+table.t-items col.c-hsn  { width: 9%; }
+table.t-items col.c-qty  { width: 5%; }
+table.t-items col.c-rate { width: 9%; }
+table.t-items col.c-tax  { width: 10%; }
+table.t-items col.c-cgst { width: 9%; }
+table.t-items col.c-sgst { width: 9%; }
+table.t-items col.c-igst { width: 9%; }
+table.t-items col.c-amt  { width: 10%; }
+
+/* Header row */
+table.t-items thead td {
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  padding: 9px 8px;
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+/* Body cells */
+table.t-items tbody td {
+  padding: 9px 8px;
+  font-size: 10.5px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: top;
+  overflow: hidden;
+  word-break: break-word;
+}
+table.t-items tbody tr:nth-child(even) td { background: #fafafa; }
+
+/* Cell-specific styles */
+.c-ref-cell  { color: #c0c0c0; font-size: 9px; }
+.c-desc-cell strong { display: block; font-size: 11px; font-weight: 700; color: #1a1a1a; }
+.c-desc-cell small  { font-size: 9px; color: #aaa; display: block; margin-top: 1px; }
+.num { text-align: right; }
+.rate-note { font-size: 7.5px; color: #c0c0c0; display: block; margin-top: 1px; }
+.amt-cell { font-weight: 700; color: #1a1a1a; }
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 4 — NOTES + TOTALS
+   Two-column layout: notes left (45%), totals right (55%).
+   Totals use inner table with fixed widths so amounts
+   never overflow.
+═══════════════════════════════════════════════════════ */
+table.t-bottom {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 28px;
+  table-layout: fixed;
+}
+table.t-bottom td.b-notes  { width: 44%; vertical-align: top; padding-right: 20px; }
+table.t-bottom td.b-totals { width: 56%; vertical-align: top; }
+
+.notes-lbl {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #aaa;
+  margin-bottom: 7px;
+}
+.notes-list { list-style: none; padding: 0; }
+.notes-list li {
+  font-size: 10px;
+  color: #777;
+  line-height: 1.65;
+  padding-left: 12px;
+  position: relative;
+  margin-bottom: 2px;
+}
+.notes-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #f97316;
+}
+.cancel-note {
+  font-size: 9.5px;
+  color: #dc2626;
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+/* Totals inner table */
+table.t-totals {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.t-totals td {
+  padding: 5px 0;
+  font-size: 10.5px;
+  vertical-align: middle;
+}
+table.t-totals td.tl { color: #777; width: 60%; }
+table.t-totals td.tr { text-align: right; color: #2b2b2b; font-weight: 600; width: 40%; white-space: nowrap; }
+table.t-totals tr.sep td { border-top: 1px solid #e8e8e8; padding-top: 8px; }
+table.t-totals tr.grand td {
+  border-top: 2px solid #1a1a1a;
+  padding-top: 10px;
+  padding-bottom: 4px;
+}
+table.t-totals tr.grand td.tl {
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #aaa;
+  vertical-align: bottom;
+  padding-bottom: 5px;
+}
+table.t-totals tr.grand td.tr {
+  font-size: 20px;
+  font-weight: 900;
+  color: #f97316;
+  line-height: 1;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 5 — FOOTER
+   Three columns: bank info | online info | appreciation
+═══════════════════════════════════════════════════════ */
+.footer-hr {
+  height: 1px;
+  background: #e8e8e8;
+  border: none;
+  margin-bottom: 0;
+}
+table.t-footer {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+table.t-footer td {
+  vertical-align: top;
+  padding: 16px 0 0;
+}
+table.t-footer td.f-col { width: 30%; padding-right: 18px; }
+table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
+
+.f-lbl {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #aaa;
+  margin-bottom: 5px;
+}
+.f-body { font-size: 10px; color: #555; line-height: 1.75; }
+
+.appreciation {
+  font-size: 14px;
+  font-weight: 900;
+  color: #1a1a1a;
+  line-height: 1.35;
+  margin-top: 6px;
+}
+.appreciation .accent { color: #f97316; }
+
+.sig-block { margin-bottom: 8px; }
+.sig-block img { height: 44px; opacity: .85; }
+.sig-lbl { font-size: 8.5px; color: #aaa; margin-top: 3px; line-height: 1.5; }
+
+/* ═══════════════════════════════════════════════════════
+   SYSTEM NOTE
+═══════════════════════════════════════════════════════ */
+.sys-note {
+  text-align: center;
+  color: #ccc;
+  font-size: 8px;
+  margin-top: 24px;
+  letter-spacing: .4px;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 1 — HEADER
+════════════════════════════════════════════════════════ -->
+<table class="t-header">
+  <tr>
+    <!-- Left: Gym identity -->
+    <td class="h-left">
+      <div class="tagline-badge">{{ gym.tagline|default:"Your Tagline" }}</div>
+      <div class="gym-name">{{ gst_profile.legal_business_name|default:gym.gym_name }}</div>
+      <div class="gym-contact">
+        {% if gym.contact_phone %}Phone: {{ gym.contact_phone }}{% endif %}
+        {% if gym.contact_email %} &nbsp;·&nbsp; {{ gym.contact_email }}{% endif %}
+      </div>
+    </td>
+
+    <!-- Right: Invoice meta -->
+    <td class="h-right">
+      <div class="inv-label">Invoice</div>
+      <div class="inv-number">#{{ invoice.invoice_number }}</div>
+      <div class="inv-issued">Issued {{ invoice.invoice_date|date:"Y-m-d" }}</div>
+      {% if invoice.is_cancelled %}
+        <div><span class="cancelled-badge">Cancelled</span></div>
+      {% endif %}
+    </td>
+  </tr>
+</table>
+
+<div class="rule-dark"></div>
+
+<!-- Bill of Supply notice (only when NOT a tax invoice) -->
+{% if not invoice.is_tax_invoice %}
+<div class="bos-notice">
+  This is a <strong>Bill of Supply</strong>. No tax is charged — the supplier is either
+  under the Composition Scheme or is not registered under GST.
+</div>
+{% endif %}
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 2 — META BLOCK
+════════════════════════════════════════════════════════ -->
+<table class="t-meta">
+  <tr>
+    <!-- Bill To -->
+    <td class="m-col">
+      <div class="meta-lbl">Bill To</div>
+      <div class="meta-name">{{ invoice.customer_name }}</div>
+      <div class="meta-body">
+        {% if invoice.customer_phone %}{{ invoice.customer_phone }}<br>{% endif %}
+        {% if invoice.customer_address %}{{ invoice.customer_address }}<br>{% endif %}
+        {% if invoice.customer_state %}{{ invoice.customer_state }}{% if invoice.customer_state_code %} ({{ invoice.customer_state_code }}){% endif %}{% endif %}
+        {% if invoice.customer_gstin %}<br>GSTIN: {{ invoice.customer_gstin }}{% endif %}
+      </div>
+    </td>
+
+    <!-- From -->
+    <td class="m-col">
+      <div class="meta-lbl">From</div>
+      <div class="meta-name">{{ gst_profile.legal_business_name|default:gym.gym_name }}</div>
+      <div class="meta-body">
+        {% if gst_profile %}
+          {{ gst_profile.address_line1 }}{% if gst_profile.address_line2 %}, {{ gst_profile.address_line2 }}{% endif %}<br>
+          {{ gst_profile.city }}, {{ gst_profile.state }} {{ gst_profile.pincode }}<br>
+          {% if gst_profile.is_gst_registered %}GSTIN: {{ gst_profile.gstin }}{% endif %}
+        {% else %}
+          {{ gym.address|default:"" }}
+        {% endif %}
+        {% if gym.contact_phone %}<br>{{ gym.contact_phone }}{% endif %}
+        {% if gym.contact_email %}<br>{{ gym.contact_email }}{% endif %}
+      </div>
+    </td>
+
+    <!-- Invoice Details — inner 2-col table for label/value alignment -->
+    <td class="m-col-r">
+      <div class="meta-lbl">Invoice Details</div>
+      <table class="t-inv-detail">
+        <tr>
+          <td class="dl">Invoice No</td>
+          <td class="dv">{{ invoice.invoice_number }}</td>
+        </tr>
+        <tr>
+          <td class="dl">Date</td>
+          <td class="dv">{{ invoice.invoice_date|date:"d M Y" }}</td>
+        </tr>
+        <tr>
+          <td class="dl">Financial Year</td>
+          <td class="dv">{{ invoice.financial_year }}</td>
+        </tr>
+        <tr>
+          <td class="dl">Place of Supply</td>
+          <td class="dv">{{ invoice.place_of_supply_state }} ({{ invoice.place_of_supply_code }})</td>
+        </tr>
+        <tr>
+          <td class="dl">Invoice Type</td>
+          <td class="dv">{{ invoice.get_invoice_type_display }}</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 3 — LINE ITEMS
+════════════════════════════════════════════════════════ -->
+<table class="t-items">
+  <colgroup>
+    <col class="c-ref">
+    <col class="c-desc">
+    <col class="c-hsn">
+    <col class="c-qty">
+    <col class="c-rate">
+    <col class="c-tax">
+    {% if invoice.is_tax_invoice %}
+      {% if invoice.cgst_amount %}
+        <col class="c-cgst">
+        <col class="c-sgst">
+      {% else %}
+        <col class="c-igst">
+      {% endif %}
+    {% endif %}
+    <col class="c-amt">
+  </colgroup>
+  <thead>
+    <tr>
+      <td>Ref</td>
+      <td>Description</td>
+      <td>SAC/HSN</td>
+      <td class="num">Qty</td>
+      <td class="num">Rate (Rs.)</td>
+      <td class="num">Taxable (Rs.)</td>
+      {% if invoice.is_tax_invoice %}
+        {% if invoice.cgst_amount %}
+          <td class="num">CGST</td>
+          <td class="num">SGST</td>
+        {% else %}
+          <td class="num">IGST</td>
+        {% endif %}
+      {% endif %}
+      <td class="num">Amount</td>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in line_items %}
+    <tr>
+      <td class="c-ref-cell">{{ item.hsn_sac_code }}</td>
+      <td class="c-desc-cell">
+        <strong>{{ item.description }}</strong>
+        {% if item.notes %}<small>{{ item.notes }}</small>{% endif %}
+      </td>
+      <td>{{ item.hsn_sac_code }}</td>
+      <td class="num">{{ item.quantity }}</td>
+      <td class="num">{{ item.unit_price }}</td>
+      <td class="num">{{ item.taxable_value }}</td>
+      {% if invoice.is_tax_invoice %}
+        {% if item.cgst_amount %}
+          <td class="num">
+            Rs. {{ item.cgst_amount }}
+            <span class="rate-note">({{ item.gst_rate|floatformat:1 }}% / 2)</span>
+          </td>
+          <td class="num">
+            Rs. {{ item.sgst_amount }}
+            <span class="rate-note">({{ item.gst_rate|floatformat:1 }}% / 2)</span>
+          </td>
+        {% else %}
+          <td class="num">
+            Rs. {{ item.igst_amount }}
+            <span class="rate-note">({{ item.gst_rate|floatformat:1 }}%)</span>
+          </td>
+        {% endif %}
+      {% endif %}
+      <td class="num amt-cell">Rs. {{ item.line_total }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 4 — NOTES + TOTALS
+════════════════════════════════════════════════════════ -->
+<table class="t-bottom">
+  <tr>
+    <!-- Notes -->
+    <td class="b-notes">
+      <div class="notes-lbl">Notes</div>
+      <ul class="notes-list">
+        <li>Membership fees once paid are non-refundable.</li>
+        <li>This is a computer-generated invoice and does not require a physical signature.</li>
+        <li>For support: {{ gym.contact_phone }} | {{ gym.contact_email }}</li>
+        <li>Subject to jurisdiction: {{ gst_profile.city }}, {{ gst_profile.state }}.</li>
+      </ul>
+      {% if invoice.cancellation_reason %}
+        <div class="cancel-note"><strong>Cancellation reason:</strong> {{ invoice.cancellation_reason }}</div>
+      {% endif %}
+    </td>
+
+    <!-- Totals -->
+    <td class="b-totals">
+      <table class="t-totals">
+        <tr>
+          <td class="tl">Subtotal</td>
+          <td class="tr">Rs. {{ invoice.taxable_value }}</td>
+        </tr>
+        {% if invoice.is_tax_invoice %}
+          {% if invoice.cgst_amount %}
+            <tr>
+              <td class="tl">CGST</td>
+              <td class="tr">Rs. {{ invoice.cgst_amount }}</td>
+            </tr>
+            <tr>
+              <td class="tl">SGST</td>
+              <td class="tr">Rs. {{ invoice.sgst_amount }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td class="tl">IGST</td>
+              <td class="tr">Rs. {{ invoice.igst_amount }}</td>
+            </tr>
+          {% endif %}
+        {% endif %}
+        {% if invoice.round_off %}
+          <tr>
+            <td class="tl">Round Off</td>
+            <td class="tr">Rs. {{ invoice.round_off }}</td>
+          </tr>
+        {% endif %}
+        <tr class="grand">
+          <td class="tl">Total</td>
+          <td class="tr">Rs. {{ invoice.grand_total }}</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 5 — FOOTER
+════════════════════════════════════════════════════════ -->
+<div class="footer-hr"></div>
+<table class="t-footer">
+  <tr>
+    <td class="f-col">
+      <div class="f-lbl">Pay by transfer</div>
+      <div class="f-body">
+        Bank Name<br>
+        Routing 000-000-000<br>
+        Account 0000-0000-00
+      </div>
+    </td>
+    <td class="f-col">
+      <div class="f-lbl">For online</div>
+      <div class="f-body">
+        {% if gym.contact_email %}{{ gym.contact_email }}<br>{% endif %}
+        {% if gst_profile %}{{ gst_profile.city }}{% endif %}
+      </div>
+    </td>
+    <td class="f-right">
+      {% if gst_profile and gst_profile.signature_image %}
+        <div class="sig-block">
+          <img src="{{ gst_profile.signature_image }}" alt="Authorised Signatory">
+          <div class="sig-lbl">
+            Authorised Signatory<br>
+            {{ gst_profile.legal_business_name|default:gym.gym_name }}
+          </div>
+        </div>
+      {% endif %}
+      <div class="appreciation">
+        We <span class="accent">appreciate</span><br>your business
+      </div>
+    </td>
+  </tr>
+</table>
+
+<!-- ════════════════════════════════════════════════════════
+     SYSTEM NOTE
+════════════════════════════════════════════════════════ -->
+<div class="sys-note">
+  This is a system-generated invoice &nbsp;·&nbsp; {{ invoice.get_invoice_type_display }} &nbsp;·&nbsp; #{{ invoice.invoice_number }}
+</div>
+
+</div><!-- /page -->
+</body>
+</html>
