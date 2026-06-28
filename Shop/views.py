@@ -157,12 +157,14 @@ def _status_counts(base_qs):
 @store_enabled_required
 def product_list(request):
     gym      = getattr(request, 'gym', None)
+    
     products = Product.objects.filter(active=True).prefetch_related('flavors')
     allowed, _ = can_user_order_products(request.user, gym=gym)
     return render(request, 'shop/product_list.html', {
         'products':          products,
         'gym':               gym,
         'can_order_products': allowed,
+        
     })
 
 
@@ -170,6 +172,7 @@ def product_list(request):
 @store_enabled_required
 def product_detail(request, product_id):
     gym     = getattr(request, 'gym', None)
+    
     product = _get_active_product(product_id)
     allowed, result = can_user_order_products(request.user, gym=gym)
     return render(request, 'shop/product_detail.html', {
@@ -189,6 +192,7 @@ def product_detail(request, product_id):
 @store_enabled_required
 def confirm_order(request, product_id):
     gym     = getattr(request, 'gym', None)
+    
     product = _get_active_product(product_id)
     if request.method != 'POST':
         return redirect('product_detail', product_id=product_id)
@@ -224,6 +228,7 @@ def confirm_order(request, product_id):
         'enrollment':  enrollment,
         'image_url':   image_url,
         'gym':         gym,
+        
     })
 
 
@@ -306,7 +311,7 @@ def order_success(request, order_id):
         return redirect('product_list')
 
     gym = getattr(request, 'gym', None)
-
+    
     qs = Order.objects.filter(
         id=order_id,
         user=request.user,
@@ -335,7 +340,7 @@ def order_success(request, order_id):
 @store_enabled_required
 def my_orders(request):
     gym = getattr(request, 'gym', None)
-
+    
     # Scope to this gym — member at two gyms sees only this gym's orders
     qs = Order.objects.filter(user=request.user).select_related('product', 'flavor')
     if gym:
@@ -363,6 +368,7 @@ def my_orders(request):
 def order_dashboard(request):
 
     gym           = getattr(request, 'gym', None)
+    
     status_filter = request.GET.get('status', 'Pending')
     search        = request.GET.get('q', '').strip()
     print("USER:", request.user)
@@ -408,7 +414,7 @@ def order_dashboard(request):
         'all_counts':    all_counts,
         'revenue':       revenue,
         'Status':        Order.Status,
-        'gym':           gym, 
+        'gym':           gym,
         'next_action': {
             Order.Status.PENDING:   ('Confirm — Item at Gym', Order.Status.CONFIRMED, 'confirm'),
             Order.Status.CONFIRMED: ('Mark Collected',        Order.Status.DELIVERED, 'deliver'),

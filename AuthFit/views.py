@@ -34,6 +34,7 @@ from AuthFit.models import (
     Contact, Enrollment, EnrollmentTransfer, MembershipPlan, Trainer,
     Attendence as Attendence_model, GymNotification
 )
+from django.http import HttpResponseRedirect
 from django.db.models import Sum, Count
 from django.db.models.functions import ExtractWeekDay, ExtractHour, TruncMonth,TruncDay 
 from collections import defaultdict
@@ -55,9 +56,59 @@ ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 ALLOWED_EXTENSIONS  = {'.jpg', '.jpeg', '.png', '.webp'}
 INTERNAL_API_KEY    = os.environ.get("INTERNAL_API_KEY", "")
 
+def robots_txt(request):
+    content = """
+    User-agent: *
+    Allow: /
+    Sitemap: https://entergym.in/sitemap.xml
+    """
+    return HttpResponse(content, content_type="text/plain")
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ──────────────────────────────────────────────────────────────────────────────
+def invalidate_gym_branding_cache(gym_pk):
+    cache.delete(f"gym_favicon_{gym_pk}")
+    cache.delete(f"gym_logo_{gym_pk}")
+
+
+def gym_favicon(request):
+    """
+    Serves the gym's favicon. Falls back to a default if none is set.
+    Called by <link rel="icon" href="/favicon.ico"> in your base template.
+    """
+    gym = getattr(request, 'gym', None)
+
+    if gym and gym.favicon:
+        cache_key = f"gym_favicon_{gym.pk}"
+        favicon_url = cache.get(cache_key)
+        if favicon_url is None:
+            try:
+                public_id = (
+                    gym.favicon.public_id
+                    if hasattr(gym.favicon, 'public_id')
+                    else str(gym.favicon)
+                )
+                favicon_url, _ = cloudinary_url(
+                    public_id,
+                    width=32, height=32,
+                    crop="fill",
+                    fetch_format="ico",
+                    quality="auto",
+                    secure=True,
+                )
+                cache.set(cache_key, favicon_url, timeout=86400)  # 24 hours
+            except Exception:
+                logger.exception("Cloudinary favicon URL error for gym %s", gym.pk)
+                favicon_url = None
+
+        if favicon_url:
+            return HttpResponseRedirect(favicon_url)
+
+    # Fall back to your static default favicon
+    from django.templatetags.static import static
+    return HttpResponseRedirect(static('images/favicon.ico'))
 
 def _check_internal_key(request):
     provided = request.headers.get("X-Internal-Key", "")
@@ -89,6 +140,7 @@ def _safe_next(next_url: str, request) -> str:
 def _gym_from_request(request):
     """Pull the current gym off request (set by GymMiddleware)."""
     return getattr(request, 'gym', None)
+
 def _get_gym(request):
     if request.user.is_superuser:
         return None
@@ -280,6 +332,7 @@ def run_expiry_check(request):
 @_gym_staff_required
 def contact_inquiries(request):
     gym = getattr(request, 'gym', None)
+    
     if gym is None:
         return HttpResponseForbidden("No gym context available.")
 
@@ -321,7 +374,7 @@ def signupPage(request):
         return redirect('/')
 
     gym = getattr(request, 'gym', None)
-
+    
     if request.method == "POST":
         form = UserLogin(request.POST, gym=gym)
         if form.is_valid():
@@ -337,7 +390,7 @@ def signupPage(request):
         else "registration/signup.html"
     )
 
-    return render(request, signup_template, {'form': form, 'gym': gym})
+    return render(request, signup_template, {'form': form, 'gym': gym,})
 
 
 def loginPage(request):
@@ -346,7 +399,7 @@ def loginPage(request):
 
     next_url = request.GET.get('next') or request.POST.get('next', '/')
     gym = getattr(request, 'gym', None)
-
+    
     if request.method == "POST":
         ip       = get_client_ip(request)
         phone    = request.POST.get('username', '').strip()
@@ -373,7 +426,7 @@ def loginPage(request):
         else "registration/login.html"
     )
 
-    return render(request, login_template, {'next': next_url, 'gym': gym})
+    return render(request, login_template, {'next': next_url, 'gym': gym ,})
 
 
 def handlelogout(request):
@@ -438,7 +491,7 @@ def homePage(request):
         "isStaff":           isStaff,
         "isSuperuser":       isSuperuser,
         "gym_notifications": gym_notifications,
-        "plans":             plans,
+        "plans":             plans,  
     })
 
 
@@ -452,6 +505,8 @@ def stats_api(request):
 
 def contact(request):
     gym = getattr(request, 'gym', None)
+
+    
 
     # FIX: Contact.gym is non-nullable — block on bare domain (gym=None)
     if not gym:
@@ -477,16 +532,21 @@ def contact(request):
         )
         messages.success(request, "Thanks for contacting us — we'll get back to you soon!")
         return redirect('/contact/')
+    
+
 
     return render(request, 'contact.html',{
-        "gym":gym
+        "gym":gym,
     })
 
 
 def workout(request):
+
     gym = getattr(request, 'gym', None)
+    
     return render(request, 'workout.html',{
-        "gym":gym
+        "gym":gym,
+        
     })
 
 
@@ -498,7 +558,7 @@ def download_app(request):
     has clean variables to use everywhere (title, meta, aria-label, etc.)
     """
     gym = getattr(request, 'gym', None)  # set by your context processor
- 
+    
     gym_name  = gym.gym_name if gym else "EnterGYM"
     # A short slug for things like the APK filename or meta title
     gym_short = gym_name.replace(" ", "")  # "GoldenGYM", "EnterGYM", etc.
@@ -512,6 +572,7 @@ def download_app(request):
 @_gym_role_required('gym_owner', 'receptionist')
 def membership_plans(request):
     gym = getattr(request, 'gym', None)
+    
     if gym is None:
         return HttpResponseForbidden("No gym context available.")
 
@@ -586,11 +647,13 @@ def membership_plans(request):
     return render(request, "membership_plans.html", {
         "gym":   gym,
         "plans": plans,
+        
     })
 
 @_gym_role_required('gym_owner', 'receptionist')
 def trainers(request):
     gym = getattr(request, 'gym', None)
+    
     if gym is None:
         return HttpResponseForbidden("No gym context available.")
 
@@ -674,6 +737,7 @@ def trainers(request):
     return render(request, "trainers.html", {
         "gym":      gym,
         "trainers": trainers,
+        
     })
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -683,7 +747,7 @@ def trainers(request):
 @login_required
 def enrollment(request):
     gym = getattr(request, 'gym', None)
-
+    
     if Enrollment.objects.filter(user=request.user, gym=gym).exists():
         return redirect('/profile/')
 
@@ -825,13 +889,13 @@ def enrollment(request):
         messages.success(request, "Welcome aboard! Your gym membership has been activated.")
         return redirect('/profile/')
 
-    return render(request, 'enrollment.html', {"plans": plans, "trainers": trainers})
+    return render(request, 'enrollment.html', {"plans": plans, "trainers": trainers,})
 
 
 @login_required
 def Profile(request):
     gym = getattr(request, 'gym', None)
-
+    
     enrollment = (
         Enrollment.objects
         .filter(user=request.user, gym=gym)
@@ -954,6 +1018,7 @@ def upload_profile_pic(request):
 @login_required
 def attendance_page(request):
     gym        = getattr(request, 'gym', None)
+    
     enrollment = Enrollment.objects.filter(user=request.user, gym=gym).first()
     if not enrollment:
         return redirect('/enrollment/')
@@ -1062,6 +1127,7 @@ def _panel_data(e, kind, **extra):
 @_gym_staff_required
 def whatsapp_pending_users(request):
     gym = getattr(request, 'gym', None)
+    
     today = timezone.now().date()
  
     base_qs = Enrollment.objects.select_related("selectPlan", "gym", "trainer")
@@ -1131,8 +1197,7 @@ def whatsapp_pending_users(request):
         "pending_count": len(pending_with_links),
         "expiring_count": len(expiring_with_links),
         "expired_count": len(expired_with_links),
-        "gym": gym,
-    })
+        "gym": gym,   })
  
 
 
@@ -1142,7 +1207,7 @@ def payment_management(request):
     status_filter = request.GET.get("filter", "pending")
     since         = timezone.now() - timedelta(days=7)
     METHOD_LABELS = {"C": "Cash", "U": "UPI", "B": "UPI + Cash"}
-
+    
     qs = Enrollment.objects.select_related("selectPlan", "trainer")
     if gym:
         qs = qs.filter(gym=gym)
@@ -1187,6 +1252,7 @@ def payment_management(request):
         "pending_count":        pending_count,
         "paid_count":           paid_count,
         "gym": gym,
+        
     })
 
 
@@ -1194,6 +1260,7 @@ def payment_management(request):
 @require_POST
 def update_payment(request):
     gym = getattr(request, 'gym', None)
+    
     try:
         data           = json.loads(request.body)
         enrollment_id  = int(data.get("enrollment_id", 0))
@@ -1274,6 +1341,7 @@ def update_payment(request):
             "payment_status":       enrollment.paymentStatus,
             "payment_method_label": METHOD_LABELS.get(enrollment.paymentMethod, "—"),
             "payment_date":         enrollment.paymentDate.strftime("%d %b %Y") if enrollment.paymentDate else "—",
+            
         })
 
     except Enrollment.DoesNotExist:
@@ -1474,6 +1542,7 @@ def create_payment_view(request):
 @_gym_staff_required
 def today_attendance(request):
     gym   = getattr(request, 'gym', None)
+    
     today = timezone.localdate()
 
     cache_key = f"today_attendance_{gym.pk if gym else 'super'}_{today}"
@@ -1546,7 +1615,8 @@ def today_attendance(request):
         "sections": [("Morning", "🌅", morning), ("Evening", "🌆", evening)],
         "today":    today,
         "total":    len(morning) + len(evening),
-        "gym" : gym
+        "gym" : gym,
+        
     }
     cache.set(cache_key, context, timeout=120)
     return render(request, "today_attendance.html", context)
@@ -1556,7 +1626,7 @@ def today_attendance(request):
 def freeze_membership(request):
     gym   = getattr(request, 'gym', None)
     query = request.GET.get("q", "").strip()
-
+    
     qs = Enrollment.objects.select_related("selectPlan").order_by("fullname")
     if gym:
         qs = qs.filter(gym=gym)
@@ -1566,7 +1636,7 @@ def freeze_membership(request):
     paginator = Paginator(qs, 20)
     page_obj  = paginator.get_page(request.GET.get("page", 1))
 
-    return render(request, "freeze_membership.html", {"page_obj": page_obj, "query": query})
+    return render(request, "freeze_membership.html", {"page_obj": page_obj, "query": query , })
 
 
 @_gym_staff_required
@@ -1576,7 +1646,7 @@ def freeze_membership_apply(request):
     enrollment_id = request.POST.get("enrollment_id", "").strip()
     days_raw      = request.POST.get("days", "").strip()
     back_query    = request.POST.get("q", "").strip()
-
+    
     redirect_url = f"/freeze-membership/?q={back_query}" if back_query else "/freeze-membership/"
 
     try:
@@ -1637,7 +1707,7 @@ def _action_label(user):
 @_gym_staff_required
 def transferred_members(request):
     gym = getattr(request, 'gym', None)
-
+    
     qs = (
         EnrollmentTransfer.objects
         .filter(previous_gym=gym)
@@ -1673,7 +1743,7 @@ def transferred_members(request):
         for t in qs
     ]
 
-    return render(request, "transferred_members.html", {"rows": rows, "summary": summary})
+    return render(request, "transferred_members.html", {"rows": rows, "summary": summary,})
 
 
 @_gym_staff_required
@@ -1729,7 +1799,7 @@ def transfer_delete_enrollment(request, transfer_id):
 @_gym_staff_required
 def attendance_analytics(request):
     gym = getattr(request, 'gym', None)
- 
+    
     cache_key = f"admin_attendance_data_{gym.pk if gym else 'super'}"
     cached = cache.get(cache_key)
  
@@ -1915,7 +1985,7 @@ def attendance_analytics(request):
 @_gym_staff_required
 def revenue_view(request):
     gym = getattr(request, 'gym', None)
-
+    
     cache_key = f"admin_revenue_{gym.pk if gym else 'super'}"
     data = cache.get(cache_key)
 

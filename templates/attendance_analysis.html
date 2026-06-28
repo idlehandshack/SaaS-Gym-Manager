@@ -3,6 +3,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+   {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    <link rel="shortcut icon" href="{{ favicon_url }}">
+  {% else %}
+    <link rel="icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+  {% endif %}
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Attendance Analytics — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
   <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}" />

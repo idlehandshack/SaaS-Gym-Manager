@@ -8,6 +8,7 @@ import os
 from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
+from cloudinary.utils import cloudinary_url
 
 logger = logging.getLogger(__name__)
 
@@ -133,4 +134,76 @@ def _build_response(is_enrolled, already_marked, user_hash, request=None):
         "GYM_CONFIG_JSON": json.dumps(config),
         "is_enrolled":     bool(is_enrolled),
         "already_marked":  bool(already_marked),
+    }
+
+
+def gym_context(request):
+    """
+    Injects gym-wide context into every template automatically.
+    Replaces the manual favicon_url / logo_url computation in every view.
+    
+    Provides:
+        {{ gym }}         — the current Gym instance (or None on root domain)
+        {{ favicon_url }} — Cloudinary 32x32 favicon URL (or None → base.html falls back to /favicon.ico)
+        {{ logo_url }}    — Cloudinary logo URL (or None)
+    """
+    gym = getattr(request, 'gym', None)
+
+    if gym is None:
+        return {'gym': None, 'favicon_url': None, 'logo_url': None}
+
+    # ── Favicon ───────────────────────────────────────────────────────────────
+    favicon_url = None
+    favicon_cache_key = f"gym_favicon_{gym.pk}"
+    favicon_url = cache.get(favicon_cache_key)
+
+    if favicon_url is None and gym.favicon:
+        try:
+            public_id = (
+                gym.favicon.public_id
+                if hasattr(gym.favicon, 'public_id')
+                else str(gym.favicon)
+            )
+            if public_id:
+                favicon_url, _ = cloudinary_url(
+                    public_id,
+                    width=32, height=32,
+                    crop="fill",
+                    fetch_format="auto",
+                    quality="auto",
+                    secure=True,
+                )
+                cache.set(favicon_cache_key, favicon_url, timeout=86400)  # 24 h
+        except Exception:
+            logger.exception("Cloudinary favicon URL error for gym %s", gym.pk)
+
+    # ── Logo ──────────────────────────────────────────────────────────────────
+    logo_url = None
+    logo_cache_key = f"gym_logo_{gym.pk}"
+    logo_url = cache.get(logo_cache_key)
+
+    if logo_url is None and gym.logo:
+        try:
+            public_id = (
+                gym.logo.public_id
+                if hasattr(gym.logo, 'public_id')
+                else str(gym.logo)
+            )
+            if public_id:
+                logo_url, _ = cloudinary_url(
+                    public_id,
+                    width=200, height=80,
+                    crop="fit",
+                    fetch_format="auto",
+                    quality="auto",
+                    secure=True,
+                )
+                cache.set(logo_cache_key, logo_url, timeout=86400)  # 24 h
+        except Exception:
+            logger.exception("Cloudinary logo URL error for gym %s", gym.pk)
+
+    return {
+        'gym': gym,
+        'favicon_url': favicon_url,
+        'logo_url': logo_url,
     }

@@ -30,6 +30,7 @@ urlpatterns = [
     path('whychoseus/', views.feature_comp,  name='whychoseus'),
     path('billing/', include('billing.urls')),
     path('', include('billing.urls_owner')),
+    path('favicon.ico', views.gym_favicon, name='gym_favicon'),
 
     # ── Existing APIs ──────────────────────────────────────────
     path('api/mark-attendance/', views.mark_attendance_api),

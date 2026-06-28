@@ -560,6 +560,13 @@ body {
   .nav-container {
     padding: 15px 20px;
   }
+
+  .mobile-menu {
+  visibility: hidden !important;
+  }
+  .mobile-menu.active {
+    visibility: visible !important;
+  }
   .hero-tag {
     display: inline-flex;
     align-items: center;

@@ -60,6 +60,7 @@ class Gym(models.Model):
 
     # ── White-label settings ──────────────────────────────────────────────
     logo            = CloudinaryField('gym_logo', null=True, blank=True)
+    favicon         = CloudinaryField('gym_favicon', null=True, blank=True)
     contact_email   = models.EmailField(blank=True)
     contact_phone   = models.CharField(max_length=15, blank=True)
     whatsapp_number = models.CharField(max_length=15, blank=True)
@@ -115,6 +116,7 @@ class Gym(models.Model):
 @receiver([post_save, post_delete], sender=Gym)
 def clear_gym_logo_cache(sender, instance, **kwargs):
     cache.delete(f"gym_logo_{instance.pk}")
+    cache.delete(f"gym_favicon_{instance.pk}")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Staff Profile  (links a User to a Gym with a role)

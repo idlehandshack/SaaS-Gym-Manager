@@ -5,7 +5,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %} — Download App</title>
-    <link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}">
+      {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    <link rel="shortcut icon" href="{{ favicon_url }}">
+  {% else %}
+    <link rel="icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+  {% endif %}
     <!-- PWA manifest -->
     <link rel="manifest" href="{% static 'js/manifest.json' %}">
     <meta name="theme-color" content="#080808" />

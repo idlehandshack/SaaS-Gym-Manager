@@ -36,11 +36,17 @@ DATA_FONT    = Font(size=10, name='Arial')
 FOOTER_FONT  = Font(italic=True, size=9, name='Arial', color='808080')
 THIN         = Side(style='thin')
 THIN_BORDER  = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
-INR_FMT      = '[\u20b9-4009]#,##0.00'
 CENTER       = Alignment(horizontal='center', vertical='center')
 
 
 # ── Core data function ─────────────────────────────────────────────────────────
+def _inr(value) -> str:
+    """Format a number as Indian Rupee string. e.g. 1234.5 → '₹1,234.50'"""
+    try:
+        return f"₹{float(value):,.2f}"
+    except (TypeError, ValueError):
+        return '₹0.00'
+
 
 def get_monthly_report_data(gym, year: int, month: int) -> dict:
     """
@@ -283,7 +289,8 @@ def _build_detail_sheet(wb, gym, data):
 
     # Title
     sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=ncols)
-    c = sheet.cell(row=1, column=1, value=f"{gym.gym_name} — Monthly Report ({data['month_label']})")
+    c = sheet.cell(row=1, column=1,
+                   value=f"{gym.gym_name} — Monthly Report ({data['month_label']})")
     c.font      = TITLE_FONT
     c.alignment = CENTER
     sheet.row_dimensions[1].height = 28
@@ -300,13 +307,11 @@ def _build_detail_sheet(wb, gym, data):
 
     _hdr(sheet,
          ['Invoice No', 'Date', 'Member Name', 'Phone', 'Plan',
-          'Taxable', 'GST', 'Grand Total', 'Status'],
-         [20, 14, 26, 14, 20, 14, 12, 14, 12])
+          'Taxable (₹)', 'GST (₹)', 'Grand Total (₹)', 'Status'],
+         [20, 14, 26, 14, 20, 16, 12, 16, 12])
 
     header_row = sheet.max_row
     sheet.freeze_panes = f'A{header_row + 1}'
-
-    cur_cols = [6, 7, 8]  # Taxable, GST, Grand Total (1-based)
 
     for inv in data['invoices']:
         row_num = sheet.max_row + 1
@@ -317,14 +322,12 @@ def _build_detail_sheet(wb, gym, data):
             inv.customer_name,
             inv.customer_phone or '—',
             inv.member.selectPlan.plan if (inv.member and inv.member.selectPlan) else '—',
-            float(inv.taxable_value),
-            float(gst_total),
-            float(inv.grand_total),
+            _inr(inv.taxable_value),   # ← string, no number_format needed
+            _inr(gst_total),
+            _inr(inv.grand_total),
             inv.get_status_display(),
         ])
         _style_row(sheet, row_num, ncols)
-        for col in cur_cols:
-            sheet.cell(row=row_num, column=col).number_format = INR_FMT
 
     if not data['invoices']:
         r = sheet.max_row + 1
@@ -333,15 +336,28 @@ def _build_detail_sheet(wb, gym, data):
         c.font      = FOOTER_FONT
         c.alignment = CENTER
 
-    # Totals
+    # Totals row
     total_gst = data['total_cgst'] + data['total_sgst'] + data['total_igst']
-    tr = _totals_row(sheet, [
+    sheet.append([])
+    totals_row_num = sheet.max_row + 1
+    sheet.append([
         'TOTAL', '', '', '', '',
-        data['total_taxable'], total_gst, data['total_grand'], '',
-    ], ncols)
-    sheet.merge_cells(start_row=tr, start_column=1, end_row=tr, end_column=5)
-    for col in cur_cols:
-        sheet.cell(row=tr, column=col).number_format = INR_FMT
+        _inr(data['total_taxable']),
+        _inr(total_gst),
+        _inr(data['total_grand']),
+        '',
+    ])
+    sheet.merge_cells(
+        start_row=totals_row_num, start_column=1,
+        end_row=totals_row_num,   end_column=5
+    )
+    for col in range(1, ncols + 1):
+        c = sheet.cell(row=totals_row_num, column=col)
+        c.font      = TOTALS_FONT
+        c.fill      = TOTALS_FILL
+        c.border    = THIN_BORDER
+        c.alignment = CENTER
+    sheet.row_dimensions[totals_row_num].height = 20
 
     # Footer
     sheet.append([])
@@ -366,9 +382,9 @@ def _build_summary_sheet(wb, gym, data):
 
     _meta(sheet, [
         ('Total Invoices',  data['total_invoices']),
-        ('Total Collected', f"₹{data['total_paid']:,.2f}"),
-        ('Total Pending',   f"₹{data['total_pending']:,.2f}"),
-        ('Grand Total',     f"₹{data['total_grand']:,.2f}"),
+        ('Total Collected', _inr(data['total_paid'])),
+        ('Total Pending',   _inr(data['total_pending'])),
+        ('Grand Total',     _inr(data['total_grand'])),
         ('Active Members',  data['total_members']),
     ], ncols)
 
@@ -377,24 +393,33 @@ def _build_summary_sheet(wb, gym, data):
 
     # Plan breakdown
     sheet.append([])
-    _hdr(sheet, ['Plan Name', 'Members', 'Collected (₹)', 'Pending (₹)'],
+    _hdr(sheet,
+         ['Plan Name', 'Members', 'Collected (₹)', 'Pending (₹)'],
          [26, 14, 18, 18])
     for row in data['plan_breakdown']:
         r = sheet.max_row + 1
-        sheet.append([row['plan_name'], row['count'], row['paid'], row['pending']])
+        sheet.append([
+            row['plan_name'],
+            row['count'],
+            _inr(row['paid']),      # ← string, no number_format
+            _inr(row['pending']),
+        ])
         _style_row(sheet, r, 4)
-        for col in [3, 4]:
-            sheet.cell(row=r, column=col).number_format = INR_FMT
 
     # Method breakdown
     sheet.append([])
-    _hdr(sheet, ['Payment Method', 'Count', 'Collected (₹)', ''],
+    _hdr(sheet,
+         ['Payment Method', 'Count', 'Collected (₹)', ''],
          [26, 14, 18, 18])
     for row in data['method_breakdown']:
         r = sheet.max_row + 1
-        sheet.append([row['method_label'], row['count'], row['paid'], ''])
+        sheet.append([
+            row['method_label'],
+            row['count'],
+            _inr(row['paid']),      # ← string, no number_format
+            '',
+        ])
         _style_row(sheet, r, 4)
-        sheet.cell(row=r, column=3).number_format = INR_FMT
 
     # Footer
     sheet.append([])

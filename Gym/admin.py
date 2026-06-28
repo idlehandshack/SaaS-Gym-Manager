@@ -21,12 +21,12 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
 # ──────────────────────────────────────────────────────────────────────────────
 @admin.register(Gym)
 class GymAdmin(admin.ModelAdmin):
-    list_display    = ('gym_name', 'gym_code', 'logo_preview', 'active', 'plan',
+    list_display    = ('gym_name', 'gym_code', 'logo_preview', 'favicon_preview', 'active', 'plan',
                        'enable_store', 'enable_attendance', 'enable_trainers')
     list_editable   = ('enable_store', 'enable_attendance', 'enable_trainers')
     list_filter     = ['active', 'plan']
     search_fields   = ['gym_name', 'gym_code', 'owner__username']
-    readonly_fields = ['id', 'logo_preview_large', 'days_until_expiry', 'created_at', 'updated_at']
+    readonly_fields = ['id', 'logo_preview_large', 'favicon_preview_large', 'days_until_expiry', 'created_at', 'updated_at']
     ordering        = ['gym_name']
     prepopulated_fields = {'gym_code': ('gym_name',)}
     fieldsets = (
@@ -50,8 +50,10 @@ class GymAdmin(admin.ModelAdmin):
             ),
         }),
         ('White-label', {
-            'fields': ('logo', 'logo_preview_large', 'contact_email',
-                       'contact_phone', 'whatsapp_number', 'address', 'city', 'website'),
+            'fields': ('logo', 'logo_preview_large',
+                       'favicon', 'favicon_preview_large',
+                       'contact_email', 'contact_phone',
+                       'whatsapp_number', 'address', 'city', 'website'),
             'classes': ('collapse',),
         }),
         ('Geo-fence', {
@@ -63,17 +65,17 @@ class GymAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
-    
+
     @admin.display(boolean=True, description='Subscription Active')
     def subscription_status(self, obj):
         return obj.is_subscription_active
 
-    # ── Logo preview helpers ────────────────────────────────────────────
-    def _logo_thumb_url(self, obj, size):
-        if not obj or not obj.logo:
+    # ── Shared Cloudinary thumb helper ──────────────────────────────────
+    def _thumb_url(self, field_value, size):
+        if not field_value:
             return None
         try:
-            public_id = obj.logo.public_id if hasattr(obj.logo, "public_id") else str(obj.logo)
+            public_id = field_value.public_id if hasattr(field_value, 'public_id') else str(field_value)
             if not public_id:
                 return None
             url, _ = cloudinary_url(
@@ -85,19 +87,21 @@ class GymAdmin(admin.ModelAdmin):
         except Exception:
             return None
 
+    # ── Logo previews ───────────────────────────────────────────────────
     @admin.display(description="Logo")
     def logo_preview(self, obj):
-        url = self._logo_thumb_url(obj, size=60)
+        url = self._thumb_url(obj.logo, 40)
         if url:
             return format_html(
-                '<img src="{}" width="60" height="60" style="object-fit:cover;border-radius:6px;" />',
+                '<img src="{}" width="40" height="40" '
+                'style="object-fit:cover;border-radius:6px;" />',
                 url,
             )
         return "-"
 
     @admin.display(description="Current Logo")
     def logo_preview_large(self, obj):
-        url = self._logo_thumb_url(obj, size=200)
+        url = self._thumb_url(obj.logo, 200)
         if url:
             return format_html(
                 '<img src="{}" width="200" height="200" '
@@ -106,6 +110,28 @@ class GymAdmin(admin.ModelAdmin):
             )
         return "No logo uploaded yet."
 
+    # ── Favicon previews ────────────────────────────────────────────────
+    @admin.display(description="Favicon")
+    def favicon_preview(self, obj):
+        url = self._thumb_url(obj.favicon, 32)
+        if url:
+            return format_html(
+                '<img src="{}" width="32" height="32" '
+                'style="object-fit:cover;border-radius:4px;" />',
+                url,
+            )
+        return "-"
+
+    @admin.display(description="Current Favicon")
+    def favicon_preview_large(self, obj):
+        url = self._thumb_url(obj.favicon, 128)
+        if url:
+            return format_html(
+                '<img src="{}" width="128" height="128" '
+                'style="object-fit:contain;background:#111;border-radius:8px;padding:8px;" />',
+                url,
+            )
+        return "No favicon uploaded yet."
 
 # ──────────────────────────────────────────────────────────────────────────────
 # StaffProfile

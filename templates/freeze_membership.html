@@ -4,6 +4,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    <link rel="shortcut icon" href="{{ favicon_url }}">
+  {% else %}
+    <link rel="icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+  {% endif %}
   <title>Freeze Membership — EnterGYM</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
