@@ -72,6 +72,7 @@ class Gym(models.Model):
     latitude        = models.FloatField(default=0.0)
     longitude       = models.FloatField(default=0.0)
     radius_meters   = models.FloatField(default=100.0)
+    map = models.TextField(blank=True)
 
     # Add this inside the Gym model, after the geo-fence fields and before created_at
 

@@ -57,7 +57,7 @@ class GymAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
         ('Geo-fence', {
-            'fields': ('latitude', 'longitude', 'radius_meters'),
+            'fields': ('latitude', 'longitude', 'radius_meters','map'),
             'classes': ('collapse',),
         }),
         ('Timestamps', {

@@ -512,6 +512,17 @@ def contact(request):
     if not gym:
         messages.error(request, "Contact form is unavailable on this domain.")
         return redirect('/')
+    
+    if gym.map:
+        map_embed_url = gym.map
+    elif gym.latitude and gym.longitude:
+        map_embed_url = (
+            f"https://maps.google.com/maps"
+            f"?q={gym.latitude},{gym.longitude}"
+            f"&z=16&output=embed"
+        )
+    else:
+        map_embed_url = None
 
     if request.method == "POST":
         name    = request.POST.get('name', '').strip()
@@ -537,6 +548,7 @@ def contact(request):
 
     return render(request, 'contact.html',{
         "gym":gym,
+        "map_embed_url": map_embed_url,
     })
 
 
