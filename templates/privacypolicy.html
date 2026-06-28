@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — EnterGYM</title>
+<link rel="icon" href="{% static 'images/favicons.ico' %}">
+<link rel="shortcut icon" href="{% static 'images/favicons.ico' %}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── TOKENS ── */
+  :root {
+    --bg: #080810;
+    --bg-card: #0f0f1a;
+    --bg-surface: #16162a;
+    --indigo: #5B5FFF;
+    --indigo-light: #7b7fff;
+    --indigo-dim: rgba(91,95,255,0.12);
+    --indigo-border: rgba(91,95,255,0.25);
+    --off-white: #F0EEE8;
+    --muted: #8888aa;
+    --muted-2: #5a5a7a;
+    --border: rgba(255,255,255,0.06);
+    --green: #22d3a0;
+    --green-dim: rgba(34,211,160,0.1);
+    --green-border: rgba(34,211,160,0.2);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--off-white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 48px;
+    background: rgba(8,8,16,0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    min-height: 60px;
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 20px;
+    color: var(--off-white); text-decoration: none;
+    letter-spacing: -0.5px; flex-shrink: 0;
+  }
+  .nav-logo span { color: var(--indigo); }
+  .nav-back {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    text-decoration: none; letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 6px;
+    transition: color 0.2s; white-space: nowrap;
+  }
+  .nav-back:hover { color: var(--indigo-light); }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 120px 48px 72px;
+    text-align: center;
+    background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(91,95,255,0.1) 0%, transparent 70%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--indigo-dim);
+    border: 1px solid var(--indigo-border);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--indigo-light);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .hero-eyebrow::before { content: '🔒'; font-size: 12px; }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 72px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    color: var(--off-white);
+    margin-bottom: 20px;
+  }
+  h1 span { color: var(--indigo); }
+
+  .hero-sub {
+    max-width: 580px; margin: 0 auto 36px;
+    color: var(--muted); font-size: clamp(14px, 2vw, 17px); line-height: 1.65;
+  }
+  .hero-meta {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; flex-wrap: wrap;
+  }
+  .meta-item {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted-2);
+  }
+  .meta-item .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--indigo); flex-shrink: 0;
+  }
+
+  /* ── MOBILE TOC TOGGLE ── */
+  .toc-toggle {
+    display: none;
+    width: 100%; padding: 14px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--off-white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; text-align: left;
+    justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+  .toc-toggle:hover { border-color: var(--indigo-border); }
+  .toc-toggle-arrow { transition: transform 0.25s; font-size: 12px; color: var(--muted); }
+  .toc-toggle.open .toc-toggle-arrow { transform: rotate(180deg); }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 256px 1fr;
+    gap: 0;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 56px 48px 100px;
+    align-items: start;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: sticky; top: 76px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 20px;
+    margin-right: 40px;
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+  }
+  .sidebar::-webkit-scrollbar { width: 3px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--bg-surface); border-radius: 2px; }
+
+  .sidebar-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted-2);
+    margin-bottom: 14px;
+  }
+  .toc-list { list-style: none; }
+  .toc-list li { margin-bottom: 2px; }
+  .toc-list a {
+    display: block;
+    font-size: 13px; color: var(--muted);
+    text-decoration: none; padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    transition: all 0.18s;
+    border: 1px solid transparent;
+    line-height: 1.4;
+  }
+  .toc-list a:hover,
+  .toc-list a.active {
+    color: var(--indigo-light);
+    background: var(--indigo-dim);
+    border-color: var(--indigo-border);
+  }
+  .toc-list a.active { font-weight: 500; }
+
+  /* ── CONTENT ── */
+  .content { min-width: 0; }
+
+  /* short version */
+  .short-version {
+    background: linear-gradient(135deg, rgba(91,95,255,0.08), rgba(34,211,160,0.04));
+    border: 1px solid var(--indigo-border);
+    border-left: 3px solid var(--indigo);
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    margin-bottom: 48px;
+    font-size: 14.5px; line-height: 1.75;
+    color: var(--muted);
+  }
+  .short-version strong { color: var(--indigo-light); }
+
+  /* sections */
+  .section { margin-bottom: 56px; scroll-margin-top: 90px; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 20px;
+  }
+  .section-num {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--indigo);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 14px;
+    color: #fff; flex-shrink: 0;
+  }
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(20px, 3vw, 26px);
+    font-weight: 700; letter-spacing: -0.4px;
+    color: var(--off-white);
+  }
+  h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px; font-weight: 600;
+    color: var(--off-white);
+    margin: 20px 0 10px;
+  }
+
+  .section p { color: var(--muted); margin-bottom: 14px; font-size: 14.5px; }
+  .section p:last-child { margin-bottom: 0; }
+  .section strong { color: var(--off-white); }
+
+  /* info cards */
+  .info-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-top: 20px;
+  }
+  .info-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    transition: border-color 0.2s;
+  }
+  .info-card:hover { border-color: var(--indigo-border); }
+  .info-card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em;
+    color: var(--muted-2); text-transform: uppercase;
+    margin-bottom: 7px;
+  }
+  .info-card-value { font-size: 13.5px; font-weight: 500; color: var(--off-white); word-break: break-word; }
+
+  /* checklist – with custom icon per type */
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .checklist li {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px; color: var(--off-white);
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+  .checklist li:hover { border-color: var(--indigo-border); }
+  .checklist li::before {
+    content: '';
+    width: 18px; height: 18px; min-width: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--indigo);
+    background: var(--indigo-dim);
+    margin-top: 1px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%235B5FFF' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: center; background-size: 10px;
+  }
+
+  /* data-type icon chips inside list items */
+  .item-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; min-width: 28px;
+    border-radius: 8px; background: var(--indigo-dim);
+    border: 1px solid var(--indigo-border);
+    font-size: 14px; margin-top: -1px;
+  }
+  .checklist.icon-list li::before { display: none; }
+  .checklist.icon-list li { gap: 12px; }
+
+  /* two-col grid for data items */
+  .data-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-top: 14px;
+  }
+  .data-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 13.5px; color: var(--muted);
+    transition: border-color 0.2s;
+    display: flex; align-items: flex-start; gap: 10px;
+    line-height: 1.5;
+  }
+  .data-item:hover { border-color: var(--indigo-border); color: var(--off-white); }
+  .data-item .di-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .data-item strong { display: block; color: var(--off-white); font-size: 13px; margin-bottom: 3px; }
+
+  /* highlight / info box */
+  .highlight-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    margin-top: 14px;
+    font-size: 14px; color: var(--muted); line-height: 1.7;
+  }
+  .highlight-box strong { color: var(--indigo-light); }
+
+  /* green "good news" box */
+  .good-box {
+    background: var(--green-dim);
+    border: 1px solid var(--green-border);
+    border-left: 3px solid var(--green);
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    margin-top: 14px;
+    font-size: 14px; color: var(--muted); line-height: 1.7;
+  }
+  .good-box strong { color: var(--green); }
+
+  /* warning box */
+  .warning-box {
+    background: rgba(255,154,64,0.06);
+    border: 1px solid rgba(255,154,64,0.2);
+    border-left: 3px solid #ff9a40;
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    margin-top: 14px;
+    font-size: 14px; color: var(--muted); line-height: 1.7;
+  }
+
+  /* rights card grid */
+  .rights-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 10px; margin-top: 14px;
+  }
+  .right-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    transition: border-color 0.2s;
+  }
+  .right-card:hover { border-color: var(--indigo-border); }
+  .right-card-title {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Syne', sans-serif; font-size: 13.5px; font-weight: 600;
+    color: var(--off-white); margin-bottom: 6px;
+  }
+  .right-card-title .rc-icon { font-size: 15px; }
+  .right-card p { font-size: 12.5px; color: var(--muted); margin: 0; line-height: 1.5; }
+
+  /* cookie table */
+  .cookie-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13.5px; }
+  .cookie-table th {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    padding: 10px 14px; text-align: left;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--muted-2); letter-spacing: 0.08em; text-transform: uppercase;
+    font-weight: 500;
+  }
+  .cookie-table td {
+    border: 1px solid var(--border);
+    padding: 10px 14px; color: var(--muted);
+    vertical-align: top; line-height: 1.5;
+    background: var(--bg-card);
+  }
+  .cookie-table td strong { color: var(--off-white); }
+  .cookie-table tr:hover td { border-color: var(--indigo-border); }
+
+  /* tag badge */
+  .badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 4px;
+    background: var(--indigo-dim); border: 1px solid var(--indigo-border);
+    color: var(--indigo-light); vertical-align: middle; margin-left: 6px;
+  }
+  .badge.essential { background: rgba(34,211,160,0.1); border-color: rgba(34,211,160,0.2); color: var(--green); }
+
+  /* divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0 0 56px; }
+
+  .mono-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px; color: var(--indigo-light);
+    word-break: break-all;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 36px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; color: var(--off-white); }
+  .footer-logo span { color: var(--indigo); }
+  .footer-copy { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted-2); }
+  .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+  .footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--indigo-light); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg-surface); border-radius: 3px; }
+
+  /* ═══════════════════════════════
+     RESPONSIVE
+  ═══════════════════════════════ */
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 220px 1fr; padding: 48px 32px 80px; }
+    .sidebar { margin-right: 28px; }
+    nav { padding: 14px 32px; }
+    .hero { padding: 110px 32px 64px; }
+    footer { padding: 32px 32px; }
+  }
+
+  @media (max-width: 860px) {
+    nav { padding: 14px 20px; }
+    .nav-logo { font-size: 18px; }
+    .nav-back { font-size: 10px; }
+    .hero { padding: 96px 20px 56px; }
+    h1 { letter-spacing: -1px; }
+    .hero-sub { font-size: 15px; }
+    .hero-meta { gap: 14px; }
+    .layout { grid-template-columns: 1fr; padding: 32px 20px 72px; }
+    .sidebar { position: static; margin-right: 0; max-height: none; overflow: visible; border-radius: var(--radius-md); }
+    .sidebar .sidebar-label { display: none; }
+    .sidebar-list-wrapper { display: none; }
+    .sidebar-list-wrapper.open { display: block; padding-top: 8px; }
+    .toc-toggle { display: flex; }
+    .info-cards { grid-template-columns: 1fr 1fr; }
+    .data-grid { grid-template-columns: 1fr 1fr; }
+    .rights-grid { grid-template-columns: 1fr 1fr; }
+    footer { padding: 28px 20px; flex-direction: column; align-items: flex-start; gap: 12px; }
+    .footer-links { gap: 16px; }
+    .cookie-table { font-size: 12.5px; }
+    .cookie-table th, .cookie-table td { padding: 8px 10px; }
+  }
+
+  @media (max-width: 560px) {
+    nav { padding: 12px 16px; min-height: 54px; }
+    .nav-logo { font-size: 16px; }
+    .hero { padding: 82px 16px 48px; }
+    .hero-eyebrow { font-size: 10px; padding: 5px 12px; margin-bottom: 20px; }
+    h1 { letter-spacing: -0.5px; margin-bottom: 16px; }
+    .hero-sub { font-size: 14px; margin-bottom: 28px; }
+    .hero-meta { gap: 10px; }
+    .meta-item { font-size: 10px; }
+    .layout { padding: 24px 16px 60px; }
+    .short-version { padding: 16px 18px; font-size: 13.5px; margin-bottom: 36px; }
+    .section { margin-bottom: 44px; scroll-margin-top: 70px; }
+    .section-header { gap: 10px; margin-bottom: 16px; }
+    .section-num { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
+    h2 { font-size: 19px; }
+    h3 { font-size: 15px; }
+    .section p { font-size: 13.5px; }
+    .info-cards { grid-template-columns: 1fr; gap: 10px; }
+    .info-card { padding: 14px; }
+    .data-grid { grid-template-columns: 1fr; gap: 8px; }
+    .data-item { padding: 12px 14px; font-size: 13px; }
+    .rights-grid { grid-template-columns: 1fr; gap: 8px; }
+    .checklist li { padding: 10px 12px; font-size: 13px; gap: 10px; }
+    .highlight-box, .warning-box, .good-box { padding: 14px 16px; font-size: 13px; }
+    .divider { margin-bottom: 44px; }
+    .toc-toggle { font-size: 13px; padding: 12px 14px; }
+    .toc-list a { font-size: 12.5px; padding: 6px 8px; }
+    footer { padding: 24px 16px; gap: 10px; }
+    .footer-logo { font-size: 15px; }
+    .footer-copy { font-size: 10px; }
+    .footer-links { gap: 14px; }
+    .footer-links a { font-size: 12px; }
+    /* cookie table becomes scrollable on tiny screens */
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .cookie-table { min-width: 480px; }
+  }
+
+  @media (max-width: 380px) {
+    .nav-logo { font-size: 15px; }
+    .hero { padding: 76px 12px 40px; }
+    .layout { padding: 20px 12px 48px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 17px; }
+    footer { padding: 20px 12px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Enter<span>GYM</span></div>
+  <a class="nav-back" href="/">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M10 3L5 8l5 5"/>
+    </svg>
+    <span class="nav-back">Back to Home</span>
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">Legal Document</div>
+  <h1>Privacy <span>Policy</span></h1>
+  <p class="hero-sub">We believe privacy policies should be readable. Here's exactly how EnterGYM handles your data — in plain language, no legal jargon required.</p>
+  <div class="hero-meta">
+    <div class="meta-item"><span class="dot"></span> Effective: 1 Jan 2026</div>
+    <div class="meta-item"><span class="dot"></span> Last Updated: 1 Jan 2026</div>
+    <div class="meta-item"><span class="dot"></span> Arrow SoftTech</div>
+  </div>
+</section>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false">
+      <span>📋 Table of Contents</span>
+      <span class="toc-toggle-arrow">▼</span>
+    </button>
+    <div class="sidebar-list-wrapper" id="tocList">
+      <div class="sidebar-label">Contents</div>
+      <ul class="toc-list">
+        <li><a href="#s1">1. Who We Are</a></li>
+        <li><a href="#s2">2. Information We Collect</a></li>
+        <li><a href="#s3">3. How We Use Your Data</a></li>
+        <li><a href="#s4">4. Your Member Data</a></li>
+        <li><a href="#s5">5. Sharing Your Data</a></li>
+        <li><a href="#s6">6. Cookies &amp; Tracking</a></li>
+        <li><a href="#s7">7. Data Security</a></li>
+        <li><a href="#s8">8. Data Retention</a></li>
+        <li><a href="#s9">9. Your Rights</a></li>
+        <li><a href="#s10">10. Push Notifications</a></li>
+        <li><a href="#s11">11. WhatsApp &amp; Third Parties</a></li>
+        <li><a href="#s12">12. Children's Privacy</a></li>
+        <li><a href="#s13">13. Policy Changes</a></li>
+        <li><a href="#s14">14. Contact Us</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- Short version -->
+    <div class="short-version">
+      <strong>The short version:</strong> We collect only what's needed to run EnterGYM for your gym. We never sell your data. Your member data belongs to you — we just store it securely. You can request export or deletion at any time.
+    </div>
+
+    <!-- S1: Who We Are -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <h2>Who We Are</h2>
+      </div>
+      <p>EnterGYM is a cloud-based gym management software platform operated by <strong>Arrow SoftTech</strong>, a company based in Bhilai, Chhattisgarh, India. When this policy says "EnterGYM", "we", "us" or "our", it refers to Arrow SoftTech.</p>
+      <p>This Privacy Policy applies to all gym owners, staff members, and end-users who access EnterGYM through our web platform, mobile app, or any subdomain under <span class="mono-tag">entergym.in</span>.</p>
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-card-label">🏢 Company</div>
+          <div class="info-card-value">Arrow SoftTech</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">✉️ Email</div>
+          <div class="info-card-value">support@entergym.in</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">📍 Location</div>
+          <div class="info-card-value">Bhilai, Chhattisgarh, India</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S2: Information We Collect -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <h2>Information We Collect</h2>
+      </div>
+
+      <h3>Information You Provide</h3>
+      <p>When you register or use EnterGYM as a gym owner or staff member, we may collect:</p>
+      <div class="data-grid">
+        <div class="data-item">
+          <span class="di-icon">👤</span>
+          <div><strong>Identity</strong>Your name, email address, and phone number</div>
+        </div>
+        <div class="data-item">
+          <span class="di-icon">🏢</span>
+          <div><strong>Business</strong>Gym name, address, GST number, and business details</div>
+        </div>
+        <div class="data-item">
+          <span class="di-icon">💳</span>
+          <div><strong>Billing</strong>Payment info processed via secure gateways — we never store card numbers</div>
+        </div>
+        <div class="data-item">
+          <span class="di-icon">👥</span>
+          <div><strong>Member Data</strong>Names, contacts, memberships, attendance, and payments you enter</div>
+        </div>
+        <div class="data-item">
+          <span class="di-icon">🤖</span>
+          <div><strong>Face Data</strong>Biometric face encodings for AI Attendance (gym-isolated, never shared)</div>
+        </div>
+        <div class="data-item">
+          <span class="di-icon">💬</span>
+          <div><strong>Support</strong>Messages and communication preferences from support interactions</div>
+        </div>
+      </div>
+
+      <h3>Information Collected Automatically</h3>
+      <p>When you use the EnterGYM platform, we automatically collect:</p>
+      <ul class="checklist">
+        <li>IP address, browser type, device model, and operating system</li>
+        <li>Pages visited, session duration, and navigation patterns within the dashboard</li>
+        <li>GPS coordinates during attendance marking (only at the moment of check-in)</li>
+        <li>Push notification delivery status and interaction events</li>
+        <li>Error logs and crash reports to maintain platform stability</li>
+      </ul>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S3: How We Use Your Data -->
+    <div class="section" id="s3">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <h2>How We Use Your Data</h2>
+      </div>
+      <p>We use the information we collect only to deliver and improve EnterGYM. Specifically:</p>
+      <ul class="checklist">
+        <li>To provision and operate your gym's isolated subdomain and dashboard</li>
+        <li>To process membership payments and generate GST-compliant invoices</li>
+        <li>To verify GPS-based attendance within your gym's geofenced radius</li>
+        <li>To power AI Face Attendance recognition at your gym entrance</li>
+        <li>To send push notifications and WhatsApp reminders on your behalf to members</li>
+        <li>To generate monthly attendance, revenue, and member analytics reports</li>
+        <li>To provide customer support and respond to your queries</li>
+        <li>To detect, investigate, and prevent fraud, abuse, or security incidents</li>
+        <li>To comply with applicable Indian laws and regulatory requirements</li>
+      </ul>
+      <div class="good-box">
+        <strong>We do not:</strong> sell your data, use your member data for advertising, share gym analytics across tenants, or process face data for any purpose other than attendance at your specific gym.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S4: Your Member Data -->
+    <div class="section" id="s4">
+      <div class="section-header">
+        <div class="section-num">4</div>
+        <h2>Your Member Data</h2>
+      </div>
+      <p>As a gym owner using EnterGYM, you are the <strong>data controller</strong> for your gym members' personal information. EnterGYM acts as a <strong>data processor</strong> — we store and process member data only on your instructions.</p>
+      <ul class="checklist">
+        <li>All member data is stored in your gym's fully isolated database</li>
+        <li>No other gym on the EnterGYM platform can access your members' information</li>
+        <li>You are responsible for obtaining consent from your members before enrolling them</li>
+        <li>You may export all member data as a CSV or PDF report at any time</li>
+        <li>We do not use your members' data for any purpose outside running your gym</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>Biometric Data (AI Face Attendance):</strong> Face encodings are computed locally, stored only in your gym's isolated environment, and are never transferred to other gyms, third parties, or used for profiling. Gym owners must obtain explicit written consent from members before enrolling them in face attendance.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S5: Sharing Your Data -->
+    <div class="section" id="s5">
+      <div class="section-header">
+        <div class="section-num">5</div>
+        <h2>Sharing Your Data</h2>
+      </div>
+      <p>We do not sell, rent, or trade your personal data. We share data only in the following limited circumstances:</p>
+      <ul class="checklist">
+        <li><strong>Infrastructure providers:</strong> Our VPS host and Cloudflare for CDN/DNS — bound by data processing agreements</li>
+        <li><strong>Cloud storage:</strong> Cloudflare R2 for encrypted database backups — data is encrypted before upload</li>
+        <li><strong>Payment gateways:</strong> To process subscription payments — they never receive your member data</li>
+        <li><strong>Push notification services:</strong> FCM (Google Firebase) for delivering push alerts — only device tokens, no personal data</li>
+        <li><strong>Legal compliance:</strong> If required by Indian law, court order, or government authority</li>
+      </ul>
+      <div class="warning-box">
+        We never share your gym's member profiles, attendance records, payment history, face data, or business analytics with any third party for advertising, research, or commercial purposes.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S6: Cookies -->
+    <div class="section" id="s6">
+      <div class="section-header">
+        <div class="section-num">6</div>
+        <h2>Cookies &amp; Tracking</h2>
+      </div>
+      <p>EnterGYM uses a minimal set of cookies to keep the platform functional and secure. We do not use advertising or cross-site tracking cookies.</p>
+      <div class="table-scroll">
+        <table class="cookie-table">
+          <thead>
+            <tr>
+              <th>Cookie</th>
+              <th>Purpose</th>
+              <th>Duration</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>sessionid</strong></td>
+              <td>Keeps you logged in to your gym dashboard</td>
+              <td>Session</td>
+              <td><span class="badge essential">Essential</span></td>
+            </tr>
+            <tr>
+              <td><strong>csrftoken</strong></td>
+              <td>Protects form submissions from cross-site attacks</td>
+              <td>1 year</td>
+              <td><span class="badge essential">Essential</span></td>
+            </tr>
+            <tr>
+              <td><strong>gym_timezone</strong></td>
+              <td>Stores your gym's local time zone for correct attendance timestamps</td>
+              <td>1 year</td>
+              <td><span class="badge essential">Essential</span></td>
+            </tr>
+            <tr>
+              <td><strong>cf_clearance</strong></td>
+              <td>Cloudflare security challenge verification</td>
+              <td>30 min</td>
+              <td><span class="badge essential">Essential</span></td>
+            </tr>
+            <tr>
+              <td><strong>push_consent</strong></td>
+              <td>Remembers whether you've accepted web push notifications</td>
+              <td>1 year</td>
+              <td><span class="badge">Functional</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:14px">You can disable cookies in your browser settings, but this will prevent you from logging into your gym dashboard.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S7: Data Security -->
+    <div class="section" id="s7">
+      <div class="section-header">
+        <div class="section-num">7</div>
+        <h2>Data Security</h2>
+      </div>
+      <p>We implement multiple layers of security to protect your gym's data:</p>
+      <div class="data-grid">
+        <div class="data-item">
+          <span class="di-icon">🔐</span>
+          <div><strong>Encryption in Transit</strong>All traffic encrypted via TLS 1.3 / HTTPS with wildcard Let's Encrypt certificates</div>
+        </div>
+        <div class="data-item">
+          <span class="di-icon">🛡️</span>
+          <div><strong>Cloudflare Protection</strong>DDoS mitigation, WAF rules, and DNS proxying for all subdomains</div>
+        </div>
+        <div class="data-item">
+          <span class="di-icon">🗄️</span>
+          <div><strong>Encrypted Backups</strong>Automated PostgreSQL backups encrypted and stored on Cloudflare R2</div>
+        </div>
+        <div class="data-item">
+          <span class="di-icon">🔑</span>
+          <div><strong>Secure Sessions</strong>Django sessions with HttpOnly, Secure, and SameSite cookie flags</div>
+        </div>
+        <div class="data-item">
+          <span class="di-icon">🏠</span>
+          <div><strong>Tenant Isolation</strong>Each gym's database is fully isolated — cross-gym access is architecturally impossible</div>
+        </div>
+        <div class="data-item">
+          <span class="di-icon">🔒</span>
+          <div><strong>Security Headers</strong>CSP, HSTS, X-Frame-Options, and XSS protection headers on all responses</div>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-top:16px">
+        If you discover a security vulnerability in EnterGYM, please report it responsibly to <strong>support@entergym.in</strong>. We aim to acknowledge reports within 24 hours.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S8: Data Retention -->
+    <div class="section" id="s8">
+      <div class="section-header">
+        <div class="section-num">8</div>
+        <h2>Data Retention</h2>
+      </div>
+      <p>We retain your data for as long as your EnterGYM subscription is active, plus a grace period after termination:</p>
+      <ul class="checklist">
+        <li>Active subscription: All data retained indefinitely while your account is active</li>
+        <li>After cancellation: Data retained for <strong>90 days</strong> to allow re-activation or export</li>
+        <li>After 90-day grace period: All gym data, member records, and backups are permanently deleted</li>
+        <li>Face recognition encodings: Deleted immediately upon member removal or account closure</li>
+        <li>Payment records: Retained for 7 years as required by Indian GST regulations</li>
+        <li>Support tickets: Retained for 2 years for audit purposes</li>
+      </ul>
+      <div class="good-box">
+        <strong>Export before you leave:</strong> We strongly recommend exporting your member data and reports before cancelling your subscription. Use the Admin Dashboard → Reports → Export to download a full backup.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S9: Your Rights -->
+    <div class="section" id="s9">
+      <div class="section-header">
+        <div class="section-num">9</div>
+        <h2>Your Rights</h2>
+      </div>
+      <p>Under applicable Indian data protection laws and general privacy principles, you have the following rights regarding your personal data:</p>
+      <div class="rights-grid">
+        <div class="right-card">
+          <div class="right-card-title"><span class="rc-icon">👁️</span> Right to Access</div>
+          <p>Request a copy of all personal data we hold about you or your gym at any time.</p>
+        </div>
+        <div class="right-card">
+          <div class="right-card-title"><span class="rc-icon">✏️</span> Right to Correct</div>
+          <p>Update or correct inaccurate information directly in the Admin Dashboard or by contacting us.</p>
+        </div>
+        <div class="right-card">
+          <div class="right-card-title"><span class="rc-icon">🗑️</span> Right to Delete</div>
+          <p>Request deletion of your account and all associated data. We'll process within 30 days.</p>
+        </div>
+        <div class="right-card">
+          <div class="right-card-title"><span class="rc-icon">📤</span> Right to Export</div>
+          <p>Download your full member database, attendance logs, and payment records in CSV/PDF format.</p>
+        </div>
+        <div class="right-card">
+          <div class="right-card-title"><span class="rc-icon">🚫</span> Right to Object</div>
+          <p>Object to specific processing activities. We'll review and respond within 14 days.</p>
+        </div>
+        <div class="right-card">
+          <div class="right-card-title"><span class="rc-icon">🔕</span> Right to Opt Out</div>
+          <p>Opt out of push notifications, WhatsApp reminders, or marketing communications at any time.</p>
+        </div>
+      </div>
+      <p style="margin-top:16px">To exercise any of these rights, email us at <strong>support@entergym.in</strong> with your gym subdomain and the request type. We'll respond within <strong>14 business days</strong>.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S10: Push Notifications -->
+    <div class="section" id="s10">
+      <div class="section-header">
+        <div class="section-num">10</div>
+        <h2>Push Notifications</h2>
+      </div>
+      <p>EnterGYM uses Web Push (via browser) and FCM (via the mobile app) to send notifications to gym members on behalf of gym owners. This includes plan expiry alerts, payment reminders, and gym announcements.</p>
+      <ul class="checklist">
+        <li>Members must explicitly opt in to receive push notifications</li>
+        <li>Only device push tokens are shared with FCM — no personal member data</li>
+        <li>Members can unsubscribe from push notifications at any time in browser settings or the app</li>
+        <li>Gym owners control notification content and frequency from the Admin Dashboard</li>
+        <li>FCM is operated by Google and subject to Google's Privacy Policy</li>
+      </ul>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S11: WhatsApp & Third Parties -->
+    <div class="section" id="s11">
+      <div class="section-header">
+        <div class="section-num">11</div>
+        <h2>WhatsApp &amp; Third Parties</h2>
+      </div>
+      <p>EnterGYM's WhatsApp reminder feature generates pre-filled <span class="mono-tag">wa.me</span> links for gym staff to send manually. We do not directly integrate with the WhatsApp Business API or send messages on your behalf automatically.</p>
+      <ul class="checklist">
+        <li>WhatsApp messages are initiated manually by your staff, not sent automatically by EnterGYM</li>
+        <li>Member phone numbers used in WhatsApp links are from your gym's own database</li>
+        <li>WhatsApp's own privacy policy governs messages sent through their platform</li>
+        <li>We do not store WhatsApp message content or delivery status</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>Third-party services we use:</strong> Cloudflare (CDN/security), Google FCM (push notifications), Razorpay or similar (payments). Each is bound by their own privacy policy. We choose partners who meet appropriate data protection standards.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S12: Children's Privacy -->
+    <div class="section" id="s12">
+      <div class="section-header">
+        <div class="section-num">12</div>
+        <h2>Children's Privacy</h2>
+      </div>
+      <p>EnterGYM is a business-to-business platform intended for gym owners and fitness professionals aged 18 and above. We do not knowingly collect personal data from children under the age of 13.</p>
+      <p>Gym owners who enroll minor members (where legally permitted) are responsible for obtaining appropriate parental consent and ensuring compliance with applicable laws governing minors' data in their jurisdiction.</p>
+      <div class="warning-box">
+        If you believe we have inadvertently collected personal data of a child under 13, please contact us immediately at <strong>support@entergym.in</strong> and we will delete it promptly.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S13: Policy Changes -->
+    <div class="section" id="s13">
+      <div class="section-header">
+        <div class="section-num">13</div>
+        <h2>Policy Changes</h2>
+      </div>
+      <p>We may update this Privacy Policy from time to time as our platform evolves or legal requirements change. When we make material changes:</p>
+      <ul class="checklist">
+        <li>We will notify you via email and in-app Admin Dashboard banner</li>
+        <li>We will provide at least 14 days' notice before new terms take effect</li>
+        <li>The "Last Updated" date at the top of this page will be revised</li>
+        <li>Continued use of EnterGYM after the effective date constitutes acceptance</li>
+      </ul>
+      <p>We encourage you to review this policy periodically. Previous versions are available on request.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S14: Contact -->
+    <div class="section" id="s14">
+      <div class="section-header">
+        <div class="section-num">14</div>
+        <h2>Contact Us</h2>
+      </div>
+      <p>If you have any questions about this Privacy Policy, want to exercise your data rights, or need to report a privacy concern, reach out to our team:</p>
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-card-label">📧 Email</div>
+          <div class="info-card-value">support@entergym.in</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">💬 WhatsApp</div>
+          <div class="info-card-value">+91 XXXXX XXXXX</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">📍 Address</div>
+          <div class="info-card-value">Bhilai, Chhattisgarh, India</div>
+        </div>
+      </div>
+      <p style="margin-top:20px">We aim to respond to all privacy-related requests within <strong>14 business days</strong>. For urgent data deletion requests, we prioritise response within 48 hours.</p>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /layout -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Enter<span>GYM</span></div>
+  <div class="footer-links">
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms</a>
+    <a href="#">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 Arrow SoftTech. All rights reserved.</div>
+</footer>
+
+<script>
+  /* ── Mobile TOC toggle ── */
+  const toggle = document.getElementById('tocToggle');
+  const list   = document.getElementById('tocList');
+
+  if (toggle && list) {
+    toggle.addEventListener('click', () => {
+      const open = list.classList.toggle('open');
+      toggle.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', open);
+    });
+    list.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (window.innerWidth <= 860) {
+          list.classList.remove('open');
+          toggle.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  }
+
+  function handleResize() {
+    if (window.innerWidth > 860) list.classList.add('open');
+  }
+  handleResize();
+  window.addEventListener('resize', handleResize);
+
+  /* ── Active TOC on scroll ── */
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        tocLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+        });
+      }
+    });
+  }, { rootMargin: '-15% 0px -65% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

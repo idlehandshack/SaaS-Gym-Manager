@@ -4,10 +4,11 @@
    1. Shared utilities
    2. Nav scroll
    3. Animated counters
-   4. Live activity feed
-   5. Scroll reveal
-   6. Pricing tab switcher
-   7. Plan calculator
+   4. Scroll reveal
+   5. Pricing tab switcher
+   6. Plan calculator
+   7. Testimonials carousel
+   8. Hero video — robust autoplay & resume
 ============================================================================= */
 
 
@@ -15,24 +16,18 @@
    1. SHARED UTILITIES
 ----------------------------------------------------------------------------- */
 
-/**
- * Format a number for display in counters.
- * Values ≥ 1 000 are shown as "Xk" (e.g. 50 000 → "50K").
- */
 function fmtCount(n) {
-  return n >= 1000 ? Math.round(n / 1000) + "K" : String(n);
+  /* FIX: explicit branch for large numbers (100K+) avoids floating-point
+     display issues and makes intent clear for future maintainers. */
+  if (n >= 100000) return Math.round(n / 1000) + "K";
+  if (n >= 1000)   return Math.round(n / 1000) + "K";
+  return String(n);
 }
 
-/**
- * Format a rupee amount (rounds to nearest integer, adds ₹ and en-IN commas).
- */
 function fmtRupee(n) {
   return "₹" + Math.round(n).toLocaleString("en-IN");
 }
 
-/**
- * Tiny helper: add an IntersectionObserver that fires once per element.
- */
 function onEnter(elements, callback, options) {
   var obs = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) {
@@ -48,7 +43,7 @@ function onEnter(elements, callback, options) {
 
 
 /* -----------------------------------------------------------------------------
-   2. NAV SCROLL — adds .is-scrolled to #siteNav once the user scrolls
+   2. NAV SCROLL
 ----------------------------------------------------------------------------- */
 (function () {
   var nav = document.getElementById("siteNav");
@@ -61,7 +56,7 @@ function onEnter(elements, callback, options) {
 
 
 /* -----------------------------------------------------------------------------
-   3. ANIMATED COUNTERS — [data-target] on .proof-num elements
+   3. ANIMATED COUNTERS
 ----------------------------------------------------------------------------- */
 (function () {
   if (!("IntersectionObserver" in window)) return;
@@ -76,7 +71,7 @@ function onEnter(elements, callback, options) {
 
     function step(now) {
       var t    = Math.min((now - start) / dur, 1);
-      var ease = 1 - Math.pow(1 - t, 3);          /* cubic ease-out */
+      var ease = 1 - Math.pow(1 - t, 3);
       el.textContent = fmtCount(Math.round(ease * target));
       if (t < 1) requestAnimationFrame(step);
       else        el.textContent = fmtCount(target);
@@ -89,57 +84,11 @@ function onEnter(elements, callback, options) {
 
 
 /* -----------------------------------------------------------------------------
-   4. LIVE ACTIVITY FEED — cycles fake events into #activityFeed every 3.2 s
------------------------------------------------------------------------------ */
-(function () {
-  var feed = document.getElementById("activityFeed");
-  if (!feed) return;
-
-  var events = [
-    { tag: "checkin", label: "CHECK-IN", msg: "Sunita K. · Alpha Fitness"  },
-    { tag: "payment", label: "PAYMENT",  msg: "₹4,500 · FitZone Elite"     },
-    { tag: "enroll",  label: "ENROLL",   msg: "New member · 3-month plan"   },
-    { tag: "checkin", label: "CHECK-IN", msg: "Mohit R. · GPS verified"     },
-    { tag: "order",   label: "ORDER",    msg: "Creatine 500g · MuscleHub"   },
-    { tag: "checkin", label: "CHECK-IN", msg: "Deepa V. · FaceID verified"  },
-    { tag: "payment", label: "PAYMENT",  msg: "₹2,100 · CoreFit Studio"     },
-  ];
-
-  var ei = 0;
-
-  setInterval(function () {
-    var ev  = events[ei % events.length];
-    ei++;
-
-    var now = new Date();
-    var hh  = String(now.getHours()).padStart(2, "0");
-    var mm  = String(now.getMinutes()).padStart(2, "0");
-
-    var row       = document.createElement("div");
-    row.className = "feed-row feed-row--new";
-    row.innerHTML =
-      '<span class="feed-time">'         + hh + ":" + mm   + "</span>" +
-      '<span class="feed-tag ' + ev.tag + '">' + ev.label  + "</span>" +
-      '<span class="feed-msg">'           + ev.msg          + "</span>";
-
-    feed.insertBefore(row, feed.firstChild);
-
-    /* Remove the --new class on next frame (triggers CSS transition) */
-    setTimeout(function () { row.classList.remove("feed-row--new"); }, 50);
-
-    /* Cap at 8 visible rows; fade then remove the oldest */
-    var rows = feed.querySelectorAll(".feed-row");
-    if (rows.length > 8) {
-      var last = rows[rows.length - 1];
-      last.classList.add("faded");
-      setTimeout(function () { last.remove(); }, 600);
-    }
-  }, 3200);
-})();
-
-
-/* -----------------------------------------------------------------------------
-   5. SCROLL REVEAL — adds .visible to elements as they enter the viewport
+   4. SCROLL REVEAL
+   NOTE: The inline <script> in saas_home.html also had a scroll-reveal block
+   that targeted the same selectors. That block must be REMOVED from the HTML
+   to avoid a race condition where two observers compete on the same elements.
+   Only this block should run.
 ----------------------------------------------------------------------------- */
 (function () {
   if (!("IntersectionObserver" in window)) return;
@@ -151,19 +100,25 @@ function onEnter(elements, callback, options) {
     ".how-step",
     ".testi-card",
     ".s6-layout",
+    ".mp-card",
+    ".gw-card",
   ].join(", ");
 
   var els = Array.from(document.querySelectorAll(SELECTORS));
   if (!els.length) return;
 
-  els.forEach(function (el) { el.classList.add("reveal"); });
+  /* Guard: skip elements that are already animated (prevents double-add
+     if the HTML inline script wasn't removed yet). */
+  els.forEach(function (el) {
+    if (!el.classList.contains("reveal")) el.classList.add("reveal");
+  });
 
   onEnter(els, function (el) { el.classList.add("visible"); }, { threshold: 0.1 });
 })();
 
 
 /* -----------------------------------------------------------------------------
-   6. PRICING TAB SWITCHER — .s5-tab[data-panel] toggles .s5-panel visibility
+   5. PRICING TAB SWITCHER
 ----------------------------------------------------------------------------- */
 (function () {
   var tabs   = Array.from(document.querySelectorAll(".s5-tabs .s5-tab"));
@@ -185,11 +140,10 @@ function onEnter(elements, callback, options) {
 
 
 /* -----------------------------------------------------------------------------
-   7. PLAN CALCULATOR
+   6. PLAN CALCULATOR
 ----------------------------------------------------------------------------- */
 (function () {
 
-  /* ── Pricing constants ─────────────────────────────────────────────────── */
   var PAYG_TIERS = [
     { upTo: 100,      rate: 6.99 },
     { upTo: 300,      rate: 5.99 },
@@ -202,7 +156,6 @@ function onEnter(elements, callback, options) {
     12: { base: 9999, extraBranch: 5000 },
   };
 
-  /* ── Helpers ───────────────────────────────────────────────────────────── */
   function paygRateFor(members) {
     for (var i = 0; i < PAYG_TIERS.length; i++) {
       if (members <= PAYG_TIERS[i].upTo) return PAYG_TIERS[i].rate;
@@ -225,10 +178,7 @@ function onEnter(elements, callback, options) {
     var total   = plan.base + extra;
     var monthly = total / months;
 
-    var html = costRow(
-      months + "-month base (1 branch)",
-      fmtRupee(plan.base)
-    );
+    var html = costRow(months + "-month base (1 branch)", fmtRupee(plan.base));
 
     if (extra > 0) {
       var addlLabel = (branches - 1) + " additional branch" + (branches - 1 > 1 ? "es" : "");
@@ -240,15 +190,13 @@ function onEnter(elements, callback, options) {
     return { html: html, total: total, monthly: monthly };
   }
 
-  /* ── DOM refs ──────────────────────────────────────────────────────────── */
   var branchSlider  = document.getElementById("calc-branches");
   var branchDisplay = document.getElementById("calc-branches-display");
   var branchesGrid  = document.getElementById("calc-branches-grid");
   var runBtn        = document.getElementById("calc-run-btn");
 
-  if (!branchSlider || !runBtn) return;   /* bail if calculator isn't on page */
+  if (!branchSlider || !runBtn) return;
 
-  /* ── Branch count slider → rebuild per-branch member inputs ───────────── */
   function rebuildBranchInputs(count) {
     var existing = Array.from(branchesGrid.querySelectorAll(".s6-branch-input"));
     var saved    = existing.map(function (i) { return i.value; });
@@ -284,7 +232,6 @@ function onEnter(elements, callback, options) {
     rebuildBranchInputs(val);
   });
 
-  /* ── Result-panel plan tab switching ──────────────────────────────────── */
   var planTabs    = Array.from(document.querySelectorAll(".s6-plan-tab"));
   var planDetails = Array.from(document.querySelectorAll(".s6-plan-detail"));
 
@@ -301,7 +248,6 @@ function onEnter(elements, callback, options) {
     tab.addEventListener("click", function () { activatePlanTab(this.dataset.plan); });
   });
 
-  /* ── Calculate button ─────────────────────────────────────────────────── */
   runBtn.addEventListener("click", function () {
     var gymName      = (document.getElementById("calc-gym-name").value.trim()) || "Your Gym";
     var branches     = parseInt(branchSlider.value, 10);
@@ -313,13 +259,11 @@ function onEnter(elements, callback, options) {
 
     var totalMembers = branchMembers.reduce(function (a, b) { return a + b; }, 0);
 
-    /* Require at least one member count */
     if (totalMembers === 0) {
       if (memberInputs[0]) memberInputs[0].focus();
       return;
     }
 
-    /* ── PAYG breakdown ─── */
     var paygMonthly  = 0;
     var paygRowsHTML = "";
 
@@ -337,7 +281,6 @@ function onEnter(elements, callback, options) {
     document.getElementById("payg-rows").innerHTML    = paygRowsHTML;
     document.getElementById("payg-total").textContent = fmtRupee(paygMonthly) + "/mo";
 
-    /* ── Fixed plan breakdowns ─── */
     var f3  = calcFixed(3,  branches);
     var f6  = calcFixed(6,  branches);
     var f12 = calcFixed(12, branches);
@@ -349,7 +292,6 @@ function onEnter(elements, callback, options) {
     document.getElementById("fixed12-rows").innerHTML    = f12.html;
     document.getElementById("fixed12-total").textContent = fmtRupee(f12.total);
 
-    /* ── Recommendation logic ─── */
     var paygAnnual = paygMonthly * 12;
     var bestPlan   = "payg";
 
@@ -365,7 +307,6 @@ function onEnter(elements, callback, options) {
     activatePlanTab(bestPlan);
     document.getElementById("calc-recommend-text").textContent = recommendLabels[bestPlan];
 
-    /* ── Savings comparison grid ─── */
     var savingsHTML = [
       { label: "PAYG / mo",  val: fmtRupee(paygMonthly), green: false },
       { label: "6-mo / mo",  val: fmtRupee(f6.monthly),  green: f6.monthly  < paygMonthly },
@@ -381,7 +322,6 @@ function onEnter(elements, callback, options) {
 
     document.getElementById("savings-grid").innerHTML = savingsHTML;
 
-    /* ── Reveal result panels ─── */
     document.getElementById("calc-gym-display").textContent = gymName;
     document.getElementById("calc-result-sub").textContent  =
       branches + " branch" + (branches > 1 ? "es" : "") +
@@ -395,10 +335,9 @@ function onEnter(elements, callback, options) {
 
 })();
 
+
 /* -----------------------------------------------------------------------------
-   TESTIMONIALS CAROUSEL — #testiCarousel
-   Single-card fade carousel. Auto-advances every 5s with a cross-fade,
-   pauses on hover/touch/focus. Arrows + dots also switch with the fade.
+   7. TESTIMONIALS CAROUSEL
 ----------------------------------------------------------------------------- */
 (function () {
   var carousel = document.getElementById("testiCarousel");
@@ -411,23 +350,26 @@ function onEnter(elements, callback, options) {
   var cards = Array.from(stage.children);
   if (!cards.length) return;
 
-  var AUTOPLAY_MS = 5000;
+  var AUTOPLAY_MS   = 5000;
   var autoplayTimer = null;
-  var current = cards.findIndex(function (c) { return c.classList.contains("is-active"); });
+  var current       = cards.findIndex(function (c) { return c.classList.contains("is-active"); });
   if (current < 0) current = 0;
 
-  /* ── Dots ──────────────────────────────────────────────────────────── */
   function buildDots() {
     if (!dotsWrap) return;
     dotsWrap.innerHTML = "";
     cards.forEach(function (_, i) {
       var dot = document.createElement("button");
+      /* FIX: reset browser-default button styles so dots render as clean
+         circles. Without this, browser UA stylesheet padding/border
+         distorts the width/height set by .testi-dot in CSS. */
+      dot.style.padding    = "0";
+      dot.style.border     = "none";
+      dot.style.background = "transparent";
+      dot.style.cursor     = "pointer";
       dot.className = "testi-dot";
       dot.setAttribute("aria-label", "Go to testimonial " + (i + 1));
-      dot.addEventListener("click", function () {
-        goTo(i);
-        restartAutoplay();
-      });
+      dot.addEventListener("click", function () { goTo(i); restartAutoplay(); });
       dotsWrap.appendChild(dot);
     });
     updateDots();
@@ -440,11 +382,9 @@ function onEnter(elements, callback, options) {
     });
   }
 
-  /* ── Core transition ──────────────────────────────────────────────── */
   function goTo(index) {
     var next = ((index % cards.length) + cards.length) % cards.length;
     if (next === current) return;
-
     cards[current].classList.remove("is-active");
     cards[next].classList.add("is-active");
     current = next;
@@ -457,23 +397,16 @@ function onEnter(elements, callback, options) {
   if (prevBtn) prevBtn.addEventListener("click", function () { goPrev(); restartAutoplay(); });
   if (nextBtn) nextBtn.addEventListener("click", function () { goNext(); restartAutoplay(); });
 
-  /* ── Autoplay ──────────────────────────────────────────────────────── */
-  function startAutoplay() {
-    stopAutoplay();
-    autoplayTimer = setInterval(goNext, AUTOPLAY_MS);
-  }
-  function stopAutoplay() {
-    if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null; }
-  }
+  function startAutoplay()   { stopAutoplay(); autoplayTimer = setInterval(goNext, AUTOPLAY_MS); }
+  function stopAutoplay()    { if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null; } }
   function restartAutoplay() { stopAutoplay(); startAutoplay(); }
 
   carousel.addEventListener("mouseenter", stopAutoplay);
   carousel.addEventListener("mouseleave", startAutoplay);
-  carousel.addEventListener("touchstart", stopAutoplay, { passive: true });
-  carousel.addEventListener("focusin", stopAutoplay);
-  carousel.addEventListener("focusout", startAutoplay);
+  carousel.addEventListener("touchstart",  stopAutoplay,  { passive: true });
+  carousel.addEventListener("focusin",     stopAutoplay);
+  carousel.addEventListener("focusout",    startAutoplay);
 
-  /* Pause when tab/section isn't visible, so timers don't pile up */
   if ("IntersectionObserver" in window) {
     new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
@@ -486,4 +419,59 @@ function onEnter(elements, callback, options) {
   }
 
   buildDots();
+})();
+
+
+/* -----------------------------------------------------------------------------
+   8. HERO VIDEO — robust autoplay & resume
+----------------------------------------------------------------------------- */
+(function () {
+  var video = document.querySelector(".g-video");
+  if (!video) return;
+
+  /* Attempt play; swallow NotAllowedError silently */
+  function tryPlay() {
+    if (video.paused && !video.ended) {
+      var p = video.play();
+      if (p && typeof p.catch === "function") {
+        p.catch(function () { /* autoplay blocked by browser policy — ignore */ });
+      }
+    }
+  }
+
+  /* ① Kick immediately (readyState may already be enough) */
+  if (video.readyState >= 2) {
+    tryPlay();
+  } else {
+    video.addEventListener("canplay", tryPlay, { once: true });
+  }
+
+  /* ② Tab visibility restored */
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) tryPlay();
+  });
+
+  /* ③ iOS back-forward cache restore */
+  window.addEventListener("pageshow", function (e) {
+    if (e.persisted) tryPlay();
+  });
+
+  /* ④ Heartbeat poll — catches Low Power Mode & mid-session suspensions */
+  var pollTimer = setInterval(function () {
+    if (video.paused && !video.ended && !document.hidden) {
+      tryPlay();
+    }
+  }, 4000);
+
+  /* Stop polling when page is unloaded to avoid memory leaks */
+  window.addEventListener("pagehide", function () { clearInterval(pollTimer); });
+
+  /* ⑤ Re-play when video element scrolls back into viewport */
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) tryPlay();
+      });
+    }, { threshold: 0.25 }).observe(video);
+  }
 })();

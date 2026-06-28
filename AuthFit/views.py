@@ -2084,3 +2084,12 @@ def revenue_view(request):
 
 def feature_comp(request):
     return render(request, "whychose.html")
+
+def Refundpolicy(request):
+    return render(request, "refundpolicy.html")
+
+def termcondition(request):
+    return render(request, "termcondition.html")
+
+def privacypolicy(request):
+    return render(request, "privacypolicy.html")

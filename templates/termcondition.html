@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms & Conditions — EnterGYM</title>
+<link rel="icon" href="{% static 'images/favicons.ico' %}">
+<link rel="shortcut icon" href="{% static 'images/favicons.ico' %}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── TOKENS ── */
+  :root {
+    --bg: #080810;
+    --bg-card: #0f0f1a;
+    --bg-surface: #16162a;
+    --indigo: #5B5FFF;
+    --indigo-light: #7b7fff;
+    --indigo-dim: rgba(91,95,255,0.12);
+    --indigo-border: rgba(91,95,255,0.25);
+    --off-white: #F0EEE8;
+    --muted: #8888aa;
+    --muted-2: #5a5a7a;
+    --border: rgba(255,255,255,0.06);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--off-white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 48px;
+    background: rgba(8,8,16,0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    min-height: 60px;
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 20px;
+    color: var(--off-white); text-decoration: none;
+    letter-spacing: -0.5px; flex-shrink: 0;
+  }
+  .nav-logo span { color: var(--indigo); }
+  .nav-back {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    text-decoration: none; letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 6px;
+    transition: color 0.2s; white-space: nowrap;
+  }
+  .nav-back:hover { color: var(--indigo-light); }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 120px 48px 72px;
+    text-align: center;
+    background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(91,95,255,0.1) 0%, transparent 70%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--indigo-dim);
+    border: 1px solid var(--indigo-border);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--indigo-light);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .hero-eyebrow::before { content: '⚖'; font-size: 13px; }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 72px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    color: var(--off-white);
+    margin-bottom: 20px;
+  }
+  h1 span { color: var(--indigo); }
+
+  .hero-sub {
+    max-width: 560px; margin: 0 auto 36px;
+    color: var(--muted); font-size: clamp(14px, 2vw, 17px); line-height: 1.65;
+  }
+  .hero-meta {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; flex-wrap: wrap;
+  }
+  .meta-item {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted-2);
+  }
+  .meta-item .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--indigo); flex-shrink: 0;
+  }
+
+  /* ── MOBILE TOC TOGGLE ── */
+  .toc-toggle {
+    display: none;
+    width: 100%; padding: 14px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--off-white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; text-align: left;
+    justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+  .toc-toggle:hover { border-color: var(--indigo-border); }
+  .toc-toggle-arrow { transition: transform 0.25s; font-size: 12px; color: var(--muted); }
+  .toc-toggle.open .toc-toggle-arrow { transform: rotate(180deg); }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 256px 1fr;
+    gap: 0;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 56px 48px 100px;
+    align-items: start;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: sticky; top: 76px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 20px;
+    margin-right: 40px;
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+  }
+  .sidebar::-webkit-scrollbar { width: 3px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--bg-surface); border-radius: 2px; }
+
+  .sidebar-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted-2);
+    margin-bottom: 14px;
+  }
+  .toc-list { list-style: none; }
+  .toc-list li { margin-bottom: 2px; }
+  .toc-list a {
+    display: block;
+    font-size: 13px; color: var(--muted);
+    text-decoration: none; padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    transition: all 0.18s;
+    border: 1px solid transparent;
+    line-height: 1.4;
+  }
+  .toc-list a:hover,
+  .toc-list a.active {
+    color: var(--indigo-light);
+    background: var(--indigo-dim);
+    border-color: var(--indigo-border);
+  }
+  .toc-list a.active { font-weight: 500; }
+
+  /* ── CONTENT ── */
+  .content { min-width: 0; }
+
+  /* short version */
+  .short-version {
+    background: linear-gradient(135deg, rgba(91,95,255,0.08), rgba(34,211,160,0.04));
+    border: 1px solid var(--indigo-border);
+    border-left: 3px solid var(--indigo);
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    margin-bottom: 48px;
+    font-size: 14.5px; line-height: 1.75;
+    color: var(--muted);
+  }
+  .short-version strong { color: var(--indigo-light); }
+
+  /* sections */
+  .section { margin-bottom: 56px; scroll-margin-top: 90px; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 20px;
+  }
+  .section-num {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--indigo);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 14px;
+    color: #fff; flex-shrink: 0;
+  }
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(20px, 3vw, 26px);
+    font-weight: 700; letter-spacing: -0.4px;
+    color: var(--off-white);
+  }
+
+  .section p { color: var(--muted); margin-bottom: 14px; font-size: 14.5px; }
+  .section p:last-child { margin-bottom: 0; }
+  .section strong { color: var(--off-white); }
+
+  /* info cards */
+  .info-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-top: 20px;
+  }
+  .info-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    transition: border-color 0.2s;
+  }
+  .info-card:hover { border-color: var(--indigo-border); }
+  .info-card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em;
+    color: var(--muted-2); text-transform: uppercase;
+    margin-bottom: 7px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .info-card-value { font-size: 13.5px; font-weight: 500; color: var(--off-white); word-break: break-word; }
+
+  /* checklist */
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .checklist li {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px; color: var(--off-white);
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+  .checklist li:hover { border-color: var(--indigo-border); }
+  .checklist li::before {
+    content: '';
+    width: 18px; height: 18px; min-width: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--indigo);
+    background: var(--indigo-dim);
+    margin-top: 1px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%235B5FFF' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 10px;
+  }
+
+  /* feature grid */
+  .features-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-top: 14px;
+  }
+  .feature-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 13.5px; color: var(--muted);
+    transition: border-color 0.2s, color 0.2s;
+    line-height: 1.5;
+  }
+  .feature-item:hover { border-color: var(--indigo-border); color: var(--off-white); }
+  .feature-item strong { display: block; color: var(--off-white); font-size: 13px; margin-bottom: 4px; }
+
+  /* highlight box */
+  .highlight-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    margin-top: 14px;
+    font-size: 14px; color: var(--muted);
+    line-height: 1.7;
+  }
+  .highlight-box strong { color: var(--indigo-light); }
+
+  /* warning box */
+  .warning-box {
+    background: rgba(255,154,64,0.06);
+    border: 1px solid rgba(255,154,64,0.2);
+    border-left: 3px solid #ff9a40;
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    margin-top: 14px;
+    font-size: 14px; color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0 0 56px; }
+
+  /* subdomain monospace */
+  .mono-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px; color: var(--indigo-light);
+    word-break: break-all;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 36px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 17px; color: var(--off-white);
+  }
+  .footer-logo span { color: var(--indigo); }
+  .footer-copy {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; color: var(--muted-2);
+  }
+  .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+  .footer-links a {
+    font-size: 13px; color: var(--muted);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--indigo-light); }
+
+  /* scrollbar global */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg-surface); border-radius: 3px; }
+
+  /* ═══════════════════════════════════════
+     RESPONSIVE BREAKPOINTS
+     ═══════════════════════════════════════ */
+
+  /* ── Tablet landscape / small desktop ── */
+  @media (max-width: 1100px) {
+    .layout {
+      grid-template-columns: 220px 1fr;
+      padding: 48px 32px 80px;
+    }
+    .sidebar { margin-right: 28px; }
+    nav { padding: 14px 32px; }
+    .hero { padding: 110px 32px 64px; }
+    footer { padding: 32px 32px; }
+  }
+
+  /* ── Tablet portrait ── */
+  @media (max-width: 860px) {
+    nav { padding: 14px 20px; }
+    .nav-logo { font-size: 18px; }
+    .nav-back { font-size: 10px; }
+
+    .hero { padding: 96px 20px 56px; }
+    h1 { letter-spacing: -1px; }
+    .hero-sub { font-size: 15px; }
+    .hero-meta { gap: 14px; }
+
+    /* Stack layout: sidebar above content */
+    .layout {
+      grid-template-columns: 1fr;
+      padding: 32px 20px 72px;
+    }
+    .sidebar {
+      position: static;
+      margin-right: 0;
+      margin-bottom: 0;
+      max-height: none;
+      overflow: visible;
+      border-radius: var(--radius-md);
+      /* hide list by default, shown via toggle */
+    }
+    .sidebar .sidebar-label { display: none; }
+    .sidebar-list-wrapper {
+      display: none;
+    }
+    .sidebar-list-wrapper.open {
+      display: block;
+      padding-top: 8px;
+    }
+    .toc-toggle { display: flex; }
+
+    .info-cards { grid-template-columns: 1fr 1fr; }
+    .features-grid { grid-template-columns: 1fr 1fr; }
+
+    footer {
+      padding: 28px 20px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .footer-links { gap: 16px; }
+  }
+
+  /* ── Mobile large ── */
+  @media (max-width: 560px) {
+    nav { padding: 12px 16px; min-height: 54px; }
+    .nav-logo { font-size: 16px; }
+    .hero { padding: 82px 16px 48px; }
+    .hero-eyebrow { font-size: 10px; padding: 5px 12px; margin-bottom: 20px; }
+    h1 { letter-spacing: -0.5px; margin-bottom: 16px; }
+    .hero-sub { font-size: 14px; margin-bottom: 28px; }
+    .hero-meta { gap: 10px; }
+    .meta-item { font-size: 10px; }
+
+    .layout { padding: 24px 16px 60px; }
+
+    .short-version { padding: 16px 18px; font-size: 13.5px; margin-bottom: 36px; }
+
+    .section { margin-bottom: 44px; scroll-margin-top: 70px; }
+    .section-header { gap: 10px; margin-bottom: 16px; }
+    .section-num { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
+    h2 { font-size: 19px; }
+    .section p { font-size: 13.5px; }
+
+    .info-cards { grid-template-columns: 1fr; gap: 10px; }
+    .info-card { padding: 14px; }
+
+    .checklist { gap: 7px; }
+    .checklist li { padding: 10px 12px; font-size: 13px; gap: 10px; }
+
+    .features-grid { grid-template-columns: 1fr; gap: 8px; }
+    .feature-item { padding: 12px 14px; font-size: 13px; }
+
+    .highlight-box, .warning-box { padding: 14px 16px; font-size: 13px; }
+
+    .divider { margin-bottom: 44px; }
+
+    .toc-toggle { font-size: 13px; padding: 12px 14px; }
+    .toc-list a { font-size: 12.5px; padding: 6px 8px; }
+
+    footer { padding: 24px 16px; gap: 10px; }
+    .footer-logo { font-size: 15px; }
+    .footer-copy { font-size: 10px; }
+    .footer-links { gap: 14px; }
+    .footer-links a { font-size: 12px; }
+
+    .mono-tag { font-size: 11.5px; }
+  }
+
+  /* ── Mobile small ── */
+  @media (max-width: 380px) {
+    .nav-logo { font-size: 15px; }
+    .hero { padding: 76px 12px 40px; }
+    .layout { padding: 20px 12px 48px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 17px; }
+    .checklist li { font-size: 12.5px; }
+    footer { padding: 20px 12px; }
+  }
+
+  /* ── Reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Enter<span>GYM</span></div>
+  <a class="nav-back" href="/">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M10 3L5 8l5 5"/>
+    </svg>
+    <span class="nav-back">Back to Home</span>
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">Legal Document</div>
+  <h1>Terms &amp; <span>Conditions</span></h1>
+  <p class="hero-sub">These Terms govern your use of EnterGYM. We've written them to be fair, clear, and human-readable. If something is unclear, just ask — we're happy to explain.</p>
+  <div class="hero-meta">
+    <div class="meta-item"><span class="dot"></span> Effective: 1 Jan 2026</div>
+    <div class="meta-item"><span class="dot"></span> Last Updated: 1 Jan 2026</div>
+    <div class="meta-item"><span class="dot"></span> Arrow SoftTech</div>
+  </div>
+</section>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR TOC -->
+  <aside class="sidebar">
+    <!-- Mobile toggle button (hidden on desktop via CSS) -->
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false">
+      <span>📋 Table of Contents</span>
+      <span class="toc-toggle-arrow">▼</span>
+    </button>
+
+    <div class="sidebar-list-wrapper" id="tocList">
+      <div class="sidebar-label">Contents</div>
+      <ul class="toc-list">
+        <li><a href="#s1">1. About EnterGYM</a></li>
+        <li><a href="#s2">2. Eligibility</a></li>
+        <li><a href="#s3">3. Account Registration</a></li>
+        <li><a href="#s4">4. Plans &amp; Billing</a></li>
+        <li><a href="#s5">5. Features &amp; Services</a></li>
+        <li><a href="#s6">6. Acceptable Use</a></li>
+        <li><a href="#s7">7. Your Data</a></li>
+        <li><a href="#s8">8. Intellectual Property</a></li>
+        <li><a href="#s9">9. Service Availability</a></li>
+        <li><a href="#s10">10. Limitation of Liability</a></li>
+        <li><a href="#s11">11. Termination</a></li>
+        <li><a href="#s12">12. Changes to Terms</a></li>
+        <li><a href="#s13">13. Governing Law</a></li>
+        <li><a href="#s14">14. Contact Us</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- Short Version -->
+    <div class="short-version">
+      <strong>The short version:</strong> Use EnterGYM lawfully to manage your gym. You own your member data. We provide isolated, secure infrastructure for each gym. We'll give you advance notice of price or policy changes. Our liability is capped to 3 months of fees you paid.
+    </div>
+
+    <!-- S1 -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <h2>About EnterGYM</h2>
+      </div>
+      <p>EnterGYM is a cloud-based gym management platform operated by <strong>Arrow SoftTech</strong>. We provide gym owners with tools to manage members, billing, attendance, WhatsApp automation, push notifications, GST billing, and AI-powered features — all in one isolated, secure platform.</p>
+      <p>Each gym on EnterGYM operates on a fully isolated subdomain (e.g., <span class="mono-tag">yourgym.entergym.in</span>), ensuring complete data separation between businesses.</p>
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-card-label">🏢 Company</div>
+          <div class="info-card-value">Arrow SoftTech</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">✉️ Email</div>
+          <div class="info-card-value">support@entergym.in</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">📍 Location</div>
+          <div class="info-card-value">Bhilai, Chhattisgarh, India</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S2 -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <h2>Eligibility</h2>
+      </div>
+      <p>You may use EnterGYM if you:</p>
+      <ul class="checklist">
+        <li>Are at least 18 years old</li>
+        <li>Are registering on behalf of a lawfully operating fitness business in India</li>
+        <li>Provide accurate and complete gym and owner registration information</li>
+        <li>Agree to comply with these Terms and all applicable Indian laws</li>
+        <li>Have a valid GST registration number (if applicable for your billing tier)</li>
+      </ul>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S3 -->
+    <div class="section" id="s3">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <h2>Account Registration</h2>
+      </div>
+      <p>When you create an EnterGYM account, a unique subdomain and isolated database is provisioned for your gym. You are responsible for:</p>
+      <ul class="checklist">
+        <li>Keeping your admin login credentials secure and confidential</li>
+        <li>All activity that occurs under your gym's account and subdomain</li>
+        <li>Ensuring staff accounts you create are used only by authorized personnel</li>
+        <li>Promptly notifying us of any unauthorized access at support@entergym.in</li>
+      </ul>
+      <div class="highlight-box" style="margin-top:16px">
+        <strong>Multi-tenant isolation:</strong> Your gym's data is stored in a fully isolated environment. No other gym on the platform can access your members, attendance records, billing data, or media files.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S4 -->
+    <div class="section" id="s4">
+      <div class="section-header">
+        <div class="section-num">4</div>
+        <h2>Plans &amp; Billing</h2>
+      </div>
+      <p>EnterGYM is a subscription-based SaaS platform. By subscribing, you agree to the following billing terms:</p>
+      <ul class="checklist">
+        <li>Subscription fees are billed monthly or annually as per your selected plan</li>
+        <li>All prices are inclusive of applicable GST unless stated otherwise</li>
+        <li>You will receive a GST-compliant invoice for every payment made</li>
+        <li>Subscription renewals are automatic unless cancelled before the renewal date</li>
+        <li>Refunds are not provided for partial billing periods already consumed</li>
+        <li>We will give you at least 30 days' advance notice of any price changes</li>
+      </ul>
+      <div class="warning-box">
+        Downgrading your plan may restrict access to certain features like AI Face Attendance or advanced analytics. Your data is retained for 90 days after plan expiry before permanent deletion.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S5 -->
+    <div class="section" id="s5">
+      <div class="section-header">
+        <div class="section-num">5</div>
+        <h2>Features &amp; Services</h2>
+      </div>
+      <p>EnterGYM provides the following tools as part of your subscription. Availability of specific features depends on your plan tier:</p>
+      <div class="features-grid">
+        <div class="feature-item">
+          <strong>🖥️ Powerful Admin Dashboard</strong>
+          Full-control panel for managing gym operations, analytics, and staff.
+        </div>
+        <div class="feature-item">
+          <strong>💳 Smart Payment Reminders</strong>
+          Automated WhatsApp and push notification reminders for due and overdue payments.
+        </div>
+        <div class="feature-item">
+          <strong>📍 GPS-Based Geo Attendance</strong>
+          Members can only mark attendance within your gym's geofenced radius.
+        </div>
+        <div class="feature-item">
+          <strong>👥 Smart Member Management</strong>
+          Enrollment, transfers, renewals, profile photos, and complete member history.
+        </div>
+        <div class="feature-item">
+          <strong>🔔 Push Notifications</strong>
+          Web push and app notifications for announcements, offers, and expiry alerts.
+        </div>
+        <div class="feature-item">
+          <strong>🏢 Fully Isolated GYM</strong>
+          Each gym runs on its own subdomain with a dedicated, isolated database.
+        </div>
+        <div class="feature-item">
+          <strong>🧾 GST Billing &amp; Reports</strong>
+          Generate GST-compliant invoices and billing reports for your gym business.
+        </div>
+        <div class="feature-item">
+          <strong>📊 Monthly Gym Reports</strong>
+          Downloadable revenue, attendance, and member analytics for any billing period.
+        </div>
+        <div class="feature-item">
+          <strong>🤖 AI Face Attendance</strong>
+          Touchless face recognition-based attendance marking at your gym entrance.
+        </div>
+        <div class="feature-item">
+          <strong>📅 Attendance Tracking</strong>
+          Day-wise, member-wise logs with visual heatmaps and summaries.
+        </div>
+        <div class="feature-item">
+          <strong>💬 Due Payments &amp; WhatsApp</strong>
+          One-click WhatsApp reminders to members with outstanding dues.
+        </div>
+        <div class="feature-item">
+          <strong>📋 Membership Plans</strong>
+          Configurable plans with durations, pricing, and GST categorization.
+        </div>
+      </div>
+      <p style="margin-top:16px">We continuously improve EnterGYM. We may add, modify, or retire features with reasonable prior notice. Core features will not be removed without providing an equivalent or better alternative.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S6 -->
+    <div class="section" id="s6">
+      <div class="section-header">
+        <div class="section-num">6</div>
+        <h2>Acceptable Use</h2>
+      </div>
+      <p>You agree to use EnterGYM only for its intended purpose — managing a legitimate gym or fitness business. You must not:</p>
+      <ul class="checklist">
+        <li>Use the platform to store, transmit, or process illegal content</li>
+        <li>Attempt to access another gym's isolated data or subdomain</li>
+        <li>Reverse-engineer, scrape, or replicate any part of the EnterGYM platform</li>
+        <li>Use AI Face Attendance data for any purpose other than gym attendance</li>
+        <li>Sell, resell, or sublicense access to the platform without written consent</li>
+        <li>Send unsolicited spam through the WhatsApp reminder features</li>
+        <li>Manipulate GPS coordinates to bypass geofenced attendance verification</li>
+      </ul>
+      <div class="warning-box">
+        Violation of Acceptable Use policies may result in immediate suspension of your account without refund. We reserve the right to report illegal activity to appropriate authorities.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S7 -->
+    <div class="section" id="s7">
+      <div class="section-header">
+        <div class="section-num">7</div>
+        <h2>Your Data</h2>
+      </div>
+      <p>You own your data. EnterGYM does not sell, share, or monetize your gym's member data to any third party.</p>
+      <ul class="checklist">
+        <li>Member profiles, payment records, and attendance data belong to your gym</li>
+        <li>Face recognition data (AI Attendance) is processed and stored only for your gym</li>
+        <li>You may export your data at any time from the Admin Dashboard</li>
+        <li>Upon account termination, data is retained for 90 days and then permanently deleted</li>
+        <li>We use industry-standard encryption for data in transit and at rest</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>Data Residency:</strong> All EnterGYM data is stored on servers located in India, in compliance with applicable Indian data protection laws and the IT Act, 2000.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S8 -->
+    <div class="section" id="s8">
+      <div class="section-header">
+        <div class="section-num">8</div>
+        <h2>Intellectual Property</h2>
+      </div>
+      <p>The EnterGYM platform, including its codebase, design system, dashboard, mobile app, AI models, and all associated branding under <strong>Arrow SoftTech</strong>, are the exclusive intellectual property of Arrow SoftTech.</p>
+      <p>You are granted a limited, non-exclusive, non-transferable license to use EnterGYM for the duration of your active subscription. This license does not permit you to copy, modify, distribute, or create derivative works from any part of the platform.</p>
+      <p>Content you upload (gym logos, member photos, supplement product images) remains your property. By uploading it, you grant EnterGYM a limited license to display and process it solely for delivering the platform's services to you.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S9 -->
+    <div class="section" id="s9">
+      <div class="section-header">
+        <div class="section-num">9</div>
+        <h2>Service Availability</h2>
+      </div>
+      <p>We target 99.5% monthly uptime for the EnterGYM platform. Scheduled maintenance windows will be announced at least 24 hours in advance via the Admin Dashboard and email notification.</p>
+      <ul class="checklist">
+        <li>Planned maintenance is typically scheduled between 2:00 AM – 5:00 AM IST</li>
+        <li>Push notification delivery depends on third-party services (FCM, Web Push)</li>
+        <li>WhatsApp reminder delivery is subject to WhatsApp's own platform availability</li>
+        <li>GPS attendance accuracy is subject to device hardware and location permissions</li>
+      </ul>
+      <p>We are not liable for downtime caused by third-party services, VPS provider outages, Cloudflare network disruptions, or force majeure events beyond our reasonable control.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S10 -->
+    <div class="section" id="s10">
+      <div class="section-header">
+        <div class="section-num">10</div>
+        <h2>Limitation of Liability</h2>
+      </div>
+      <p>To the maximum extent permitted under Indian law, Arrow SoftTech's total liability to you for any claim arising from or related to EnterGYM shall not exceed the total fees paid by you in the <strong>3 months preceding</strong> the event giving rise to the claim.</p>
+      <div class="warning-box">
+        Arrow SoftTech is not liable for: indirect or consequential losses, loss of gym revenue or goodwill, data loss due to user error, or losses arising from third-party service failures (WhatsApp, FCM, Cloudflare, SMS gateways).
+      </div>
+      <p style="margin-top:16px">EnterGYM is provided "as is" with commercially reasonable efforts to maintain accuracy and availability. We do not warrant that the service will be uninterrupted, error-free, or free of security vulnerabilities.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S11 -->
+    <div class="section" id="s11">
+      <div class="section-header">
+        <div class="section-num">11</div>
+        <h2>Termination</h2>
+      </div>
+      <p>Either party may terminate the subscription at any time:</p>
+      <ul class="checklist">
+        <li>You may cancel your subscription from the Admin Dashboard at any time</li>
+        <li>Cancellation takes effect at the end of the current billing cycle</li>
+        <li>We may suspend or terminate your account for violation of these Terms</li>
+        <li>We may terminate inactive accounts (no login for 12+ months) with 30 days' notice</li>
+        <li>Upon termination, your subdomain and data are retained for 90 days before deletion</li>
+      </ul>
+      <p>You are advised to export your member data and reports before requesting account closure.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S12 -->
+    <div class="section" id="s12">
+      <div class="section-header">
+        <div class="section-num">12</div>
+        <h2>Changes to Terms</h2>
+      </div>
+      <p>We may update these Terms from time to time to reflect product changes, legal requirements, or business updates. When we make material changes:</p>
+      <ul class="checklist">
+        <li>We will notify you via email and in-app Admin Dashboard notification</li>
+        <li>We will provide at least 14 days' notice before changes take effect</li>
+        <li>Continued use of EnterGYM after the effective date constitutes acceptance</li>
+        <li>You may terminate your subscription if you do not agree with the revised Terms</li>
+      </ul>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S13 -->
+    <div class="section" id="s13">
+      <div class="section-header">
+        <div class="section-num">13</div>
+        <h2>Governing Law</h2>
+      </div>
+      <p>These Terms are governed by and construed in accordance with the laws of India. Any disputes arising from or related to these Terms or your use of EnterGYM shall be subject to the exclusive jurisdiction of the courts in <strong>Chhattisgarh, India</strong>.</p>
+      <p>Before initiating any legal proceedings, parties agree to attempt to resolve disputes through good-faith negotiation for a period of 30 days.</p>
+      <div class="highlight-box">
+        These Terms are subject to the <strong>Information Technology Act, 2000</strong>, the <strong>Consumer Protection Act, 2019</strong>, and all applicable Indian data protection and e-commerce regulations.
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S14 -->
+    <div class="section" id="s14">
+      <div class="section-header">
+        <div class="section-num">14</div>
+        <h2>Contact Us</h2>
+      </div>
+      <p>If you have questions about these Terms, need clarification on any policy, or wish to report a concern, please reach out to us:</p>
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-card-label">📧 Email</div>
+          <div class="info-card-value">support@entergym.in</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">💬 WhatsApp</div>
+          <div class="info-card-value">+91 XXXXX XXXXX</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">📍 Address</div>
+          <div class="info-card-value">Bhilai, Chhattisgarh, India</div>
+        </div>
+      </div>
+      <p style="margin-top:20px">We aim to respond to all legal and Terms-related queries within <strong>2 business days</strong>.</p>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /layout -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Enter<span>GYM</span></div>
+  <div class="footer-links">
+    <a href="#">Privacy Policy</a>
+    <a href="#">Terms</a>
+    <a href="#">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 Arrow SoftTech. All rights reserved.</div>
+</footer>
+
+<script>
+  /* ── Mobile TOC toggle ── */
+  const toggle = document.getElementById('tocToggle');
+  const list   = document.getElementById('tocList');
+
+  if (toggle && list) {
+    toggle.addEventListener('click', () => {
+      const open = list.classList.toggle('open');
+      toggle.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', open);
+    });
+
+    /* close after tapping a link on mobile */
+    list.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (window.innerWidth <= 860) {
+          list.classList.remove('open');
+          toggle.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  }
+
+  /* ── On desktop always show the list ── */
+  function handleResize() {
+    if (window.innerWidth > 860) {
+      list.classList.add('open');
+    } else {
+      /* don't force-close if user opened it */
+    }
+  }
+  handleResize();
+  window.addEventListener('resize', handleResize);
+
+  /* ── Active TOC highlighting on scroll ── */
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        tocLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+        });
+      }
+    });
+  }, { rootMargin: '-15% 0px -65% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

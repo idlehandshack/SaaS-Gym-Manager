@@ -31,6 +31,9 @@ urlpatterns = [
     path('billing/', include('billing.urls')),
     path('', include('billing.urls_owner')),
     path('favicon.ico', views.gym_favicon, name='gym_favicon'),
+    path('refundpolicy/',views.Refundpolicy,name = 'refundpolicy'),
+    path('termandcondition/',views.termcondition,name = 'termandcondition'),
+    path('privacypolicy/',views.privacypolicy,name = 'privacypolicy'),
 
     # ── Existing APIs ──────────────────────────────────────────
     path('api/mark-attendance/', views.mark_attendance_api),
