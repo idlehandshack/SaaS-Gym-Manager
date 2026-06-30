@@ -755,13 +755,13 @@ img, svg   { max-width: 100%; }
 
     transition:.3s;
 }
-
+.feature-note--cta-row{ display:flex; align-items:center; gap:.6rem; margin-top:.4rem; }
+.aiattend-more-btn{ display:inline-flex; align-items:center; gap:.45rem; }
 .feature-item::before{
     content:"";
     position:absolute;
     left:0;
     top:0;
-
     width:5px;
     height:100%;
 

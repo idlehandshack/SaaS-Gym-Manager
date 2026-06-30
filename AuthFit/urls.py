@@ -62,6 +62,8 @@ urlpatterns = [
     path("api/embedding-version/", views.get_embedding_version,
     name="embedding-version"),
     path("api/gyms/login/", views.gym_login_api, name="gym_login_api"),
+    path("aiattendance/", views.aiattendance, name="aiattendance"),
+
     
 
     # ── NEW: Background geo auto-mark ─────────────────────────

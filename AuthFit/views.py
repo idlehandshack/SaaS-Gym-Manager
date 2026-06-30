@@ -2218,3 +2218,6 @@ def privacypolicy(request):
 
 def guide(request):
     return render(request, "guide.html")
+
+def aiattendance(request):
+    return render(request, "aiattendance.html")
