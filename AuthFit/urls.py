@@ -1,9 +1,24 @@
-from django.urls import path, include
+from django.urls import path, reverse ,include
 from AuthFit import views
 from AuthFit.geo_views import geo_mark_attendance, serve_sw ,attendance_status
 from . import device_views
 from django.contrib.auth import views as auth_views
 from Gym.views import saas_dashboard
+
+
+from django.contrib.sitemaps.views import sitemap
+from django.contrib.sitemaps import Sitemap
+
+
+class StaticViewSitemap(Sitemap):
+    changefreq = 'weekly'
+    priority = 0.8
+
+    def items(self):
+        return ['home', 'signup', 'login', 'contact', 'enrollment', 'Attendence', 'download_app','profile','workout']
+
+    def location(self, item):
+        return reverse(item)
 
 urlpatterns = [
     path('', views.homePage, name='home'),
@@ -11,10 +26,10 @@ urlpatterns = [
     path('accounts/password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
     path('accounts/reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
-    path('signup/', views.signupPage, name='signPage'),
+    path('signup/', views.signupPage, name='signup'),
     path('login/', views.loginPage, name='login'),
     path('workout/', views.workout, name='workout'),
-    path('profile/', views.Profile, name='Profile'),
+    path('profile/', views.Profile, name='profile'),
     path('logout/', views.handlelogout, name='logout'),
     path('contact/', views.contact, name='contact'),
     path('enrollment/', views.enrollment, name='enrollment'),
@@ -30,10 +45,12 @@ urlpatterns = [
     path('whychoseus/', views.feature_comp,  name='whychoseus'),
     path('billing/', include('billing.urls')),
     path('', include('billing.urls_owner')),
-    path('favicon.ico', views.gym_favicon, name='gym_favicon'),
     path('refundpolicy/',views.Refundpolicy,name = 'refundpolicy'),
     path('termandcondition/',views.termcondition,name = 'termandcondition'),
     path('privacypolicy/',views.privacypolicy,name = 'privacypolicy'),
+    path('favicon.ico', views.gym_favicon, name='gym_favicon'),
+    path('download/', views.download_app, name='download_app'),
+    path('help/desktop/', views.guide, name='help'),
 
     # ── Existing APIs ──────────────────────────────────────────
     path('api/mark-attendance/', views.mark_attendance_api),
@@ -42,7 +59,10 @@ urlpatterns = [
     path('api/stats/', views.stats_api, name='stats_api'),
     path('api/save-embeddings-batch/', views.save_embeddings_batch, name='save-embeddings-batch'),
     path('admin-tools/today-attendance/', views.today_attendance, name='today_attendance'),
-    path('download/', views.download_app, name='download_app'),
+    path("api/embedding-version/", views.get_embedding_version,
+    name="embedding-version"),
+    path("api/gyms/login/", views.gym_login_api, name="gym_login_api"),
+    
 
     # ── NEW: Background geo auto-mark ─────────────────────────
     path('api/geo-mark-attendance/', geo_mark_attendance, name='geo_mark_attendance'),
@@ -61,4 +81,6 @@ urlpatterns = [
     path('internal/run-expiry-check/', views.run_expiry_check, name='run_expiry_check'),
     path('ad/attendance/', views.attendance_analytics, name='attendance_analytics'),
     path('ad/revenue/', views.revenue_view, name='revenue'),
+    path("robots.txt", views.robots_txt, name="robots_txt"),
+    path('sitemap.xml', sitemap, {'sitemaps': {'static': StaticViewSitemap}}, name='django.contrib.sitemaps.views.sitemap'),
 ]

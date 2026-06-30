@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desktop Quick Start Guide — EnterGYM</title>
+<link rel="icon" href="{% static 'images/favicons.ico' %}">
+<link rel="shortcut icon" href="{% static 'images/favicons.ico' %}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── TOKENS (matches EnterGYM dark theme) ── */
+  :root {
+    --bg: #080810;
+    --bg-card: #0f0f1a;
+    --bg-surface: #16162a;
+    --indigo: #5B5FFF;
+    --indigo-light: #7b7fff;
+    --indigo-dim: rgba(91,95,255,0.12);
+    --indigo-border: rgba(91,95,255,0.25);
+    --off-white: #F0EEE8;
+    --muted: #8888aa;
+    --muted-2: #5a5a7a;
+    --border: rgba(255,255,255,0.06);
+    --green: #22d3a0;
+    --orange: #ff9a40;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--off-white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3 { font-family: 'Syne', sans-serif; letter-spacing: -0.4px; }
+  ul { list-style: none; }
+  a { color: inherit; }
+  img { max-width: 100%; display: block; }
+
+  /* ── reveal-on-scroll ── */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+  .reveal-stagger > * { opacity: 0; transform: translateY(18px); transition: opacity .55s cubic-bezier(.2,.7,.2,1), transform .55s cubic-bezier(.2,.7,.2,1); }
+  .reveal-stagger.in > * { opacity: 1; transform: translateY(0); }
+  .reveal-stagger.in > *:nth-child(1){transition-delay:.02s;}
+  .reveal-stagger.in > *:nth-child(2){transition-delay:.08s;}
+  .reveal-stagger.in > *:nth-child(3){transition-delay:.14s;}
+  .reveal-stagger.in > *:nth-child(4){transition-delay:.20s;}
+  .reveal-stagger.in > *:nth-child(5){transition-delay:.26s;}
+  .reveal-stagger.in > *:nth-child(6){transition-delay:.32s;}
+  .reveal-stagger.in > *:nth-child(7){transition-delay:.38s;}
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+    .reveal, .reveal-stagger > * { opacity: 1; transform: none; }
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 48px;
+    background: rgba(8,8,16,0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    min-height: 60px;
+  }
+  .nav-logo { font-weight: 800; font-size: 20px; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
+  .nav-logo span { color: var(--indigo); }
+  .nav-cta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #fff; letter-spacing: 0.04em;
+    background: var(--indigo);
+    border-radius: 100px;
+    padding: 9px 18px;
+    text-decoration: none; white-space: nowrap;
+    transition: background .2s, transform .2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav-cta:hover { background: var(--indigo-light); transform: translateY(-1px); }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 130px 48px 72px;
+    text-align: center;
+    background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(91,95,255,0.12) 0%, transparent 70%);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .hero-bg-grid {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: linear-gradient(rgba(91,95,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(91,95,255,0.05) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: linear-gradient(to bottom, black, transparent 80%);
+  }
+  .hero-eyebrow {
+    position: relative; z-index: 1;
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--indigo-dim);
+    border: 1px solid var(--indigo-border);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--indigo-light);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .hero-eyebrow::before { content: '⚡'; font-size: 13px; }
+  .nav-back {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    text-decoration: none; letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 6px;
+    transition: color 0.2s; white-space: nowrap;
+  }
+  .nav-back:hover { color: var(--indigo-light); }
+
+  h1.hero-title {
+    position: relative; z-index: 1;
+    font-size: clamp(32px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -1.5px;
+    color: var(--off-white);
+    margin-bottom: 20px;
+  }
+  h1.hero-title span { color: var(--indigo); }
+
+  .hero-sub {
+    position: relative; z-index: 1;
+    max-width: 580px; margin: 0 auto 36px;
+    color: var(--muted); font-size: clamp(14px, 2vw, 17px); line-height: 1.65;
+  }
+
+  .hero-actions { position: relative; z-index: 1; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600; font-size: 14.5px;
+    padding: 14px 26px; border-radius: 10px;
+    text-decoration: none;
+    transition: transform .2s, box-shadow .2s, border-color .2s, background .2s;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--indigo); color: #fff; box-shadow: 0 12px 28px -10px rgba(91,95,255,0.55); }
+  .btn-primary:hover { background: var(--indigo-light); transform: translateY(-2px); box-shadow: 0 16px 32px -10px rgba(91,95,255,0.65); }
+  .btn-secondary { background: var(--bg-card); color: var(--off-white); border-color: var(--border); }
+  .btn-secondary:hover { border-color: var(--indigo-border); transform: translateY(-2px); }
+
+  .hero-meta {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; flex-wrap: wrap;
+  }
+  .meta-item {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted-2);
+  }
+  .meta-item .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); flex-shrink: 0; }
+
+  /* ── MOBILE TOC TOGGLE ── */
+  .toc-toggle {
+    display: none;
+    width: 100%; padding: 14px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--off-white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; text-align: left;
+    justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+  .toc-toggle:hover { border-color: var(--indigo-border); }
+  .toc-toggle-arrow { transition: transform 0.25s; font-size: 12px; color: var(--muted); }
+  .toc-toggle.open .toc-toggle-arrow { transform: rotate(180deg); }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 256px 1fr;
+    gap: 0;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 56px 48px 60px;
+    align-items: start;
+  }
+  .toc-list { list-style: none; }
+  .toc-list li { margin-bottom: 2px; }
+  .toc-list a {
+    display: block;
+    font-size: 13px; color: var(--muted);
+    text-decoration: none; padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    transition: all 0.18s;
+    border: 1px solid transparent;
+    line-height: 1.4;
+  }
+  .toc-list a:hover, .toc-list a.active {
+    color: var(--indigo-light);
+    background: var(--indigo-dim);
+    border-color: var(--indigo-border);
+  }
+  .toc-list a.active { font-weight: 500; }
+
+  /* ── CONTENT ── */
+  .content { min-width: 0; }
+
+  .section { margin-bottom: 56px; scroll-margin-top: 90px; }
+  .section-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .section-num {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--indigo);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+    color: #fff; flex-shrink: 0;
+  }
+  h2 { font-size: clamp(20px, 3vw, 26px); font-weight: 700; color: var(--off-white); }
+  .section p { color: var(--muted); margin-bottom: 14px; font-size: 14.5px; }
+  .section p:last-child { margin-bottom: 0; }
+  .section strong { color: var(--off-white); }
+  .section > p.lead { font-size: 15px; margin-bottom: 20px; }
+
+  /* info cards */
+  .info-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+  .info-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; transition: border-color 0.2s; }
+  .info-card:hover { border-color: var(--indigo-border); }
+  .info-card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em;
+    color: var(--muted-2); text-transform: uppercase;
+    margin-bottom: 7px; display: flex; align-items: center; gap: 5px;
+  }
+  .info-card-value { font-size: 13.5px; font-weight: 500; color: var(--off-white); word-break: break-word; }
+
+  /* checklist */
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .checklist li {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px; color: var(--off-white);
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+  .checklist li:hover { border-color: var(--indigo-border); }
+  .checklist li::before {
+    content: '';
+    width: 18px; height: 18px; min-width: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--indigo);
+    background: var(--indigo-dim);
+    margin-top: 1px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%235B5FFF' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 10px;
+  }
+
+  /* numbered steps */
+  .steps { display: flex; flex-direction: column; gap: 0; margin-top: 14px; }
+  .step { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    background: var(--bg-surface); border: 1px solid var(--indigo-border);
+    color: var(--indigo-light);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; font-family: 'JetBrains Mono', monospace;
+  }
+  .step-body h4 { font-size: 14.5px; font-weight: 600; color: var(--off-white); margin-bottom: 3px; font-family: 'DM Sans'; }
+  .step-body p { font-size: 13.5px; color: var(--muted); margin: 0; line-height: 1.55; }
+
+  /* feature grid (icon tiles) */
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+  .feature-item {
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 18px 16px; transition: border-color .2s, transform .2s;
+  }
+  .feature-item:hover { border-color: var(--indigo-border); transform: translateY(-2px); }
+  .feat-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--indigo-dim); border: 1px solid var(--indigo-border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px; color: var(--indigo-light);
+  }
+  .feat-icon svg { width: 19px; height: 19px; }
+  .feature-item strong { display: block; color: var(--off-white); font-size: 13.5px; margin-bottom: 4px; font-weight: 600; }
+  .feature-item span.fdesc { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+  /* success box */
+  .success-box {
+    background: rgba(34,211,160,0.07); border: 1px solid rgba(34,211,160,0.25); border-left: 3px solid var(--green);
+    border-radius: var(--radius-md); padding: 14px 20px; margin-top: 18px; font-size: 14px; color: var(--off-white);
+    display: inline-flex; align-items: center; gap: 10px; font-weight: 500;
+  }
+  .success-box svg { width: 16px; height: 16px; color: var(--green); flex-shrink: 0; }
+
+  /* mono tag */
+  .mono-tag { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--indigo-light); word-break: break-all; }
+
+  /* divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0 0 56px; }
+
+  /* screenshot placeholder */
+  .screenshot {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    aspect-ratio: 16/10;
+    display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px;
+    margin-top: 16px;
+    position: relative; overflow: hidden;
+  }
+  .screenshot::before {
+    content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(91,95,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(91,95,255,0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .screenshot .ph-icon {
+    width: 50px; height: 50px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--indigo-border);
+    display: flex; align-items: center; justify-content: center; position: relative; z-index: 1;
+  }
+  .screenshot .ph-icon svg { width: 22px; height: 22px; color: var(--indigo-light); }
+  .screenshot .ph-label { font-size: 13px; font-weight: 600; color: var(--off-white); position: relative; z-index: 1; }
+  .screenshot .ph-sub { font-size: 11.5px; color: var(--muted-2); position: relative; z-index: 1; font-family: 'JetBrains Mono', monospace; }
+
+  /* two-col helper */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: start; margin-top: 14px; }
+
+  /* login mock card */
+  .login-mock {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 28px 26px; margin-top: 14px;
+  }
+  .login-mock h3 { font-size: 16px; font-weight: 700; color: var(--off-white); margin-bottom: 3px; }
+  .login-mock .sub { font-size: 12.5px; color: var(--muted-2); margin-bottom: 22px; font-family: 'JetBrains Mono', monospace; }
+  .mock-input { margin-bottom: 14px; }
+  .mock-input label { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; font-family: 'JetBrains Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
+  .mock-input .box { border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; font-size: 13.5px; color: var(--muted); background: var(--bg-surface); }
+  .mock-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin: 12px 0 20px; }
+  .mock-row .chk { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--indigo); background: var(--indigo-dim); flex-shrink: 0; }
+  .mock-login-btn { width: 100%; padding: 12px; border-radius: 8px; text-align: center; font-weight: 600; font-size: 13.5px; background: var(--indigo); color: #fff; }
+
+  /* video grid */
+  .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+  .video-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; transition: border-color .2s, transform .2s; }
+  .video-card:hover { border-color: var(--indigo-border); transform: translateY(-3px); }
+  .video-thumb { aspect-ratio: 16/9; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; position: relative; }
+  .video-thumb::before {
+    content: ''; position: absolute; inset: 0; opacity: .5;
+    background-image: linear-gradient(rgba(91,95,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(91,95,255,0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .play-btn {
+    width: 46px; height: 46px; border-radius: 50%; background: var(--indigo);
+    display: flex; align-items: center; justify-content: center; position: relative; z-index: 1;
+    box-shadow: 0 10px 24px -6px rgba(91,95,255,0.55); transition: transform .25s;
+  }
+  .video-card:hover .play-btn { transform: scale(1.1); }
+  .play-btn svg { width: 16px; height: 16px; color: #fff; }
+  .video-info { padding: 14px 16px; }
+  .video-info h4 { font-size: 13.5px; font-weight: 600; color: var(--off-white); margin-bottom: 2px; font-family: 'DM Sans'; }
+  .video-info p { font-size: 11.5px; color: var(--muted-2); margin: 0; font-family: 'JetBrains Mono', monospace; }
+
+  /* tips list */
+  .tips-card { background: var(--bg-surface); border: 1px solid var(--indigo-border); border-radius: var(--radius-md); padding: 22px; margin-top: 14px; }
+  .tips-card h4 { font-size: 13.5px; font-weight: 700; color: var(--indigo-light); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; font-family: 'DM Sans'; }
+  .tips-card ul { display: flex; flex-direction: column; gap: 10px; }
+  .tips-card li { display: flex; gap: 9px; font-size: 13.5px; color: var(--off-white); align-items: flex-start; }
+  .tips-card li svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; color: var(--indigo-light); }
+
+  /* trouble grid */
+  .trouble-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 20px; }
+  .trouble-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 22px; transition: border-color .2s; }
+  .trouble-card:hover { border-color: var(--indigo-border); }
+  .trouble-card .top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .trouble-card h4 { font-size: 14.5px; font-weight: 600; color: var(--off-white); font-family: 'DM Sans'; }
+  .trouble-icon {
+    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+    background: rgba(255,154,64,0.1); border: 1px solid rgba(255,154,64,0.25);
+    display: flex; align-items: center; justify-content: center; color: var(--orange);
+  }
+  .trouble-icon svg { width: 17px; height: 17px; }
+  .trouble-card ul { display: flex; flex-direction: column; gap: 8px; }
+  .trouble-card li { font-size: 13px; color: var(--muted); padding-left: 16px; position: relative; line-height: 1.55; }
+  .trouble-card li::before { content: ''; position: absolute; left: 0; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 36px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-logo { font-weight: 800; font-size: 17px; color: var(--off-white); }
+  .footer-logo span { color: var(--indigo); }
+  .footer-copy { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted-2); }
+  .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+  .footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--indigo-light); }
+
+  /* ── totop ── */
+  .totop {
+    position: fixed; bottom: 26px; right: 26px; z-index: 90;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--indigo); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 24px -6px rgba(91,95,255,0.55);
+    opacity: 0; transform: translateY(12px); pointer-events: none;
+    transition: opacity .3s, transform .3s;
+  }
+  .totop.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .totop svg { width: 17px; height: 17px; }
+
+  /* scrollbar global */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg-surface); border-radius: 3px; }
+
+  /* ═══════════════════════════════════════
+     RESPONSIVE BREAKPOINTS
+     ═══════════════════════════════════════ */
+
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 220px 1fr; padding: 48px 32px 60px; }
+    nav { padding: 14px 32px; }
+    .hero { padding: 120px 32px 64px; }
+    footer { padding: 32px 32px; }
+    .info-cards, .features-grid, .video-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 860px) {
+    nav { padding: 14px 20px; }
+    .nav-logo { font-size: 18px; }
+    .nav-cta { font-size: 10px; padding: 8px 14px; }
+
+    .hero { padding: 104px 20px 56px; }
+    .hero-title { letter-spacing: -1px; }
+    .hero-sub { font-size: 15px; }
+    .hero-meta { gap: 14px; }
+
+    .layout { grid-template-columns: 1fr; padding: 32px 20px 56px; }
+    .toc-toggle { display: flex; }
+
+    .two-col { grid-template-columns: 1fr; gap: 20px; }
+    .info-cards { grid-template-columns: 1fr 1fr; }
+    .features-grid { grid-template-columns: 1fr 1fr; }
+    .video-grid { grid-template-columns: 1fr 1fr; }
+    .trouble-grid { grid-template-columns: 1fr; }
+
+    footer { padding: 28px 20px; flex-direction: column; align-items: flex-start; gap: 12px; }
+    .footer-links { gap: 16px; }
+  }
+
+  @media (max-width: 560px) {
+    nav { padding: 12px 16px; min-height: 54px; }
+    .nav-logo { font-size: 16px; }
+    .nav-cta span.cta-label { display: none; }
+    .hero { padding: 88px 16px 48px; }
+    .hero-eyebrow { font-size: 10px; padding: 5px 12px; margin-bottom: 20px; }
+    .hero-title { letter-spacing: -0.5px; margin-bottom: 16px; }
+    .hero-sub { font-size: 14px; margin-bottom: 28px; }
+    .hero-actions { gap: 10px; }
+    .btn { padding: 12px 20px; font-size: 13.5px; }
+    .hero-meta { gap: 10px; }
+    .meta-item { font-size: 10px; }
+
+    .layout { padding: 24px 16px 48px; }
+
+    .section { margin-bottom: 44px; scroll-margin-top: 70px; }
+    .section-header { gap: 10px; margin-bottom: 16px; }
+    .section-num { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
+    h2 { font-size: 19px; }
+    .section p { font-size: 13.5px; }
+
+    .info-cards { grid-template-columns: 1fr; gap: 10px; }
+    .info-card { padding: 14px; }
+
+    .checklist { gap: 7px; }
+    .checklist li { padding: 10px 12px; font-size: 13px; gap: 10px; }
+
+    .features-grid { grid-template-columns: 1fr; gap: 8px; }
+    .feature-item { padding: 14px; }
+
+    .video-grid { grid-template-columns: 1fr; gap: 12px; }
+
+    .divider { margin-bottom: 44px; }
+
+    .toc-toggle { font-size: 13px; padding: 12px 14px; }
+    .toc-list a { font-size: 12.5px; padding: 6px 8px; }
+
+    footer { padding: 24px 16px; gap: 10px; }
+    .footer-logo { font-size: 15px; }
+    .footer-copy { font-size: 10px; }
+    .footer-links { gap: 14px; }
+    .footer-links a { font-size: 12px; }
+
+    .mono-tag { font-size: 11.5px; }
+    .totop { width: 40px; height: 40px; bottom: 18px; right: 18px; }
+  }
+
+  @media (max-width: 380px) {
+    .nav-logo { font-size: 15px; }
+    .hero { padding: 80px 12px 40px; }
+    .layout { padding: 20px 12px 40px; }
+    h1.hero-title { font-size: 28px; }
+    h2 { font-size: 17px; }
+    .checklist li { font-size: 12.5px; }
+    footer { padding: 20px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Enter<span>GYM</span></div>
+  <a class="nav-back" href="/">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M10 3L5 8l5 5"/>
+    </svg>
+    <span class="nav-back">Back to Home</span>
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg-grid"></div>
+  <div class="hero-eyebrow">Desktop Quick Start Guide</div>
+  <h1 class="hero-title">Welcome to <span>EnterGYM</span><br>Face Attendance</h1>
+  <p class="hero-sub">Complete setup guide to get your AI Face Attendance System running in less than 5 minutes.</p>
+  <div class="hero-actions">
+    <a href="#s7" class="btn btn-secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#7b7fff" stroke-width="1.8"/><path d="M10 9l5 3-5 3V9Z" fill="#7b7fff"/></svg>
+      Watch Setup Video
+    </a>
+  </div>
+  <div class="hero-meta">
+    <div class="meta-item"><span class="dot"></span> Windows 10/11</div>
+    <div class="meta-item"><span class="dot"></span> &lt;5 min setup</div>
+    <div class="meta-item"><span class="dot"></span> Arrow SoftTech</div>
+  </div>
+</section>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- S1: System Requirements -->
+    <div class="section reveal" id="s1">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <h2>System Requirements</h2>
+      </div>
+      <p class="lead">Make sure your computer meets these requirements before installing EnterGYM Desktop.</p>
+      <div class="features-grid reveal-stagger">
+        <div class="feature-item">
+          <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+          <strong>Windows 10 or 11</strong>
+          <span class="fdesc">Runs natively on both Windows 10 and Windows 11.</span>
+        </div>
+        <div class="feature-item">
+          <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M17 10l4-2v8l-4-2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+          <strong>Webcam</strong>
+          <span class="fdesc">Built-in or USB webcam — either works fine.</span>
+        </div>
+        <div class="feature-item">
+          <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M2 9a14 14 0 0 1 20 0M5.5 12.5a9 9 0 0 1 13 0M9 16a4.2 4.2 0 0 1 6 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="19.5" r="1.2" fill="currentColor"/></svg></div>
+          <strong>Stable Internet</strong>
+          <span class="fdesc">Needed for login, sync, and updates.</span>
+        </div>
+        <div class="feature-item">
+          <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7 6V4m10 2V4M3 11h18" stroke="currentColor" stroke-width="1.7"/></svg></div>
+          <strong>4GB RAM Minimum</strong>
+          <span class="fdesc">8GB recommended for best performance.</span>
+        </div>
+        <div class="feature-item">
+          <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5h11l5 5v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M15 5v5h5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+          <strong>2GB Free Disk Space</strong>
+          <span class="fdesc">Leave room for install files and app data.</span>
+        </div>
+        <div class="feature-item">
+          <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7"/></svg></div>
+          <strong>Administrator Access</strong>
+          <span class="fdesc">Required to run the installer.</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S2: Install -->
+    <div class="section reveal" id="s2">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <h2>Install EnterGYM</h2>
+      </div>
+      <p class="lead">Six quick steps and you're ready to log in.</p>
+      <div class="two-col">
+        <div class="steps">
+          <div class="step"><div class="step-num">01</div><div class="step-body"><h4>Download EnterGymSetup.exe</h4><p>Grab the installer from your dashboard or the link provided by EnterGYM.</p></div></div>
+          <div class="step"><div class="step-num">02</div><div class="step-body"><h4>Double-click the installer</h4><p>Locate the downloaded file and open it to begin setup.</p></div></div>
+          <div class="step"><div class="step-num">03</div><div class="step-body"><h4>Click Next</h4><p>Review the setup wizard welcome screen and continue.</p></div></div>
+          <div class="step"><div class="step-num">04</div><div class="step-body"><h4>Choose installation folder</h4><p>Use the default location, or pick a folder of your choice.</p></div></div>
+          <div class="step"><div class="step-num">05</div><div class="step-body"><h4>Click Install</h4><p>The installer copies all required files to your computer.</p></div></div>
+          <div class="step"><div class="step-num">06</div><div class="step-body"><h4>Finish installation</h4><p>Click Finish and launch EnterGYM Desktop for the first time.</p></div></div>
+        </div>
+        <div class="screenshot">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 21h8M12 18v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+          <div class="ph-label">Installer Screenshot</div>
+          <div class="ph-sub">EnterGymSetup.exe wizard preview</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S3: First Login -->
+    <div class="section reveal" id="s3">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <h2>First Login</h2>
+      </div>
+      <p class="lead">Sign in with the details provided by EnterGYM to connect your gym account.</p>
+      <div class="two-col">
+        <div>
+          <div class="info-cards" style="grid-template-columns:1fr;">
+            <div class="info-card">
+              <div class="info-card-label">🔗 Gym URL</div>
+              <div class="info-card-value">Enter your gym website URL provided by EnterGYM.</div>
+              <div class="mono-tag" style="margin-top:8px;display:block;">https://goldengym.entergym.in</div>
+            </div>
+            <div class="info-card">
+              <div class="info-card-label">📱 Phone Number</div>
+              <div class="info-card-value">Enter your registered gym owner phone number.</div>
+            </div>
+            <div class="info-card">
+              <div class="info-card-label">🔒 Password</div>
+              <div class="info-card-value">Enter your account password to authenticate.</div>
+            </div>
+            <div class="info-card">
+              <div class="info-card-label">✅ Remember Server</div>
+              <div class="info-card-value">Saves your Gym URL and phone number on this computer. Your password is never stored.</div>
+            </div>
+          </div>
+        </div>
+        <div class="login-mock">
+          <h3>Sign in to EnterGYM</h3>
+          <p class="sub">// enter gym details to continue</p>
+          <div class="mock-input"><label>Gym URL</label><div class="box">https://goldengym.entergym.in</div></div>
+          <div class="mock-input"><label>Phone Number</label><div class="box">+91 98xxxxxx00</div></div>
+          <div class="mock-input"><label>Password</label><div class="box">••••••••••</div></div>
+          <div class="mock-row"><span class="chk"></span> Remember Server on this computer</div>
+          <div class="mock-login-btn">Click Login</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S4: Configure Camera -->
+    <div class="section reveal" id="s4">
+      <div class="section-header">
+        <div class="section-num">4</div>
+        <h2>Configure Camera</h2>
+      </div>
+      <p class="lead">Pick the right camera and confirm the preview before continuing.</p>
+      <div class="two-col">
+        <ul class="checklist">
+          <li>Open Settings from the main menu.</li>
+          <li>Select the correct webcam from the dropdown list.</li>
+          <li>Verify the live preview shows a clear, well-lit image.</li>
+          <li>Save settings to apply your camera selection.</li>
+        </ul>
+        <div class="screenshot" style="margin-top:0;">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M17 10l4-2v8l-4-2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+          <div class="ph-label">Camera Settings Screenshot</div>
+          <div class="ph-sub">Live preview + device selector</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S5: Enroll Members -->
+    <div class="section reveal" id="s5">
+      <div class="section-header">
+        <div class="section-num">5</div>
+        <h2>Enroll Members</h2>
+      </div>
+      <p class="lead">Capture a member's face profile in a few simple steps.</p>
+      <div class="two-col">
+        <div class="steps">
+          <div class="step"><div class="step-num">01</div><div class="step-body"><h4>Click Enroll</h4><p>Open the enrollment screen from the dashboard.</p></div></div>
+          <div class="step"><div class="step-num">02</div><div class="step-body"><h4>Enter member details</h4><p>Fill in the member's name and basic information.</p></div></div>
+          <div class="step"><div class="step-num">03</div><div class="step-body"><h4>Stand in front of the camera</h4><p>Position the member centered in the frame.</p></div></div>
+          <div class="step"><div class="step-num">04</div><div class="step-body"><h4>Look straight</h4><p>Face the camera directly for the first capture.</p></div></div>
+          <div class="step"><div class="step-num">05</div><div class="step-body"><h4>Slowly turn left and right</h4><p>Capture different face angles for better accuracy.</p></div></div>
+          <div class="step"><div class="step-num">06</div><div class="step-body"><h4>Wait for embeddings to capture</h4><p>The progress indicator confirms when capture is complete.</p></div></div>
+          <div class="step"><div class="step-num">07</div><div class="step-body"><h4>Click Finish</h4><p>Save the enrolled profile to complete the process.</p></div></div>
+        </div>
+        <div class="tips-card">
+          <h4>💡 Tips for best results</h4>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Good lighting</li>
+            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> One person only</li>
+            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Remove sunglasses</li>
+            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Keep face fully visible</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S6: Start Attendance -->
+    <div class="section reveal" id="s6">
+      <div class="section-header">
+        <div class="section-num">6</div>
+        <h2>Start Attendance</h2>
+      </div>
+      <p class="lead">Recognition happens automatically — no extra clicks required.</p>
+      <div class="two-col">
+        <div class="screenshot" style="margin-top:0;">
+          <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+          <div class="ph-label">Attendance Screen Screenshot</div>
+          <div class="ph-sub">Live camera + face detection box</div>
+        </div>
+        <div>
+          <div class="steps">
+            <div class="step"><div class="step-num">01</div><div class="step-body"><h4>Open Attendance screen</h4><p>Navigate to the Attendance tab in the app.</p></div></div>
+            <div class="step"><div class="step-num">02</div><div class="step-body"><h4>Stand in front of the camera</h4><p>Position yourself within the camera frame.</p></div></div>
+            <div class="step"><div class="step-num">03</div><div class="step-body"><h4>Wait for face recognition</h4><p>The system scans and matches the enrolled profile.</p></div></div>
+            <div class="step"><div class="step-num">04</div><div class="step-body"><h4>Attendance marked automatically</h4><p>No buttons to press — recognition does it all.</p></div></div>
+          </div>
+          <div class="success-box">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Attendance Marked Successfully
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S7: Video Tutorials -->
+    <div class="section reveal" id="s7">
+      <div class="section-header">
+        <div class="section-num">7</div>
+        <h2>Video Tutorials</h2>
+      </div>
+      <p class="lead">Prefer watching over reading? These short walkthroughs cover the same steps.</p>
+      <div class="video-grid reveal-stagger">
+        <div class="video-card">
+          <div class="video-thumb"><div class="play-btn"><svg viewBox="0 0 24 24" fill="none"><path d="M9 7l8 5-8 5V7Z" fill="currentColor"/></svg></div></div>
+          <div class="video-info"><h4>Installation Walkthrough</h4><p>2:14 — setting up EnterGYM Desktop</p></div>
+        </div>
+        <div class="video-card">
+          <div class="video-thumb"><div class="play-btn"><svg viewBox="0 0 24 24" fill="none"><path d="M9 7l8 5-8 5V7Z" fill="currentColor"/></svg></div></div>
+          <div class="video-info"><h4>Member Enrollment Demo</h4><p>3:02 — capturing face profiles correctly</p></div>
+        </div>
+        <div class="video-card">
+          <div class="video-thumb"><div class="play-btn"><svg viewBox="0 0 24 24" fill="none"><path d="M9 7l8 5-8 5V7Z" fill="currentColor"/></svg></div></div>
+          <div class="video-info"><h4>Daily Attendance Flow</h4><p>1:48 — marking attendance end to end</p></div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S8: Troubleshooting -->
+    <div class="section reveal" id="s8">
+      <div class="section-header">
+        <div class="section-num">8</div>
+        <h2>Troubleshooting</h2>
+      </div>
+      <p class="lead">Quick fixes for the most common setup hiccups.</p>
+      <div class="trouble-grid reveal-stagger">
+        <div class="trouble-card">
+          <div class="top"><div class="trouble-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M17 10l4-2v8l-4-2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.7"/></svg></div><h4>Camera Not Working</h4></div>
+          <ul><li>Check camera permissions in Windows settings.</li><li>Close other apps using the webcam.</li></ul>
+        </div>
+        <div class="trouble-card">
+          <div class="top"><div class="trouble-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="9" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="1.7"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.7"/></svg></div><h4>Face Not Detected</h4></div>
+          <ul><li>Improve lighting around the camera.</li><li>Face the camera directly.</li><li>Keep your face inside the frame.</li></ul>
+        </div>
+        <div class="trouble-card">
+          <div class="top"><div class="trouble-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M2 9a14 14 0 0 1 20 0M5.5 12.5a9 9 0 0 1 13 0M9 16a4.2 4.2 0 0 1 6 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.7"/></svg></div><h4>Internet Error</h4></div>
+          <ul><li>Check your internet connection.</li><li>Verify the Gym URL is correct.</li></ul>
+        </div>
+        <div class="trouble-card">
+          <div class="top"><div class="trouble-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.7"/></svg></div><h4>Login Failed</h4></div>
+          <ul><li>Verify your phone number.</li><li>Verify your password.</li><li>Contact your gym administrator if needed.</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S9: Need Help -->
+    <div class="section reveal" id="s9">
+      <div class="section-header">
+        <div class="section-num">9</div>
+        <h2>Need Help?</h2>
+      </div>
+      <p class="lead">Our team is just a message away.</p>
+      <div class="info-cards reveal-stagger">
+        <div class="info-card">
+          <div class="info-card-label">📧 Email</div>
+          <div class="info-card-value">support@entergym.in</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">🌐 Website</div>
+          <div class="info-card-value">entergym.in</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">📘 Documentation</div>
+          <div class="info-card-value">entergym.in/help/desktop</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /layout -->
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">Enter<span>GYM</span></div>
+    <div class="footer-copy" style="margin-top:6px;">AI Powered Face Attendance System</div>
+  </div>
+  <div class="footer-links">
+    <a href="#">Privacy Policy</a>
+    <a href="#">Terms</a>
+    <a href="#">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 Arrow SoftTech. All rights reserved.</div>
+</footer>
+
+<div class="totop" id="totop">
+  <svg viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
+
+<script nonce="{{ request.csp_nonce }}" >
+  /* ── Mobile TOC toggle ── */
+  const toggle = document.getElementById('tocToggle');
+  const list   = document.getElementById('tocList');
+
+  if (toggle && list) {
+    toggle.addEventListener('click', () => {
+      const open = list.classList.toggle('open');
+      toggle.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', open);
+    });
+    list.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (window.innerWidth <= 860) {
+          list.classList.remove('open');
+          toggle.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  }
+
+  function handleResize() {
+    if (window.innerWidth > 860) { list.classList.add('open'); }
+  }
+  handleResize();
+  window.addEventListener('resize', handleResize);
+
+  /* ── Active TOC highlighting on scroll ── */
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        tocLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+        });
+      }
+    });
+  }, { rootMargin: '-15% 0px -65% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  /* ── Reveal on scroll ── */
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => revealObserver.observe(el));
+
+  /* ── Back to top ── */
+  const totop = document.getElementById('totop');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 480) { totop.classList.add('show'); } else { totop.classList.remove('show'); }
+  });
+  totop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+</body>
+</html>

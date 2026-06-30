@@ -57,6 +57,7 @@ class Gym(models.Model):
     # Limits (mirrored from plan but can be overridden per-gym)
     member_limit    = models.PositiveIntegerField(default=100)
     trainer_limit   = models.PositiveIntegerField(default=5)
+    embedding_version = models.PositiveIntegerField(default=1)
 
     # ── White-label settings ──────────────────────────────────────────────
     logo            = CloudinaryField('gym_logo', null=True, blank=True)

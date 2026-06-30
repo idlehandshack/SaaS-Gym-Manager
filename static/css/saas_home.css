@@ -768,7 +768,10 @@ img, svg   { max-width: 100%; }
     background:#2563eb;
     border-radius:14px 0 0 14px;
 }
-
+.guide{
+  color: var(--red);
+  font-weight: 700;
+}
 .feature-item:hover{
     transform:translateX(8px);
     border-color:#2563eb;

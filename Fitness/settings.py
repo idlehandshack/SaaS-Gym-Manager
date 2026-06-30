@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+INTERNAL_API_KEY = os.environ.get("INTERNAL_API_KEY", "")
 SECRET_KEY = os.environ['SECRET_KEY']
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 API_KEY = os.environ.get("INTERNAL_API_KEY", "")
@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'cloudinary',
     'cloudinary_storage',
+    'rest_framework.authtoken',
 
     # Your apps
     'AuthFit',
@@ -240,6 +241,15 @@ LOGGING = {
         },
     },
 }
+REST_FRAMEWORK = {
+       "DEFAULT_AUTHENTICATION_CLASSES": [
+           "rest_framework.authentication.TokenAuthentication",
+           "rest_framework.authentication.SessionAuthentication",
+       ],
+       "DEFAULT_PERMISSION_CLASSES": [
+           "rest_framework.permissions.IsAuthenticated",
+       ],
+   }
 
 if not DEBUG:
     SECURE_HSTS_SECONDS            = 31536000  # 1 year
