@@ -8,6 +8,7 @@ import os
 from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
+from Gym.branding import get_gym_branding
 from cloudinary.utils import cloudinary_url
 
 logger = logging.getLogger(__name__)
@@ -206,4 +207,17 @@ def gym_context(request):
         'gym': gym,
         'favicon_url': favicon_url,
         'logo_url': logo_url,
+    }
+
+
+def gym_branding(request):
+    b = get_gym_branding(getattr(request, 'gym', None))
+    return {
+        "logo_url": b["logo_url"],
+        "favicon_url": b["favicon_url"],
+        "apple_touch_icon_url": b["apple_touch_icon_url"],
+        "splash_logo_url": b["splash_logo_url"],
+        "theme_color": b["theme_color"],
+        "app_name": b["app_name"],
+        "app_short_name": b["app_short_name"],
     }

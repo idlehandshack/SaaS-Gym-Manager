@@ -37,6 +37,15 @@ class Gym(models.Model):
     # Identity
     id              = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     gym_name        = models.CharField(max_length=100)
+    app_name = models.CharField(
+        max_length=100, blank=True,
+        help_text="Full application name shown during installation (e.g. 'Muscle Garage Fitness'). "
+        "Falls back to gym_name if left blank."
+        )
+    app_short_name = models.CharField(
+            max_length=30, blank=True,
+            help_text="Short name shown below the app icon (e.g. 'MuscleGarage'). Falls back to gym_name if blank."
+        )
     gym_code        = models.SlugField(max_length=20, unique=True, db_index=True)
 
     # Owner (1 User can own exactly 1 gym — use StaffProfile for multi-gym staff)
@@ -60,14 +69,21 @@ class Gym(models.Model):
     embedding_version = models.PositiveIntegerField(default=1)
 
     # ── White-label settings ──────────────────────────────────────────────
-    logo            = CloudinaryField('gym_logo', null=True, blank=True)
+    logo = CloudinaryField(
+        'gym_logo', null=True, blank=True,
+        help_text="Primary square logo, recommended 512×512. Used as the 192×192 PWA icon."
+    )
     favicon         = CloudinaryField('gym_favicon', null=True, blank=True)
+    splash_logo     = CloudinaryField("gym_splash_logo", null=True, blank=True)
     contact_email   = models.EmailField(blank=True)
     contact_phone   = models.CharField(max_length=15, blank=True)
     whatsapp_number = models.CharField(max_length=15, blank=True)
+    theme_color     = models.CharField(max_length=7, default='#007bff')  # hex
+    receipt_footer  = models.TextField(blank=True)
     address         = models.TextField(blank=True)
     city            = models.CharField(max_length=60, blank=True)
     website         = models.URLField(blank=True)
+    app_download_url = models.URLField(blank=True,help_text="APK download link or Play Store URL for this gym's app.")
 
     # ── Geo-fence (per gym) ───────────────────────────────────────────────
     latitude        = models.FloatField(default=0.0)
@@ -75,9 +91,6 @@ class Gym(models.Model):
     radius_meters   = models.FloatField(default=100.0)
     map = models.TextField(blank=True)
 
-    # Add this inside the Gym model, after the geo-fence fields and before created_at
-
-    # ── Module feature flags (per-gym toggles) ────────────────────────────
     enable_store            = models.BooleanField(default=True,
         help_text="Supplement store & order management.")
     enable_attendance       = models.BooleanField(default=True,
@@ -86,7 +99,7 @@ class Gym(models.Model):
         help_text="Face recognition enrollment and auto check-in.")
     enable_trainers         = models.BooleanField(default=True,
         help_text="Trainer management module.")
-
+    
     created_at      = models.DateTimeField(auto_now_add=True)
     updated_at      = models.DateTimeField(auto_now=True)
 
@@ -117,8 +130,8 @@ class Gym(models.Model):
 
 @receiver([post_save, post_delete], sender=Gym)
 def clear_gym_logo_cache(sender, instance, **kwargs):
-    cache.delete(f"gym_logo_{instance.pk}")
-    cache.delete(f"gym_favicon_{instance.pk}")
+    cache.delete(f"gym_branding_{instance.pk}")
+    cache.delete(f"manifest_{instance.pk}")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Staff Profile  (links a User to a Gym with a role)
@@ -166,8 +179,7 @@ class StaffProfile(models.Model):
     @property
     def is_receptionist(self):
         return self.role == 'receptionist'
-
-
+    
 class GymGSTProfile(models.Model):
     """One-to-one GST/billing profile per gym tenant."""
     gym = models.OneToOneField('Gym', on_delete=models.CASCADE, related_name='gst_profile') 

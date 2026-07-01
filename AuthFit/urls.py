@@ -70,6 +70,7 @@ urlpatterns = [
     path('api/geo-mark-attendance/', geo_mark_attendance, name='geo_mark_attendance'),
     path('api/attendance-status/', attendance_status),
     path('sw.js', serve_sw, name='sw'),
+    path('manifest.json', views.manifest, name='manifest'),
 
     # ── Admin tools ────────────────────────────────────────────
     path('admin-tools/transferred-members/', views.transferred_members, name='transferred_members'),

@@ -26,7 +26,9 @@ class GymAdmin(admin.ModelAdmin):
     list_editable   = ('enable_store', 'enable_attendance', 'enable_trainers')
     list_filter     = ['active', 'plan']
     search_fields   = ['gym_name', 'gym_code', 'owner__username']
-    readonly_fields = ['id', 'logo_preview_large', 'favicon_preview_large', 'days_until_expiry', 'created_at', 'updated_at']
+    readonly_fields = ['id', 'logo_preview_large', 'favicon_preview_large',
+                    'splash_logo_preview_large', 'days_until_expiry',
+                    'created_at', 'updated_at']
     ordering        = ['gym_name']
     prepopulated_fields = {'gym_code': ('gym_name',)}
     fieldsets = (
@@ -50,10 +52,14 @@ class GymAdmin(admin.ModelAdmin):
             ),
         }),
         ('White-label', {
-            'fields': ('logo', 'logo_preview_large',
-                       'favicon', 'favicon_preview_large',
-                       'contact_email', 'contact_phone',
-                       'whatsapp_number', 'address', 'city', 'website'),
+            'fields': ('app_name', 'app_short_name',
+                    'logo', 'logo_preview_large',
+                    'favicon', 'favicon_preview_large',
+                    'splash_logo', 'splash_logo_preview_large',
+                    'theme_color',
+                    'contact_email', 'contact_phone',
+                    'whatsapp_number', 'address', 'city', 'website',
+                    'app_download_url'),
             'classes': ('collapse',),
         }),
         ('Geo-fence', {
@@ -132,6 +138,16 @@ class GymAdmin(admin.ModelAdmin):
                 url,
             )
         return "No favicon uploaded yet."
+    @admin.display(description="Current Splash Logo")
+    def splash_logo_preview_large(self, obj):
+        url = self._thumb_url(obj.splash_logo, 200)
+        if url:
+            return format_html(
+                '<img src="{}" width="200" height="200" '
+                'style="object-fit:contain;background:#111;border-radius:8px;padding:8px;" />',
+                url,
+            )
+        return "No splash image uploaded yet."
 
 # ──────────────────────────────────────────────────────────────────────────────
 # StaffProfile

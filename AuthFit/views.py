@@ -48,6 +48,7 @@ from billing.services.invoice_generator import create_invoice_for_payment
 from billing.services.pdf_generator import generate_invoice_pdf
 from billing.services.cloudflare_storage import upload_file_to_r2
 from AuthFit.signals import _version_cache_key , _VERSION_CACHE_TTL ,update_enrollment_embeddings
+from Gym.branding import get_gym_branding
 logger = logging.getLogger(__name__)
 
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
@@ -62,6 +63,60 @@ def robots_txt(request):
     """
     return HttpResponse(content, content_type="text/plain")
 
+
+MANIFEST_CACHE_TTL = 60 * 60 * 6  # 6 hours
+def manifest(request):
+    """
+    GET /manifest.json
+    Per-tenant PWA manifest built from request.gym's logo, favicon,
+    splash_logo, app_name, app_short_name, theme_color. No auth required.
+    """
+    gym = getattr(request, 'gym', None)
+    cache_key = f"manifest_{gym.pk if gym else 'default'}"
+
+    manifest_data = cache.get(cache_key)
+    if manifest_data is None:
+        b = get_gym_branding(gym)
+
+        manifest_data = {
+            "name": b["app_name"],
+            "short_name": b["app_short_name"],
+            "description": b["description"],
+            "start_url": "/?source=pwa",
+            "scope": "/",
+            "display": "standalone",
+            "background_color": b["background_color"],
+            "theme_color": b["theme_color"],
+            "orientation": "portrait-primary",
+            "lang": "en",
+            "categories": ["fitness", "health", "sports"],
+            "icons": [
+                {"src": b["logo_url"], "sizes": "192x192", "type": "image/png", "purpose": "any"},
+                {"src": b["splash_logo_url"], "sizes": "512x512", "type": "image/png", "purpose": "any"},
+                {"src": b["maskable_icon_url"], "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+                {"src": b["apple_touch_icon_url"], "sizes": "180x180", "type": "image/png", "purpose": "any"},
+            ],
+            "shortcuts": [
+                {
+                    "name": "Check In", "short_name": "Check In",
+                    "description": "Mark your gym attendance",
+                    "url": "/attendence/?source=shortcut",
+                    "icons": [{"src": b["shortcut_icon_url"], "sizes": "96x96"}],
+                },
+                {
+                    "name": "My Membership", "short_name": "Membership",
+                    "description": "View membership & payment status",
+                    "url": "/profile/?source=shortcut",
+                    "icons": [{"src": b["shortcut_icon_url"], "sizes": "96x96"}],
+                },
+            ],
+        }
+        cache.set(cache_key, manifest_data, timeout=MANIFEST_CACHE_TTL)
+
+    response = JsonResponse(manifest_data, json_dumps_params={"indent": 2})
+    response["Content-Type"] = "application/manifest+json"
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers

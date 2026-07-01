@@ -103,8 +103,8 @@ TEMPLATES = [
                 'AuthFit.context_processors.gym_config',
                 'AuthFit.context_processors.saas_config',
                 'notifications.context_processors.vapid_key',
-                "Gym.context_processors.gym_branding",
                 'AuthFit.context_processors.gym_context',
+                'AuthFit.context_processors.gym_branding',
             ],
         },
     }
