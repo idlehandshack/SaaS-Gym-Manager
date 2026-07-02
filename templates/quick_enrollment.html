@@ -1,0 +1,654 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Enrollment — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
+    {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    <link rel="shortcut icon" href="{{ favicon_url }}">
+  {% else %}
+    <link rel="icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+  {% endif %}
+
+  <link rel="manifest" href="{% static 'js/manifest.json' %}" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="EnterGYM" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+
+  <style>
+    /* ── TOKENS (matched to enrollment.html / profile.html) ── */
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #181818;
+      --surface-3:   #1e1e1e;
+      --border:      rgba(255,255,255,.06);
+      --border-2:    rgba(255,255,255,.11);
+      --orange:      #ff5a00;
+      --orange-dim:  rgba(255,90,0,.10);
+      --orange-bdr:  rgba(255,90,0,.28);
+      --orange-glow: rgba(255,90,0,.20);
+      --green:       #5de87c;
+      --green-dim:   rgba(93,232,124,.10);
+      --green-bdr:   rgba(93,232,124,.28);
+      --yellow:      #f0a500;
+      --yellow-dim:  rgba(240,165,0,.10);
+      --yellow-bdr:  rgba(240,165,0,.28);
+      --red:         #ef5350;
+      --red-dim:     rgba(239,83,80,.10);
+      --red-bdr:     rgba(239,83,80,.28);
+      --text-hi:     #f5f5f5;
+      --text-mid:    #888;
+      --text-lo:     #444;
+      --font-d:      "Barlow Condensed", sans-serif;
+      --font-b:      "Barlow", sans-serif;
+      --ease:        cubic-bezier(.4,0,.2,1);
+      --t:           .22s;
+      --radius-lg:   18px;
+      --radius-md:   12px;
+      --radius-sm:   8px;
+      --radius-pill: 40px;
+      --nav-h:       60px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ── FLASH MESSAGES ── */
+    #message-container {
+      position: fixed;
+      top: calc(var(--nav-h) + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      width: 100%;
+      max-width: 420px;
+      padding: 0 16px;
+    }
+    .flash-message {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 18px; margin-bottom: 10px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-d); font-size: 14px; font-weight: 600; letter-spacing: .04em;
+      border-left: 3px solid;
+      backdrop-filter: blur(16px);
+      animation: slideIn .25s var(--ease);
+    }
+    @keyframes slideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+    .flash-message.success { background: rgba(93,232,124,.08); border-color: var(--green); color: var(--green); }
+    .flash-message.error   { background: rgba(239,83,80,.08); border-color: var(--red); color: var(--red); }
+    .flash-message.default { background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
+    .close-btn {
+      background: none; border: none; color: inherit; font-size: 18px; cursor: pointer;
+      opacity: .7; flex-shrink: 0; transition: opacity var(--t);
+    }
+    .close-btn:hover { opacity: 1; }
+
+    /* ── STICKY NAV ── */
+    .store-nav {
+      position: sticky; top: 0; z-index: 200;
+      height: var(--nav-h);
+      background: rgba(8,8,8,.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .nav-inner {
+      width: 100%; padding: 0 clamp(16px,4vw,40px);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .nav-brand {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.1rem,3vw,1.5rem);
+      text-transform: uppercase; text-decoration: none;
+      color: var(--text-hi); letter-spacing: -.01em;
+      white-space: nowrap; display: flex; align-items: center; gap: 8px;
+      transition: color var(--t);
+    }
+    .nav-brand .acc { color: var(--orange); }
+    .back-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; flex-shrink: 0;
+      transition: background var(--t);
+    }
+    .nav-brand:hover .back-icon { background: var(--orange-dim); }
+    .nav-brand:hover { color: var(--text-hi); }
+    .nav-badge {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      background: var(--orange-dim); color: var(--orange);
+      border: 1px solid var(--orange-bdr);
+      padding: 5px 14px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      position: relative;
+      padding: clamp(40px,7vw,72px) 0 clamp(28px,5vw,48px);
+      text-align: center; overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: clamp(24px,4vw,40px);
+    }
+    .page-header::before {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .header-inner { position: relative; z-index: 1; padding: 0 clamp(16px,4vw,40px); }
+    .header-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
+      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 10px;
+      padding: 5px 14px;
+      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
+      background: var(--orange-dim);
+    }
+    .page-header h1 {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(2rem,7vw,3.8rem); line-height: .92;
+      letter-spacing: -.01em; text-transform: uppercase;
+      margin-bottom: 8px; color: var(--text-hi);
+    }
+    .page-header h1 .accent { color: var(--orange); }
+    .header-sub {
+      font-family: var(--font-b);
+      font-size: clamp(.8rem,2vw,.95rem);
+      color: var(--text-mid);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── MAIN CONTENT ── */
+    .quick-enroll-page {
+      max-width: 900px; margin: 0 auto;
+      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
+    }
+
+    .section-label {
+      display: flex; align-items: center; gap: 10px;
+      margin: clamp(20px,4vw,32px) 0 clamp(14px,2.5vw,20px);
+    }
+    .section-label:first-child { margin-top: 0; }
+    .section-label span {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .2em; text-transform: uppercase;
+      color: var(--text-lo); white-space: nowrap;
+    }
+    .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── FORM CARD ── */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-lg);
+      padding: clamp(24px,5vw,40px) clamp(20px,5vw,36px);
+      box-shadow: 0 25px 70px rgba(0,0,0,.55), 0 0 40px rgba(255,90,0,.07);
+      animation: fadeUp .45s var(--ease) both;
+    }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px,2.5vw,16px); }
+    .col-full { grid-column: 1 / -1; }
+
+    .field, select.field {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      color: var(--text-hi);
+      border-radius: var(--radius-md);
+      padding: 13px 16px;
+      font-family: var(--font-b);
+      font-size: 15px;
+      outline: none;
+      transition: border-color var(--t), box-shadow var(--t);
+      -webkit-appearance: none;
+    }
+    .field::placeholder { color: var(--text-lo); }
+    .field:hover, .field:focus, select.field:hover, select.field:focus {
+      border-color: var(--orange-bdr); box-shadow: 0 0 0 3px var(--orange-glow);
+    }
+    select.field { cursor: pointer; }
+
+    input[type="date"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      color: var(--text-hi);
+      border-radius: var(--radius-md);
+      padding: 13px 16px;
+      font-family: var(--font-b);
+      font-size: 15px;
+      outline: none;
+      cursor: pointer;
+      color-scheme: dark;
+      box-sizing: border-box;
+      line-height: 1.5;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+    input[type="date"]:hover, input[type="date"]:focus {
+      border-color: var(--orange-bdr); box-shadow: 0 0 0 3px var(--orange-glow);
+    }
+    input[type="date"]::-webkit-datetime-edit { color: var(--text-hi); }
+    input[type="date"]:invalid { color: var(--text-lo); }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) sepia(1) saturate(5) hue-rotate(10deg);
+      cursor: pointer; opacity: .7;
+    }
+    input, button, select { touch-action: manipulation; }
+
+    /* ── CUSTOM DROPDOWNS (plan / trainer) ── */
+    .dropdown-wrap { position: relative; width: 100%; }
+    .dropdown-btn {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      color: var(--text-hi);
+      border-radius: var(--radius-md);
+      padding: 13px 16px;
+      font-family: var(--font-b);
+      font-size: 15px;
+      cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      text-align: left;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+    .dropdown-btn:hover, .dropdown-btn.open { border-color: var(--orange-bdr); box-shadow: 0 0 0 3px var(--orange-glow); }
+    .dropdown-btn .placeholder { color: var(--text-lo); }
+    .dropdown-btn .arrow { color: var(--orange); font-size: 10px; flex-shrink: 0; transition: transform var(--t); }
+    .dropdown-btn.open .arrow { transform: rotate(180deg); }
+    .dropdown-menu {
+      display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: var(--surface-2); border: 1px solid var(--border-2);
+      border-radius: var(--radius-md); overflow: hidden; z-index: 100;
+      box-shadow: 0 16px 40px rgba(0,0,0,.7);
+      animation: ddFade .15s var(--ease);
+      max-height: 260px; overflow-y: auto;
+    }
+    .dropdown-menu.open { display: block; }
+    @keyframes ddFade { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+    .dropdown-item {
+      padding: 12px 16px; font-family: var(--font-b); font-size: 14px;
+      color: var(--text-mid); cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+      transition: background var(--t), color var(--t);
+      border-bottom: 1px solid var(--border);
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: var(--orange-dim); color: var(--orange); }
+    .color-price { font-family: var(--font-d); font-weight: 700; font-size: .9rem; color: var(--orange); }
+
+    /* ── FORM ERRORS ── */
+    .form-error {
+      background: var(--red-dim);
+      border: 1px solid var(--red-bdr);
+      color: var(--red);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 13.5px;
+      margin-bottom: 18px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ── SUBMIT BUTTON ── */
+    .submit-btn {
+      margin-top: 28px;
+      width: 100%;
+      background: var(--orange);
+      color: #000;
+      font-family: var(--font-d);
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: var(--radius-pill);
+      padding: 15px;
+      cursor: pointer;
+      transition: background var(--t), transform .15s, box-shadow var(--t);
+      box-shadow: 0 0 28px rgba(255,90,0,.4);
+    }
+    .submit-btn:hover { background: #ff6a1a; box-shadow: 0 0 44px rgba(255,90,0,.65); transform: translateY(-1px); }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ── PENDING ENROLLMENTS TABLE ── */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .table-wrap { overflow-x: auto; }
+    table.enroll-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+    table.enroll-table thead th {
+      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--text-mid);
+      text-align: left;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-2);
+      background: var(--surface-2);
+      white-space: nowrap;
+    }
+    table.enroll-table tbody td {
+      padding: 14px 20px;
+      font-family: var(--font-b); font-size: 14px;
+      color: var(--text-hi);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    table.enroll-table tbody tr:last-child td { border-bottom: none; }
+    table.enroll-table tbody tr { transition: background var(--t); }
+    table.enroll-table tbody tr:hover { background: rgba(255,255,255,.02); }
+    .cell-muted { color: var(--text-mid); }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      padding: 5px 12px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+    .status-pill.pending { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow-bdr); }
+    .status-pill.registered { background: var(--green-dim); color: var(--green); border: 1px solid var(--green-bdr); }
+
+    .pay-pill {
+      display: inline-flex; align-items: center;
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      padding: 5px 12px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+    .pay-pill.done { background: var(--green-dim); color: var(--green); border: 1px solid var(--green-bdr); }
+    .pay-pill.pending { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-bdr); }
+
+    .table-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-mid);
+      font-size: 14px;
+    }
+
+    .hero-animate { opacity: 0; transform: translateY(24px); animation: fadeUp .45s var(--ease) forwards; }
+
+    @media (max-width: 600px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .col-full { grid-column: auto; }
+      .field, .dropdown-btn, input[type="date"], select.field { min-height: 50px; font-size: 16px; }
+      .submit-btn { padding: 16px; font-size: 17px; }
+    }
+    @supports (padding: env(safe-area-inset-left)) {
+      .nav-inner {
+        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
+        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ FLASH MESSAGES ══ -->
+  <div id="message-container">
+    {% for message in messages %}
+    <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}">
+      <span>{{ message }}</span>
+      <button class="close-btn">×</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ══ STICKY NAV ══ -->
+  <nav class="store-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/">
+        <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
+        {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
+        <span class="acc">Staff</span>
+      </a>
+      <div class="nav-badge">Quick Enrollment</div>
+    </div>
+  </nav>
+
+  <!-- ══ PAGE HEADER ══ -->
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-eyebrow"><i class="bi bi-lightning-charge-fill"></i> Staff Panel</div>
+      <h1>Quick <span class="accent">Enrollment</span></h1>
+      <p class="header-sub">Enroll a member in seconds with just the essentials. They'll fill in the rest when they sign up.</p>
+    </div>
+  </header>
+
+  <!-- ══ MAIN ══ -->
+  <main class="quick-enroll-page">
+    <div class="form-card hero-animate">
+
+      {% if form.non_field_errors %}
+      <div class="form-error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>{{ form.non_field_errors.0 }}</span>
+      </div>
+      {% endif %}
+
+      <form id="quickEnrollForm" method="POST" action="{% url 'quick_enrollment' %}" novalidate>
+        {% csrf_token %}
+
+        <!-- ── Member Details ── -->
+        <div class="section-label"><span>◈ Member Details</span></div>
+        <div class="grid-2">
+          <input class="field" type="text" name="name" placeholder="Full Name" required value="{{ form.name.value|default_if_none:'' }}" />
+          <input class="field" type="tel" name="phone" placeholder="10-Digit Phone Number" maxlength="10" required value="{{ form.phone.value|default_if_none:'' }}" />
+        </div>
+
+        <!-- ── Membership ── -->
+        <div class="section-label" style="margin-top: clamp(24px,4vw,36px);"><span>◈ Membership</span></div>
+
+        <div class="dropdown-wrap">
+          <button type="button" class="dropdown-btn" id="planBtn">
+            <span id="selectedPlan" class="placeholder">Select Membership Plan</span>
+            <span class="arrow">▼</span>
+          </button>
+          <div class="dropdown-menu" id="planDropdown">
+            {% for p in form.fields.plan.queryset %}
+            <div class="dropdown-item plan-item" data-id="{{ p.id }}" data-name="{{ p.plan }}" data-price="{{ p.price }}">
+              {{ p.plan }}
+              <span class="color-price">₹{{ p.price }}</span>
+            </div>
+            {% empty %}
+            <div class="dropdown-item" style="pointer-events:none; opacity:.4;">No plans available</div>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="plan" id="planInput" required />
+        </div>
+
+        <div class="dropdown-wrap" style="margin-top: 12px;">
+          <button type="button" class="dropdown-btn" id="trainerBtn">
+            <span id="selectedTrainer" class="placeholder">Select Trainer (Optional)</span>
+            <span class="arrow">▼</span>
+          </button>
+          <div class="dropdown-menu" id="trainerDropdown">
+            {% for t in form.fields.trainer.queryset %}
+            <div class="dropdown-item trainer-item" data-id="{{ t.id }}" data-name="{{ t.name }}">
+              {{ t.name }}
+            </div>
+            {% empty %}
+            <div class="dropdown-item" style="pointer-events:none; opacity:.4;">No trainers available</div>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="trainer" id="trainerInput" />
+        </div>
+
+        <!-- ── Payment (Optional) ── -->
+        <div class="section-label" style="margin-top: clamp(24px,4vw,36px);"><span>◈ Payment (Optional)</span></div>
+        <div class="grid-2">
+          <input class="field" type="number" name="paid_amount" placeholder="Amount Paid Now" min="0" step="0.01" />
+
+          <select class="field" name="payment_method">
+            <option value="">Payment Method</option>
+            <option value="C">Cash</option>
+            <option value="U">UPI</option>
+            <option value="B">UPI + Cash</option>
+          </select>
+
+          <div class="col-full">
+            <input class="field" type="date" name="payment_date" />
+          </div>
+        </div>
+
+        <button type="submit" id="enrollBtn" class="submit-btn">Enroll Member</button>
+      </form>
+
+    </div><!-- /.form-card -->
+
+    <!-- ══ PENDING / RECENT ENROLLMENTS ══ -->
+    <div class="section-label"><span>◈ Recent Enrollments</span></div>
+    <div class="table-card">
+      {% if pending %}
+      <div class="table-wrap">
+        <table class="enroll-table">
+          <thead>
+            <tr>
+              <th>Member Name</th>
+              <th>Phone Number</th>
+              <th>Plan</th>
+              <th>Trainer</th>
+              <th>Payment</th>
+              <th>Created</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in pending %}
+            <tr>
+              <td>{{ row.name }}</td>
+              <td class="cell-muted">{{ row.phone }}</td>
+              <td>{{ row.plan }}</td>
+              <td class="cell-muted">{{ row.trainer }}</td>
+              <td>
+                <span class="pay-pill {% if row.payment_status == 'Done' %}done{% else %}pending{% endif %}">
+                  {{ row.payment_status }}
+                </span>
+              </td>
+              <td class="cell-muted">{{ row.created }}</td>
+              <td>
+                {% if row.is_registered %}
+                  <span class="status-pill registered"><i class="bi bi-check-circle-fill"></i> Registered</span>
+                {% else %}
+                  <span class="status-pill pending"><i class="bi bi-hourglass-split"></i> Pending Signup</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="table-empty">No enrollments yet — the members you enroll will show up here.</div>
+      {% endif %}
+    </div>
+  </main>
+
+  <!-- ══ SCRIPTS ══ -->
+  <script nonce="{{ request.csp_nonce }}">
+    function closeAll() {
+      ["plan", "trainer"].forEach(function (id) {
+        document.getElementById(id + "Dropdown")?.classList.remove("open");
+        document.getElementById(id + "Btn")?.classList.remove("open");
+      });
+    }
+
+    function toggleDropdown(id) {
+      const menu = document.getElementById(id + "Dropdown");
+      const btn  = document.getElementById(id + "Btn");
+      const isOpen = menu.classList.contains("open");
+      closeAll();
+      if (!isOpen) { menu.classList.add("open"); btn.classList.add("open"); }
+    }
+
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest(".dropdown-wrap")) closeAll();
+    });
+
+    function selectPlan(id, name, price) {
+      const label = document.getElementById("selectedPlan");
+      label.innerText = name + " — ₹" + price;
+      label.classList.remove("placeholder");
+      document.getElementById("planInput").value = id;
+      closeAll();
+    }
+
+    function selectTrainer(id, name) {
+      const label = document.getElementById("selectedTrainer");
+      label.innerText = name;
+      label.classList.remove("placeholder");
+      document.getElementById("trainerInput").value = id;
+      closeAll();
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      document.getElementById("planBtn").addEventListener("click", function () { toggleDropdown("plan"); });
+      document.getElementById("trainerBtn").addEventListener("click", function () { toggleDropdown("trainer"); });
+
+      document.getElementById("planDropdown").addEventListener("click", function (e) {
+        const item = e.target.closest(".dropdown-item");
+        if (!item || !item.dataset.id) return;
+        selectPlan(item.dataset.id, item.dataset.name, item.dataset.price);
+      });
+
+      document.getElementById("trainerDropdown").addEventListener("click", function (e) {
+        const item = e.target.closest(".dropdown-item");
+        if (!item || !item.dataset.id) return;
+        selectTrainer(item.dataset.id, item.dataset.name);
+      });
+
+      document.getElementById("quickEnrollForm").addEventListener("submit", function (e) {
+        const planInput = document.getElementById("planInput");
+        if (!planInput.value) {
+          e.preventDefault();
+          alert("Please select a membership plan.");
+          return;
+        }
+        const btn = document.getElementById("enrollBtn");
+        btn.textContent = "Enrolling...";
+        btn.disabled = true;
+      });
+    });
+  </script>
+
+  <script src="{% static 'js/messages.js' %}"></script>
+  <script nonce="{{ request.csp_nonce }}">
+    document.querySelectorAll('.close-btn').forEach(function (b) {
+      b.addEventListener('click', function () { b.closest('.flash-message').remove(); });
+    });
+  </script>
+
+</body>
+</html>

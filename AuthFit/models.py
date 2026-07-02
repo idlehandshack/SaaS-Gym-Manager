@@ -65,46 +65,34 @@ class MembershipPlan(models.Model):
 
 
 class Enrollment(models.Model):
-    gym = models.ForeignKey(
-        Gym,
-        on_delete=models.CASCADE,
-        db_index=True
-    )
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, db_index=True)
     objects = GymManager()
-    # ==============================
-    # CHOICES
-    # ==============================
-    GENDER_CHOICES = [
-        ('M', 'Male'),
-        ('F', 'Female'),
+
+    GENDER_CHOICES = [('M', 'Male'), ('F', 'Female')]
+    PAYMENT = [("Done", 'Done'), ("Pending", 'Pending')]
+    METHOD = [('C', 'CASH'), ('U', 'UPI'), ('B', 'UPI + CASH')]
+
+    SOURCE_CHOICES = [
+        ("OWNER", "Owner"),
+        ("MEMBER", "Member"),
     ]
 
-    PAYMENT = [
-        ("Done", 'Done'),
-        ("Pending", 'Pending'),
-    ]
-
-    METHOD = [
-        ('C', 'CASH'),
-        ('U', 'UPI'),
-        ('B', 'UPI + CASH'),
-    ]
-
-    # ==============================
-    # BASIC INFO
-    # ==============================
     unique_id = models.CharField(max_length=10, editable=False, db_index=True)
 
+    # CHANGED: nullable — a Quick Enrollment can exist before signup
     user = models.ForeignKey(
-    User,
-    on_delete=models.CASCADE
-)
+        User, on_delete=models.CASCADE, null=True, blank=True
+    )
+
+    # NEW
+    profile_completed = models.BooleanField(default=False)
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default="OWNER")
 
     fullname = models.CharField(max_length=25)
-    email = models.EmailField()
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
-    phone = models.CharField(max_length=10, db_index=True)
-    address = models.TextField()
+    email = models.EmailField(blank=True ,null=True)          # blank allowed — owner won't fill this
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True ,null=True)
+    phone = models.CharField(max_length=10, db_index=True)   # primary lookup field now
+    address = models.TextField(blank=True)
     reference = models.CharField(max_length=30, null=True, blank=True)
 
     # ==============================
@@ -149,7 +137,17 @@ class Enrollment(models.Model):
     # Multiple embeddings
     face_embeddings = models.JSONField(default=list, blank=True)
     class Meta:
-        unique_together = ('gym', 'unique_id')  # unique within a gym, not globally
+        unique_together = ('gym', 'unique_id')
+        constraints = [
+            # Prevent two *pending* (unlinked) enrollments sharing a phone in the same gym.
+            # Linked enrollments (user is set) are unrestricted — a member could
+            # theoretically re-enroll after leaving, matching existing behavior.
+            models.UniqueConstraint(
+                fields=['gym', 'phone'],
+                condition=models.Q(user__isnull=True),
+                name='unique_pending_enrollment_phone_per_gym',
+            )
+        ]
     # ==============================
     # UNIQUE ID GENERATOR
     # ==============================

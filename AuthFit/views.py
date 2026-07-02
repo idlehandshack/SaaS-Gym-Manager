@@ -38,7 +38,7 @@ from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth,TruncDay
 from AuthFit.rate_limit import check_login_attempt, reset_attempt, record_failed_attempt ,get_client_ip
 from .attendance import mark_attendance
-from .forms import UserLogin
+from .forms import UserLogin , CompleteProfileForm , QuickEnrollmentForm
 from urllib.parse import quote
 from Shop.notifications import notify_staff_new_enrollment
 from django.contrib.auth.hashers import check_password
@@ -578,15 +578,48 @@ def signupPage(request):
         return redirect('/')
 
     gym = getattr(request, 'gym', None)
-    
 
-    
     if request.method == "POST":
         form = UserLogin(request.POST, gym=gym)
         if form.is_valid():
-            user = form.save()
+            with transaction.atomic():
+                user = form.save()
+
+                linked_enrollment = None
+                if gym:
+                    phone = getattr(user, 'username', None)  # confirm this matches how UserLogin stores phone
+
+                    # Req 8 — defensive check: never touch a pending row if this
+                    # user somehow already has an enrollment at this gym.
+                    already_enrolled = Enrollment.objects.filter(user=user, gym=gym).exists()
+
+                    if phone and not already_enrolled:
+                        linked_enrollment = (
+                            Enrollment.objects
+                            .select_for_update()
+                            .filter(gym=gym, phone=phone, user__isnull=True)
+                            .first()
+                        )
+                        if linked_enrollment:
+                            linked_enrollment.user = user
+                            linked_enrollment.source = "MEMBER"        # Req 2
+
+                            update_fields = ['user', 'source']
+                            if not linked_enrollment.email and user.email:  # Req 3
+                                linked_enrollment.email = user.email
+                                update_fields.append('email')
+
+                            linked_enrollment.save(update_fields=update_fields)
+
             auth_log(request, user)
             messages.success(request, "Account created successfully!")
+
+            if linked_enrollment:
+                cache.delete(f"enrollment_{user.id}_{gym.pk}")
+                cache.delete(f"enrolled_{user.id}_{gym.pk}")
+                cache.delete(f"enrollment_status_{user.id}_{gym.pk}")
+                return redirect('/profile/')
+
             return redirect('/')
     else:
         form = UserLogin(gym=gym)
@@ -595,8 +628,7 @@ def signupPage(request):
         "registration/saas_signup.html" if gym is None
         else "registration/signup.html"
     )
-
-    return render(request, signup_template, {'form': form, 'gym': gym,})
+    return render(request, signup_template, {'form': form, 'gym': gym})
 
 
 def loginPage(request):
@@ -939,6 +971,48 @@ def trainers(request):
         "trainers": trainers,       
     })
 
+@_gym_role_required('gym_owner', 'receptionist')
+def quick_enrollment(request):
+    gym = getattr(request, 'gym', None)
+
+    if request.method == "POST":
+        form = QuickEnrollmentForm(request.POST, gym=gym)
+        if form.is_valid():
+            enrollment = form.save()
+            transaction.on_commit(lambda: notify_staff_new_enrollment(enrollment))
+            cache.delete(f"admin_revenue_{gym.pk}")
+
+            if enrollment.user_id:
+                messages.success(request, f"{enrollment.fullname} enrolled and linked to their existing account.")
+            else:
+                messages.success(request, f"{enrollment.fullname} enrolled — pending signup link.")
+            return redirect('/quick-enrollment/')
+    else:
+        form = QuickEnrollmentForm(gym=gym)
+
+    # Req 7 — richer table, still just reading the existing Enrollment model
+    rows = (
+        Enrollment.objects
+        .filter(gym=gym)
+        .select_related('selectPlan', 'trainer')
+        .order_by('-doj')[:100]
+    )
+    pending = [
+        {
+            "id":             e.id,
+            "name":           e.fullname,
+            "phone":          e.phone,
+            "plan":           e.selectPlan.plan if e.selectPlan else "—",
+            "trainer":        e.trainer.name if e.trainer else "—",
+            "payment_status": e.paymentStatus,
+            "created":        e.doj.strftime("%d %b %Y") if e.doj else "—",
+            "is_registered":  e.user_id is not None,
+        }
+        for e in rows
+    ]
+    return render(request, "quick_enrollment.html", {"form": form, "pending": pending, "gym": gym})
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Member views
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1137,15 +1211,49 @@ def Profile(request):
             .order_by('-invoice_date', '-created_at')[:2]
         )
     return render(request, "profile.html", {
-        "enrollment":     enrollment,
-        "image_url":      image_url,
-        "is_expired":     enrollment.is_expired if enrollment else False,
+        "enrollment": enrollment,
+        "image_url": image_url,
+        "is_expired": enrollment.is_expired if enrollment else False,
         "days_remaining": enrollment.days_remaining if enrollment else 0,
-        "plans":          plans,
-        "gym":       gym,
-        "invoices":       invoices,
-        
+        "plans": plans,
+        "gym": gym,
+        "invoices": invoices,
+        "needs_profile_completion": bool(enrollment and not enrollment.profile_completed),
     })
+
+
+@login_required
+def complete_profile(request):
+    gym = getattr(request, 'gym', None)
+    enrollment = get_object_or_404(Enrollment, user=request.user, gym=gym)
+
+    if request.method == "POST":
+        form = CompleteProfileForm(request.POST, request.FILES, instance=enrollment)
+        if form.is_valid():
+            obj = form.save(commit=False)
+
+            # Req 5 — only flip the flag once the minimum required fields are
+            # actually filled; lets a member save partial progress (e.g. just
+            # upload a photo) without falsely marking the profile complete.
+            required_filled = bool(obj.email and obj.gender and obj.address)
+            obj.profile_completed = required_filled
+
+            obj.save(update_fields=[
+                'email', 'gender', 'address', 'reference', 'face_image', 'profile_completed'
+            ])
+
+            cache.delete(f"enrollment_{request.user.id}_{gym.pk}")
+            cache.delete(f"profile_image_{request.user.id}")
+
+            if required_filled:
+                messages.success(request, "Profile completed!")
+            else:
+                messages.info(request, "Progress saved. A few required fields are still missing.")
+            return redirect('/profile/')
+    else:
+        form = CompleteProfileForm(instance=enrollment)
+
+    return render(request, "complete_profile.html", {"form": form, "gym": gym, "enrollment": enrollment})
 
 
 @login_required

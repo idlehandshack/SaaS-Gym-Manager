@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign Up{% if gym %} — {{ gym.name }}{% endif %}</title>
+<title>Sign Up{% if gym %} — {{ gym.gym_name }}{% endif %}</title>
   {% if favicon_url %}
     <link rel="icon" href="{{ favicon_url }}">
     <link rel="shortcut icon" href="{{ favicon_url }}">
@@ -54,7 +54,7 @@
     <div class="auth-visual-content">
       <div class="auth-brand">
         {% if gym and gym.logo %}
-          <img src="{{ gym.logo.url }}" alt="{{ gym.name }}">
+          <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }}">
         {% else %}
           <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM">
         {% endif %}
@@ -78,11 +78,11 @@
 
       <div class="auth-mobile-brand">
         {% if gym and gym.logo %}
-          <img src="{{ gym.logo.url }}" alt="{{ gym.name }}">
+          <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }}">
         {% else %}
           <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM">
         {% endif %}
-        <span>{% if gym %}{{ gym.name }}{% else %}EnterGYM{% endif %}</span>
+        <span>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</span>
       </div>
 
       <div class="auth-card-head">
@@ -113,6 +113,9 @@
               inputmode="numeric"
             />
           </div>
+          <small class="password-hint">
+            Already enrolled by your gym? Sign up with the same number and your membership links automatically.
+          </small>
           {% if form.username.errors %}
             <small class="error">{{ form.username.errors.0 }}</small>
           {% endif %}

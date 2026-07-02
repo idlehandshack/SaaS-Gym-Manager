@@ -51,6 +51,8 @@ urlpatterns = [
     path('favicon.ico', views.gym_favicon, name='gym_favicon'),
     path('download/', views.download_app, name='download_app'),
     path('help/desktop/', views.guide, name='help'),
+    path('quick-enrollment/', views.quick_enrollment, name='quick_enrollment'),
+    path('complete-profile/', views.complete_profile, name='complete_profile'),
 
     # ── Existing APIs ──────────────────────────────────────────
     path('api/mark-attendance/', views.mark_attendance_api),

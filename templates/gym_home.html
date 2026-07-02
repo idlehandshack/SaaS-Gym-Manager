@@ -138,67 +138,52 @@
           </a>
 
           <ul class="nav-links" id="navLinks">
-            {% if isSuperuser or isStaff %}
-            <li class="dropdown">
-              <a href="#">Attendance ▼</a>
-              <ul class="dropdown-menu">
-                <li><a href="/ad/attendance/">Attendance Analytics</a></li>
-                <li><a href="/admin-tools/today-attendance/">Attendance Records</a></li>
-              </ul>
-            </li>
-            {% endif %}
+            {% if isStaff %}
+              <!-- Analytics: reporting & insights -->
+              <li class="dropdown">
+                <a href="#">Analytics ▼</a>
+                <ul class="dropdown-menu">
+                  <li><a href="/ad/revenue/">Revenue Insights</a></li>
+                  <li><a href="/ad/attendance/">Attendance Analytics</a></li>
+                  <li><a href="/admin-tools/today-attendance/">Attendance Records</a></li>
+                </ul>
+              </li>
 
-            {% if  isStaff %}
-            <li class="dropdown">
-              <a href="#">Payment ▼</a>
-              <ul class="dropdown-menu">
-                <li><a href="/ad/revenue/">Revenue Insights</a></li>
-                <li><a href="{% url 'whatsapp_pending' %}">Due Payments</a></li>
-              </ul>
-            </li>
-            <li class="dropdown">
-              <a href="#">Member's ▼</a>
-              <ul class="dropdown-menu">
-                <li><a href="/membership-plans/">MemberShip Plans</a></li>
-                <li><a href="/trainers/">Add Trainer</a></li>
-                <li><a href="/freeze-membership/">Members</a></li>
-                <li><a href="/admin-tools/transferred-members/">Member Transferred</a></li>
-              </ul>
-            </li>
-            {% if gym.enable_store %}
-            <li><a href="/manage/orders/">Order Management</a></li>
-            {% endif %}
-            <li><a href="/contact-inquiries/">Support Requests</a></li>
+              <!-- Members: roster + membership setup -->
+              <li class="dropdown">
+                <a href="#">Members ▼</a>
+                <ul class="dropdown-menu">
+                  <li><a href="/freeze-membership/">All Members</a></li>
+                  <li><a href="/admin-tools/transferred-members/">Transferred Members</a></li>
+                  <li><a href="/membership-plans/">Membership Plans</a></li>
+                  <li><a href="{% url 'whatsapp_pending' %}">Due Payments</a></li>
+                </ul>
+              </li>
+
+              <!-- Operations: setup & support -->
+              <li class="dropdown">
+                <a href="#">Operations ▼</a>
+                <ul class="dropdown-menu">
+                  <li><a href="/trainers/">Add Trainer</a></li>
+                  <li><a href="/quick-enrollment/">Quick Enrollment</a></li>
+                  <li><a href="/contact-inquiries/">Support Requests</a></li>
+                  {% if gym.enable_store %}
+                  <li><a href="/manage/orders/">Order Management</a></li>
+                  {% endif %}
+                </ul>
+              </li>
+
             {% else %}
-            <li class="dropdown">
-              <a href="#">Membership ▼</a>
-              <ul class="dropdown-menu">
-                {% if request.user.is_authenticated %}
-                  {% if not enrolled %}
-                  <li><a href="/enrollment/">Join Now</a></li>
-                  {% endif %}
-                {% else %}
-                <li><a href="/signup/">Join Now</a></li>
-                {% endif %}
-
-                <li><a href="/workout/">Workout</a></li>
-
-                {% if request.user.is_authenticated and enrolled %}
-                  {% if isStaff %}
-                  <li><a href="/admin/AuthFit/attendence/">Attendance Records</a></li>
-                  {% else %}
-                  <li><a href="/attendence/">Attendance</a></li>
-                  {% endif %}
-                {% endif %}
-              </ul>
-            </li>
-
-            <li><a href="#Price">Free Trial</a></li>
-            <li><a href="#About">About</a></li>
-            <li><a href="/contact/">Contact</a></li>
-            {% if enrolled and gym.enable_store %}
-             <li><a href="/products/">Supplements</a></li>
-            {% endif %}
+              <li><a href="/">Home</a></li>
+              {% if not enrolled %}
+              <li><a href="#Price">Free Trial</a></li>
+              {% endif %}
+              <li><a href="#About">About</a></li>
+              <li><a href="/contact/">Contact</a></li>
+              <li><a href="/workout/">Workout</a></li>
+              {% if enrolled and gym.enable_store %}
+              <li><a href="/products/">Supplements</a></li>
+              {% endif %}
             {% endif %}
           </ul>
 
@@ -313,6 +298,7 @@
 
         <li class="nav-solo"><a href="{% url 'whatsapp_pending' %}">Due Payments <span>↗</span></a></li>
         <li class="nav-solo"><a href="/admin-tools/today-attendance/">Attendance Records <span>↗</span></a></li>
+        <li class="nav-solo"><a href="/quick-enrollment/">Quick Enrollment <span>↗</span></a></li>
 
         <!-- Analytics -->
         <li class="nav-group">

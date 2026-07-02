@@ -150,7 +150,31 @@
       margin-bottom: 8px; color: var(--text-hi);
     }
     .page-header h1 .accent { color: var(--orange); }
-
+    .profile-banner {
+      max-width: 1100px; margin: 0 auto clamp(20px,4vw,32px);
+      padding: 0 clamp(12px,3vw,24px);
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      flex-wrap: wrap;
+    }
+    .profile-banner {
+      background: var(--orange-dim);
+      border: 1px solid var(--orange-bdr);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+    }
+    .profile-banner-text h3 {
+      font-family: var(--font-d); font-size: 18px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .02em; color: var(--orange);
+    }
+    .profile-banner-text p { font-size: 13px; color: var(--text-mid); margin-top: 4px; }
+    .profile-banner-btn {
+      font-family: var(--font-d); font-size: 13px; font-weight: 800;
+      letter-spacing: .08em; text-transform: uppercase;
+      background: var(--orange); color: #000; text-decoration: none;
+      padding: 11px 22px; border-radius: var(--radius-pill);
+      white-space: nowrap; transition: background var(--t);
+    }
+    .profile-banner-btn:hover { background: #ff6a1a; }
     /* ── MAIN CONTENT ── */
     .profile-page {
       max-width: 1100px; margin: 0 auto;
@@ -611,7 +635,15 @@
       <h1>Your <span class="accent">Profile</span></h1>
     </div>
   </header>
-
+    {% if needs_profile_completion %}
+    <div class="profile-banner">
+      <div class="profile-banner-text">
+        <h3>Complete Your Profile</h3>
+        <p>Your gym has already created your membership. Please complete your personal information.</p>
+      </div>
+      <a href="{% url 'complete_profile' %}" class="profile-banner-btn">Complete Profile</a>
+    </div>
+  {% endif %}
   <!-- ══ MAIN CONTENT ══ -->
   <main class="profile-page">
     <div class="main">
