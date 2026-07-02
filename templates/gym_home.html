@@ -200,7 +200,7 @@
               {% else %}
               <a href="/enrollment/" class="btn mobile-only">Join Now</a>
               {% endif %}
-              {% endif %}
+            {% endif %}
 
               <form action="{% url 'logout' %}" method="POST" class="desktop-only">
                 {% csrf_token %}
