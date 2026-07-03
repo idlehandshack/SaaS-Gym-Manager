@@ -15,8 +15,7 @@ from AuthFit.views import _gym_role_required
 def upi_payment_settings(request):
     gym = getattr(request, 'gym', None)
     if gym is None:
-        from django.http import HttpResponseForbidden
-        return HttpResponseForbidden("No gym context available.")
+        raise PermissionDenied("No gym context available.")
 
     if request.method == "POST":
         form = UPISettingsForm(request.POST, instance=gym)

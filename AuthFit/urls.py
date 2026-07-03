@@ -20,6 +20,8 @@ class StaticViewSitemap(Sitemap):
     def location(self, item):
         return reverse(item)
 
+handler403 = 'AuthFit.views.custom_403_view'
+
 urlpatterns = [
     path('', views.homePage, name='home'),
     path('accounts/password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),

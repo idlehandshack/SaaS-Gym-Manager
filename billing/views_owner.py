@@ -15,7 +15,7 @@ import logging
 from datetime import date
 from django.db.models import Count, Sum
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
@@ -26,7 +26,7 @@ from billing.services.monthly_report import (
     get_monthly_report_data,
 )
 from billing.services.pdf_generator import generate_invoice_pdf
-
+from django.core.exceptions import PermissionDenied
 logger = logging.getLogger('billing')
 
 
@@ -45,16 +45,16 @@ def _gym_owner_required(view_fn):
     def wrapped(request, *args, **kwargs):
         # Must be gym staff first
         if not getattr(request, 'is_gym_staff', False):
-            return HttpResponseForbidden("Staff access required.")
+            raise PermissionDenied("Staff access required.")
         # Super admin bypasses role check
         if getattr(request, 'is_super_admin', False):
             return view_fn(request, *args, **kwargs)
         # Gym must be resolved
         if not getattr(request, 'gym', None):
-            return HttpResponseForbidden("No gym context.")
+            raise PermissionDenied("No gym context.")
         # Role check — receptionists and trainers are blocked here
         if getattr(request, 'staff_role', None) != 'gym_owner':
-            return HttpResponseForbidden(
+            raise PermissionDenied(
                 "This page is restricted to gym owners only."
             )
         return view_fn(request, *args, **kwargs)

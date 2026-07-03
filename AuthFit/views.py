@@ -14,7 +14,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_log, logout
-from django.http import JsonResponse, HttpResponseForbidden ,HttpResponse
+from django.http import JsonResponse,HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from django.conf import settings
@@ -25,10 +25,11 @@ import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
 from PIL import Image
 from django.db.models import Count
+from django.core.exceptions import PermissionDenied
 import io
 import logging
 from urllib.parse import urlencode
-from Gym.models import Gym ,StaffProfile                          
+from Gym.models import Gym                         
 from AuthFit.models import (
     Contact, Enrollment, EnrollmentTransfer, MembershipPlan, Trainer,
     Attendence as Attendence_model, GymNotification
@@ -65,6 +66,11 @@ def robots_txt(request):
     """
     return HttpResponse(content, content_type="text/plain")
 
+def custom_403_view(request, exception=None):
+    context = {
+        'gym': getattr(request, 'gym', None),
+    }
+    return render(request, '403.html', context, status=403)
 
 MANIFEST_CACHE_TTL = 60 * 60 * 6  # 6 hours
 def manifest(request):
@@ -214,7 +220,7 @@ def _gym_staff_required(view_fn):
 
         # NEW ✅
         if not getattr(request, 'is_gym_staff', False):
-            return HttpResponseForbidden("Staff access required.")
+            raise PermissionDenied("Staff access required.")
         return view_fn(request, *args, **kwargs)
     return wrapped
 
@@ -229,7 +235,7 @@ def _gym_role_required(*allowed_roles):
         @functools.wraps(view_fn)
         def wrapped(request, *args, **kwargs):
             if not (request.is_super_admin or request.staff_role in allowed_roles):
-                return HttpResponseForbidden("You don't have permission for this action.")
+                raise PermissionDenied("You don't have permission for this action.")
             return view_fn(request, *args, **kwargs)
         return wrapped
     return decorator
@@ -539,7 +545,7 @@ def contact_inquiries(request):
 
     
     if gym is None:
-        return HttpResponseForbidden("No gym context available.")
+        raise PermissionDenied("No gym context available.")
 
     if request.method == "POST":
         contact_id = request.POST.get("contact_id", "").strip()
@@ -810,7 +816,7 @@ def download_app(request):
 def membership_plans(request):
     gym = getattr(request, 'gym', None)
     if gym is None:
-        return HttpResponseForbidden("No gym context available.")
+        raise PermissionDenied("No gym context available.")
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -889,7 +895,7 @@ def membership_plans(request):
 def trainers(request):
     gym = getattr(request, 'gym', None)
     if gym is None:
-        return HttpResponseForbidden("No gym context available.")
+        raise PermissionDenied("No gym context available.")
 
     if request.method == "POST":
         action = request.POST.get("action")
