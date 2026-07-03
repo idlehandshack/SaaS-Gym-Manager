@@ -3,7 +3,7 @@ from AuthFit import views
 from AuthFit.geo_views import geo_mark_attendance, serve_sw ,attendance_status
 from . import device_views
 from django.contrib.auth import views as auth_views
-from Gym.views import saas_dashboard
+from Gym.views import saas_dashboard ,upi_payment_settings
 
 
 from django.contrib.sitemaps.views import sitemap
@@ -53,6 +53,7 @@ urlpatterns = [
     path('help/desktop/', views.guide, name='help'),
     path('quick-enrollment/', views.quick_enrollment, name='quick_enrollment'),
     path('complete-profile/', views.complete_profile, name='complete_profile'),
+    path('settings/upi-payment/', upi_payment_settings, name='upi_payment_settings'),
 
     # ── Existing APIs ──────────────────────────────────────────
     path('api/mark-attendance/', views.mark_attendance_api),

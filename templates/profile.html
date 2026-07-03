@@ -102,7 +102,17 @@
       padding: 5px 14px; border-radius: var(--radius-pill);
       white-space: nowrap;
     }
-
+    .pay-badge-btn {
+      font-family: var(--font-d);
+      font-size: .72rem; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      background: var(--orange); color: #000;
+      border: none; cursor: pointer;
+      padding: 5px 14px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+      transition: background var(--t);
+    }
+    .pay-badge-btn:hover { background: #ff6a1a; }
     /* ── PAGE HEADER ── */
     .page-header {
       position: relative;
@@ -606,7 +616,20 @@
         {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
         <span class="acc">Profile</span>
       </a>
-      {% if enrollment %}<div class="nav-badge">{{ enrollment.unique_id }}</div>{% endif %}
+      {% if enrollment %}
+        {% if enrollment.paymentStatus == 'Pending' and gym.upi_enabled and gym.upi_id %}
+          <button type="button" class="nav-badge pay-badge-btn" id="upiPayBtn"
+                  data-pending="{{ enrollment.pendingAmount }}">
+            {% if enrollment.pendingAmount and enrollment.pendingAmount > 0 %}
+              Pay ₹{{ enrollment.pendingAmount|floatformat:0 }}
+            {% else %}
+              Pay Now
+            {% endif %}
+          </button>
+        {% else %}
+          <div class="nav-badge">{{ enrollment.unique_id }}</div>
+        {% endif %}
+      {% endif %}
     </div>
   </nav>
 
@@ -808,7 +831,147 @@
       </div>
     </div>
   </main>
+  {% if enrollment and enrollment.paymentStatus == 'Pending' and gym.upi_enabled and gym.upi_id %}
+    <div id="upiPayModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.75); align-items:center; justify-content:center;">
+      <div class="renew-modal-box" style="max-width:400px;">
+        <button type="button" id="upiModalClose" class="renew-modal-close">×</button>
+        <h3>Pay via UPI</h3>
+        <p>Outstanding Amount: <strong style="color:var(--orange);">₹{{ enrollment.pendingAmount }}</strong></p>
 
+        <label class="plan-select-label">AMOUNT TO PAY</label>
+        <input
+          type="number"
+          id="upiAmountInput"
+          min="0.01"
+          step="0.01"
+          max="{{ enrollment.pendingAmount }}"
+          value="{{ enrollment.pendingAmount }}"
+          style="width:100%; margin-top:8px; padding:12px 14px; background:var(--surface-2);
+                border:1px solid var(--border-2); border-radius:var(--radius-sm);
+                color:var(--text-hi); font-size:15px;">
+        <div id="upiAmountError" style="color:var(--red); font-size:12px; margin-top:6px; display:none;"></div>
+
+        <div id="upiDesktopNotice" style="display:none; margin-top:14px; padding:12px; background:var(--surface-2); border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-mid); font-size:13px;">
+          Payments must be completed from a mobile device with a UPI app installed, or by scanning a QR code if your gym provides one.
+        </div>
+
+        <div id="upiConfirmationNotice" style="display:none; margin-top:14px; padding:12px; background:var(--orange-dim); border:1px solid var(--orange-bdr); border-radius:var(--radius-sm); color:var(--text-hi); font-size:13px;">
+          We have shared your payment request with your UPI application. Once the gym owner verifies your payment, your payment status and invoice will be updated.
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <button type="button" id="upiCancelBtn" class="renew-btn" style="background:var(--surface-2); color:var(--text-hi); flex:1;">Cancel</button>
+          <button type="button" id="upiProceedBtn" class="renew-btn" style="flex:1;">Proceed to Pay</button>
+        </div>
+      </div>
+    </div>
+
+    <script nonce="{{ request.csp_nonce }}">
+    (function () {
+      const payBtn        = document.getElementById('upiPayBtn');
+      const modal          = document.getElementById('upiPayModal');
+      const closeBtn        = document.getElementById('upiModalClose');
+      const cancelBtn       = document.getElementById('upiCancelBtn');
+      const proceedBtn      = document.getElementById('upiProceedBtn');
+      const amountInput     = document.getElementById('upiAmountInput');
+      const errorBox        = document.getElementById('upiAmountError');
+      const desktopNotice   = document.getElementById('upiDesktopNotice');
+      const confirmNotice   = document.getElementById('upiConfirmationNotice');
+
+      const PENDING_AMOUNT = parseFloat(payBtn ? payBtn.dataset.pending : '0') || 0;
+
+      // Gym config — never hardcoded, injected from request.gym server-side
+      const UPI_ID   = "{{ gym.upi_id|escapejs }}";
+      const UPI_NAME      = "{{ gym.upi_display_name|escapejs }}";
+      const UPI_NOTE      = "{{ gym.upi_payment_note|escapejs }}";
+
+      function isAndroid() {
+        return /Android/i.test(navigator.userAgent);
+      }
+      function isMobile() {
+        return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      }
+
+      function openModal() {
+        errorBox.style.display = 'none';
+        confirmNotice.style.display = 'none';
+        amountInput.value = PENDING_AMOUNT;
+        amountInput.disabled = false;
+        proceedBtn.style.display = 'inline-block';
+        cancelBtn.textContent = 'Cancel';
+        desktopNotice.style.display = isMobile() ? 'none' : 'block';
+        modal.style.display = 'flex';
+      }
+      function closeModal() {
+        modal.style.display = 'none';
+      }
+
+      if (payBtn) payBtn.addEventListener('click', openModal);
+      closeBtn.addEventListener('click', closeModal);
+      cancelBtn.addEventListener('click', closeModal);
+      modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+      function validateAmount() {
+        const val = parseFloat(amountInput.value);
+        errorBox.style.display = 'none';
+
+        if (amountInput.value.trim() === '' || isNaN(val)) {
+          errorBox.textContent = 'Please enter a numeric amount.';
+          errorBox.style.display = 'block';
+          return null;
+        }
+        if (val <= 0) {
+          errorBox.textContent = 'Amount must be greater than zero.';
+          errorBox.style.display = 'block';
+          return null;
+        }
+        // Server-side pending amount is authoritative — this is a UX guard only.
+        if (val > PENDING_AMOUNT) {
+          errorBox.textContent = 'Amount cannot exceed the pending balance.';
+          errorBox.style.display = 'block';
+          return null;
+        }
+        return val;
+      }
+
+      proceedBtn.addEventListener('click', function () {
+        const amount = validateAmount();
+        if (amount === null) return;
+
+        if (!UPI_ID) {
+          errorBox.textContent = 'UPI payments are not configured for this gym.';
+          errorBox.style.display = 'block';
+          return;
+        }
+
+        const params = new URLSearchParams({
+          pa: UPI_ID,
+          pn: UPI_NAME,
+          am: amount.toFixed(2),
+          cu: 'INR',
+          tn: UPI_NOTE,
+        });
+        const upiLink = 'upi://pay?' + params.toString();
+
+        if (isMobile()) {
+          // Attempt to open the UPI app (Android shows a chooser automatically
+          // for multiple installed apps; iOS relies on the installed app's
+          // registered upi:// handler).
+          window.location.href = upiLink;
+
+          // We never poll for success — per spec, returning from the app does
+          // not mark anything paid. Just show the "shared" confirmation.
+          amountInput.disabled = true;
+          proceedBtn.style.display = 'none';
+          cancelBtn.textContent = 'Close';
+          confirmNotice.style.display = 'block';
+        } else {
+          desktopNotice.style.display = 'block';
+        }
+      });
+    })();
+    </script>
+  {% endif %}
   <!-- ══ EXPIRY ALERT (unchanged logic) ══ -->
   {% if enrollment and not is_expired and days_remaining <= 4 and days_remaining >= 0 %}
   <script nonce="{{ request.csp_nonce }}">

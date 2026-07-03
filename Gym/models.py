@@ -102,6 +102,25 @@ class Gym(models.Model):
     
     created_at      = models.DateTimeField(auto_now_add=True)
     updated_at      = models.DateTimeField(auto_now=True)
+    upi_enabled = models.BooleanField(default=False)
+
+    upi_id = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="e.g. yourgym@oksbi"
+    )
+
+    upi_display_name = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text="Name shown in the member's UPI app during payment."
+    )
+
+    upi_payment_note = models.CharField(
+        max_length=120,
+        default="Membership Payment",
+        help_text="Transaction note (tn) attached to the UPI deep link."
+    )
 
     # ── Helpers ───────────────────────────────────────────────────────────
     @property
@@ -111,7 +130,18 @@ class Gym(models.Model):
         if self.subscription_end and timezone.now().date() > self.subscription_end:
             return False
         return True
-
+    
+    def clean(self):
+        super().clean()
+        if self.upi_enabled:
+            from django.core.exceptions import ValidationError
+            errors = {}
+            if not self.upi_id.strip():
+                errors['upi_id'] = "UPI ID cannot be empty when UPI is enabled."
+            if not self.upi_display_name.strip():
+                errors['upi_display_name'] = "Display Name cannot be empty when UPI is enabled."
+            if errors:
+                raise ValidationError(errors)
     @property
     def days_until_expiry(self):
         if self.subscription_end:

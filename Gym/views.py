@@ -5,9 +5,33 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import render
 from django.utils import timezone
 from datetime import timedelta
-
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from .forms import UPISettingsForm
 from Gym.models import Gym, SubscriptionPlan
+from AuthFit.views import _gym_role_required
 
+@_gym_role_required('gym_owner')
+def upi_payment_settings(request):
+    gym = getattr(request, 'gym', None)
+    if gym is None:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("No gym context available.")
+
+    if request.method == "POST":
+        form = UPISettingsForm(request.POST, instance=gym)
+        if form.is_valid():
+            form.save()
+            from django.core.cache import cache
+            cache.delete(f"gym_branding_{gym.pk}")
+            messages.success(request, "UPI Payment Settings saved.")
+            return redirect('upi_payment_settings')
+        else:
+            messages.error(request, "Please fix the errors below.")
+    else:
+        form = UPISettingsForm(instance=gym)
+
+    return render(request, "gym_settings_upi.html", {"gym": gym, "form": form})
 
 def superuser_required(view_func):
     """Only Django superusers can pass. Everyone else gets 403."""

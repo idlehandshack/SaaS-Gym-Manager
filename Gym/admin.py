@@ -21,8 +21,7 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
 # ──────────────────────────────────────────────────────────────────────────────
 @admin.register(Gym)
 class GymAdmin(admin.ModelAdmin):
-    list_display    = ('gym_name', 'gym_code', 'logo_preview', 'favicon_preview', 'active', 'plan',
-                       'enable_store', 'enable_attendance', 'enable_trainers')
+    list_display    = ('gym_name', 'gym_code', 'logo_preview', 'favicon_preview', 'active', 'plan','enable_store', 'enable_attendance', 'enable_trainers', 'upi_enabled')
     list_editable   = ('enable_store', 'enable_attendance', 'enable_trainers')
     list_filter     = ['active', 'plan']
     search_fields   = ['gym_name', 'gym_code', 'owner__username']
@@ -62,6 +61,21 @@ class GymAdmin(admin.ModelAdmin):
                     'app_download_url'),
             'classes': ('collapse',),
         }),
+        ('UPI Payment Settings', {
+            'fields': (
+                'upi_enabled',
+                'upi_id',
+                'upi_display_name',
+                'upi_payment_note',
+            ),
+            'description': (
+                'Lets members pay this gym directly via UPI deep link from their profile page. '
+                'This is NOT a payment gateway — the gym owner must still verify and record the '
+                'payment manually in Payment Management. UPI ID and Display Name are required '
+                'when UPI is enabled.'
+            ),
+            'classes': ('collapse',),
+        }),
         ('Geo-fence', {
             'fields': ('latitude', 'longitude', 'radius_meters','map'),
             'classes': ('collapse',),
@@ -71,7 +85,10 @@ class GymAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
-
+    @admin.display(boolean=True, description='UPI Enabled')
+    def upi_enabled_display(self, obj):
+        return obj.upi_enabled
+    
     @admin.display(boolean=True, description='Subscription Active')
     def subscription_status(self, obj):
         return obj.is_subscription_active
