@@ -47,6 +47,8 @@ from billing.services.gst_report import generate_gstr1_style_report
 from billing.services.invoice_generator import create_invoice_for_payment
 from billing.services.pdf_generator import generate_invoice_pdf
 from billing.services.cloudflare_storage import upload_file_to_r2
+from billing.services.change_membership_plan import (
+        change_membership_plan, PlanChangeError)
 from AuthFit.signals import _version_cache_key , _VERSION_CACHE_TTL ,update_enrollment_embeddings
 from Gym.branding import get_gym_branding
 logger = logging.getLogger(__name__)
@@ -1941,11 +1943,127 @@ def freeze_membership(request):
         qs = qs.filter(gym=gym)
     if query:
         qs = qs.filter(unique_id=query)
-
+ 
     paginator = Paginator(qs, 20)
     page_obj  = paginator.get_page(request.GET.get("page", 1))
-
-    return render(request, "freeze_membership.html", {"page_obj": page_obj, "query": query , })
+ 
+    # ── "Change Membership Plan" card data ──────────────────────────────
+    # Permission gate matches the spec: only Gym Owner / Receptionist (or
+    # super admin) ever see the button — everyone else viewing this
+    # freeze page just won't see the card.
+    can_change_plan = bool(
+        getattr(request, 'is_super_admin', False)
+        or getattr(request, 'staff_role', None) in ('gym_owner', 'receptionist')
+    )
+ 
+    plans = []
+    change_plan_rows = []
+    if can_change_plan and gym:
+        plans = list(
+            MembershipPlan.objects.filter(gym=gym)
+            .order_by('price')
+            .values('id', 'plan', 'price', 'duration_days')
+        )
+ 
+        member_ids = [e.id for e in page_obj.object_list]
+ 
+        # Latest issued invoice number per member — shown in the
+        # confirmation dialog before the plan-change POST fires.
+        invoice_map = {}
+        invoices_qs = (
+            Invoice.objects
+            .filter(gym=gym, member_id__in=member_ids, status=Invoice.Status.ISSUED)
+            .order_by('member_id', '-invoice_date', '-created_at')
+        )
+        for inv in invoices_qs:
+            invoice_map.setdefault(inv.member_id, inv.invoice_number)
+ 
+        for e in page_obj.object_list:
+            change_plan_rows.append({
+                "id": e.id,
+                "unique_id": e.unique_id,
+                "fullname": e.fullname,
+                "phone": e.phone,
+                "current_plan_id": e.selectPlan_id,
+                "current_plan_name": e.selectPlan.plan if e.selectPlan else "—",
+                "current_price": float(e.Amount),
+                "current_duration_days": e.selectPlan.duration_days if e.selectPlan else 0,
+                "payment_status": e.paymentStatus,
+                "paid_amount": float(e.paidAmount),
+                "pending_amount": float(e.pendingAmount),
+                "due_date_display": e.DueDate.strftime("%d %b %Y") if e.DueDate else "—",
+                "invoice_number": invoice_map.get(e.id, "—"),
+            })
+ 
+    return render(request, "freeze_membership.html", {
+        "page_obj": page_obj,
+        "query": query,
+        "can_change_plan": can_change_plan,
+        "plans": plans,
+        "change_plan_rows": change_plan_rows,
+    })
+ 
+ 
+# 3) ADD this new view — the AJAX endpoint the modal posts to.
+ 
+@_gym_role_required('gym_owner', 'receptionist')
+@require_POST
+def change_membership_plan_view(request, enrollment_id):
+    """
+    POST /owner/member/<enrollment_id>/change-plan/
+    Body (form-encoded): new_plan_id, effective_date, reason, confirm
+    """
+    gym = getattr(request, 'gym', None)
+    if gym is None:
+        return JsonResponse({"success": False, "error": "No gym context available."}, status=403)
+ 
+    enrollment = (
+        Enrollment.objects.select_related('selectPlan')
+        .filter(gym=gym, pk=enrollment_id)
+        .first()
+    )
+    if not enrollment:
+        return JsonResponse({"success": False, "error": "Member not found."}, status=404)
+ 
+    new_plan_id   = request.POST.get('new_plan_id', '').strip()
+    reason        = request.POST.get('reason', '').strip()
+    effective_raw = request.POST.get('effective_date', '').strip()
+    confirmed     = request.POST.get('confirm') in ('1', 'on', 'true')
+ 
+    if not confirmed:
+        return JsonResponse({
+            "success": False,
+            "error": "Please confirm you understand this will update the member's invoice.",
+        }, status=400)
+ 
+    new_plan = MembershipPlan.objects.filter(pk=new_plan_id, gym=gym).first()
+    if not new_plan:
+        return JsonResponse({"success": False, "error": "Selected plan is invalid for this gym."}, status=400)
+ 
+    if effective_raw:
+        try:
+            effective_date = date.fromisoformat(effective_raw)
+        except ValueError:
+            return JsonResponse({"success": False, "error": "Invalid effective date."}, status=400)
+    else:
+        effective_date = timezone.localdate()
+ 
+    try:
+        result = change_membership_plan(
+            enrollment, new_plan, effective_date, reason, request.user,
+        )
+    except PlanChangeError as exc:
+        return JsonResponse({"success": False, "error": str(exc)}, status=400)
+    except Exception:
+        logger.exception(
+            "change_membership_plan failed for enrollment_id=%s", enrollment.id
+        )
+        return JsonResponse({
+            "success": False,
+            "error": "Something went wrong updating the membership. No changes were saved.",
+        }, status=500)
+ 
+    return JsonResponse({"success": True, **result})
 
 
 @_gym_staff_required

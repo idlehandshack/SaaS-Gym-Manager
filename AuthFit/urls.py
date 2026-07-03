@@ -65,6 +65,11 @@ urlpatterns = [
     name="embedding-version"),
     path("api/gyms/login/", views.gym_login_api, name="gym_login_api"),
     path("aiattendance/", views.aiattendance, name="aiattendance"),
+    path(
+        'owner/member/<int:enrollment_id>/change-plan/',
+        views.change_membership_plan_view,
+        name='change_membership_plan',
+    ),
 
     
 

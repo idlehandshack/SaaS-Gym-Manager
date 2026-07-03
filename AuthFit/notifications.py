@@ -137,12 +137,78 @@ def send_expiry_reminders() -> int:
     return len(notified_ids)
 
 
-# ── Member channel implementations (unchanged behaviour) ──────────────────────
+# ── Public entry point — single-event member notification ─────────────────────
 
-def _send_member_fcm(enr, title: str, body: str, gym_code: str) -> bool:
+def notify_member_plan_changed(enrollment, new_plan,*,new_due_date=None,pending_amount=None) -> bool:
+    """
+    Member-facing 'your plan changed' push for a single enrollment. Fires
+    the same two member channels the expiry-reminder job uses
+    (_send_member_fcm / _send_member_web_push) below, just for one
+    immediate event instead of a daily batch — so there's one
+    implementation of "how do we push to a member" rather than two
+    drifting copies.
+
+    Called from billing/services/change_membership_plan.py after a plan
+    change commits:
+        from AuthFit.notifications import notify_member_plan_changed
+        transaction.on_commit(lambda: notify_member_plan_changed(enrollment, new_plan))
+
+    Returns True if at least one channel delivered.
+    """
+    if not enrollment.user_id:
+        return False
+
+    gym_code = getattr(enrollment.gym, 'gym_code', str(enrollment.gym_id))
+    title = "Your membership plan has been updated."
+    lines = [
+        f"New Plan: {new_plan.plan}",
+    ]
+    if new_due_date:
+        lines.append(
+            f"Valid Until: {new_due_date:%d %b %Y}"
+        )
+
+    if pending_amount is not None:
+        lines.append(
+            f"Pending Amount: ₹{pending_amount}"
+        )
+
+    lines.append("Please check your profile.")
+    body = "\n".join(lines)
+
+    ch1_ok = _send_member_fcm(
+        enrollment, title, body, gym_code,
+        notif_type="plan_changed",
+    )
+    ch2_ok = _send_member_web_push(
+        enrollment, title, body, gym_code,
+        url="/profile/",
+    )
+
+    ok = ch1_ok or ch2_ok
+    if not ok:
+        logger.warning(
+            "notify_member_plan_changed: all member channels failed enrollment=%s",
+            enrollment.id,
+        )
+    return ok
+
+
+# ── Member channel implementations (shared by the expiry batch job and ───────
+# ── single-event callers like notify_member_plan_changed above) ──────────────
+
+def _send_member_fcm(
+    enr, title: str, body: str, gym_code: str,
+    *, notif_type: str = 'plan_expiry', channel_id: str = 'entergym_expiry',
+) -> bool:
     """
     Channel 1 — Member FCM via UserDevice.
     Scoped to user + gym. Returns True if ≥1 delivery succeeded.
+
+    notif_type / channel_id default to the expiry-reminder values so
+    send_expiry_reminders' calls above are unchanged; single-event
+    callers (e.g. notify_member_plan_changed) override notif_type to tag
+    the push correctly.
     """
     try:
         tokens = list(
@@ -167,9 +233,9 @@ def _send_member_fcm(enr, title: str, body: str, gym_code: str) -> bool:
                 "enrollment_id": str(enr.id),
                 "gym_id":        str(enr.gym_id),
                 "screen":        "Profile",
-                "type":          "plan_expiry",
+                "type":          notif_type,
             },
-            channel_id='entergym_expiry',
+            channel_id=channel_id,
         )
 
         if successes > 0:
@@ -188,10 +254,18 @@ def _send_member_fcm(enr, title: str, body: str, gym_code: str) -> bool:
         return False
 
 
-def _send_member_web_push(enr, title: str, body: str, gym_code: str) -> bool:
+def _send_member_web_push(
+    enr, title: str, body: str, gym_code: str,
+    *, url: str = "/renew-membership/",
+) -> bool:
     """
     Channel 2 — Member browser/PWA via WebPushSubscription.
     Returns True if ≥1 delivery succeeded.
+
+    url defaults to the expiry-reminder target so send_expiry_reminders'
+    calls above are unchanged; single-event callers (e.g.
+    notify_member_plan_changed) override it to point somewhere relevant
+    to that event.
     """
     print(
         f"WEB PUSH -> user={enr.user.username} "
@@ -202,7 +276,7 @@ def _send_member_web_push(enr, title: str, body: str, gym_code: str) -> bool:
             user=enr.user,
             title=title,
             body=body,
-            url="/renew-membership/",
+            url=url,
         )
 
         if successes > 0:

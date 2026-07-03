@@ -201,7 +201,78 @@ class Enrollment(models.Model):
     def __str__(self):
         return f"{self.unique_id} - {self.fullname}"
 
-
+class MembershipPlanChangeLogQuerySet(models.QuerySet):
+    def delete(self, *args, **kwargs):
+        # Business rule: "Never delete logs." Blocks bulk qs.delete() too.
+        raise PermissionError(
+            "MembershipPlanChangeLog rows are a permanent audit trail and "
+            "cannot be bulk-deleted."
+        )
+ 
+ 
+class MembershipPlanChangeLogManager(models.Manager):
+    def get_queryset(self):
+        return MembershipPlanChangeLogQuerySet(self.model, using=self._db)
+ 
+ 
+class MembershipPlanChangeLog(models.Model):
+    """
+    Permanent audit trail for the 'Change Membership Plan' feature.
+    One row per plan change. Rows are never edited or deleted.
+    """
+    gym = models.ForeignKey(
+        Gym, on_delete=models.CASCADE, db_index=True,
+        related_name='plan_change_logs',
+    )
+    enrollment = models.ForeignKey(
+        Enrollment, on_delete=models.CASCADE,
+        related_name='plan_change_logs',
+    )
+ 
+    old_plan = models.ForeignKey(
+        MembershipPlan, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+',
+    )
+    new_plan = models.ForeignKey(
+        MembershipPlan, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+',
+    )
+ 
+    old_price = models.DecimalField(max_digits=10, decimal_places=2)
+    new_price = models.DecimalField(max_digits=10, decimal_places=2)
+ 
+    old_due_date = models.DateField(null=True, blank=True)
+    new_due_date = models.DateField(null=True, blank=True)
+ 
+    reason = models.CharField(max_length=255, blank=True)
+    changed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+',
+    )
+ 
+    created_at = models.DateTimeField(auto_now_add=True)
+ 
+    objects = MembershipPlanChangeLogManager()
+ 
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['gym', 'enrollment'])]
+        verbose_name = 'Membership Plan Change Log'
+        verbose_name_plural = 'Membership Plan Change Logs'
+ 
+    def delete(self, *args, **kwargs):
+        # Belt-and-braces: block instance-level delete() as well as the
+        # queryset-level block above.
+        raise PermissionError(
+            "MembershipPlanChangeLog rows are a permanent audit trail and "
+            "cannot be deleted."
+        )
+ 
+    def __str__(self):
+        old_name = self.old_plan.plan if self.old_plan else "—"
+        new_name = self.new_plan.plan if self.new_plan else "—"
+        return f"{self.enrollment.unique_id}: {old_name} → {new_name} ({self.created_at:%d %b %Y})"
+ 
 class Attendence(models.Model):
     gym = models.ForeignKey(
         Gym,

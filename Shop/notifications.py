@@ -8,6 +8,9 @@ Usage (always call via transaction.on_commit):
 
     from Shop.notifications import notify_staff_new_enrollment
     transaction.on_commit(lambda: notify_staff_new_enrollment(enrollment))
+
+    from Shop.notifications import notify_staff_plan_changed
+    transaction.on_commit(lambda: notify_staff_plan_changed(enrollment, old_plan, new_plan))
 """
 
 import logging
@@ -247,6 +250,69 @@ def notify_staff_new_enrollment(enrollment) -> None:
             "gym_id":        str(gym.id),
             "screen":        "MemberDetail",
             "type":          "new_enrollment",
+        },
+        channel_id='entergym_orders',
+    )
+
+
+def notify_staff_plan_changed(enrollment, old_plan, new_plan,*,changed_by=None,) -> None:
+    """
+    Push a 'membership plan changed' alert to every active staff device at
+    this gym. Mirrors notify_staff_new_enrollment exactly (same all-staff
+    StaffDevice + send_web_push_to_gym_staff pattern, same
+    'entergym_orders' channel) so it behaves consistently with the other
+    staff-facing alerts in this file.
+
+    Call via transaction.on_commit() after the plan change is saved:
+        transaction.on_commit(lambda: notify_staff_plan_changed(enrollment, old_plan, new_plan))
+    """
+    gym = enrollment.gym
+
+    old_plan_name = old_plan.plan if old_plan else "—"
+    new_plan_name = new_plan.plan if new_plan else "—"
+
+    title = "Membership Plan Changed"
+    body  = f"{enrollment.fullname}: {old_plan_name} → {new_plan_name}"
+    if changed_by:
+        staff_name = (
+            changed_by.get_full_name().strip()
+            or changed_by.username
+        )
+        body += f"\nChanged by: {staff_name}"
+    # ── Web push → staff browser/PWA ─────────────────────────────────────
+    try:
+        send_web_push_to_gym_staff(
+            gym=gym,
+            title=title,
+            body=body,
+            url="/admin-tools/payments/",
+        )
+    except Exception:
+        logger.exception(
+            "notify_staff_plan_changed: web push failed for gym=%s",
+            getattr(gym, 'gym_code', None),
+        )
+
+    # ── FCM push → staff mobile app ───────────────────────────────────────
+    tokens = _get_staff_tokens(gym)
+
+    if not tokens:
+        logger.debug(
+            "notify_staff_plan_changed: no active staff devices for gym=%s",
+            getattr(gym, 'gym_code', None),
+        )
+        return
+
+    send_push_to_tokens(
+        tokens=tokens,
+        title=title,
+        body=body,
+        data={
+            "enrollment_id": str(enrollment.id),
+            "unique_id":     enrollment.unique_id,
+            "gym_id":        str(gym.id),
+            "screen":        "MemberDetail",
+            "type":          "plan_changed",
         },
         channel_id='entergym_orders',
     )
