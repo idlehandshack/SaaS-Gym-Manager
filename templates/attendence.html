@@ -677,8 +677,11 @@
   </script>
   <script src="{% static 'js/loc_permission.js' %}" defer></script>
   <script src="{% static 'js/geo_attendance.js' %}" defer></script>
-  {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
-  <script src="{% static 'js/push_subscribe.js' %}"></script>
+  {% if request.user.is_authenticated %}
+    {% if VAPID_PUBLIC_KEY %}
+      <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
+      <script src="{% static 'js/push_subscribe.js' %}" defer></script>
+    {% endif %}
   {% endif %}
 
   <!-- ── MESSAGES AUTO-DISMISS (from base.html pattern) ── -->

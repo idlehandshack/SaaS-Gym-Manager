@@ -1232,9 +1232,6 @@ def complete_profile(request):
         if form.is_valid():
             obj = form.save(commit=False)
 
-            # Req 5 — only flip the flag once the minimum required fields are
-            # actually filled; lets a member save partial progress (e.g. just
-            # upload a photo) without falsely marking the profile complete.
             required_filled = bool(obj.email and obj.gender and obj.address)
             obj.profile_completed = required_filled
 
@@ -1247,6 +1244,18 @@ def complete_profile(request):
 
             if required_filled:
                 messages.success(request, "Profile completed!")
+
+                # Backfill the invoice for whatever was paid during Quick
+                # Enrollment, now that the member is linked + profiled.
+                # No-op if already done, no payment was ever collected,
+                # or this enrollment wasn't Quick-Enrollment-originated.
+                from billing.services.initial_invoice import ensure_initial_invoice
+                try:
+                    ensure_initial_invoice(obj)
+                except Exception:
+                    logger.exception(
+                        "ensure_initial_invoice failed for enrollment_id=%s", obj.id
+                    )
             else:
                 messages.info(request, "Progress saved. A few required fields are still missing.")
             return redirect('/profile/')

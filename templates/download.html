@@ -1400,5 +1400,11 @@
         setTimeout(openIOSModal, 900); // slight delay so page settles first
       }
     </script>
+    {% if request.user.is_authenticated %}
+      {% if VAPID_PUBLIC_KEY %}
+        <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
+        <script src="{% static 'js/push_subscribe.js' %}" defer></script>
+      {% endif %}
+    {% endif %}
   </body>
 </html>

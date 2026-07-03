@@ -117,6 +117,11 @@ class Enrollment(models.Model):
         max_length=10, choices=PAYMENT, default="Pending"
     )
     last_expiry_notif_sent = models.DateField(null=True, blank=True)
+    initial_invoice_generated = models.BooleanField(
+        default=False,
+        help_text="Set once the up-front payment collected during Quick Enrollment "
+                "has been converted into a Payment + Invoice.",
+    )
 
     # ==============================
     # DATES
