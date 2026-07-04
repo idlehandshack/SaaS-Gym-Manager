@@ -1,15 +1,23 @@
+from __future__ import annotations
+
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Sum, Q, DecimalField
 from django.db.models.functions import Coalesce
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib import messages
-from django.shortcuts import render, redirect
-from .forms import UPISettingsForm
-from Gym.models import Gym, SubscriptionPlan
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.models import User
+import json as json_lib
+
+from .forms import UPISettingsForm, GymCreateForm, StaffProfileCreateForm, GymGSTProfileForm
+from .models import Gym, SubscriptionPlan, StaffProfile, GymGSTProfile
 from AuthFit.views import _gym_role_required
+from .services import platform_insights as pi
+
 
 @_gym_role_required('gym_owner')
 def upi_payment_settings(request):
@@ -32,6 +40,7 @@ def upi_payment_settings(request):
 
     return render(request, "gym_settings_upi.html", {"gym": gym, "form": form})
 
+
 def superuser_required(view_func):
     """Only Django superusers can pass. Everyone else gets 403."""
     @login_required
@@ -42,6 +51,148 @@ def superuser_required(view_func):
     return wrapper
 
 
+def _filters_from_request(request) -> dict:
+    """Extracts the shared top-bar filters from GET params."""
+    return {
+        "range": request.GET.get("range", "30d"),
+        "date_from": request.GET.get("date_from") or None,
+        "date_to": request.GET.get("date_to") or None,
+        "plan": request.GET.get("plan") or None,
+        "status": request.GET.get("status") or None,
+        "state": request.GET.get("state") or None,
+        "city": request.GET.get("city") or None,
+        "search": request.GET.get("search") or None,
+    }
+
+
+@superuser_required
+def platform_insights_page(request):
+    """Renders the shell. Widgets load their data via the dashboard API."""
+    plans = SubscriptionPlan.objects.all().order_by("name")
+    return render(request, "insights.html", {"plans": plans})
+
+
+# --------------------------------------------------------------------------- #
+# Platform Insights — current API (3-request architecture)
+# --------------------------------------------------------------------------- #
+@superuser_required
+def api_dashboard(request):
+    """
+    Aggregated dashboard payload — replaces ~11 separate widget calls.
+    Cached for 5 minutes per filter combination. Each section is individually
+    guarded inside get_dashboard(), so this can only fail on something outside
+    that guard (e.g. a JSON-serialization edge case) — the except below exists
+    purely so the endpoint still returns 200 with empty sections rather than 500.
+    """
+    try:
+        return JsonResponse(pi.get_dashboard(_filters_from_request(request)))
+    except Exception:
+        return JsonResponse({
+            "kpi_summary": {}, "platform_growth": {}, "member_growth": {},
+            "gym_status": {}, "subscription_analytics": {}, "revenue_analytics": {},
+            "member_distribution": {}, "platform_activity": {}, "engagement_analytics": {},
+            "renewal_churn": {}, "payment_analytics": {}, "top_performing_gyms": {},
+            "low_performing_gyms": {}, "geographic_analytics": {"available": False},
+            "meta": {"generated_at": timezone.now().isoformat(), "cache_until": None, "version": 1},
+        })
+
+
+@superuser_required
+def api_notifications(request):
+    try:
+        return JsonResponse(pi.get_notifications())
+    except Exception:
+        return JsonResponse({"unread_count": 0, "critical_count": 0, "notifications": []})
+
+
+@superuser_required
+def api_system_health(request):
+    try:
+        return JsonResponse(pi.get_system_health())
+    except Exception:
+        return JsonResponse({
+            "database": {"status": "Down", "progress": 0},
+            "redis": {"status": "Down", "progress": 0},
+            "cron": {"status": "Failed", "last_run": None, "progress": 0},
+            "cpu": {"usage": None},
+            "memory": {"usage": None, "used": None, "total": None},
+            "disk": {"usage": None, "used": None, "total": None},
+            "web_push": {"status": "Unavailable", "progress": 0},
+            "gunicorn": {"status": "Failed", "progress": 0},
+            "nginx": {"status": "Failed", "progress": 0},
+            "background_jobs": {"status": "Not Configured"},
+            "uptime": None,
+            "platform_status": "Critical",
+        })
+
+
+# --------------------------------------------------------------------------- #
+# DEPRECATED — kept for backward compatibility only. All of these delegate
+# to the exact same cached service functions used by api_dashboard, so there
+# is a single source of business logic. Prefer /api/platform-insights/dashboard/.
+# --------------------------------------------------------------------------- #
+@superuser_required
+def api_kpi_summary(request):
+    return JsonResponse(pi.get_kpi_summary(_filters_from_request(request)))
+
+
+@superuser_required
+def api_platform_growth(request):
+    return JsonResponse(pi.get_platform_growth(_filters_from_request(request)))
+
+
+@superuser_required
+def api_member_growth(request):
+    return JsonResponse(pi.get_member_growth(_filters_from_request(request)))
+
+
+@superuser_required
+def api_subscription_analytics(request):
+    return JsonResponse(pi.get_subscription_analytics(_filters_from_request(request)))
+
+
+@superuser_required
+def api_revenue_analytics(request):
+    return JsonResponse(pi.get_revenue_analytics(_filters_from_request(request)))
+
+
+@superuser_required
+def api_member_distribution(request):
+    return JsonResponse(pi.get_member_distribution(_filters_from_request(request)))
+
+
+@superuser_required
+def api_platform_activity(request):
+    return JsonResponse(pi.get_platform_activity(_filters_from_request(request)))
+
+
+@superuser_required
+def api_engagement_analytics(request):
+    return JsonResponse(pi.get_engagement_analytics(_filters_from_request(request)))
+
+
+@superuser_required
+def api_renewal_churn(request):
+    return JsonResponse(pi.get_renewal_churn(_filters_from_request(request)))
+
+
+@superuser_required
+def api_payment_analytics(request):
+    return JsonResponse(pi.get_payment_analytics(_filters_from_request(request)))
+
+
+@superuser_required
+def api_top_performing_gyms(request):
+    return JsonResponse(pi.get_top_performing_gyms(_filters_from_request(request)))
+
+
+@superuser_required
+def api_low_performing_gyms(request):
+    return JsonResponse(pi.get_low_performing_gyms(_filters_from_request(request)))
+
+# --------------------------------------------------------------------------- #
+# SaaS dashboard / gym management (unrelated to Platform Insights API)
+# --------------------------------------------------------------------------- #
 @superuser_required
 def saas_dashboard(request):
     today = timezone.now().date()
@@ -65,38 +216,38 @@ def saas_dashboard(request):
         .order_by("-created_at")
     )
 
-    total_gyms     = gyms.count()
-    active_gyms    = gyms.filter(active=True, subscription_end__gte=today).count()
-    inactive_gyms  = total_gyms - active_gyms
-    active_pct     = round(active_gyms / total_gyms * 100) if total_gyms else 0
-    inactive_pct   = 100 - active_pct
+    total_gyms = gyms.count()
+    active_gyms = gyms.filter(active=True, subscription_end__gte=today).count()
+    inactive_gyms = total_gyms - active_gyms
+    active_pct = round(active_gyms / total_gyms * 100) if total_gyms else 0
+    inactive_pct = 100 - active_pct
     new_this_month = gyms.filter(created_at__date__gte=month_start).count()
-    total_owners   = gyms.values("owner").distinct().count()
+    total_owners = gyms.values("owner").distinct().count()
 
-    expiring_7    = gyms.filter(active=True, subscription_end__gte=today, subscription_end__lte=today + timedelta(days=7)).count()
-    expiring_15   = gyms.filter(active=True, subscription_end__gt=today + timedelta(days=7),  subscription_end__lte=today + timedelta(days=15)).count()
-    expiring_30   = gyms.filter(active=True, subscription_end__gt=today + timedelta(days=15), subscription_end__lte=today + timedelta(days=30)).count()
+    expiring_7 = gyms.filter(active=True, subscription_end__gte=today, subscription_end__lte=today + timedelta(days=7)).count()
+    expiring_15 = gyms.filter(active=True, subscription_end__gt=today + timedelta(days=7), subscription_end__lte=today + timedelta(days=15)).count()
+    expiring_30 = gyms.filter(active=True, subscription_end__gt=today + timedelta(days=15), subscription_end__lte=today + timedelta(days=30)).count()
     expired_count = gyms.filter(Q(active=False) | Q(subscription_end__lt=today)).count()
 
-    capacity           = gyms.aggregate(
+    capacity = gyms.aggregate(
         total_members=Coalesce(Sum("member_count"), 0),
         total_member_limit=Coalesce(Sum("member_limit"), 0),
     )
-    total_members      = capacity["total_members"]
+    total_members = capacity["total_members"]
     total_member_limit = capacity["total_member_limit"]
-    near_member_limit  = sum(
+    near_member_limit = sum(
         1 for g in gyms
         if g.member_limit and g.member_count / g.member_limit >= 0.85
     )
 
-    rev           = gyms.aggregate(
+    rev = gyms.aggregate(
         total=Coalesce(
             Sum("revenue"), 0,
             output_field=DecimalField(max_digits=14, decimal_places=2)
         )
     )
     total_revenue = rev["total"] or 0
-    avg_revenue   = round(total_revenue / active_gyms) if active_gyms else 0
+    avg_revenue = round(total_revenue / active_gyms) if active_gyms else 0
     estimated_mrr = gyms.filter(active=True, subscription_end__gte=today).aggregate(
         mrr=Coalesce(
             Sum("plan__price_monthly"), 0,
@@ -123,27 +274,379 @@ def saas_dashboard(request):
     ]
 
     return render(request, "saas_dashboard.html", {
-        "gyms":               gyms,
-        "total_gyms":         total_gyms,
-        "active_gyms":        active_gyms,
-        "inactive_gyms":      inactive_gyms,
-        "expiring_7":         expiring_7,
-        "expiring_15":        expiring_15,
-        "expiring_30":        expiring_30,
-        "expired_count":      expired_count,
-        "new_this_month":     new_this_month,
-        "total_owners":       total_owners,
-        "active_pct":         active_pct,
-        "inactive_pct":       inactive_pct,
-        "near_member_limit":  near_member_limit,
-        "total_members":      total_members,
+        "gyms": gyms,
+        "total_gyms": total_gyms,
+        "active_gyms": active_gyms,
+        "inactive_gyms": inactive_gyms,
+        "expiring_7": expiring_7,
+        "expiring_15": expiring_15,
+        "expiring_30": expiring_30,
+        "expired_count": expired_count,
+        "new_this_month": new_this_month,
+        "total_owners": total_owners,
+        "active_pct": active_pct,
+        "inactive_pct": inactive_pct,
+        "near_member_limit": near_member_limit,
+        "total_members": total_members,
         "total_member_limit": total_member_limit,
-        "total_revenue":      total_revenue,
-        "monthly_revenue":    monthly_revenue,
-        "avg_revenue":        avg_revenue,
-        "estimated_mrr":      estimated_mrr,
-        "plan_stats":         plan_stats,
-        "top_gyms":           gyms.order_by("-revenue")[:5],
-        "top_growing":        gyms.filter(active=True).order_by("-member_count")[:6],
-        "BASE_DOMAIN":        "entergym.in",
+        "total_revenue": total_revenue,
+        "monthly_revenue": monthly_revenue,
+        "avg_revenue": avg_revenue,
+        "estimated_mrr": estimated_mrr,
+        "plan_stats": plan_stats,
+        "top_gyms": gyms.order_by("-revenue")[:5],
+        "top_growing": gyms.filter(active=True).order_by("-member_count")[:6],
+        "BASE_DOMAIN": "entergym.in",
     })
+
+
+@superuser_required
+def all_gyms_view(request):
+    today = timezone.now().date()
+    gyms = (
+        Gym.objects
+        .select_related("plan", "owner")
+        .annotate(
+            member_count=Count("enrollment", distinct=True),
+            trainer_count=Count(
+                "staff", filter=Q(staff__role="trainer", staff__active=True), distinct=True,
+            ),
+            revenue=Coalesce(
+                Sum("enrollment__Amount"), 0,
+                output_field=DecimalField(max_digits=12, decimal_places=2)
+            ),
+        )
+        .order_by("-created_at")
+    )
+    return render(request, "all_gyms.html", {
+        "gyms": gyms,
+        "total_gyms": gyms.count(),
+        "BASE_DOMAIN": "entergym.in",
+        "today": today,
+    })
+
+
+@superuser_required
+def gym_detail_json(request, gym_id):
+    """Returns everything the detail modal needs: gym info, staff list, gst profile."""
+    gym = get_object_or_404(Gym.objects.select_related("plan", "owner"), pk=gym_id)
+
+    staff_qs = StaffProfile.objects.filter(gym=gym).select_related("user").order_by("role")
+    staff_data = [
+        {
+            "id": s.id,
+            "username": s.user.username,
+            "email": s.user.email,
+            "role": s.role,
+            "role_display": s.get_role_display(),
+            "active": s.active,
+        }
+        for s in staff_qs
+    ]
+
+    gst_profile = getattr(gym, "gst_profile", None)
+    gst_data = None
+    if gst_profile:
+        gst_data = {
+            "legal_business_name": gst_profile.legal_business_name,
+            "gstin": gst_profile.gstin,
+            "is_gst_registered": gst_profile.is_gst_registered,
+            "address_line1": gst_profile.address_line1,
+            "address_line2": gst_profile.address_line2,
+            "city": gst_profile.city,
+            "state": gst_profile.state,
+            "state_code": gst_profile.state_code,
+            "pincode": gst_profile.pincode,
+            "invoice_series_prefix": gst_profile.invoice_series_prefix,
+            "default_sac_membership": gst_profile.default_sac_membership,
+            "composition_scheme": gst_profile.composition_scheme,
+            "signature_image": gst_profile.signature_image,
+        }
+
+    return JsonResponse({
+        "gym": {
+            "id": str(gym.id),
+            "gym_name": gym.gym_name,
+            "gym_code": gym.gym_code,
+            "owner_username": gym.owner.username,
+            "owner_email": gym.owner.email,
+            "plan": gym.plan.name if gym.plan else None,
+            "active": gym.active,
+            "contact_email": gym.contact_email,
+            "contact_phone": gym.contact_phone,
+        },
+        "staff": staff_data,
+        "gst_profile": gst_data,
+    })
+
+
+@superuser_required
+@require_POST
+def add_staff_profile(request, gym_id):
+    gym = get_object_or_404(Gym, pk=gym_id)
+    form = StaffProfileCreateForm(request.POST)
+    if form.is_valid():
+        staff = form.save(gym)
+        return JsonResponse({
+            "success": True,
+            "staff": {
+                "id": staff.id,
+                "username": staff.user.username,
+                "role_display": staff.get_role_display(),
+                "active": staff.active,
+            },
+        })
+    return JsonResponse({"success": False, "errors": form.errors}, status=400)
+
+
+@superuser_required
+@require_POST
+def add_gst_profile(request, gym_id):
+    gym = get_object_or_404(Gym, pk=gym_id)
+    instance = getattr(gym, "gst_profile", None)  # create-or-update since it's OneToOne
+    form = GymGSTProfileForm(request.POST, instance=instance)
+    if form.is_valid():
+        profile = form.save(commit=False)
+        profile.gym = gym
+        profile.save()
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False, "errors": form.errors}, status=400)
+
+
+@superuser_required
+def search_owner_by_phone(request):
+    """AJAX: GET ?q=98 -> list of Users matching that phone/username prefix, excluding existing gym owners."""
+    q = request.GET.get("q", "").strip()
+    if len(q) < 2:
+        return JsonResponse({"results": []})
+    users = (
+        User.objects.filter(username__icontains=q)
+        .select_related("owned_gym")
+        .order_by("username")[:10]
+    )
+    results = [
+        {
+            "username": u.username,
+            "full_name": u.get_full_name() or "—",
+            "email": u.email or "—",
+            "already_owns_gym": hasattr(u, "owned_gym"),
+        }
+        for u in users
+    ]
+    return JsonResponse({"results": results})
+
+
+@superuser_required
+def add_gym_page(request):
+    """Full standalone page for creating a gym with every model field."""
+    if request.method == "POST":
+        form = GymCreateForm(request.POST, request.FILES)
+        if form.is_valid():
+            gym = form.save()
+            messages.success(request, f"Gym '{gym.gym_name}' created successfully.")
+            return redirect("all_gyms")
+        else:
+            messages.error(request, "Please fix the errors below.")
+    else:
+        form = GymCreateForm()
+
+    return render(request, "add_gym.html", {"form": form})
+
+
+def _serialize_plan(plan, gyms_qs, today):
+    gyms_on_plan = gyms_qs.filter(plan=plan)
+    gyms_data = []
+    for g in gyms_on_plan:
+        gyms_data.append({
+            "id": str(g.id),
+            "gym_name": g.gym_name,
+            "gym_code": g.gym_code,
+            "owner_name": g.owner.get_full_name() or g.owner.username,
+            "member_count": g.member_count,
+            "member_limit": g.member_limit,
+            "trainer_count": g.trainer_count,
+            "trainer_limit": g.trainer_limit,
+            "active": g.active,
+            "is_subscription_active": g.is_subscription_active,
+            "days_until_expiry": g.days_until_expiry,
+            "subscription_end": g.subscription_end.isoformat() if g.subscription_end else None,
+            "logo_url": g.logo.url if g.logo else None,
+        })
+    return {
+        "id": plan.id,
+        "name": plan.name,
+        "price_monthly": str(plan.price_monthly),
+        "member_limit": plan.member_limit,
+        "trainer_limit": plan.trainer_limit,
+        "feature_flags": plan.feature_flags or {},
+        "gym_count": gyms_on_plan.count(),
+        "gyms": gyms_data,
+    }
+
+
+@superuser_required
+def subscriptions_page(request):
+    today = timezone.now().date()
+
+    gyms = (
+        Gym.objects
+        .select_related("plan", "owner")
+        .annotate(
+            member_count=Count("enrollment", distinct=True),
+            trainer_count=Count(
+                "staff",
+                filter=Q(staff__role="trainer", staff__active=True),
+                distinct=True,
+            ),
+        )
+    )
+
+    plans_qs = SubscriptionPlan.objects.all().order_by("price_monthly")
+    plans_data = [_serialize_plan(p, gyms, today) for p in plans_qs]
+
+    return render(request, "subscriptions_page.html", {
+        "plans": plans_qs,
+        "plans_json": json_lib.dumps(plans_data, default=str),
+        "total_gyms": gyms.count(),
+    })
+
+
+@superuser_required
+@require_POST
+def add_subscription_plan(request):
+    name = request.POST.get("name", "").strip()
+    price_monthly = request.POST.get("price_monthly")
+    member_limit = request.POST.get("member_limit")
+    trainer_limit = request.POST.get("trainer_limit")
+    feature_flags_raw = request.POST.get("feature_flags", "{}")
+
+    errors = {}
+    if not name:
+        errors["name"] = ["Plan name is required."]
+    elif SubscriptionPlan.objects.filter(name__iexact=name).exists():
+        errors["name"] = ["A plan with this name already exists."]
+
+    try:
+        price_monthly = float(price_monthly)
+        if price_monthly < 0:
+            errors["price_monthly"] = ["Price cannot be negative."]
+    except (TypeError, ValueError):
+        errors["price_monthly"] = ["Enter a valid price."]
+
+    try:
+        member_limit = int(member_limit)
+        if member_limit < 1:
+            errors["member_limit"] = ["Must be at least 1."]
+    except (TypeError, ValueError):
+        errors["member_limit"] = ["Enter a valid number."]
+
+    try:
+        trainer_limit = int(trainer_limit)
+        if trainer_limit < 1:
+            errors["trainer_limit"] = ["Must be at least 1."]
+    except (TypeError, ValueError):
+        errors["trainer_limit"] = ["Enter a valid number."]
+
+    try:
+        feature_flags = json_lib.loads(feature_flags_raw)
+    except json_lib.JSONDecodeError:
+        feature_flags = {}
+
+    if errors:
+        return JsonResponse({"success": False, "errors": errors}, status=400)
+
+    plan = SubscriptionPlan.objects.create(
+        name=name,
+        price_monthly=price_monthly,
+        member_limit=member_limit,
+        trainer_limit=trainer_limit,
+        feature_flags=feature_flags,
+    )
+    return JsonResponse({"success": True, "plan_id": plan.id})
+
+
+@superuser_required
+@require_POST
+def edit_subscription_plan(request, plan_id):
+    plan = get_object_or_404(SubscriptionPlan, pk=plan_id)
+
+    name = request.POST.get("name", "").strip()
+    price_monthly = request.POST.get("price_monthly")
+    member_limit = request.POST.get("member_limit")
+    trainer_limit = request.POST.get("trainer_limit")
+    feature_flags_raw = request.POST.get("feature_flags", "{}")
+
+    errors = {}
+    if not name:
+        errors["name"] = ["Plan name is required."]
+    elif SubscriptionPlan.objects.filter(name__iexact=name).exclude(pk=plan.pk).exists():
+        errors["name"] = ["A plan with this name already exists."]
+
+    try:
+        price_monthly = float(price_monthly)
+        if price_monthly < 0:
+            errors["price_monthly"] = ["Price cannot be negative."]
+    except (TypeError, ValueError):
+        errors["price_monthly"] = ["Enter a valid price."]
+
+    try:
+        member_limit = int(member_limit)
+        if member_limit < 1:
+            errors["member_limit"] = ["Must be at least 1."]
+    except (TypeError, ValueError):
+        errors["member_limit"] = ["Enter a valid number."]
+
+    try:
+        trainer_limit = int(trainer_limit)
+        if trainer_limit < 1:
+            errors["trainer_limit"] = ["Must be at least 1."]
+    except (TypeError, ValueError):
+        errors["trainer_limit"] = ["Enter a valid number."]
+
+    try:
+        feature_flags = json_lib.loads(feature_flags_raw)
+    except json_lib.JSONDecodeError:
+        feature_flags = {}
+
+    if errors:
+        return JsonResponse({"success": False, "errors": errors}, status=400)
+
+    plan.name = name
+    plan.price_monthly = price_monthly
+    plan.member_limit = member_limit
+    plan.trainer_limit = trainer_limit
+    plan.feature_flags = feature_flags
+    plan.save()
+
+    return JsonResponse({"success": True})
+
+
+@superuser_required
+@require_POST
+def delete_subscription_plan(request, plan_id):
+    plan = get_object_or_404(SubscriptionPlan, pk=plan_id)
+    if Gym.objects.filter(plan=plan).exists():
+        return JsonResponse({
+            "success": False,
+            "error": "Cannot delete a plan that still has gyms assigned to it.",
+        }, status=400)
+    plan.delete()
+    return JsonResponse({"success": True})
+
+
+@superuser_required
+@require_POST
+def change_gym_plan(request, gym_id):
+    gym = get_object_or_404(Gym, pk=gym_id)
+    plan_id = request.POST.get("plan_id") or None
+
+    if plan_id:
+        plan = get_object_or_404(SubscriptionPlan, pk=plan_id)
+        gym.plan = plan
+        gym.member_limit = plan.member_limit
+        gym.trainer_limit = plan.trainer_limit
+    else:
+        gym.plan = None
+
+    gym.save()
+    return JsonResponse({"success": True})

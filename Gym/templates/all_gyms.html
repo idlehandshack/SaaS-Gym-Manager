@@ -1,0 +1,570 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EnterGYM — All Gyms</title>
+<link rel="icon" type="image/png" href="{% static 'images/favicons.png' %}"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0c;color:#e2e2e6;min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+img{display:block;max-width:100%}
+
+:root{
+  --bg-base:#0a0a0c;--bg-surface:#111115;--bg-elevated:#18181e;--bg-card:#1c1c24;
+  --border:#2a2a38;--border-subtle:#1f1f2b;
+  --orange:#ff7a00;--orange-dim:#ff7a0018;
+  --green:#22c55e;--green-dim:#22c55e18;
+  --red:#ef4444;--red-dim:#ef444418;
+  --yellow:#f59e0b;--yellow-dim:#f59e0b18;
+  --blue:#3b82f6;--blue-dim:#3b82f618;
+  --text-primary:#f0f0f4;--text-secondary:#8b8b9e;--text-muted:#4a4a5e;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:18px;
+  --transition:all .18s cubic-bezier(.4,0,.2,1);
+}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#111115}
+::-webkit-scrollbar-thumb{background:#2a2a38;border-radius:2px}
+
+.layout{display:flex;min-height:100vh}
+
+.sidebar{width:220px;min-width:220px;background:var(--bg-surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:100;transition:var(--transition)}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-name{font-size:.85rem;font-weight:700;letter-spacing:.04em;color:var(--text-primary)}
+.logo-badge{font-size:.6rem;background:var(--orange);color:#000;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.05em;margin-left:auto}
+.nav-section{padding:16px 12px 8px}
+.nav-label{font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:0 8px 8px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-sm);font-size:.82rem;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:var(--transition);border:1px solid transparent}
+.nav-item:hover{background:var(--bg-elevated);color:var(--text-primary)}
+.nav-item.active{background:var(--orange-dim);color:var(--orange);border-color:#ff7a0025}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+.sidebar-footer{margin-top:auto;padding:16px;border-top:1px solid var(--border);font-size:.75rem;color:var(--text-muted)}
+.sidebar-user{display:flex;align-items:center;gap:8px}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--orange-dim);border:1px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:var(--orange);flex-shrink:0}
+
+.main{flex:1;overflow-x:hidden;min-width:0}
+.topbar{background:var(--bg-surface);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:90}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.hamburger{display:none;flex-direction:column;gap:4px;padding:6px;cursor:pointer}
+.hamburger span{display:block;width:18px;height:2px;background:var(--text-secondary);border-radius:2px}
+.breadcrumb{font-size:.8rem;color:var(--text-muted)}
+.breadcrumb b{color:var(--text-primary)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-time{font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
+.content{padding:28px;max-width:1600px}
+
+.section-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:1rem;font-weight:600;color:var(--text-primary)}
+.section-sub{font-size:.75rem;color:var(--text-muted);margin-top:2px}
+
+.btn-add{display:flex;align-items:center;gap:6px;background:var(--orange);color:#000;font-weight:700;font-size:.8rem;padding:9px 16px;border-radius:var(--radius-sm);transition:var(--transition)}
+.btn-add:hover{background:#e06d00}
+.btn-add svg{width:15px;height:15px}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+
+.table-controls{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.search-input{flex:1;max-width:280px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;font:inherit;font-size:.78rem;color:var(--text-primary);outline:none}
+.search-input::placeholder{color:var(--text-muted)}
+.search-input:focus{border-color:#3a3a4a;background:var(--bg-card)}
+.table-count{font-size:.72rem;color:var(--text-muted);margin-left:auto}
+
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.data-table{width:100%;border-collapse:collapse;font-size:.78rem;white-space:nowrap}
+.data-table thead{background:var(--bg-elevated)}
+.data-table th{padding:10px 14px;text-align:left;font-size:.67rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border)}
+.data-table td{padding:11px 14px;border-bottom:1px solid var(--border-subtle);color:var(--text-secondary);vertical-align:middle}
+.data-table tbody tr:hover{background:var(--bg-elevated)}
+.data-table tbody tr:last-child td{border-bottom:none}
+.row-healthy td:first-child{border-left:2px solid var(--green)}
+.row-warning td:first-child{border-left:2px solid var(--yellow)}
+.row-danger td:first-child{border-left:2px solid var(--red)}
+
+.gym-logo-cell{display:flex;align-items:center;gap:10px}
+.gym-logo-thumb{width:30px;height:30px;border-radius:var(--radius-sm);object-fit:cover;background:var(--bg-elevated);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:var(--text-secondary);border:1px solid var(--border)}
+.gym-name-cell{font-weight:600;color:var(--text-primary)}
+.gym-code{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-muted)}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:.67rem;font-weight:600;letter-spacing:.03em}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.badge.active{background:var(--green-dim);color:var(--green)}
+.badge.expiring{background:var(--yellow-dim);color:var(--yellow)}
+.badge.expired{background:var(--red-dim);color:var(--red)}
+.badge.inactive{background:var(--red-dim);color:var(--red)}
+
+.contact-cell{display:flex;flex-direction:column;gap:2px}
+.contact-cell .phone{color:var(--text-primary);font-weight:500}
+.contact-cell .email{font-size:.7rem;color:var(--text-muted)}
+
+.empty-state{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:.8rem}
+
+/* Modal (used only by Gym Detail Modal now) */
+.modal-overlay{position:fixed;inset:0;background:#00000088;backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);width:100%;max-width:640px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;animation:modalIn .2s cubic-bezier(.4,0,.2,1)}
+@keyframes modalIn{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:none}}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:1rem;font-weight:700;color:var(--text-primary)}
+.modal-close{width:30px;height:30px;border-radius:var(--radius-sm);background:var(--bg-elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-secondary)}
+.modal-close:hover{color:var(--text-primary);border-color:#3a3a4a}
+.modal-close svg{width:14px;height:14px}
+.modal-body{padding:24px;overflow-y:auto;flex:1}
+.modal-section{margin-bottom:22px}
+.modal-section-title{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-field{display:flex;flex-direction:column;gap:5px}
+.form-field label{font-size:.68rem;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.form-field input,.form-field select{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font:inherit;font-size:.8rem;color:var(--text-primary);outline:none}
+.form-field input:focus,.form-field select:focus{border-color:var(--orange)}
+.form-errors{font-size:.7rem;color:var(--red);margin-top:2px}
+.modal-actions{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.btn-sm{padding:8px 16px;border-radius:var(--radius-sm);font-size:.78rem;font-weight:600;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);transition:var(--transition)}
+.btn-sm:hover{color:var(--text-primary);border-color:#3a3a4a}
+.btn-sm.primary{background:var(--orange);border-color:var(--orange);color:#000}
+.btn-sm.primary:hover{background:#e06d00;border-color:#e06d00}
+
+.gdm-tab-btn{padding:10px 14px;font-size:.78rem;font-weight:600;color:var(--text-secondary);border-bottom:2px solid transparent;background:none}
+.gdm-tab-btn.active{color:var(--orange);border-bottom-color:var(--orange)}
+
+.alert{padding:12px 16px;border-radius:var(--radius-md);font-size:.8rem;margin-bottom:18px;border:1px solid}
+.alert.success{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+.alert.error{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+
+@media (max-width:768px){
+  .sidebar{position:fixed;left:-220px;top:0;bottom:0;z-index:200;transition:left .25s cubic-bezier(.4,0,.2,1)}
+  .sidebar.mobile-open{left:0}
+  .sidebar-overlay{position:fixed;inset:0;background:#00000060;z-index:190;display:none}
+  .sidebar-overlay.open{display:block}
+  .hamburger{display:flex}
+  .topbar{padding:0 16px}
+  .content{padding:16px}
+  .modal-grid{grid-template-columns:1fr}
+}
+@media (max-width:480px){
+  .modal{max-height:100vh;border-radius:0}
+  .modal-overlay{padding:0}
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="6" fill="#ff7a00"/>
+      <rect x="5" y="11" width="8" height="6" rx="1.5" fill="white" opacity="0.9"/>
+      <rect x="15" y="8" width="8" height="12" rx="1.5" fill="white"/>
+    </svg>
+    <span class="logo-name">EnterGYM</span>
+    <span class="logo-badge">SAAS</span>
+  </div>
+
+  <div class="nav-section">
+    <p class="nav-label">Platform</p>
+    <a class="nav-item" href="{% url 'saas_dashboard' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="nav-item active" href="{% url 'all_gyms' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      All Gyms
+    </a>
+    <a class="nav-item" href="{% url 'subscriptions_page' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Subscriptions
+    </a>
+    <a class="nav-item" href="{% url 'platform_insights' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Insights
+    </a>
+    <a class="nav-item" data-scroll-target="leaderboard">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Top Gyms
+    </a>
+    <a class="nav-item" data-scroll-target="revenue">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Revenue
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <p class="nav-label">System</p>
+    <a class="nav-item" href="/admin/">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Django Admin
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar">SA</div>
+      <div>
+        <div style="font-size:.73rem;color:var(--text-primary);font-weight:500">{{ request.user.username }}</div>
+        <div style="font-size:.65rem;margin-top:1px;color:var(--green)">● Super Admin</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<main class="main">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+      <div class="breadcrumb">EnterGYM <span style="color:var(--border)">·</span> <b>All Gyms</b></div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot"></div>
+      <span class="topbar-time" id="liveTime">--:--:--</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}error{% else %}success{% endif %}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="section-header">
+      <div>
+        <div class="section-title">All Gyms</div>
+        <div class="section-sub">{{ total_gyms }} gym{{ total_gyms|pluralize }} registered on the platform</div>
+      </div>
+      <a class="btn-add" href="{% url 'add_gym_page' %}">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add New Gym
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Gym Directory</span>
+      </div>
+      <div class="table-controls">
+        <input class="search-input" type="text" id="gymSearch" placeholder="Search gym, owner, code, phone…"/>
+        <span class="table-count" id="tableCount"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Gym</th>
+              <th>Code</th>
+              <th>Owner</th>
+              <th>Owner Phone</th>
+              <th>Owner Email</th>
+              <th>Plan</th>
+              <th>Status</th>
+              <th>Members</th>
+              <th>Trainers</th>
+              <th>Expiry Date</th>
+              <th>Days Left</th>
+            </tr>
+          </thead>
+          <tbody id="gymTableBody">
+          {% for gym in gyms %}
+          {% with days=gym.days_until_expiry %}
+          <tr
+            data-gym-id="{{ gym.id }}"
+            class="{% if gym.active and gym.is_subscription_active %}row-healthy{% elif days != None and days >= 0 and days <= 7 %}row-warning{% else %}row-danger{% endif %}"
+            data-search="{{ gym.gym_name|lower }} {{ gym.gym_code|lower }} {{ gym.owner.get_full_name|lower }} {{ gym.owner.username|lower }} {{ gym.contact_phone }}"
+            style="cursor:pointer"
+            >
+            <td>
+              <div class="gym-logo-cell">
+                {% if gym.logo %}<img src="{{ gym.logo.url }}" alt="" class="gym-logo-thumb"/>
+                {% else %}<div class="gym-logo-thumb">{{ gym.gym_name|slice:":2"|upper }}</div>{% endif %}
+                <span class="gym-name-cell">{{ gym.gym_name }}</span>
+              </div>
+            </td>
+            <td><span class="gym-code">{{ gym.gym_code }}</span></td>
+            <td>{{ gym.owner.get_full_name|default:gym.owner.username }}</td>
+            <td>
+              <div class="contact-cell">
+                <span class="phone">{{ gym.contact_phone|default:gym.whatsapp_number|default:"—" }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="contact-cell">
+                <span class="email">{{ gym.contact_email|default:gym.owner.email|default:"—" }}</span>
+              </div>
+            </td>
+            <td style="color:var(--text-muted)">{{ gym.plan.name|default:"—" }}</td>
+            <td>
+              {% if gym.active and gym.is_subscription_active %}<span class="badge active">Active</span>
+              {% elif days != None and days >= 0 and days <= 7 %}<span class="badge expiring">Expiring</span>
+              {% elif not gym.is_subscription_active %}<span class="badge expired">Expired</span>
+              {% else %}<span class="badge inactive">Inactive</span>{% endif %}
+            </td>
+            <td>{{ gym.member_count|default:0 }} / {{ gym.member_limit }}</td>
+            <td>{{ gym.trainer_count|default:0 }} / {{ gym.trainer_limit }}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem">{{ gym.subscription_end|default:"—" }}</td>
+            <td>
+              {% if days != None %}
+                <span style="font-weight:600;font-size:.78rem;color:{% if days < 0 %}var(--red){% elif days <= 7 %}var(--yellow){% elif days <= 30 %}var(--orange){% else %}var(--green){% endif %}">
+                  {% if days < 0 %}Expired{% else %}{{ days }}d{% endif %}
+                </span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+          </tr>
+          {% endwith %}
+          {% empty %}
+          <tr><td colspan="11"><div class="empty-state">No gyms registered yet. Click "Add New Gym" to create one.</div></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<!-- ── Gym Detail Modal ─────────────────────────────────────── -->
+<div class="modal-overlay" id="gymDetailModal">
+  <div class="modal" id="gymDetailModalBox" style="max-width:720px">
+    <div class="modal-header">
+      <div class="modal-title" id="gdmTitle">Gym</div>
+      <button type="button" class="modal-close" id="gdmClose">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div style="display:flex;gap:4px;padding:0 24px;border-bottom:1px solid var(--border)">
+      <button type="button" class="gdm-tab-btn active" data-tab="overview">Overview</button>
+      <button type="button" class="gdm-tab-btn" data-tab="staff">Staff</button>
+      <button type="button" class="gdm-tab-btn" data-tab="gst">GST Profile</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="gdm-pane" data-pane="overview">
+        <div class="modal-grid" id="gdmOverviewGrid" style="font-size:.82rem;color:var(--text-secondary)"></div>
+      </div>
+
+      <div class="gdm-pane" data-pane="staff" style="display:none">
+        <div id="gdmStaffList" style="margin-bottom:18px"></div>
+        <div class="modal-section-title">Add Staff Member</div>
+        <div class="field-hint" style="font-size:.72rem;color:var(--text-muted);margin-bottom:12px">
+          Staff must already have an account (phone = username). Look them up below.
+        </div>
+        <form id="gdmStaffForm">
+          <div class="modal-grid">
+            <div class="form-field" style="grid-column:1/-1">
+              <label>Staff Phone Number</label>
+              <input name="phone" required placeholder="Existing user's phone / username">
+            </div>
+            <div class="form-field">
+              <label>Role</label>
+              <select name="role">
+                <option value="gym_owner">Gym Owner</option>
+                <option value="trainer" selected>Trainer</option>
+                <option value="receptionist">Receptionist</option>
+              </select>
+            </div>
+            <div class="form-field" style="justify-content:flex-end;flex-direction:row;align-items:center;gap:8px">
+              <input type="checkbox" name="active" checked style="width:auto">
+              <label style="text-transform:none;font-size:.78rem">Active</label>
+            </div>
+          </div>
+          <div class="form-errors" id="gdmStaffErrors"></div>
+          <div style="margin-top:14px;text-align:right">
+            <button type="submit" class="btn-sm primary">Add Staff</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="gdm-pane" data-pane="gst" style="display:none">
+        <form id="gdmGstForm">
+          <div class="modal-grid">
+            <div class="form-field" style="grid-column:1/-1"><label>Legal Business Name</label><input name="legal_business_name" required></div>
+            <div class="form-field"><label>GSTIN</label><input name="gstin"></div>
+            <div class="form-field"><label>State</label><input name="state" required></div>
+            <div class="form-field"><label>State Code</label><input name="state_code" required maxlength="2"></div>
+            <div class="form-field"><label>City</label><input name="city" required></div>
+            <div class="form-field"><label>Pincode</label><input name="pincode" required maxlength="6"></div>
+            <div class="form-field" style="grid-column:1/-1"><label>Address Line 1</label><input name="address_line1" required></div>
+            <div class="form-field" style="grid-column:1/-1"><label>Address Line 2</label><input name="address_line2"></div>
+            <div class="form-field"><label>Invoice Prefix</label><input name="invoice_series_prefix" value="INV"></div>
+            <div class="form-field"><label>SAC Code</label><input name="default_sac_membership" value="999652"></div>
+            <div class="form-field"><label style="display:flex;align-items:center;gap:8px;text-transform:none"><input type="checkbox" name="is_gst_registered" style="width:auto"> GST Registered</label></div>
+            <div class="form-field"><label style="display:flex;align-items:center;gap:8px;text-transform:none"><input type="checkbox" name="composition_scheme" style="width:auto"> Composition Scheme</label></div>
+          </div>
+          <div class="form-errors" id="gdmGstErrors"></div>
+          <div style="margin-top:14px;text-align:right">
+            <button type="submit" class="btn-sm primary">Save GST Profile</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+(function(){
+  const timeEl = document.getElementById('liveTime');
+  function tick(){
+    const n=new Date();
+    timeEl.textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+  }
+  tick();setInterval(tick,1000);
+
+  const sidebar=document.getElementById('sidebar');
+  const sidebarOverlay=document.getElementById('sidebarOverlay');
+  const hamburger=document.getElementById('hamburger');
+
+  function toggleSidebar(){
+    sidebar.classList.toggle('mobile-open');
+    sidebarOverlay.classList.toggle('open');
+  }
+  function closeSidebar(){
+    sidebar.classList.remove('mobile-open');
+    sidebarOverlay.classList.remove('open');
+  }
+  hamburger.addEventListener('click', toggleSidebar);
+  sidebarOverlay.addEventListener('click', closeSidebar);
+
+  const gymSearch=document.getElementById('gymSearch');
+  function filterTable(){
+    const q=gymSearch.value.toLowerCase();
+    const rows=document.querySelectorAll('#gymTableBody tr[data-search]');
+    let vis=0;
+    rows.forEach(r=>{
+      const show=!q||r.dataset.search.includes(q);
+      r.style.display=show?'':'none';
+      if(show)vis++;
+    });
+    document.getElementById('tableCount').textContent=vis+' gym'+(vis===1?'':'s')+' shown';
+  }
+  gymSearch.addEventListener('input', filterTable);
+  filterTable();
+
+  // ── Gym Detail Modal ──────────────────────────────────────────────
+  const gdm = document.getElementById('gymDetailModal');
+  const gdmBox = document.getElementById('gymDetailModalBox');
+  let currentGymId = null;
+
+  function getCookie(name) {
+    const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return m ? m.pop() : '';
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  function openGdm(gymId) {
+    currentGymId = gymId;
+    fetch(`/gyms/${gymId}/detail/`)
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('gdmTitle').textContent = data.gym.gym_name;
+
+        const ov = document.getElementById('gdmOverviewGrid');
+        ov.innerHTML = `
+          <div><b style="color:var(--text-primary)">Code:</b> ${data.gym.gym_code}</div>
+          <div><b style="color:var(--text-primary)">Plan:</b> ${data.gym.plan || '—'}</div>
+          <div><b style="color:var(--text-primary)">Owner:</b> ${data.gym.owner_username}</div>
+          <div><b style="color:var(--text-primary)">Owner Email:</b> ${data.gym.owner_email || '—'}</div>
+          <div><b style="color:var(--text-primary)">Contact Email:</b> ${data.gym.contact_email || '—'}</div>
+          <div><b style="color:var(--text-primary)">Contact Phone:</b> ${data.gym.contact_phone || '—'}</div>
+        `;
+
+        const staffList = document.getElementById('gdmStaffList');
+        if (data.staff.length) {
+          staffList.innerHTML = data.staff.map(s =>
+            `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-subtle);font-size:.8rem">
+               <span>${s.username}</span><span style="color:var(--text-muted)">${s.role_display}${s.active ? '' : ' (inactive)'}</span>
+             </div>`
+          ).join('');
+        } else {
+          staffList.innerHTML = `<div style="color:var(--text-muted);font-size:.78rem">No staff added yet.</div>`;
+        }
+
+        document.getElementById('gdmStaffForm').reset();
+
+        const gstForm = document.getElementById('gdmGstForm');
+        gstForm.reset();
+        if (data.gst_profile) {
+          const g = data.gst_profile;
+          for (const key in g) {
+            const el = gstForm.elements[key];
+            if (!el) continue;
+            if (el.type === 'checkbox') el.checked = !!g[key];
+            else el.value = g[key] ?? '';
+          }
+        }
+
+        gdm.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      });
+  }
+  function closeGdm() {
+    gdm.classList.remove('open');
+    document.body.style.overflow = '';
+    document.getElementById('gdmStaffErrors').textContent = '';
+    document.getElementById('gdmGstErrors').textContent = '';
+  }
+
+  document.querySelectorAll('#gymTableBody tr[data-gym-id]').forEach(row => {
+    row.addEventListener('click', () => openGdm(row.dataset.gymId));
+  });
+  document.getElementById('gdmClose').addEventListener('click', closeGdm);
+  gdm.addEventListener('click', e => { if (e.target === gdm) closeGdm(); });
+  gdmBox.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGdm(); });
+
+  gdm.querySelectorAll('.gdm-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      gdm.querySelectorAll('.gdm-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      gdm.querySelectorAll('.gdm-pane').forEach(p => {
+        p.style.display = (p.dataset.pane === btn.dataset.tab) ? '' : 'none';
+      });
+    });
+  });
+
+  document.getElementById('gdmStaffForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch(`/gyms/${currentGymId}/add-staff/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken },
+      body: fd,
+    }).then(r => r.json()).then(res => {
+      if (res.success) { openGdm(currentGymId); document.getElementById('gdmStaffErrors').textContent = ''; }
+      else { document.getElementById('gdmStaffErrors').textContent = Object.values(res.errors).flat().join(' '); }
+    });
+  });
+
+  document.getElementById('gdmGstForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch(`/gyms/${currentGymId}/gst-profile/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken },
+      body: fd,
+    }).then(r => r.json()).then(res => {
+      if (res.success) { document.getElementById('gdmGstErrors').textContent = ''; alert('GST profile saved.'); }
+      else { document.getElementById('gdmGstErrors').textContent = Object.values(res.errors).flat().join(' '); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

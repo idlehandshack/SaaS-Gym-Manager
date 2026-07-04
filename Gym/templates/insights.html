@@ -1,0 +1,1355 @@
+{% load static %}
+{% load tz %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EnterGYM — Platform Insights</title>
+<link rel="icon" href="{% static 'images/favicons.ico' %}">
+<link rel="shortcut icon" href="{% static 'images/favicons.ico' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0c;color:#e2e2e6;min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+img{display:block;max-width:100%}
+
+:root{
+  --bg-base:#0a0a0c;
+  --bg-surface:#111115;
+  --bg-elevated:#18181e;
+  --bg-card:#1c1c24;
+  --border:#2a2a38;
+  --border-subtle:#1f1f2b;
+  --orange:#ff7a00;
+  --orange-dim:#ff7a0018;
+  --orange-glow:0 0 24px #ff7a0030;
+  --green:#22c55e;
+  --green-dim:#22c55e18;
+  --red:#ef4444;
+  --red-dim:#ef444418;
+  --yellow:#f59e0b;
+  --yellow-dim:#f59e0b18;
+  --blue:#3b82f6;
+  --blue-dim:#3b82f618;
+  --purple:#a855f7;
+  --purple-dim:#a855f718;
+  --text-primary:#f0f0f4;
+  --text-secondary:#8b8b9e;
+  --text-muted:#4a4a5e;
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:14px;
+  --radius-xl:18px;
+  --transition:all .18s cubic-bezier(.4,0,.2,1);
+}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#111115}
+::-webkit-scrollbar-thumb{background:#2a2a38;border-radius:2px}
+
+.layout{display:flex;min-height:100vh}
+
+.sidebar{
+  width:220px;min-width:220px;
+  background:var(--bg-surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;
+  overflow-y:auto;z-index:100;
+  transition:var(--transition);
+}
+.sidebar-logo{
+  padding:20px 20px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.sidebar-logo svg{flex-shrink:0}
+.logo-name{font-size:.85rem;font-weight:700;letter-spacing:.04em;color:var(--text-primary)}
+.logo-badge{font-size:.6rem;background:var(--orange);color:#000;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.05em;margin-left:auto}
+
+.nav-section{padding:16px 12px 8px}
+.nav-label{font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:0 8px 8px}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:var(--radius-sm);
+  font-size:.82rem;font-weight:500;color:var(--text-secondary);
+  cursor:pointer;transition:var(--transition);
+  border:1px solid transparent;
+}
+.nav-item:hover{background:var(--bg-elevated);color:var(--text-primary)}
+.nav-item.active{background:var(--orange-dim);color:var(--orange);border-color:#ff7a0025}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+
+.sidebar-footer{
+  margin-top:auto;padding:16px;border-top:1px solid var(--border);
+  font-size:.75rem;color:var(--text-muted);
+}
+.sidebar-user{display:flex;align-items:center;gap:8px}
+.user-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--orange-dim);border:1px solid var(--orange);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;font-weight:700;color:var(--orange);flex-shrink:0
+}
+
+.main{flex:1;overflow-x:hidden;min-width:0}
+.topbar{
+  background:var(--bg-surface);border-bottom:1px solid var(--border);
+  padding:0 28px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:90;
+}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.hamburger{display:none;flex-direction:column;gap:4px;padding:6px;cursor:pointer}
+.hamburger span{display:block;width:18px;height:2px;background:var(--text-secondary);border-radius:2px;transition:var(--transition)}
+.breadcrumb{font-size:.8rem;color:var(--text-muted)}
+.breadcrumb b{color:var(--text-primary)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-time{font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted)}
+
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease infinite}
+.status-dot.loading{background:var(--yellow);box-shadow:0 0 6px var(--yellow)}
+.status-dot.error{background:var(--red);box-shadow:0 0 6px var(--red);animation:none}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
+
+.content{padding:28px;max-width:1600px}
+
+.section-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:1rem;font-weight:600;color:var(--text-primary)}
+.section-sub{font-size:.75rem;color:var(--text-muted);margin-top:2px}
+.section-action{font-size:.75rem;color:var(--orange);cursor:pointer;transition:var(--transition)}
+.section-action:hover{opacity:.75}
+
+.filter-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:12px 16px;margin-bottom:24px;
+}
+.filter-bar .search-input{max-width:220px}
+.filter-bar-label{font-size:.68rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-right:2px}
+.filter-spacer{margin-left:auto}
+.btn-refresh{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 12px;border-radius:var(--radius-sm);
+  background:var(--orange-dim);border:1px solid #ff7a0030;
+  color:var(--orange);font-size:.75rem;font-weight:600;transition:var(--transition);
+}
+.btn-refresh:hover{background:#ff7a0028}
+.btn-refresh svg{width:13px;height:13px}
+.btn-refresh.spinning svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+  margin-bottom:28px;
+}
+.kpi-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:18px 20px;
+  position:relative;overflow:hidden;
+  transition:var(--transition);
+}
+.kpi-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 100% 0%,var(--kpi-accent,#ff7a0008) 0%,transparent 65%);
+  pointer-events:none;
+}
+.kpi-card:hover{border-color:#3a3a4a;transform:translateY(-1px)}
+.kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.kpi-icon{
+  width:34px;height:34px;border-radius:var(--radius-sm);
+  background:var(--kpi-bg,var(--orange-dim));
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-icon svg{width:16px;height:16px;color:var(--kpi-color,var(--orange))}
+.kpi-trend{
+  display:flex;align-items:center;gap:4px;
+  font-size:.7rem;font-weight:600;
+  padding:3px 7px;border-radius:20px;
+}
+.kpi-trend.up{background:var(--green-dim);color:var(--green)}
+.kpi-trend.down{background:var(--red-dim);color:var(--red)}
+.kpi-trend.neutral{background:var(--bg-elevated);color:var(--text-muted)}
+.kpi-value{font-size:1.9rem;font-weight:700;color:var(--text-primary);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.kpi-label{font-size:.73rem;color:var(--text-muted)}
+.skel{display:inline-block;background:linear-gradient(90deg,var(--bg-elevated) 25%,#22222c 50%,var(--bg-elevated) 75%);background-size:200% 100%;animation:shimmer 1.3s infinite;border-radius:4px;color:transparent!important}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:28px}
+
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+.card-header{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;
+}
+.card-title{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+.card-body{padding:20px}
+
+.health-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.health-metric{display:flex;flex-direction:column;gap:8px}
+.health-label{font-size:.73rem;color:var(--text-secondary);display:flex;align-items:center;justify-content:space-between}
+.health-val{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+.progress-bar{height:5px;background:var(--bg-elevated);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.progress-fill.orange{background:var(--orange)}
+.progress-fill.green{background:var(--green)}
+.progress-fill.red{background:var(--red)}
+.progress-fill.blue{background:var(--blue)}
+.progress-fill.yellow{background:var(--yellow)}
+.progress-fill.purple{background:var(--purple)}
+
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.data-table{width:100%;border-collapse:collapse;font-size:.78rem;white-space:nowrap}
+.data-table thead{background:var(--bg-elevated)}
+.data-table th{
+  padding:10px 14px;text-align:left;
+  font-size:.67rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--text-muted);border-bottom:1px solid var(--border);
+}
+.data-table td{
+  padding:11px 14px;border-bottom:1px solid var(--border-subtle);
+  color:var(--text-secondary);vertical-align:middle;
+}
+.data-table tbody tr{transition:var(--transition)}
+.data-table tbody tr:hover{background:var(--bg-elevated)}
+.data-table tbody tr:last-child td{border-bottom:none}
+.gym-name-cell{font-weight:600;color:var(--text-primary)}
+
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:20px;
+  font-size:.67rem;font-weight:600;letter-spacing:.03em;
+}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.badge.active{background:var(--green-dim);color:var(--green)}
+.badge.inactive{background:var(--red-dim);color:var(--red)}
+.badge.expiring{background:var(--yellow-dim);color:var(--yellow)}
+.badge.expired{background:var(--red-dim);color:var(--red)}
+
+.insights-list{display:flex;flex-direction:column;gap:8px}
+.insight-card{
+  padding:12px 16px;border-radius:var(--radius-md);
+  border:1px solid var(--border);
+  display:flex;align-items:flex-start;gap:10px;
+  background:var(--bg-elevated);
+  animation:slideIn .3s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.insight-icon{width:28px;height:28px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.insight-icon svg{width:14px;height:14px}
+.insight-icon.info{background:var(--blue-dim);color:var(--blue)}
+.insight-icon.warn{background:var(--yellow-dim);color:var(--yellow)}
+.insight-icon.danger{background:var(--red-dim);color:var(--red)}
+.insight-icon.success{background:var(--green-dim);color:var(--green)}
+.insight-text{font-size:.78rem;color:var(--text-secondary);line-height:1.5;flex:1}
+.insight-text b{color:var(--text-primary)}
+
+.leaderboard{display:flex;flex-direction:column;gap:0}
+.leader-row{
+  display:grid;grid-template-columns:36px 1fr 90px 70px 70px;
+  align-items:center;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--border-subtle);
+  transition:var(--transition);
+}
+.leader-row:hover{background:var(--bg-elevated)}
+.leader-row:last-child{border-bottom:none}
+.leader-rank{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;
+}
+.rank-1{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000}
+.rank-2{background:linear-gradient(135deg,#9ca3af,#6b7280);color:#000}
+.rank-3{background:linear-gradient(135deg,#b45309,#92400e);color:#fff}
+.rank-other{background:var(--bg-elevated);color:var(--text-muted);border:1px solid var(--border)}
+.leader-gym{font-size:.8rem;font-weight:600;color:var(--text-primary)}
+.leader-plan{font-size:.68rem;color:var(--text-muted)}
+.leader-stat{font-size:.78rem;font-weight:600;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.leader-stat.primary{color:var(--text-primary)}
+
+.revenue-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.rev-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:18px 20px;
+  position:relative;overflow:hidden;
+}
+.rev-card::after{
+  content:'';position:absolute;
+  bottom:-20px;right:-20px;
+  width:80px;height:80px;border-radius:50%;
+  background:radial-gradient(var(--orange-dim),transparent 70%);
+  pointer-events:none;
+}
+.rev-label{font-size:.7rem;color:var(--text-muted);margin-bottom:8px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.rev-value{font-size:1.6rem;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;line-height:1}
+.rev-sub{font-size:.72rem;color:var(--text-muted);margin-top:6px}
+
+.chart-wrap{width:100%;height:180px;position:relative}
+.chart-wrap svg{width:100%;height:100%;overflow:visible}
+.chart-empty{display:flex;align-items:center;justify-content:center;height:100%;font-size:.75rem;color:var(--text-muted)}
+.donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1;min-width:120px}
+.legend-row{display:flex;align-items:center;justify-content:space-between;font-size:.75rem;color:var(--text-secondary)}
+.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+
+.stat-mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat-mini{background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:12px 14px}
+.stat-mini-val{font-size:1.1rem;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums}
+.stat-mini-label{font-size:.68rem;color:var(--text-muted);margin-top:2px}
+
+.activity-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.activity-card{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:16px 18px;display:flex;align-items:center;gap:12px;
+}
+.activity-icon{width:34px;height:34px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.activity-icon svg{width:16px;height:16px}
+.activity-val{font-size:1.3rem;font-weight:700;color:var(--text-primary);line-height:1}
+.activity-label{font-size:.68rem;color:var(--text-muted);margin-top:3px}
+
+.divider{height:1px;background:var(--border);margin:28px 0}
+.empty-state{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:.8rem}
+
+.text-green{color:var(--green)}
+.text-red{color:var(--red)}
+.text-yellow{color:var(--yellow)}
+.text-orange{color:var(--orange)}
+.text-blue{color:var(--blue)}
+.text-purple{color:var(--purple)}
+.text-muted{color:var(--text-muted)}
+
+.search-input{
+  background:var(--bg-elevated);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:7px 12px;
+  font:inherit;font-size:.78rem;color:var(--text-primary);
+  outline:none;transition:var(--transition);
+}
+.search-input::placeholder{color:var(--text-muted)}
+.search-input:focus{border-color:#3a3a4a;background:var(--bg-card)}
+.filter-select{
+  background:var(--bg-elevated);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:7px 10px;
+  font:inherit;font-size:.75rem;color:var(--text-secondary);
+  outline:none;cursor:pointer;
+}
+.filter-select:focus{border-color:#3a3a4a}
+
+@media (max-width:1100px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .revenue-grid{grid-template-columns:repeat(2,1fr)}
+  .activity-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col{grid-template-columns:1fr}
+  .three-col{grid-template-columns:1fr}
+  .stat-mini-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:768px){
+  .sidebar{
+    position:fixed;left:-220px;top:0;bottom:0;z-index:200;
+    transition:left .25s cubic-bezier(.4,0,.2,1);
+  }
+  .sidebar.mobile-open{left:0}
+  .sidebar-overlay{position:fixed;inset:0;background:#00000060;z-index:190;display:none}
+  .sidebar-overlay.open{display:block}
+  .hamburger{display:flex}
+  .topbar{padding:0 16px}
+  .content{padding:16px}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .revenue-grid{grid-template-columns:1fr 1fr}
+  .activity-grid{grid-template-columns:1fr 1fr}
+  .leader-row{grid-template-columns:30px 1fr 70px}
+  .leader-row span:nth-child(4),.leader-row span:nth-child(5){display:none}
+  .filter-bar{gap:8px}
+  .filter-bar .search-input{max-width:100%;width:100%}
+  .filter-spacer{margin-left:0;width:100%;display:flex;justify-content:flex-end}
+}
+@media (max-width:480px){
+  .kpi-grid{grid-template-columns:1fr}
+  .revenue-grid{grid-template-columns:1fr}
+  .activity-grid{grid-template-columns:1fr}
+  .donut-wrap{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="6" fill="#ff7a00"/>
+      <rect x="5" y="11" width="8" height="6" rx="1.5" fill="white" opacity="0.9"/>
+      <rect x="15" y="8" width="8" height="12" rx="1.5" fill="white"/>
+    </svg>
+    <span class="logo-name">EnterGYM</span>
+    <span class="logo-badge">SAAS</span>
+  </div>
+
+  <div class="nav-section">
+    <p class="nav-label">Platform</p>
+    <a class="nav-item" href="{% url 'saas_dashboard' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="nav-item" href="{% url 'all_gyms' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      All Gyms
+    </a>
+    <a class="nav-item" href="{% url 'subscriptions_page' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Subscriptions
+    </a>
+    <a class="nav-item active" href="{% url 'platform_insights' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Insights
+    </a>
+    <a class="nav-item" data-scroll-target="leaderboard">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Top Gyms
+    </a>
+    <a class="nav-item" data-scroll-target="revenue">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Revenue
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <p class="nav-label">System</p>
+    <a class="nav-item" href="/admin/">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Django Admin
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar">SA</div>
+      <div>
+        <div style="font-size:.73rem;color:var(--text-primary);font-weight:500">{{ request.user.username }}</div>
+        <div style="font-size:.65rem;margin-top:1px;color:var(--green)">● Super Admin</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<main class="main">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+      <div class="breadcrumb">EnterGYM <span style="color:var(--border)">·</span> <b>Platform Insights</b></div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="topbar-time" id="liveTime">--:--:--</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="section-header">
+      <div>
+        <div class="section-title">Platform Insights</div>
+        <div class="section-sub">Deep analytics across every gym on the network</div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar" id="filterBar">
+      <span class="filter-bar-label">Range</span>
+      <select class="filter-select" id="f_range">
+        <option value="30d" selected>Last 30 days</option>
+        <option value="today">Today</option>
+        <option value="7d">Last 7 days</option>
+        <option value="90d">Last 90 days</option>
+        <option value="year">This year</option>
+      </select>
+
+      <span class="filter-bar-label">Plan</span>
+      <select class="filter-select" id="f_plan">
+        <option value="">All Plans</option>
+        {% for plan in plans %}
+        <option value="{{ plan.name }}">{{ plan.name }}</option>
+        {% endfor %}
+      </select>
+
+      <span class="filter-bar-label">Status</span>
+      <select class="filter-select" id="f_status">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="trial">Trial</option>
+        <option value="expired">Expired</option>
+        <option value="inactive">Inactive</option>
+      </select>
+
+      <input class="search-input" type="text" id="f_search" placeholder="Search gym, code, owner…"/>
+
+      <div class="filter-spacer">
+        <button class="btn-refresh" id="refreshBtn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card" style="--kpi-accent:#ff7a0010;--kpi-bg:var(--orange-dim);--kpi-color:var(--orange)">
+        <div class="kpi-header">
+          <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+          <span class="kpi-trend neutral" id="kpi_gyms_trend">—</span>
+        </div>
+        <div class="kpi-value skel" id="kpi_total_gyms">000</div>
+        <div class="kpi-label">Total Gyms (filtered)</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-accent:#22c55e10;--kpi-bg:var(--green-dim);--kpi-color:var(--green)">
+        <div class="kpi-header">
+          <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          <span class="kpi-trend neutral" id="kpi_renewal_trend">—</span>
+        </div>
+        <div class="kpi-value skel" id="kpi_active_gyms" style="color:var(--green)">000</div>
+        <div class="kpi-label">Active Gyms</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-accent:#3b82f610;--kpi-bg:var(--blue-dim);--kpi-color:var(--blue)">
+        <div class="kpi-header">
+          <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+          <span class="kpi-trend neutral">Filtered</span>
+        </div>
+        <div class="kpi-value skel" id="kpi_total_members">000</div>
+        <div class="kpi-label">Total Members</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-accent:#ff7a0010;--kpi-bg:var(--orange-dim);--kpi-color:var(--orange)">
+        <div class="kpi-header">
+          <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+          <span class="kpi-trend neutral" id="kpi_revenue_trend">—</span>
+        </div>
+        <div class="kpi-value skel" id="kpi_monthly_revenue">₹0</div>
+        <div class="kpi-label">Revenue This Month</div>
+      </div>
+    </div>
+
+    <!-- Platform growth + Member growth -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Platform Growth</span>
+          <span style="font-size:.7rem;color:var(--text-muted)" id="growth_summary">Loading…</span>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap" id="growthChart"><div class="chart-empty">Loading chart…</div></div>
+          <div class="stat-mini-grid" style="margin-top:16px">
+            <div class="stat-mini"><div class="stat-mini-val" id="growth_today">—</div><div class="stat-mini-label">Today</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="growth_week">—</div><div class="stat-mini-label">This Week</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="growth_month">—</div><div class="stat-mini-label">This Month</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="growth_prev">—</div><div class="stat-mini-label">Previous Month</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Member Growth</span>
+          <span style="font-size:.7rem;color:var(--text-muted)" id="member_summary">Loading…</span>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap" id="memberChart"><div class="chart-empty">Loading chart…</div></div>
+          <div class="stat-mini-grid" style="margin-top:16px">
+            <div class="stat-mini"><div class="stat-mini-val" id="mem_today">—</div><div class="stat-mini-label">New Today</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="mem_week">—</div><div class="stat-mini-label">New This Week</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="mem_month">—</div><div class="stat-mini-label">New This Month</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="mem_avg">—</div><div class="stat-mini-label">Avg / Gym</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gym status / Subscription analytics / Renewal & churn -->
+    <div class="three-col">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Subscription Plans</span></div>
+        <div class="card-body" id="subAnalytics">
+          <div class="chart-empty">Loading…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Renewal &amp; Churn</span></div>
+        <div class="card-body">
+          <div class="stat-mini-grid">
+            <div class="stat-mini"><div class="stat-mini-val text-green" id="rc_renewal">—</div><div class="stat-mini-label">Renewal Rate</div></div>
+            <div class="stat-mini"><div class="stat-mini-val text-red" id="rc_churn">—</div><div class="stat-mini-label">Churn Rate</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="rc_renewed">—</div><div class="stat-mini-label">Renewed</div></div>
+            <div class="stat-mini"><div class="stat-mini-val text-yellow" id="rc_expired">—</div><div class="stat-mini-label">Expired</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revenue analytics -->
+    <div id="revenue">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Revenue Analytics</div>
+          <div class="section-sub">12-month trend across filtered gyms</div>
+        </div>
+      </div>
+      <div class="revenue-grid">
+        <div class="rev-card"><div class="rev-label">Today's Revenue</div><div class="rev-value skel" id="rev_today">₹0</div><div class="rev-sub">Filtered gyms</div></div>
+        <div class="rev-card"><div class="rev-label">Weekly Revenue</div><div class="rev-value skel" id="rev_week">₹0</div><div class="rev-sub">Last 7 days</div></div>
+        <div class="rev-card"><div class="rev-label">MRR</div><div class="rev-value skel" id="rev_mrr">₹0</div><div class="rev-sub">Monthly recurring</div></div>
+        <div class="rev-card"><div class="rev-label">ARR</div><div class="rev-value skel" id="rev_arr">₹0</div><div class="rev-sub">Annualized</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Monthly Revenue Trend</span></div>
+        <div class="card-body">
+          <div class="chart-wrap" id="revenueChart"><div class="chart-empty">Loading chart…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Today's activity -->
+    <div class="section-header">
+      <div>
+        <div class="section-title">Today's Platform Activity</div>
+        <div class="section-sub">Live counts across all filtered gyms</div>
+      </div>
+    </div>
+    <div class="activity-grid" id="activityGrid">
+      <div class="activity-card">
+        <div class="activity-icon" style="background:var(--blue-dim);color:var(--blue)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div><div class="activity-val skel" id="act_checkins">0</div><div class="activity-label">Checked In</div></div>
+      </div>
+      <div class="activity-card">
+        <div class="activity-icon" style="background:var(--orange-dim);color:var(--orange)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
+        <div><div class="activity-val skel" id="act_invoices">0</div><div class="activity-label">Invoices Generated</div></div>
+      </div>
+      <div class="activity-card">
+        <div class="activity-icon" style="background:var(--green-dim);color:var(--green)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+        <div><div class="activity-val skel" id="act_payments">0</div><div class="activity-label">Payments Recorded</div></div>
+      </div>
+      <div class="activity-card">
+        <div class="activity-icon" style="background:var(--purple-dim);color:var(--purple)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <div><div class="activity-val skel" id="act_new_reg">0</div><div class="activity-label">New Registrations</div></div>
+      </div>
+    </div>
+
+    <!-- Engagement + Payments -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Engagement</span></div>
+        <div class="card-body">
+          <div class="stat-mini-grid">
+            <div class="stat-mini"><div class="stat-mini-val" id="eng_daily">—</div><div class="stat-mini-label">Daily Active Gyms</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="eng_weekly">—</div><div class="stat-mini-label">Weekly Active Gyms</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="eng_monthly">—</div><div class="stat-mini-label">Monthly Active Gyms</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="eng_attendance">—</div><div class="stat-mini-label">Avg Attendance %</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Payment Analytics</span></div>
+        <div class="card-body">
+          <div class="health-metric" style="margin-bottom:12px">
+            <span class="health-label">Success Rate<span class="health-val text-green" id="pay_success_rate">—</span></span>
+            <div class="progress-bar"><div class="progress-fill green" id="pay_success_bar" style="width:0%"></div></div>
+          </div>
+          <div class="health-metric" style="margin-bottom:14px">
+            <span class="health-label">Failure Rate<span class="health-val text-red" id="pay_failure_rate">—</span></span>
+            <div class="progress-bar"><div class="progress-fill red" id="pay_failure_bar" style="width:0%"></div></div>
+          </div>
+          <div class="stat-mini-grid">
+            <div class="stat-mini"><div class="stat-mini-val" id="pay_pending">—</div><div class="stat-mini-label">Pending</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="pay_avg">—</div><div class="stat-mini-label">Avg Amount</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Member distribution -->
+    <div class="card" style="margin-bottom:28px">
+      <div class="card-header">
+        <span class="card-title">Member Distribution — Top 10 Gyms</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Gym</th><th>Members</th><th>Capacity</th><th>Growth</th></tr></thead>
+          <tbody id="memberDistBody">
+            <tr><td colspan="4"><div class="empty-state">Loading…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Top performing gyms -->
+    <div id="leaderboard" class="card" style="margin-bottom:28px">
+      <div class="card-header">
+        <span class="card-title">Top Performing Gyms</span>
+        <span style="font-size:.72rem;color:var(--text-muted)">By revenue</span>
+      </div>
+      <div style="padding:0 0 4px">
+        <div style="display:grid;grid-template-columns:36px 1fr 90px 70px 70px;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">
+          <span style="font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Rank</span>
+          <span style="font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Gym</span>
+          <span style="font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Revenue</span>
+          <span style="font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Members</span>
+          <span style="font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">Renewal</span>
+        </div>
+        <div class="leaderboard" id="topGymsList">
+          <div class="empty-state">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Low performing gyms -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Lowest Activity</span></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Gym</th><th>Members</th></tr></thead>
+            <tbody id="lowActivityBody"><tr><td colspan="2"><div class="empty-state">Loading…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Inactive Owners (7d+)</span></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Gym</th><th>Owner</th><th>Last Login</th></tr></thead>
+            <tbody id="inactiveOwnersBody"><tr><td colspan="3"><div class="empty-state">Loading…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Business insights + system health -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Business Insights</span>
+          <span style="font-size:.7rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace">Auto-generated</span>
+        </div>
+        <div class="card-body">
+          <div class="insights-list" id="insightsList"><div class="empty-state">Loading…</div></div>
+        </div>
+      </div>
+
+      <div class="card" id="systemHealthCard">
+        <div class="card-header">
+          <span class="card-title">System Health</span>
+          <span id="sys_badge" class="badge active">Healthy</span>
+        </div>
+        <div class="card-body">
+          <div class="health-grid" style="grid-template-columns:1fr 1fr">
+            <div class="health-metric">
+              <span class="health-label">Database<span class="health-val" id="sys_db">—</span></span>
+              <div class="progress-bar"><div class="progress-fill green" id="sys_db_bar" style="width:0%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Redis Cache<span class="health-val" id="sys_redis">—</span></span>
+              <div class="progress-bar"><div class="progress-fill green" id="sys_redis_bar" style="width:0%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Cron Scheduler<span class="health-val" id="sys_cron">—</span></span>
+              <div class="progress-bar"><div class="progress-fill green" id="sys_cron_bar" style="width:0%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Web Push<span class="health-val" id="sys_push">—</span></span>
+              <div class="progress-bar"><div class="progress-fill green" id="sys_push_bar" style="width:0%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">CPU Usage<span class="health-val" id="sys_cpu">—</span></span>
+              <div class="progress-bar"><div class="progress-fill green" id="sys_cpu_bar" style="width:0%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Memory<span class="health-val" id="sys_mem">—</span></span>
+              <div class="progress-bar"><div class="progress-fill green" id="sys_mem_bar" style="width:0%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Disk<span class="health-val" id="sys_disk">—</span></span>
+              <div class="progress-bar"><div class="progress-fill green" id="sys_disk_bar" style="width:0%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Gunicorn<span class="health-val" id="sys_gunicorn">—</span></span>
+              <div class="progress-bar"><div class="progress-fill green" id="sys_gunicorn_bar" style="width:0%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Nginx<span class="health-val" id="sys_nginx">—</span></span>
+              <div class="progress-bar"><div class="progress-fill green" id="sys_nginx_bar" style="width:0%"></div></div>
+            </div>
+            <div class="health-metric">
+              <span class="health-label">Background Jobs<span class="health-val" id="sys_jobs">—</span></span>
+              <div class="progress-bar"><div class="progress-fill purple" id="sys_jobs_bar" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="divider" style="margin:16px 0"></div>
+          <div class="stat-mini-grid">
+            <div class="stat-mini"><div class="stat-mini-val" id="sys_uptime">—</div><div class="stat-mini-label">Server Uptime</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="sys_cron_last">—</div><div class="stat-mini-label">Cron Last Run</div></div>
+          </div>
+          <div style="font-size:.7rem;color:var(--text-muted);margin-top:10px" id="sys_last_updated">Last updated: —</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+(function(){
+
+/* ── Live clock ─────────────────────────────────────── */
+const timeEl=document.getElementById('liveTime');
+function tick(){
+  const n=new Date();
+  timeEl.textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+}
+tick();setInterval(tick,1000);
+
+/* ── Sidebar ────────────────────────────────────────── */
+const sidebar=document.getElementById('sidebar');
+const sidebarOverlay=document.getElementById('sidebarOverlay');
+const hamburger=document.getElementById('hamburger');
+function toggleSidebar(){sidebar.classList.toggle('mobile-open');sidebarOverlay.classList.toggle('open');}
+function closeSidebar(){sidebar.classList.remove('mobile-open');sidebarOverlay.classList.remove('open');}
+hamburger.addEventListener('click', toggleSidebar);
+sidebarOverlay.addEventListener('click', closeSidebar);
+document.querySelectorAll('.nav-item[data-scroll-target]').forEach(function(item){
+  item.addEventListener('click', function(){
+    const id=item.getAttribute('data-scroll-target');
+    const el=document.getElementById(id);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    closeSidebar();
+  });
+});
+
+/* ── Helpers ────────────────────────────────────────── */
+function fmtInt(n){ n=Number(n||0); return n.toLocaleString('en-IN'); }
+function fmtMoney(n){ n=Number(n||0); return '₹'+n.toLocaleString('en-IN', {maximumFractionDigits:0}); }
+function pctColor(p){ return p>=90?'var(--red)':p>=70?'var(--yellow)':'var(--green)'; }
+function trendBadge(el, pct){
+  if(pct===null||pct===undefined){ el.textContent='—'; el.className='kpi-trend neutral'; return; }
+  const up = pct >= 0;
+  el.textContent = (up?'↑ ':'↓ ') + Math.abs(pct) + '%';
+  el.className = 'kpi-trend ' + (up?'up':'down');
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+function buildQuery(){
+  const params = new URLSearchParams();
+  const range = document.getElementById('f_range').value;
+  const plan = document.getElementById('f_plan').value;
+  const status = document.getElementById('f_status').value;
+  const search = document.getElementById('f_search').value.trim();
+  if(range) params.set('range', range);
+  if(plan) params.set('plan', plan);
+  if(status) params.set('status', status);
+  if(search) params.set('search', search);
+  return params.toString();
+}
+
+async function getJSON(url){
+  const res = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+  if(!res.ok) throw new Error('Request failed: '+url);
+  return res.json();
+}
+
+/* ── Simple SVG line chart (no external deps) ───────── */
+function lineChart(container, labels, series, color){
+  if(!series || !series.length){
+    container.innerHTML = '<div class="chart-empty">No data for this range</div>';
+    return;
+  }
+  if(series.length === 1){
+    container.innerHTML = `
+      <svg viewBox="0 0 600 180" preserveAspectRatio="none">
+        <circle cx="300" cy="90" r="5" fill="${color}"/>
+        <text x="300" y="75" text-anchor="middle" font-size="12" fill="var(--text-primary)">₹${series[0].toLocaleString()}</text>
+      </svg>
+      <div style="display:flex;justify-content:center;font-size:.65rem;color:var(--text-muted);margin-top:4px">${esc(labels[0])}</div>`;
+    return;
+  }
+  const w=600, h=180, pad=8;
+  const max = Math.max(1, ...series);
+  const min = 0;
+  const stepX = (w - pad*2) / Math.max(1, series.length - 1);
+  const scaleY = v => h - pad - ((v - min) / (max - min || 1)) * (h - pad*2);
+  const pts = series.map((v,i) => [pad + i*stepX, scaleY(v)]);
+  const linePath = pts.map((p,i) => (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const areaPath = linePath + ' L'+pts[pts.length-1][0].toFixed(1)+','+(h-pad)+' L'+pts[0][0].toFixed(1)+','+(h-pad)+' Z';
+  const gradId = 'grad_'+Math.random().toString(36).slice(2,8);
+  const lastLabel = labels[labels.length-1] || '';
+  const firstLabel = labels[0] || '';
+  container.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaPath}" fill="url(#${gradId})" stroke="none"/>
+      <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    </svg>
+    <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--text-muted);margin-top:4px">
+      <span>${esc(firstLabel)}</span><span>${esc(lastLabel)}</span>
+    </div>`;
+}
+
+function donutChart(container, labels, series, colors){
+  const total = series.reduce((a,b)=>a+b,0);
+  if(!total){ container.innerHTML = '<div class="chart-empty">No data</div>'; return; }
+  const r=42, cx=50, cy=50;
+  let acc=0;
+  const circumference = 2*Math.PI*r;
+  let segs='';
+  series.forEach((v,i)=>{
+    const frac = v/total;
+    const dash = frac*circumference;
+    const gap = circumference-dash;
+    segs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i]}" stroke-width="14"
+      stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${-acc}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    acc += dash;
+  });
+  const legend = labels.map((l,i)=>{
+    const pct = total? Math.round(series[i]/total*100) : 0;
+    return `<div class="legend-row"><span><span class="legend-dot" style="background:${colors[i]}"></span>${esc(l)}</span><span><b style="color:var(--text-primary)">${series[i]}</b> · ${pct}%</span></div>`;
+  }).join('');
+  container.innerHTML = `
+    <svg width="110" height="110" viewBox="0 0 100 100" style="flex-shrink:0">${segs}
+      <text x="50" y="46" text-anchor="middle" font-size="14" font-weight="700" fill="var(--text-primary)">${total}</text>
+      <text x="50" y="60" text-anchor="middle" font-size="7" fill="var(--text-muted)">gyms</text>
+    </svg>
+    <div class="donut-legend">${legend}</div>`;
+}
+
+/* ── System health helpers ──────────────────────────── */
+function svcColor(status){
+  return status==='Operational' || status==='Running' || status==='Worker Running' ? 'green'
+       : status==='Degraded' || status==='Warning' || status==='Configuration Error' ? 'yellow'
+       : status==='Not Configured' ? 'purple'
+       : 'red';
+}
+function svcTextClass(status){
+  const c = svcColor(status);
+  return c==='green' ? 'text-green' : c==='yellow' ? 'text-yellow' : c==='purple' ? 'text-purple' : 'text-red';
+}
+function pctBarColor(pct, thresholds){
+  if(pct===null||pct===undefined) return 'yellow';
+  if(pct>=thresholds[1]) return 'red';
+  if(pct>=thresholds[0]) return 'orange';
+  return 'green';
+}
+function setMetric(prefix, label, colorClass){
+  document.getElementById(`sys_${prefix}`).textContent = label;
+  document.getElementById(`sys_${prefix}`).className = 'health-val ' + colorClass;
+}
+
+let lastHealthCheck = null;
+let sysHealthTimer = null;
+
+/* Independent — refreshes on its own 30s timer AND is included in the
+   Refresh-button Promise.all. NEVER folded into the dashboard payload,
+   since system health needs to reflect near real-time infra state. */
+async function loadSystemHealth(){
+  try{
+    const d = await getJSON(`/api/platform-insights/system-health/`);
+    lastHealthCheck = new Date();
+
+    setMetric('db', d.database.status, svcTextClass(d.database.status));
+    document.getElementById('sys_db_bar').className = 'progress-fill ' + svcColor(d.database.status);
+    document.getElementById('sys_db_bar').style.width = d.database.progress + '%';
+
+    setMetric('redis', d.redis.status, svcTextClass(d.redis.status));
+    document.getElementById('sys_redis_bar').className = 'progress-fill ' + svcColor(d.redis.status);
+    document.getElementById('sys_redis_bar').style.width = d.redis.progress + '%';
+
+    setMetric('cron', d.cron.status, svcTextClass(d.cron.status));
+    document.getElementById('sys_cron_bar').className = 'progress-fill ' + svcColor(d.cron.status);
+    document.getElementById('sys_cron_bar').style.width = d.cron.progress + '%';
+    document.getElementById('sys_cron_last').textContent = d.cron.last_run
+      ? new Date(d.cron.last_run).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+      : 'No data yet';
+
+    setMetric('push', d.web_push.status, svcTextClass(d.web_push.status));
+    document.getElementById('sys_push_bar').className = 'progress-fill ' + svcColor(d.web_push.status);
+    document.getElementById('sys_push_bar').style.width = d.web_push.progress + '%';
+
+    const cpuPct = d.cpu.usage;
+    const cpuColor = cpuPct===null ? 'yellow' : pctBarColor(cpuPct, [50,80]);
+    document.getElementById('sys_cpu').textContent = cpuPct===null ? 'N/A' : cpuPct+'%';
+    document.getElementById('sys_cpu').className = 'health-val text-' + cpuColor;
+    document.getElementById('sys_cpu_bar').className = 'progress-fill ' + cpuColor;
+    document.getElementById('sys_cpu_bar').style.width = (cpuPct||0)+'%';
+
+    const memPct = d.memory.usage;
+    const memColor = memPct===null ? 'yellow' : pctBarColor(memPct, [70,90]);
+    document.getElementById('sys_mem').textContent = memPct===null ? 'N/A' : `${memPct}% (${d.memory.used}/${d.memory.total})`;
+    document.getElementById('sys_mem').className = 'health-val text-' + memColor;
+    document.getElementById('sys_mem_bar').className = 'progress-fill ' + memColor;
+    document.getElementById('sys_mem_bar').style.width = (memPct||0)+'%';
+
+    const diskPct = d.disk.usage;
+    const diskColor = diskPct===null ? 'yellow' : pctBarColor(diskPct, [75,90]);
+    document.getElementById('sys_disk').textContent = diskPct===null ? 'N/A' : `${diskPct}% (${d.disk.used}/${d.disk.total})`;
+    document.getElementById('sys_disk').className = 'health-val text-' + diskColor;
+    document.getElementById('sys_disk_bar').className = 'progress-fill ' + diskColor;
+    document.getElementById('sys_disk_bar').style.width = (diskPct||0)+'%';
+
+    setMetric('gunicorn', d.gunicorn.status, svcTextClass(d.gunicorn.status));
+    document.getElementById('sys_gunicorn_bar').className = 'progress-fill ' + svcColor(d.gunicorn.status);
+    document.getElementById('sys_gunicorn_bar').style.width = d.gunicorn.progress + '%';
+
+    setMetric('nginx', d.nginx.status, svcTextClass(d.nginx.status));
+    document.getElementById('sys_nginx_bar').className = 'progress-fill ' + svcColor(d.nginx.status);
+    document.getElementById('sys_nginx_bar').style.width = d.nginx.progress + '%';
+
+    const bj = d.background_jobs || {};
+    const bjLabel = bj.status==='Worker Running'
+      ? `Running (${bj.workers}w, ${bj.queue_size} active, ${bj.pending_tasks} pending)`
+      : bj.status;
+    setMetric('jobs', bjLabel, svcTextClass(bj.status));
+    document.getElementById('sys_jobs_bar').className = 'progress-fill ' + svcColor(bj.status);
+    document.getElementById('sys_jobs_bar').style.width = (bj.status==='Worker Running' ? 100 : 0) + '%';
+
+    document.getElementById('sys_uptime').textContent = d.uptime
+      ? `${d.uptime.days}d ${d.uptime.hours}h ${d.uptime.minutes}m`
+      : 'N/A';
+
+    const badge = document.getElementById('sys_badge');
+    badge.textContent = d.platform_status;
+    badge.className = 'badge ' + (d.platform_status==='Healthy' ? 'active' : d.platform_status==='Warning' ? 'expiring' : 'inactive');
+
+    updateHealthTimestamp();
+  }catch(e){
+    console.error(e);
+    const badge = document.getElementById('sys_badge');
+    badge.textContent = 'Critical';
+    badge.className = 'badge inactive';
+  }
+}
+
+function updateHealthTimestamp(){
+  if(!lastHealthCheck) return;
+  const secs = Math.round((Date.now() - lastHealthCheck.getTime())/1000);
+  document.getElementById('sys_last_updated').textContent = `Last updated: ${secs}s ago`;
+}
+setInterval(updateHealthTimestamp, 1000);
+
+/* Independent — short-TTL live notifications feed. Kept separate from the
+   dashboard call since it refreshes more frequently than the 5-minute
+   analytics cache. Fetched here so the state is available for a future
+   notifications widget without re-plumbing the loaders. */
+let latestNotifications = null;
+async function loadNotifications(){
+  try{
+    latestNotifications = await getJSON(`/api/platform-insights/notifications/`);
+  }catch(e){
+    console.error(e);
+  }
+  return latestNotifications;
+}
+
+/* ── Render functions — pure, no fetching. Each takes the matching slice
+   of the dashboard payload and only touches the DOM. Passing `null` (a
+   failed fetch) renders the same "couldn't load" states the old
+   individual loaders used to show. ───────────────────────────────── */
+
+function renderKPI(d){
+  if(!d) return;
+  document.getElementById('kpi_total_gyms').textContent = fmtInt(d.total_gyms);
+  document.getElementById('kpi_total_gyms').classList.remove('skel');
+  document.getElementById('kpi_active_gyms').textContent = fmtInt(d.active_gyms);
+  document.getElementById('kpi_active_gyms').classList.remove('skel');
+  document.getElementById('kpi_total_members').textContent = fmtInt(d.total_members);
+  document.getElementById('kpi_total_members').classList.remove('skel');
+  document.getElementById('kpi_monthly_revenue').textContent = fmtMoney(d.monthly_revenue);
+  document.getElementById('kpi_monthly_revenue').classList.remove('skel');
+  trendBadge(document.getElementById('kpi_gyms_trend'), d.growth_pct);
+  trendBadge(document.getElementById('kpi_revenue_trend'), d.revenue_growth_pct);
+  document.getElementById('kpi_renewal_trend').textContent = (d.renewal_rate ?? 0) + '% renewal';
+  document.getElementById('kpi_renewal_trend').className = 'kpi-trend neutral';
+}
+
+function renderPlatformGrowth(d){
+  if(!d){ document.getElementById('growthChart').innerHTML='<div class="chart-empty">Failed to load</div>'; return; }
+  lineChart(document.getElementById('growthChart'), d.labels, d.series, '#ff7a00');
+  document.getElementById('growth_today').textContent = fmtInt(d.today);
+  document.getElementById('growth_week').textContent = fmtInt(d.this_week);
+  document.getElementById('growth_month').textContent = fmtInt(d.this_month);
+  document.getElementById('growth_prev').textContent = fmtInt(d.previous_month);
+  document.getElementById('growth_summary').textContent = (d.growth_pct>=0?'+':'')+d.growth_pct+'% vs last month';
+}
+
+function renderMemberGrowth(d){
+  if(!d){ document.getElementById('memberChart').innerHTML='<div class="chart-empty">Failed to load</div>'; return; }
+  lineChart(document.getElementById('memberChart'), d.labels, d.series, '#3b82f6');
+  document.getElementById('mem_today').textContent = fmtInt(d.new_today);
+  document.getElementById('mem_week').textContent = fmtInt(d.new_this_week);
+  document.getElementById('mem_month').textContent = fmtInt(d.new_this_month);
+  document.getElementById('mem_avg').textContent = d.avg_members_per_gym ?? '—';
+  document.getElementById('member_summary').textContent = fmtInt(d.total_members)+' total members';
+}
+
+function renderSubscriptionAnalytics(d){
+  const el = document.getElementById('subAnalytics');
+  if(!d){ el.innerHTML='<div class="chart-empty">Failed to load</div>'; return; }
+  if(!d.plans || !d.plans.length){ el.innerHTML='<div class="chart-empty">No plan data</div>'; return; }
+  const maxCount = Math.max(...d.plans.map(p=>p.gym_count), 1);
+  el.innerHTML = d.plans.map(function(p){
+    const pct = Math.round(p.gym_count/maxCount*100);
+    const star = p.name===d.most_popular_plan ? ' ⭐' : '';
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:.78rem;font-weight:500;color:var(--text-secondary)">${esc(p.name)}${star}</span>
+        <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--text-primary)">${p.gym_count} gyms · ${fmtMoney(p.monthly_revenue)}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill orange" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderRevenueAnalytics(d){
+  if(!d){ document.getElementById('revenueChart').innerHTML='<div class="chart-empty">Failed to load</div>'; return; }
+  document.getElementById('rev_today').textContent = fmtMoney(d.todays_revenue);
+  document.getElementById('rev_today').classList.remove('skel');
+  document.getElementById('rev_week').textContent = fmtMoney(d.weekly_revenue);
+  document.getElementById('rev_week').classList.remove('skel');
+  document.getElementById('rev_mrr').textContent = fmtMoney(d.mrr);
+  document.getElementById('rev_mrr').classList.remove('skel');
+  document.getElementById('rev_arr').textContent = fmtMoney(d.arr);
+  document.getElementById('rev_arr').classList.remove('skel');
+  lineChart(document.getElementById('revenueChart'), d.labels, d.series, '#ff7a00');
+}
+
+function renderPlatformActivity(d){
+  if(!d) return;
+  document.getElementById('act_checkins').textContent = fmtInt(d.members_checked_in);
+  document.getElementById('act_invoices').textContent = fmtInt(d.invoices_generated);
+  document.getElementById('act_payments').textContent = fmtInt(d.payments_recorded);
+  document.getElementById('act_new_reg').textContent = fmtInt(d.new_registrations);
+  document.querySelectorAll('#activityGrid .skel').forEach(el=>el.classList.remove('skel'));
+}
+
+function renderEngagement(d){
+  if(!d) return;
+  document.getElementById('eng_daily').textContent = fmtInt(d.daily_active_gyms);
+  document.getElementById('eng_weekly').textContent = fmtInt(d.weekly_active_gyms);
+  document.getElementById('eng_monthly').textContent = fmtInt(d.monthly_active_gyms);
+  document.getElementById('eng_attendance').textContent = (d.avg_attendance_pct ?? 0)+'%';
+}
+
+function renderRenewal(d){
+  if(!d) return;
+  document.getElementById('rc_renewal').textContent = (d.renewal_rate ?? 0)+'%';
+  document.getElementById('rc_churn').textContent = (d.churn_rate ?? 0)+'%';
+  document.getElementById('rc_renewed').textContent = fmtInt(d.renewed);
+  document.getElementById('rc_expired').textContent = fmtInt(d.expired);
+}
+
+function renderPayments(d){
+  if(!d) return;
+  document.getElementById('pay_success_rate').textContent = (d.success_rate ?? 0)+'%';
+  document.getElementById('pay_success_bar').style.width = (d.success_rate ?? 0)+'%';
+  document.getElementById('pay_failure_rate').textContent = (d.failure_rate ?? 0)+'%';
+  document.getElementById('pay_failure_bar').style.width = (d.failure_rate ?? 0)+'%';
+  document.getElementById('pay_pending').textContent = fmtInt(d.pending);
+  document.getElementById('pay_avg').textContent = fmtMoney(d.avg_amount);
+}
+
+function renderMemberDistribution(d){
+  const body = document.getElementById('memberDistBody');
+  if(!d){ body.innerHTML='<tr><td colspan="4"><div class="empty-state">Failed to load</div></td></tr>'; return; }
+  if(!d.gyms || !d.gyms.length){ body.innerHTML='<tr><td colspan="4"><div class="empty-state">No data available</div></td></tr>'; return; }
+  body.innerHTML = d.gyms.map(function(g){
+    const up = (g.growth_pct ?? 0) >= 0;
+    return `<tr>
+      <td class="gym-name-cell">${esc(g.gym_name)}</td>
+      <td>${fmtInt(g.members)}</td>
+      <td><span style="color:${pctColor(g.capacity_pct)}">${g.capacity_pct}%</span></td>
+      <td class="${up?'text-green':'text-red'}">${up?'↑':'↓'} ${Math.abs(g.growth_pct)}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTopGyms(d){
+  const el = document.getElementById('topGymsList');
+  if(!d){ el.innerHTML='<div class="empty-state">Failed to load</div>'; return; }
+  if(!d.gyms || !d.gyms.length){ el.innerHTML='<div class="empty-state">No revenue data yet</div>'; return; }
+  el.innerHTML = d.gyms.map(function(g){
+    const rankClass = g.rank===1?'rank-1':g.rank===2?'rank-2':g.rank===3?'rank-3':'rank-other';
+    return `<div class="leader-row">
+      <div class="leader-rank ${rankClass}">${g.rank}</div>
+      <div><div class="leader-gym">${esc(g.gym_name)}</div><div class="leader-plan">${g.members} members · ${g.active_trainers} trainers</div></div>
+      <div class="leader-stat primary">${fmtMoney(g.revenue)}</div>
+      <div class="leader-stat">${g.members}</div>
+      <div class="leader-stat">${g.renewal_pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+function renderLowGyms(d){
+  const lowBody = document.getElementById('lowActivityBody');
+  const inactiveBody = document.getElementById('inactiveOwnersBody');
+  if(!d){
+    lowBody.innerHTML='<tr><td colspan="2"><div class="empty-state">Failed to load</div></td></tr>';
+    inactiveBody.innerHTML='<tr><td colspan="3"><div class="empty-state">Failed to load</div></td></tr>';
+    return;
+  }
+  lowBody.innerHTML = (d.lowest_activity && d.lowest_activity.length)
+    ? d.lowest_activity.map(g=>`<tr><td class="gym-name-cell">${esc(g.gym_name)}</td><td>${fmtInt(g.member_count)}</td></tr>`).join('')
+    : '<tr><td colspan="2"><div class="empty-state">No data</div></td></tr>';
+  inactiveBody.innerHTML = (d.inactive_owners && d.inactive_owners.length)
+    ? d.inactive_owners.map(g=>`<tr><td class="gym-name-cell">${esc(g.gym_name)}</td><td>${esc(g['owner__username'])}</td><td>${g['owner__last_login'] ? new Date(g['owner__last_login']).toLocaleDateString('en-IN') : 'Never'}</td></tr>`).join('')
+    : '<tr><td colspan="3"><div class="empty-state">No inactive owners</div></td></tr>';
+}
+
+function generateInsights(kpi, growth, renewalChurn){
+  const list = document.getElementById('insightsList');
+  const insights = [];
+  if(kpi){
+    if(kpi.revenue_growth_pct !== undefined){
+      insights.push({
+        type: kpi.revenue_growth_pct>=0?'success':'danger',
+        text: `Monthly revenue is <b>${fmtMoney(kpi.monthly_revenue)}</b>, ${kpi.revenue_growth_pct>=0?'up':'down'} <b>${Math.abs(kpi.revenue_growth_pct)}%</b> vs last month.`
+      });
+    }
+    if(kpi.renewal_rate !== undefined){
+      insights.push({ type: kpi.renewal_rate>=70?'success':'warn', text:`Platform-wide renewal rate stands at <b>${kpi.renewal_rate}%</b>.` });
+    }
+  }
+  if(growth && growth.growth_pct !== undefined){
+    insights.push({
+      type: growth.growth_pct>=0?'success':'warn',
+      text:`${growth.growth_pct>=0?'Gym signups grew':'Gym signups fell'} by <b>${Math.abs(growth.growth_pct)}%</b> compared to the previous month.`
+    });
+  }
+  if(renewalChurn && renewalChurn.churn_rate !== undefined && renewalChurn.churn_rate > 15){
+    insights.push({ type:'danger', text:`Churn rate is <b>${renewalChurn.churn_rate}%</b> — consider reviewing at-risk gyms.` });
+  }
+  if(!insights.length) insights.push({ type:'info', text:'Not enough data yet to generate insights for this filter.' });
+
+  const iconMap={
+    success:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    warn:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    danger:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    info:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+  };
+  list.innerHTML = insights.map(i=>`<div class="insight-card"><div class="insight-icon ${i.type}">${iconMap[i.type]}</div><div class="insight-text">${i.text}</div></div>`).join('');
+}
+
+/* ── Single aggregated loader ─────────────────────────────────────────
+   Replaces the ~11 separate /api/platform-insights/{widget}/ fetches
+   with ONE call to /api/platform-insights/dashboard/, then fans the
+   response out to the pure render functions above. */
+async function loadDashboard(){
+  let dashboard;
+  try{
+    dashboard = await getJSON(
+      `/api/platform-insights/dashboard/?${buildQuery()}`
+    );
+  }catch(e){
+    console.error(e);
+    renderKPI(null);
+    renderPlatformGrowth(null);
+    renderMemberGrowth(null);
+    renderSubscriptionAnalytics(null);
+    renderRevenueAnalytics(null);
+    renderMemberDistribution(null);
+    renderPlatformActivity(null);
+    renderEngagement(null);
+    renderRenewal(null);
+    renderPayments(null);
+    renderTopGyms(null);
+    renderLowGyms(null);
+    generateInsights(null, null, null);
+    throw e;
+  }
+
+  renderKPI(dashboard.kpi_summary);
+  renderPlatformGrowth(dashboard.platform_growth);
+  renderMemberGrowth(dashboard.member_growth);
+  renderSubscriptionAnalytics(dashboard.subscription_analytics);
+  renderRevenueAnalytics(dashboard.revenue_analytics);
+  renderMemberDistribution(dashboard.member_distribution);
+  renderPlatformActivity(dashboard.platform_activity);
+  renderEngagement(dashboard.engagement_analytics);
+  renderRenewal(dashboard.renewal_churn);
+  renderPayments(dashboard.payment_analytics);
+  renderTopGyms(dashboard.top_performing_gyms);
+  renderLowGyms(dashboard.low_performing_gyms);
+
+  generateInsights(dashboard.kpi_summary, dashboard.platform_growth, dashboard.renewal_churn);
+
+  return dashboard;
+}
+
+/* ── Orchestration ──────────────────────────────────── */
+const statusDot = document.getElementById('statusDot');
+const refreshBtn = document.getElementById('refreshBtn');
+
+async function loadAll(){
+  statusDot.className = 'status-dot loading';
+  refreshBtn.classList.add('spinning');
+
+  try{
+    await Promise.all([
+      loadDashboard(),
+      loadSystemHealth(),
+      loadNotifications()
+    ]);
+    statusDot.className = 'status-dot';
+  }catch(e){
+    console.error(e);
+    statusDot.className = 'status-dot error';
+  }finally{
+    refreshBtn.classList.remove('spinning');
+  }
+}
+
+/* ── Filter wiring ──────────────────────────────────── */
+['f_range','f_plan','f_status'].forEach(function(id){
+  document.getElementById(id).addEventListener('change', loadAll);
+});
+let searchTimer;
+document.getElementById('f_search').addEventListener('input', function(){
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(loadAll, 500);
+});
+refreshBtn.addEventListener('click', loadAll);
+
+// System health refreshes independently every 30s, separate from the
+// filter-driven loadAll() cycle.
+sysHealthTimer = setInterval(loadSystemHealth, 30000);
+
+loadAll();
+
+})();
+</script>
+</body>
+</html>

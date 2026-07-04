@@ -1,0 +1,372 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EnterGYM — Add New Gym</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:'Barlow',system-ui,sans-serif;background:#080808;color:#f5f5f5;min-height:100vh}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+
+:root{
+  --e-surface:#111111;--e-surface-2:#181818;
+  --e-border:rgba(255,255,255,.06);--e-border-2:rgba(255,255,255,.11);
+  --e-orange:#ff5a00;--e-orange-dim:rgba(255,90,0,.10);--e-orange-bdr:rgba(255,90,0,.28);--e-orange-glow:rgba(255,90,0,.20);
+  --e-red:#ef5350;--e-red-dim:rgba(239,83,80,.10);--e-red-bdr:rgba(239,83,80,.28);
+  --e-green:#22c55e;--e-green-dim:rgba(34,197,94,.10);
+  --e-text-hi:#f5f5f5;--e-text-mid:#888;--e-text-lo:#444;
+  --e-font-d:"Barlow Condensed",sans-serif;--e-font-b:"Barlow",sans-serif;
+  --e-radius-lg:18px;--e-radius-md:12px;--e-radius-pill:40px;
+}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#111}
+::-webkit-scrollbar-thumb{background:#2a2a38;border-radius:2px}
+
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:var(--e-surface);border-bottom:1px solid var(--e-border);
+  padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;
+}
+.topbar-title{font-family:var(--e-font-d);font-weight:900;font-size:1.15rem;text-transform:uppercase;letter-spacing:-.01em}
+.topbar-title::before{content:"◈ ";color:var(--e-orange)}
+.back-link{
+  display:flex;align-items:center;gap:8px;font-family:var(--e-font-d);
+  font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--e-text-mid);padding:8px 16px;border-radius:var(--e-radius-pill);
+  border:1px solid var(--e-border-2);
+}
+.back-link:hover{color:var(--e-text-hi);border-color:var(--e-orange-bdr)}
+
+.page-wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px}
+
+.alert{padding:12px 16px;border-radius:var(--e-radius-md);font-size:.85rem;margin-bottom:20px;border:1px solid}
+.alert.success{background:var(--e-green-dim);border-color:var(--e-green);color:var(--e-green)}
+.alert.error{background:var(--e-red-dim);border-color:var(--e-red);color:var(--e-red)}
+
+form{background:var(--e-surface);border:1px solid var(--e-border-2);border-radius:var(--e-radius-lg);overflow:hidden}
+
+.section{padding:26px 28px;border-bottom:1px solid var(--e-border)}
+.section:last-of-type{border-bottom:none}
+.section-title{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--e-font-d);font-size:.75rem;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--e-text-lo);
+  margin-bottom:18px;
+}
+.section-title::before{content:"◈";color:var(--e-orange)}
+.section-title::after{content:"";flex:1;height:1px;background:var(--e-border)}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.span-2{grid-column:1/-1}
+
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{
+  font-family:var(--e-font-d);font-size:.68rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--e-text-mid);
+}
+.field input,.field select,.field textarea{
+  background:var(--e-surface-2);border:1px solid var(--e-border-2);color:var(--e-text-hi);
+  border-radius:var(--e-radius-md);padding:12px 15px;font-family:var(--e-font-b);
+  font-size:.85rem;outline:none;transition:border-color .2s, box-shadow .2s;width:100%;
+}
+.field textarea{resize:vertical}
+.field input::placeholder{color:var(--e-text-lo)}
+.field input:hover,.field input:focus,.field select:hover,.field select:focus,.field textarea:focus{
+  border-color:var(--e-orange-bdr);box-shadow:0 0 0 3px var(--e-orange-glow);
+}
+.field select{cursor:pointer}
+input[type="date"]{color-scheme:dark}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1) saturate(5) hue-rotate(10deg);cursor:pointer;opacity:.7}
+input[type="file"]{padding:9px 12px;font-size:.78rem}
+input[type="color"]{padding:4px;height:44px;cursor:pointer}
+
+.checkbox-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--e-surface-2);border:1px solid var(--e-border-2);border-radius:var(--e-radius-md)}
+.checkbox-row input{width:auto}
+.checkbox-row label{margin:0;font-size:.78rem;text-transform:none;letter-spacing:0;color:var(--e-text-hi);font-weight:500}
+
+.field-error{color:var(--e-red);background:var(--e-red-dim);border:1px solid var(--e-red-bdr);border-radius:6px;padding:5px 9px;font-size:.75rem;margin-top:2px}
+.field-hint{font-size:.72rem;color:var(--e-text-lo)}
+
+.owner-search-box{position:relative}
+.owner-results{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;
+  background:var(--e-surface-2);border:1px solid var(--e-border-2);border-radius:var(--e-radius-md);
+  max-height:220px;overflow-y:auto;display:none;
+}
+.owner-results.open{display:block}
+.owner-result-item{
+  padding:10px 14px;font-size:.8rem;cursor:pointer;border-bottom:1px solid var(--e-border);
+  display:flex;justify-content:space-between;gap:10px;
+}
+.owner-result-item:last-child{border-bottom:none}
+.owner-result-item:hover{background:var(--e-orange-dim)}
+.owner-result-item.disabled{opacity:.4;cursor:not-allowed}
+.owner-result-item .username{color:var(--e-text-hi);font-weight:600;font-family:'JetBrains Mono',monospace}
+.owner-result-item .meta{color:var(--e-text-mid);font-size:.72rem}
+.owner-selected{
+  display:none;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--e-orange-dim);border:1px solid var(--e-orange-bdr);
+  border-radius:var(--e-radius-md);padding:12px 15px;
+}
+.owner-selected.open{display:flex}
+.owner-selected .name{font-weight:700;color:var(--e-text-hi)}
+.owner-selected .sub{font-size:.75rem;color:var(--e-text-mid)}
+.owner-change-btn{
+  font-family:var(--e-font-d);font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--e-orange);padding:6px 12px;border:1px solid var(--e-orange-bdr);border-radius:var(--e-radius-pill);
+}
+
+.actions-bar{
+  padding:22px 28px;display:flex;justify-content:flex-end;gap:10px;
+  background:var(--e-surface);border-top:1px solid var(--e-border);
+}
+.btn{
+  font-family:var(--e-font-d);font-weight:700;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;
+  border-radius:var(--e-radius-pill);padding:12px 26px;
+}
+.btn-cancel{background:rgba(255,255,255,.05);border:1px solid var(--e-border-2);color:var(--e-text-mid)}
+.btn-cancel:hover{color:var(--e-text-hi)}
+.btn-submit{background:var(--e-orange);border:1px solid var(--e-orange);color:#000;box-shadow:0 0 22px rgba(255,90,0,.35)}
+.btn-submit:hover{background:#ff6a1a;box-shadow:0 0 32px rgba(255,90,0,.55)}
+
+@media (max-width:640px){
+  .grid,.grid-3{grid-template-columns:1fr}
+  .section{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">Add New Gym</div>
+  <a class="back-link" href="{% url 'all_gyms' %}">← Back to All Gyms</a>
+</div>
+
+<div class="page-wrap">
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert {% if message.tags == 'error' %}error{% else %}success{% endif %}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    <div class="section">
+      <div class="section-title">Owner</div>
+      <div class="field owner-search-box">
+        <label>Search Owner by Phone Number</label>
+        <input type="text" id="ownerSearchInput" placeholder="Start typing phone number…" autocomplete="off"
+               value="{{ form.owner_phone.value|default:'' }}">
+        <div class="owner-results" id="ownerResults"></div>
+        {% if form.owner_phone.errors %}<div class="field-error">{{ form.owner_phone.errors|join:", " }}</div>{% endif %}
+        <div class="field-hint">Owner must already have an account (they sign up first). Search finds them by phone/username.</div>
+      </div>
+      <div class="owner-selected" id="ownerSelected" style="margin-top:10px">
+        <div>
+          <div class="name" id="ownerSelectedName"></div>
+          <div class="sub" id="ownerSelectedMeta"></div>
+        </div>
+        <button type="button" class="owner-change-btn" id="ownerChangeBtn">Change</button>
+      </div>
+      <input type="hidden" name="owner_phone" id="ownerPhoneHidden" value="{{ form.owner_phone.value|default:'' }}">
+    </div>
+
+    <div class="section">
+      <div class="section-title">Identity &amp; Subscription</div>
+      <div class="grid">
+        <div class="field">
+          <label>Gym Name</label>
+          <input type="text" name="gym_name" id="gymNameInput" value="{{ form.gym_name.value|default:'' }}" required>
+          {% if form.gym_name.errors %}<div class="field-error">{{ form.gym_name.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label>Gym Code (slug)</label>
+          <input type="text" name="gym_code" id="gymCodeInput" value="{{ form.gym_code.value|default:'' }}" required>
+          {% if form.gym_code.errors %}<div class="field-error">{{ form.gym_code.errors|join:", " }}</div>{% endif %}
+          <div class="field-hint">Auto-filled from gym name — edit if you need something different.</div>
+        </div>
+        <div class="field">
+          <label>Plan</label>
+          {{ form.plan }}
+        </div>
+        <div class="checkbox-row" style="align-self:end">
+          {{ form.active }}
+          <label for="{{ form.active.id_for_label }}">Active</label>
+        </div>
+        <div class="field">
+          <label>Subscription Start</label>
+          {{ form.subscription_start }}
+        </div>
+        <div class="field">
+          <label>Subscription End</label>
+          {{ form.subscription_end }}
+        </div>
+        <div class="field">
+          <label>Member Limit</label>
+          {{ form.member_limit }}
+        </div>
+        <div class="field">
+          <label>Trainer Limit</label>
+          {{ form.trainer_limit }}
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Module Flags</div>
+      <div class="grid-3">
+        <div class="checkbox-row">{{ form.enable_store }}<label for="{{ form.enable_store.id_for_label }}">Store</label></div>
+        <div class="checkbox-row">{{ form.enable_attendance }}<label for="{{ form.enable_attendance.id_for_label }}">Attendance</label></div>
+        <div class="checkbox-row">{{ form.enable_face_recognition }}<label for="{{ form.enable_face_recognition.id_for_label }}">Face Recognition</label></div>
+        <div class="checkbox-row">{{ form.enable_trainers }}<label for="{{ form.enable_trainers.id_for_label }}">Trainers</label></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">White-label</div>
+      <div class="grid">
+        <div class="field"><label>App Name</label>{{ form.app_name }}</div>
+        <div class="field"><label>App Short Name</label>{{ form.app_short_name }}</div>
+        <div class="field"><label>Logo</label>{{ form.logo }}</div>
+        <div class="field"><label>Favicon</label>{{ form.favicon }}</div>
+        <div class="field"><label>Splash Logo</label>{{ form.splash_logo }}</div>
+        <div class="field"><label>Theme Color</label>{{ form.theme_color }}</div>
+        <div class="field"><label>Contact Email</label>{{ form.contact_email }}</div>
+        <div class="field"><label>Contact Phone</label>{{ form.contact_phone }}</div>
+        <div class="field"><label>WhatsApp Number</label>{{ form.whatsapp_number }}</div>
+        <div class="field"><label>City</label>{{ form.city }}</div>
+        <div class="field span-2"><label>Address</label>{{ form.address }}</div>
+        <div class="field"><label>Website</label>{{ form.website }}</div>
+        <div class="field"><label>App Download URL</label>{{ form.app_download_url }}</div>
+        <div class="field span-2"><label>Receipt Footer</label>{{ form.receipt_footer }}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">UPI Payment Settings</div>
+      <div class="checkbox-row" style="margin-bottom:16px;max-width:220px">
+        {{ form.upi_enabled }}<label for="{{ form.upi_enabled.id_for_label }}">Enable UPI</label>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label>UPI ID</label>{{ form.upi_id }}
+          {% if form.upi_id.errors %}<div class="field-error">{{ form.upi_id.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label>Display Name</label>{{ form.upi_display_name }}
+          {% if form.upi_display_name.errors %}<div class="field-error">{{ form.upi_display_name.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="field span-2"><label>Payment Note</label>{{ form.upi_payment_note }}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Geo-fence</div>
+      <div class="grid-3">
+        <div class="field"><label>Latitude</label>{{ form.latitude }}</div>
+        <div class="field"><label>Longitude</label>{{ form.longitude }}</div>
+        <div class="field"><label>Radius (meters)</label>{{ form.radius_meters }}</div>
+      </div>
+      <div class="field" style="margin-top:16px"><label>Map (embed / notes)</label>{{ form.map }}</div>
+    </div>
+
+    <div class="actions-bar">
+      <a href="{% url 'all_gyms' %}" class="btn btn-cancel">Cancel</a>
+      <button type="submit" class="btn btn-submit">Create Gym</button>
+    </div>
+  </form>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+(function(){
+  const nameInput = document.getElementById('gymNameInput');
+  const codeInput = document.getElementById('gymCodeInput');
+  let codeTouched = !!codeInput.value;
+  codeInput.addEventListener('input', () => { codeTouched = true; });
+  function slugify(s){
+    return s.toLowerCase().trim()
+      .replace(/[^a-z0-9\s-]/g,'')
+      .replace(/\s+/g,'-')
+      .replace(/-+/g,'-')
+      .slice(0,20);
+  }
+  nameInput.addEventListener('input', () => {
+    if(!codeTouched) codeInput.value = slugify(nameInput.value);
+  });
+
+  const searchInput = document.getElementById('ownerSearchInput');
+  const resultsBox   = document.getElementById('ownerResults');
+  const hiddenPhone  = document.getElementById('ownerPhoneHidden');
+  const selectedBox  = document.getElementById('ownerSelected');
+  const selectedName = document.getElementById('ownerSelectedName');
+  const selectedMeta = document.getElementById('ownerSelectedMeta');
+  const changeBtn    = document.getElementById('ownerChangeBtn');
+
+  let debounceTimer = null;
+
+  function searchOwners(q){
+    fetch(`{% url 'search_owner_by_phone' %}?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(data => {
+        if(!data.results.length){
+          resultsBox.innerHTML = `<div class="owner-result-item disabled">No matching users</div>`;
+          resultsBox.classList.add('open');
+          return;
+        }
+        resultsBox.innerHTML = data.results.map(u => `
+          <div class="owner-result-item ${u.already_owns_gym ? 'disabled' : ''}"
+               data-username="${u.username}" data-name="${u.full_name}" data-email="${u.email}">
+            <span class="username">${u.username}</span>
+            <span class="meta">${u.already_owns_gym ? 'Already owns a gym' : u.full_name}</span>
+          </div>
+        `).join('');
+        resultsBox.classList.add('open');
+      });
+  }
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim();
+    hiddenPhone.value = q;
+    clearTimeout(debounceTimer);
+    if(q.length < 2){ resultsBox.classList.remove('open'); return; }
+    debounceTimer = setTimeout(() => searchOwners(q), 250);
+  });
+
+  resultsBox.addEventListener('click', (e) => {
+    const item = e.target.closest('.owner-result-item');
+    if(!item || item.classList.contains('disabled')) return;
+    const username = item.dataset.username;
+    hiddenPhone.value = username;
+    selectedName.textContent = username;
+    selectedMeta.textContent = item.dataset.name + (item.dataset.email !== '—' ? ' · ' + item.dataset.email : '');
+    selectedBox.classList.add('open');
+    searchInput.style.display = 'none';
+    resultsBox.classList.remove('open');
+  });
+
+  changeBtn.addEventListener('click', () => {
+    selectedBox.classList.remove('open');
+    searchInput.style.display = '';
+    searchInput.value = '';
+    hiddenPhone.value = '';
+    searchInput.focus();
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.owner-search-box')) resultsBox.classList.remove('open');
+  });
+})();
+</script>
+</body>
+</html>

@@ -109,7 +109,7 @@
       <div class="nav-actions">
         {% if request.user.is_authenticated %} 
         {% if request.user.is_superuser%}
-        <a href="/admin/" class="btn-ghost">Admin Panel</a>
+        <a href="/superadmin/dashboard/" class="btn-ghost">Dashboard</a>
         {% endif %}
         <form action="{% url 'logout' %}" method="POST" style="display: inline">
           {% csrf_token %}

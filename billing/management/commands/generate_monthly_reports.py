@@ -22,6 +22,8 @@ Usage:
 from datetime import date
 
 from django.core.management.base import BaseCommand
+from django.core.cache import cache
+from django.utils import timezone
 
 from Gym.models import Gym
 from billing.services.monthly_report_store import (
@@ -111,6 +113,12 @@ class Command(BaseCommand):
                     self.style.ERROR(f"  FAIL  {gym.gym_code:<20} {exc}")
                 )
                 fail_count += 1
+        if ok_count > 0 or skip_count > 0:
+            cache.set(
+                "cron:monthly_reports:last_run",
+                timezone.now(),
+                timeout=None,
+            )
 
         self.stdout.write(
             self.style.SUCCESS(
