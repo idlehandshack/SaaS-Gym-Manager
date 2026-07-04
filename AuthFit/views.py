@@ -1944,24 +1944,25 @@ def today_attendance(request):
 def freeze_membership(request):
     gym   = getattr(request, 'gym', None)
     query = request.GET.get("q", "").strip()
-    qs = Enrollment.objects.select_related("selectPlan").order_by("fullname")
+
+    qs = Enrollment.objects.filter(is_deleted=False).select_related("selectPlan").order_by("fullname")
     if gym:
         qs = qs.filter(gym=gym)
     if query:
         qs = qs.filter(unique_id=query)
- 
+
     paginator = Paginator(qs, 20)
     page_obj  = paginator.get_page(request.GET.get("page", 1))
- 
-    # ── "Change Membership Plan" card data ──────────────────────────────
-    # Permission gate matches the spec: only Gym Owner / Receptionist (or
-    # super admin) ever see the button — everyone else viewing this
-    # freeze page just won't see the card.
+
     can_change_plan = bool(
         getattr(request, 'is_super_admin', False)
         or getattr(request, 'staff_role', None) in ('gym_owner', 'receptionist')
     )
- 
+    can_delete_enrollment = bool(
+        getattr(request, 'is_super_admin', False)
+        or getattr(request, 'staff_role', None) == 'gym_owner'
+    )
+
     plans = []
     change_plan_rows = []
     if can_change_plan and gym:
@@ -1970,11 +1971,7 @@ def freeze_membership(request):
             .order_by('price')
             .values('id', 'plan', 'price', 'duration_days')
         )
- 
         member_ids = [e.id for e in page_obj.object_list]
- 
-        # Latest issued invoice number per member — shown in the
-        # confirmation dialog before the plan-change POST fires.
         invoice_map = {}
         invoices_qs = (
             Invoice.objects
@@ -1983,7 +1980,7 @@ def freeze_membership(request):
         )
         for inv in invoices_qs:
             invoice_map.setdefault(inv.member_id, inv.invoice_number)
- 
+
         for e in page_obj.object_list:
             change_plan_rows.append({
                 "id": e.id,
@@ -2000,14 +1997,123 @@ def freeze_membership(request):
                 "due_date_display": e.DueDate.strftime("%d %b %Y") if e.DueDate else "—",
                 "invoice_number": invoice_map.get(e.id, "—"),
             })
- 
+
+    # ── Delete Enrollment tab: independent search / filter / pagination ──
+    del_page_obj = None
+    del_query = ""
+    del_status = "all"
+    if can_delete_enrollment and gym:
+        del_query, del_status, del_page_obj = _build_delete_enrollment_page(request, gym)
+
     return render(request, "freeze_membership.html", {
         "page_obj": page_obj,
         "query": query,
         "can_change_plan": can_change_plan,
+        "can_delete_enrollment": can_delete_enrollment,
         "plans": plans,
         "change_plan_rows": change_plan_rows,
+        "del_page_obj": del_page_obj,
+        "del_query": del_query,
+        "del_status": del_status,
+        "del_status_choices": [
+            ("all", "All"),
+            ("active", "Active"),
+            ("frozen", "Frozen"),
+            ("expired", "Expired"),
+            ("pending_signup", "Pending Signup"),
+            ("duplicate", "Duplicate Candidates"),
+        ],
     })
+
+
+def _build_delete_enrollment_page(request, gym):
+    """
+    Builds the paginated, searched, filtered row-set for the Delete
+    Enrollment tab. Returns (query, status_filter, page_obj).
+    Every enrollment is shown here (not just duplicates) — duplicate
+    detection only adds a warning badge, it never restricts the list.
+    """
+    from django.db.models import Count
+    from datetime import timedelta
+
+    today = timezone.localdate()
+
+    del_query  = request.GET.get("dq", "").strip()
+    del_status = request.GET.get("dstatus", "all").strip() or "all"
+
+    base_qs = (
+        Enrollment.objects
+        .filter(gym=gym, is_deleted=False)
+        .select_related("selectPlan", "trainer")
+        .order_by("-doj")
+    )
+
+    if del_query:
+        base_qs = base_qs.filter(
+            Q(fullname__icontains=del_query) |
+            Q(phone__icontains=del_query) |
+            Q(unique_id__icontains=del_query)
+        )
+
+    if del_status == "active":
+        base_qs = base_qs.filter(user__isnull=False, DueDate__gte=today)
+    elif del_status == "frozen":
+        # "Frozen" = a DueDate extension already applied and pushed comfortably
+        # into the future relative to their plan's normal cycle isn't tracked
+        # as a separate flag today, so we treat "frozen" as: active, not
+        # expiring soon, not pending signup. Adjust here if/when a dedicated
+        # frozen flag is added to the model.
+        base_qs = base_qs.filter(user__isnull=False, DueDate__gt=today + timedelta(days=5))
+    elif del_status == "expired":
+        base_qs = base_qs.filter(DueDate__lt=today)
+    elif del_status == "pending_signup":
+        base_qs = base_qs.filter(user__isnull=True)
+    elif del_status == "duplicate":
+        # Computed below — pull the full candidate list then filter in Python
+        # since duplicate detection needs a phone-frequency aggregate.
+        dup_phones = (
+            Enrollment.objects
+            .filter(gym=gym, is_deleted=False)
+            .values("phone")
+            .annotate(cnt=Count("id"))
+            .filter(cnt__gt=1)
+            .values_list("phone", flat=True)
+        )
+        base_qs = base_qs.filter(phone__in=list(dup_phones))
+
+    paginator = Paginator(base_qs, 20)
+    page_obj  = paginator.get_page(request.GET.get("dpage", 1))
+
+    # Duplicate-candidate detection for badges (computed once per page, not
+    # per row, to avoid N+1 queries). Two independent signals:
+    #   1. Same phone number shared by more than one enrollment in this gym.
+    #   2. Same full name (case-insensitive) shared by more than one
+    #      enrollment in this gym — catches the "re-registered under a new
+    #      number" case that a phone-based check alone would miss.
+    row_ids = [e.id for e in page_obj.object_list]
+    phones_on_page = {e.phone for e in page_obj.object_list}
+    names_on_page  = {e.fullname.strip().lower() for e in page_obj.object_list}
+
+    dup_phone_counts = dict(
+        Enrollment.objects.filter(gym=gym, is_deleted=False, phone__in=phones_on_page)
+        .values("phone").annotate(cnt=Count("id")).values_list("phone", "cnt")
+    )
+    dup_name_counts = {}
+    if names_on_page:
+        from django.db.models.functions import Lower
+        dup_name_counts = dict(
+            Enrollment.objects.filter(gym=gym, is_deleted=False)
+            .annotate(lname=Lower("fullname"))
+            .filter(lname__in=names_on_page)
+            .values("lname").annotate(cnt=Count("id")).values_list("lname", "cnt")
+        )
+
+    for e in page_obj.object_list:
+        is_dup_phone = dup_phone_counts.get(e.phone, 0) > 1
+        is_dup_name  = dup_name_counts.get(e.fullname.strip().lower(), 0) > 1
+        e.is_possible_duplicate = is_dup_phone or is_dup_name
+
+    return del_query, del_status, page_obj
  
  
 # 3) ADD this new view — the AJAX endpoint the modal posts to.
@@ -2071,7 +2177,52 @@ def change_membership_plan_view(request, enrollment_id):
  
     return JsonResponse({"success": True, **result})
 
+@_gym_role_required('gym_owner')
+@require_POST
+def delete_enrollment_view(request, enrollment_id):
+    """
+    POST /owner/member/<enrollment_id>/delete/
+    Body (form-encoded): delete_type ('duplicate'|'soft'), reason, confirm_text
+    """
+    gym = getattr(request, 'gym', None)
+    if gym is None:
+        return JsonResponse({"success": False, "error": "No gym context available."}, status=403)
 
+    enrollment = Enrollment.objects.filter(gym=gym, pk=enrollment_id).first()
+    if not enrollment:
+        return JsonResponse({"success": False, "error": "Member not found."}, status=404)
+
+    delete_type  = request.POST.get('delete_type', '').strip()
+    reason       = request.POST.get('reason', '').strip()
+    confirm_text = request.POST.get('confirm_text', '').strip()
+
+    if confirm_text != 'DELETE':
+        return JsonResponse({"success": False, "error": "Type DELETE to confirm."}, status=400)
+
+    if delete_type not in ('duplicate', 'soft'):
+        return JsonResponse({"success": False, "error": "Invalid delete type."}, status=400)
+
+    from AuthFit.services.delete_enrollment import (
+        delete_enrollment_duplicate, delete_enrollment_soft, DeleteEnrollmentError,
+    )
+
+    try:
+        if delete_type == 'duplicate':
+            delete_enrollment_duplicate(enrollment, gym, request.user, reason)
+            msg = "Duplicate enrollment deleted successfully."
+        else:
+            delete_enrollment_soft(enrollment, gym, request.user, reason)
+            msg = "Enrollment removed successfully."
+    except DeleteEnrollmentError as exc:
+        return JsonResponse({"success": False, "error": str(exc)}, status=403)
+    except Exception:
+        logger.exception("delete_enrollment_view failed for enrollment_id=%s", enrollment_id)
+        return JsonResponse({
+            "success": False,
+            "error": "Something went wrong while deleting. No changes were saved.",
+        }, status=500)
+
+    return JsonResponse({"success": True, "message": msg})
 @_gym_staff_required
 @require_POST
 def freeze_membership_apply(request):

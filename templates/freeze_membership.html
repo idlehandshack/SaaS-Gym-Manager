@@ -26,8 +26,12 @@
       --text:      #f0f0f0;
       --muted:     #888;
       --danger:    #ff4444;
+      --danger-lo: rgba(255,68,68,.12);
+      --danger-md: rgba(255,68,68,.30);
       --success:   #22c55e;
       --warning:   #f97316;
+      --warning-lo: rgba(249,115,22,.12);
+      --warning-md: rgba(249,115,22,.30);
       --ice:       #38bdf8;
       --ice-lo:    rgba(56,189,248,.12);
       --ice-md:    rgba(56,189,248,.30);
@@ -106,6 +110,7 @@
       line-height: 1.65;
     }
     .info-banner strong { color: #fff; }
+    .info-banner.danger  { background: var(--danger-lo); border-color: var(--danger-md); border-left-color: var(--danger); color: var(--danger); }
 
     /* ── Flash messages ── */
     .messages { list-style: none; margin-bottom: 18px; }
@@ -179,7 +184,123 @@
       width: 100%;
     }
     .search-info strong { color: var(--text); }
+    /* ══════════════════════════════════════════
+        ACTION TABS — full reset + pill styling
+      ══════════════════════════════════════════ */
+      .section-label {
+        font-family: var(--font);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .section-label::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
 
+      .platform-tabs {
+        display: flex;
+        gap: 4px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 40px;
+        padding: 4px;
+        width: fit-content;
+        max-width: 100%;
+        overflow-x: auto;
+        margin-bottom: 22px;
+      }
+
+      .tab-btn {
+        /* hard reset — kills default <button> chrome (white bg, border, shadow) */
+        appearance: none;
+        -webkit-appearance: none;
+        outline: none;
+        box-shadow: none;
+        margin: 0;
+
+        font-family: var(--font);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        padding: 9px 20px;
+        border: none;
+        border-radius: 40px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        transition: background .2s, color .2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        line-height: 1.2;
+      }
+      .tab-btn:focus,
+      .tab-btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 2px var(--ice-md);
+      }
+      .tab-btn.active {
+        background: var(--accent);
+        color: #fff;
+      }
+      .tab-btn:not(.active):hover {
+        background: #1e1e1e;
+        color: var(--text);
+      }
+      .tab-count {
+        font-family: var(--font);
+        font-size: 12px;
+        font-weight: 700;
+        opacity: .85;
+      }
+
+      .tab-panel { display: none; }
+      .tab-panel.active {
+        display: block;
+        animation: tabFadeUp .35s cubic-bezier(0.4, 0, 0.2, 1) both;
+      }
+      @keyframes tabFadeUp {
+        from { opacity: 0; transform: translateY(14px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      /* ── Mobile stacking (3 tabs) ── */
+      @media (max-width: 640px) {
+        .platform-tabs {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          width: 100%;
+          border-radius: 10px;
+          overflow-x: visible;
+          gap: 4px;
+          padding: 4px;
+        }
+        .tab-btn {
+          padding: 9px 4px;
+          font-size: 11px;
+          letter-spacing: .02em;
+          justify-content: center;
+          gap: 4px;
+          border-radius: 8px;
+          text-align: center;
+          white-space: normal;
+          line-height: 1.25;
+        }
+      }
+      @media (max-width: 380px) {
+        .tab-btn { font-size: 10px; padding: 8px 3px; }
+      }
     /* ══════════════════════════════════════════
        DESKTOP TABLE  (≥ 768px)
     ══════════════════════════════════════════ */
@@ -433,6 +554,7 @@
       margin-bottom: 5px;
       color: var(--ice);
     }
+    .modal h3.danger { color: var(--danger); }
     .modal .modal-sub {
       font-size: 13px;
       color: var(--muted);
@@ -488,6 +610,8 @@
       width: 100%;
     }
     .btn-confirm:hover { opacity: .88; }
+    .btn-confirm:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-confirm.danger { background: var(--danger); color: #fff; }
 
     /* ══════════════════════════════════════════
        RESPONSIVE BREAKPOINTS
@@ -526,10 +650,10 @@
     }
 
     /* ══════════════════════════════════════════
-       CHANGE MEMBERSHIP PLAN — new card + modal
+       CHANGE MEMBERSHIP PLAN — card + modal
     ══════════════════════════════════════════ */
     .cmp-card {
-      margin-top: 34px;
+      margin-top: 0;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
@@ -547,6 +671,7 @@
       color: var(--accent);
       margin-bottom: 4px;
     }
+    .cmp-card-header.danger h2 { color: var(--danger); }
     .cmp-card-header p { font-size: 12px; color: var(--muted); line-height: 1.5; }
     .cmp-table-wrap { border: none; border-radius: 0; }
     .cmp-cards-list { padding: 14px; }
@@ -567,6 +692,23 @@
       white-space: nowrap;
     }
     .btn-change-plan:hover { background: var(--accent-md); }
+
+    .btn-delete-enrollment {
+      background: var(--danger-lo);
+      border: 1px solid var(--danger-md);
+      color: var(--danger);
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-delete-enrollment:hover { background: var(--danger-md); }
 
     .cmp-modal { max-width: 560px; max-height: 88vh; overflow-y: auto; }
     .cmp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -626,103 +768,103 @@
     }
 
     /* ══════════════════════════════════════════
-       ACTION TABS — pattern reused from admin_whatsapp.html
-       (structure only — theme colors below reuse this page's
-       existing --accent / --surface / --border variables)
+       DELETE ENROLLMENT — radio option cards
     ══════════════════════════════════════════ */
-    .section-label {
-      font-family: var(--font);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 14px;
+    .del-filter-row {
       display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .section-label::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    .platform-tabs {
-      display: flex;
-      gap: 4px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 40px;
-      padding: 4px;
-      width: fit-content;
-      max-width: 100%;
-      overflow-x: auto;
-      margin-bottom: 22px;
-    }
-    .tab-btn {
-      font-family: var(--font);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      padding: 9px 20px;
-      border: none;
-      border-radius: 40px;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      transition: background .2s, color .2s;
-      display: flex;
-      align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
-      white-space: nowrap;
+      padding: 0 14px 14px;
     }
-    .tab-btn.active {
-      background: var(--accent);
-      color: #fff;
-    }
-    .tab-btn:not(.active):hover {
-      background: #1e1e1e;
-      color: var(--text);
-    }
-    .tab-count {
+    .del-filter-pill {
       font-family: var(--font);
       font-size: 12px;
       font-weight: 700;
-      opacity: .85;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all .2s;
+    }
+    .del-filter-pill:hover { border-color: var(--text); color: var(--text); }
+    .del-filter-pill.active {
+      background: var(--danger-lo);
+      border-color: var(--danger-md);
+      color: var(--danger);
     }
 
-    .tab-panel { display: none; }
-    .tab-panel.active {
-      display: block;
-      animation: tabFadeUp .35s cubic-bezier(0.4, 0, 0.2, 1) both;
-    }
-    @keyframes tabFadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
+    .dup-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      background: var(--warning-lo);
+      border: 1px solid var(--warning-md);
+      color: var(--warning);
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-left: 6px;
+      vertical-align: middle;
+      white-space: nowrap;
     }
 
-    @media (max-width: 640px) {
-      .platform-tabs {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        width: 100%;
-        border-radius: 10px;
-        overflow-x: visible;
-        gap: 4px;
-      }
-      .tab-btn {
-        padding: 10px 6px;
-        font-size: 12px;
-        letter-spacing: .03em;
-        justify-content: center;
-        gap: 5px;
-        border-radius: 8px;
-        text-align: center;
-      }
+    .status-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 12px;
+      white-space: nowrap;
     }
+    .status-tag.active  { background: rgba(34,197,94,.12);  border: 1px solid rgba(34,197,94,.3);  color: var(--success); }
+    .status-tag.expired { background: var(--danger-lo);     border: 1px solid var(--danger-md);     color: var(--danger); }
+    .status-tag.pending { background: var(--ice-lo);        border: 1px solid var(--ice-md);        color: var(--ice); }
+
+    @media (max-width: 480px) {
+      .del-filter-pill { font-size: 11px; padding: 5px 11px; }
+    }
+    .del-option {
+      display: flex; align-items: flex-start; gap: 10px;
+      border-radius: 10px; padding: 12px 14px; cursor: pointer;
+      margin-bottom: 10px; transition: all .2s;
+    }
+    .del-option input[type="radio"] { margin-top: 3px; flex-shrink: 0; accent-color: var(--danger); }
+    .del-option .del-option-title { font-weight: 700; font-size: 14px; display: block; margin-bottom: 3px; }
+    .del-option .del-option-desc  { font-size: 12px; color: var(--muted); line-height: 1.55; display: block; }
+    .del-option .del-option-example {
+      font-size: 11.5px; color: var(--muted); margin-top: 6px; line-height: 1.6;
+    }
+
+    .del-option.duplicate {
+      border: 1px solid var(--danger-md);
+      background: var(--danger-lo);
+    }
+    .del-option.duplicate .del-option-title { color: var(--danger); }
+    .del-option.duplicate:has(input:checked) { border-color: var(--danger); box-shadow: 0 0 0 2px var(--danger-lo); }
+
+    .del-option.soft {
+      border: 1px solid var(--warning-md);
+      background: var(--warning-lo);
+    }
+    .del-option.soft .del-option-title { color: var(--warning); }
+    .del-option.soft:has(input:checked) { border-color: var(--warning); box-shadow: 0 0 0 2px var(--warning-lo); }
+
+    .del-confirm-type-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px;
+    }
+    #del-confirm-text {
+      font-family: 'Courier New', monospace;
+      letter-spacing: .12em;
+    }
+    #del-confirm-text:focus { border-color: var(--danger); }
   </style>
 </head>
 <body>
@@ -752,24 +894,31 @@
   {% endif %}
 
   <!-- ══════════════════════════════════════
-       ACTION TABS
+       ACTION TABS (3 columns, admin_whatsapp pattern)
   ══════════════════════════════════════ -->
-  {% if can_change_plan %}
+  {% if can_change_plan or can_delete_enrollment %}
   <p class="section-label">Choose Action</p>
   <div class="platform-tabs" id="member-tabs">
-    <button class="tab-btn active" data-tab="freeze">
+    <button class="tab-btn " data-tab="freeze">
       ❄️ Extend Due Date
     </button>
+    {% if can_change_plan %}
     <button class="tab-btn" data-tab="changeplan">
       🔄 Change Plan
     </button>
+    {% endif %}
+    {% if can_delete_enrollment %}
+    <button class="tab-btn active" data-tab="deleteenrollment">
+      🗑 Delete Enrollment
+    </button>
+    {% endif %}
   </div>
   {% endif %}
 
   <!-- ══════════════════════════════════════
        PANEL 1: EXTEND DUE DATE (freeze)
   ══════════════════════════════════════ -->
-  <div id="tab-freeze" class="tab-panel active">
+  <div id="tab-freeze" class="tab-panel ">
 
   <!-- Info banner -->
   <div class="info-banner">
@@ -804,9 +953,7 @@
 
   {% if page_obj.object_list %}
 
-  <!-- ══════════════════════════════════════
-       DESKTOP TABLE
-  ══════════════════════════════════════ -->
+  <!-- DESKTOP TABLE -->
   <div class="table-wrap">
     <table>
       <thead>
@@ -864,9 +1011,7 @@
     </table>
   </div>
 
-  <!-- ══════════════════════════════════════
-       MOBILE CARDS
-  ══════════════════════════════════════ -->
+  <!-- MOBILE CARDS -->
   <div class="cards-list">
     {% for row in page_obj.object_list %}
     <div class="member-card">
@@ -922,7 +1067,6 @@
   </div>
 
   {% else %}
-  <!-- Empty state works for both layouts -->
   <div class="table-wrap">
     <div class="empty">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -956,11 +1100,10 @@
 
   <!-- ══════════════════════════════════════
        PANEL 2: CHANGE MEMBERSHIP PLAN
-       Only rendered for Gym Owner / Receptionist / Super Admin
   ══════════════════════════════════════ -->
   {% if can_change_plan %}
   <div id="tab-changeplan" class="tab-panel">
-  <div class="cmp-card" style="margin-top:0;">
+  <div class="cmp-card">
     <div class="cmp-card-header">
       <h2>🔄 Change Membership Plan</h2>
       <p>Update a member's plan without creating a new enrollment or a new invoice. The existing invoice is updated in place — the invoice number never changes.</p>
@@ -1075,6 +1218,194 @@
   {{ plans|json_script:"cmp-plans-data" }}
   {% endif %}
 
+  <!-- ══════════════════════════════════════
+       PANEL 3: DELETE ENROLLMENT
+       gym_owner (or super admin) only
+  ══════════════════════════════════════ -->
+  {% if can_delete_enrollment %}
+  <div id="tab-deleteenrollment" class="tab-panel active ">
+  <div class="cmp-card">
+    <div class="cmp-card-header danger">
+      <h2>🗑 Delete Enrollment</h2>
+      <p>Every enrollment in this gym is listed here. Use <strong>Duplicate Enrollment</strong> when a member was mistakenly enrolled twice (e.g. re-registered under a new phone number), or <strong>Delete Enrollment Only</strong> to remove a member from active operations while keeping their financial history intact.</p>
+    </div>
+
+    <!-- Search -->
+    <div class="search-row" style="padding: 14px 14px 0;">
+      <form method="get" action="" id="del-search-form" style="display:contents">
+        <input type="hidden" name="page" value="{{ page_obj.number }}"/>
+        <div class="search-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            name="dq"
+            id="del-search-input"
+            placeholder="Search by Name, Phone, or Member ID"
+            value="{{ del_query }}"
+            autocomplete="off"
+          />
+        </div>
+        <input type="hidden" name="dstatus" id="del-status-hidden" value="{{ del_status }}"/>
+        {% if del_query %}
+        <a href="?dstatus={{ del_status }}#deleteenrollment" class="btn-clear-search" id="del-clear-search">✕ Clear</a>
+        {% endif %}
+      </form>
+      <span class="search-info">
+        Showing <strong>{{ del_page_obj.paginator.count }}</strong> enrollment{{ del_page_obj.paginator.count|pluralize }}{% if del_query %} matching <strong>"{{ del_query }}"</strong>{% endif %}
+      </span>
+    </div>
+
+    <!-- Status filter pills -->
+    <div class="del-filter-row">
+      {% for key, label in del_status_choices %}
+      <a href="?dstatus={{ key }}{% if del_query %}&dq={{ del_query }}{% endif %}#deleteenrollment"
+        class="del-filter-pill {% if del_status == key %}active{% endif %}">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+
+    {% if del_page_obj.object_list %}
+
+    <!-- DESKTOP TABLE -->
+    <div class="table-wrap cmp-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Member ID</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Plan</th>
+            <th>Status</th>
+            <th>Payment</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in del_page_obj.object_list %}
+          <tr>
+            <td><span class="uid">{{ e.unique_id }}</span></td>
+            <td>
+              <div class="name-cell">
+                {{ e.fullname }}
+                {% if e.is_possible_duplicate %}
+                <span class="dup-badge" title="This name or phone number appears on more than one enrollment in this gym">⚠ Possible Duplicate</span>
+                {% endif %}
+              </div>
+              <div class="sub-text">
+                {% if not e.user_id %}<span class="status-tag pending">Pending Signup</span>{% endif %}
+              </div>
+            </td>
+            <td class="sub-text">{{ e.phone }}</td>
+            <td><span class="plan-pill">{{ e.selectPlan.plan|default:"—" }}</span></td>
+            <td>
+              {% if e.is_expired %}
+                <span class="status-tag expired">Expired</span>
+              {% elif not e.user_id %}
+                <span class="status-tag pending">Pending Signup</span>
+              {% else %}
+                <span class="status-tag active">Active</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if e.pendingAmount == 0 %}
+                <span class="pending-0">✓ Paid</span>
+              {% else %}
+                <span class="pending-amt">₹{{ e.pendingAmount }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <button type="button" class="btn-delete-enrollment"
+                data-id="{{ e.id }}"
+                data-name="{{ e.fullname }}"
+                data-phone="{{ e.phone }}">
+                🗑 Delete
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- MOBILE CARDS -->
+    <div class="cards-list cmp-cards-list">
+      {% for e in del_page_obj.object_list %}
+      <div class="member-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <span class="uid">{{ e.unique_id }}</span>
+            <div>
+              <div class="card-name">
+                {{ e.fullname }}
+                {% if e.is_possible_duplicate %}<span class="dup-badge">⚠ Duplicate?</span>{% endif %}
+              </div>
+              <div class="card-phone">{{ e.phone }}</div>
+            </div>
+          </div>
+          <span class="plan-pill">{{ e.selectPlan.plan|default:"—" }}</span>
+        </div>
+        <div class="card-body">
+          <div class="card-field">
+            <span class="card-label">Status</span>
+            {% if e.is_expired %}
+              <span class="status-tag expired">Expired</span>
+            {% elif not e.user_id %}
+              <span class="status-tag pending">Pending Signup</span>
+            {% else %}
+              <span class="status-tag active">Active</span>
+            {% endif %}
+          </div>
+          <div class="card-field">
+            <span class="card-label">Payment</span>
+            {% if e.pendingAmount == 0 %}
+              <span class="pending-0">✓ Paid</span>
+            {% else %}
+              <span class="pending-amt">₹{{ e.pendingAmount }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="card-footer">
+          <button type="button" class="btn-delete-enrollment" style="width:100%;"
+            data-id="{{ e.id }}"
+            data-name="{{ e.fullname }}"
+            data-phone="{{ e.phone }}">
+            🗑 Delete Enrollment
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if del_page_obj.has_other_pages %}
+    <div class="pagination">
+      {% if del_page_obj.has_previous %}
+      <a href="?dpage={{ del_page_obj.previous_page_number }}&dstatus={{ del_status }}{% if del_query %}&dq={{ del_query }}{% endif %}#deleteenrollment">← Prev</a>
+      {% endif %}
+      {% for num in del_page_obj.paginator.page_range %}
+        {% if del_page_obj.number == num %}
+          <span class="current">{{ num }}</span>
+        {% elif num > del_page_obj.number|add:"-3" and num < del_page_obj.number|add:"3" %}
+          <a href="?dpage={{ num }}&dstatus={{ del_status }}{% if del_query %}&dq={{ del_query }}{% endif %}#deleteenrollment">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if del_page_obj.has_next %}
+      <a href="?dpage={{ del_page_obj.next_page_number }}&dstatus={{ del_status }}{% if del_query %}&dq={{ del_query }}{% endif %}#deleteenrollment">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty" style="padding: 40px 20px;">
+      <p>No enrollments found{% if del_query %} matching <strong>"{{ del_query }}"</strong>{% endif %}.</p>
+    </div>
+    {% endif %}
+  </div>
+  </div><!-- /tab-deleteenrollment -->
+  {% endif %}
 </div><!-- /page -->
 
 <!-- ── Confirm Modal (Freeze) ── -->
@@ -1211,7 +1542,6 @@
   </div>
 </div>
 
-<!-- Second-step confirmation, shown before the actual POST fires -->
 <div class="modal-bg" id="cmp-confirm-modal">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1231,6 +1561,64 @@
 <div id="cmp-toast" class="cmp-toast"></div>
 {% endif %}
 
+{% if can_delete_enrollment %}
+<!-- ── Delete Enrollment Modal ── -->
+<div class="modal-bg" id="del-modal">
+  <div class="modal cmp-modal">
+    <div class="modal-handle"></div>
+    <h3 class="danger">🗑 Delete Enrollment</h3>
+    <p class="modal-sub">Choose why you are deleting this enrollment for <strong id="del-name">—</strong>.</p>
+
+    <form id="del-form">
+      {% csrf_token %}
+
+      <label class="del-option duplicate">
+        <input type="radio" name="delete_type" value="duplicate" required>
+        <span>
+          <span class="del-option-title">🔴 Duplicate Enrollment</span>
+          <span class="del-option-desc">This member was enrolled twice by mistake.</span>
+          <span class="del-option-example">
+            e.g. Owner created a Quick Enrollment → member later registered using another phone number → duplicate enrollment exists.<br>
+            This permanently removes every record related to this duplicate enrollment (attendance, payments, invoices, face data). Cannot be undone.
+          </span>
+        </span>
+      </label>
+
+      <label class="del-option soft">
+        <input type="radio" name="delete_type" value="soft" required>
+        <span>
+          <span class="del-option-title">🟠 Delete Enrollment Only</span>
+          <span class="del-option-desc">Remove only the enrollment from active gym operations.</span>
+          <span class="del-option-example">
+            Financial records (payments, invoices, revenue history, audit history) remain intact for reports and auditing.
+          </span>
+        </span>
+      </label>
+
+      <div class="cmp-field" style="margin-top:14px;">
+        <label>Reason (optional)</label>
+        <textarea id="del-reason" name="reason" rows="2" maxlength="255" placeholder="e.g. Member re-registered with a new number"></textarea>
+      </div>
+
+      <div class="cmp-field">
+        <span class="del-confirm-type-label">Type DELETE to confirm</span>
+        <input type="text" id="del-confirm-text" autocomplete="off" placeholder="DELETE">
+      </div>
+
+      <div id="del-error" class="cmp-error" style="display:none;"></div>
+
+      <div class="modal-actions" style="margin-top:16px;">
+        <button type="button" class="btn-cancel" id="del-cancel-btn">Cancel</button>
+        <button type="submit" class="btn-confirm danger" id="del-save-btn" style="flex:2;" disabled>
+          <span id="del-save-label">Delete</span>
+          <span id="del-spinner" class="cmp-spinner" style="display:none; border-top-color:#fff; border-color:rgba(255,255,255,.35);"></span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 <script nonce="{{ request.csp_nonce }}">
   function openConfirm(btn) {
   const enrollId  = btn.dataset.id;
@@ -1238,7 +1626,6 @@
   const name      = btn.dataset.name;
   const dueDate   = btn.dataset.due;
 
-  // Find the days input that's a sibling within the same freeze-form / freeze-form-card
   const container = btn.closest('.freeze-form, .freeze-form-card');
   const daysInput = container.querySelector('[data-days-input]');
   const days = parseInt(daysInput.value, 10);
@@ -1268,13 +1655,17 @@
     document.getElementById('modal').classList.remove('open');
   }
 
-  // Delegate Freeze button clicks (replaces inline onclick, CSP-safe)
   document.addEventListener('click', function(e) {
     const btn = e.target.closest('.btn-freeze');
     if (btn) openConfirm(btn);
 
     const cancelBtn = e.target.closest('.btn-cancel');
-    if (cancelBtn && !e.target.closest('#cmp-modal') && !e.target.closest('#cmp-confirm-modal')) closeConfirm();
+    if (cancelBtn
+        && !e.target.closest('#cmp-modal')
+        && !e.target.closest('#cmp-confirm-modal')
+        && !e.target.closest('#del-modal')) {
+      closeConfirm();
+    }
   });
 
   document.getElementById('modal').addEventListener('click', function(e) {
@@ -1298,9 +1689,9 @@
   }
 </script>
 
-{% if can_change_plan %}
+<!-- ── Tab switching (shared across all 3 panels) ── -->
+{% if can_change_plan or can_delete_enrollment %}
 <script nonce="{{ request.csp_nonce }}">
-  // ── Action tab switching (Extend Due Date ⇄ Change Plan) ──
   (function() {
     const tabBar = document.getElementById('member-tabs');
     if (!tabBar) return;
@@ -1314,6 +1705,9 @@
     });
   })();
 </script>
+{% endif %}
+
+{% if can_change_plan %}
 <script nonce="{{ request.csp_nonce }}">
 (function() {
   let isSaving = false;
@@ -1344,7 +1738,7 @@
   function populatePlanOptions(currentPlanId) {
     planSelect.innerHTML = '<option value="">Select plan…</option>';
     plansData.forEach(p => {
-      if (String(p.id) === String(currentPlanId)) return; // don't offer the current plan again
+      if (String(p.id) === String(currentPlanId)) return;
       const opt = document.createElement('option');
       opt.value = p.id;
       opt.textContent = `${p.plan} — ₹${p.price} / ${fmtDuration(p.duration_days)}`;
@@ -1436,9 +1830,7 @@
   });
 
   function submitChangePlan() {
-    if (isSaving) {
-        return;
-    }
+    if (isSaving) return;
     isSaving = true;
     const saveBtn   = document.getElementById('cmp-save-btn');
     const saveLabel = document.getElementById('cmp-save-label');
@@ -1483,13 +1875,11 @@
         setTimeout(() => window.location.reload(), 900);
       })
       .catch(err => {
-
           if (!navigator.onLine) {
               showError("Network error. Please check your internet connection.");
           } else {
               showError(err.message);
           }
-
           cmpModal.classList.add('open');
       })
       .finally(() => {
@@ -1503,6 +1893,129 @@
         saveLabel.textContent = 'Save Changes';
         spinner.style.display = 'none';
       });
+  }
+})();
+</script>
+{% endif %}
+
+{% if can_delete_enrollment %}
+<script nonce="{{ request.csp_nonce }}">
+(function() {
+  let isDeleting = false;
+  let currentEnrollmentId = null;
+
+  const delModal      = document.getElementById('del-modal');
+  const delForm        = document.getElementById('del-form');
+  const confirmInput   = document.getElementById('del-confirm-text');
+  const saveBtn        = document.getElementById('del-save-btn');
+  const saveLabel      = document.getElementById('del-save-label');
+  const spinner        = document.getElementById('del-spinner');
+  const input = document.getElementById('del-search-input');
+  if (!input) return;
+    let t;
+    input.addEventListener('input', function() {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        document.getElementById('del-search-form').submit();
+      }, 500);
+    });
+  function updateSaveButtonState() {
+    const typedDelete   = confirmInput.value.trim() === 'DELETE';
+    const typeSelected   = !!delForm.querySelector('input[name=delete_type]:checked');
+    saveBtn.disabled = !(typedDelete && typeSelected);
+  }
+
+  confirmInput.addEventListener('input', updateSaveButtonState);
+  delForm.addEventListener('change', function(e) {
+    if (e.target.name === 'delete_type') updateSaveButtonState();
+  });
+
+  function openDeleteModal(btn) {
+    currentEnrollmentId = btn.dataset.id;
+    document.getElementById('del-name').textContent = btn.dataset.name;
+    delForm.reset();
+    confirmInput.value = '';
+    document.getElementById('del-error').style.display = 'none';
+    saveBtn.disabled = true;
+    delModal.classList.add('open');
+  }
+
+  function closeDeleteModal() {
+    if (isDeleting) return;
+    delModal.classList.remove('open');
+  }
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-delete-enrollment');
+    if (btn) { openDeleteModal(btn); return; }
+
+    if (e.target.id === 'del-cancel-btn') { closeDeleteModal(); return; }
+    if (e.target === delModal) { closeDeleteModal(); return; }
+  });
+
+  delForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (isDeleting) return;
+
+    const deleteType = delForm.querySelector('input[name=delete_type]:checked');
+    if (!deleteType) {
+      showDelError('Please choose a deletion reason.');
+      return;
+    }
+    if (confirmInput.value.trim() !== 'DELETE') {
+      showDelError('Type DELETE exactly to confirm.');
+      return;
+    }
+
+    isDeleting = true;
+    saveBtn.disabled = true;
+    document.getElementById('del-cancel-btn').disabled = true;
+    saveLabel.textContent = 'Deleting…';
+    spinner.style.display = 'inline-block';
+    document.getElementById('del-error').style.display = 'none';
+
+    const csrfToken = delForm.querySelector('[name=csrfmiddlewaretoken]').value;
+    const body = new URLSearchParams({
+      delete_type: deleteType.value,
+      reason: document.getElementById('del-reason').value,
+      confirm_text: confirmInput.value.trim(),
+    });
+
+    fetch(`/owner/member/${currentEnrollmentId}/delete/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrfToken,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: body.toString(),
+    })
+      .then(r => r.json().then(data => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (!ok || !data.success) throw new Error(data.error || 'Something went wrong.');
+        delModal.classList.remove('open');
+        window.location.reload();
+      })
+      .catch(err => {
+        if (!navigator.onLine) {
+          showDelError('Network error. Please check your internet connection.');
+        } else {
+          showDelError(err.message);
+        }
+      })
+      .finally(() => {
+        isDeleting = false;
+        document.getElementById('del-cancel-btn').disabled = false;
+        saveLabel.textContent = 'Delete';
+        spinner.style.display = 'none';
+        updateSaveButtonState();
+      });
+  });
+
+  function showDelError(msg) {
+    const el = document.getElementById('del-error');
+    el.textContent = msg;
+    el.style.display = 'block';
   }
 })();
 </script>

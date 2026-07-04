@@ -130,6 +130,11 @@ class Enrollment(models.Model):
     DueDate = models.DateField(blank=True, null=True,db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True, db_index=True)
+    is_deleted = models.BooleanField(default=False, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
 
     # ==============================
     # 🔥 FACE SYSTEM (CLEAN)
@@ -272,7 +277,40 @@ class MembershipPlanChangeLog(models.Model):
         old_name = self.old_plan.plan if self.old_plan else "—"
         new_name = self.new_plan.plan if self.new_plan else "—"
         return f"{self.enrollment.unique_id}: {old_name} → {new_name} ({self.created_at:%d %b %Y})"
- 
+class EnrollmentDeletionLog(models.Model):
+    """
+    Permanent audit trail for every enrollment deletion (duplicate or soft).
+    Never edited or deleted — mirrors MembershipPlanChangeLog's pattern.
+    """
+    DELETE_TYPE_CHOICES = [
+        ('duplicate', 'Duplicate Enrollment (permanent)'),
+        ('soft', 'Delete Enrollment Only (soft delete)'),
+    ]
+
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, db_index=True, related_name='enrollment_deletion_logs')
+    gym_owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+
+    # Not a FK — enrollment may no longer exist after a 'duplicate' delete.
+    enrollment_id = models.IntegerField(db_index=True)
+    member_name = models.CharField(max_length=100)
+    member_phone = models.CharField(max_length=10)
+
+    delete_type = models.CharField(max_length=10, choices=DELETE_TYPE_CHOICES)
+    reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['gym', 'enrollment_id'])]
+        verbose_name = 'Enrollment Deletion Log'
+        verbose_name_plural = 'Enrollment Deletion Logs'
+
+    def delete(self, *args, **kwargs):
+        raise PermissionError("EnrollmentDeletionLog rows are a permanent audit trail and cannot be deleted.")
+
+    def __str__(self):
+        return f"{self.member_name} ({self.member_phone}) — {self.delete_type} — {self.created_at:%d %b %Y}"
+
 class Attendence(models.Model):
     gym = models.ForeignKey(
         Gym,

@@ -78,6 +78,7 @@ urlpatterns = [
     path('subscriptions/plans/<int:plan_id>/delete/', delete_subscription_plan, name='delete_subscription_plan'),
     path('gyms/<uuid:gym_id>/change-plan/', change_gym_plan, name='change_gym_plan'),
     path('superadmin/platform-insights/', platform_insights_page, name='platform_insights'),
+    path('owner/member/<int:enrollment_id>/delete/', views.delete_enrollment_view, name='delete_enrollment'),
 
     # ── Platform Insights: aggregated (current) ─────────────────
     path('api/platform-insights/dashboard/', api_dashboard, name='api_pi_dashboard'),
