@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request a Demo | EnterGYM</title>
+<link rel="icon" href="{% static 'images/favicons.ico' %}">
+<link rel="shortcut icon" href="{% static 'images/favicons.ico' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810;
+    --bg-elevated: #0F0F1A;
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(91,95,255,0.4);
+    --primary: #5B5FFF;
+    --primary-glow: rgba(91,95,255,0.25);
+    --text: #F2F2F7;
+    --text-muted: #8A8A9A;
+    --danger: #FF5A5F;
+    --success: #34D399;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(91,95,255,0.15), transparent), var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 44px 40px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--primary);
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 14.5px;
+    margin: 0 0 30px;
+    line-height: 1.5;
+  }
+  .alert {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    margin-bottom: 20px;
+    border: 1px solid;
+  }
+  .alert-warning { background: rgba(255,180,0,0.08); border-color: rgba(255,180,0,0.3); color: #FFC94D; }
+  .alert-error   { background: rgba(255,90,95,0.08); border-color: rgba(255,90,95,0.3); color: var(--danger); }
+  .alert-success { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.3); color: var(--success); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field { margin-bottom: 18px; }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 7px;
+  }
+  input, select, textarea {
+    width: 100%;
+    background: #0A0A14;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14.5px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  input::placeholder, textarea::placeholder { color: #55556A; }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+  }
+  textarea { resize: vertical; min-height: 90px; }
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238A8A9A' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  .error-text {
+    color: var(--danger);
+    font-size: 12.5px;
+    margin-top: 6px;
+  }
+  button[type="submit"] {
+    width: 100%;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: filter 0.15s ease, transform 0.15s ease;
+  }
+  button[type="submit"]:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .back-link {
+    display: inline-block;
+    margin-top: 22px;
+    color: var(--text-muted);
+    font-size: 13.5px;
+    text-decoration: none;
+  }
+  .back-link:hover { color: var(--text); }
+  @media (max-width: 520px) {
+    .row { grid-template-columns: 1fr; }
+    .card { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">EnterGYM</div>
+    <h1>Request a Free Demo</h1>
+    <p class="subtitle">Tell us about your gym and we'll set up a personalized walkthrough within 24 hours.</p>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="field">
+        <label for="{{ form.gym_name.id_for_label }}">Gym Name</label>
+        {{ form.gym_name }}
+        {% if form.gym_name.errors %}<div class="error-text">{{ form.gym_name.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="{{ form.owner_name.id_for_label }}">Owner Name</label>
+          {{ form.owner_name }}
+          {% if form.owner_name.errors %}<div class="error-text">{{ form.owner_name.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
+          {{ form.phone_number }}
+          {% if form.phone_number.errors %}<div class="error-text">{{ form.phone_number.errors|striptags }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="{{ form.email.id_for_label }}">Email <span style="font-weight:400;color:#55556A;">(optional)</span></label>
+          {{ form.email }}
+          {% if form.email.errors %}<div class="error-text">{{ form.email.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label for="{{ form.city.id_for_label }}">City <span style="font-weight:400;color:#55556A;">(optional)</span></label>
+          {{ form.city }}
+          {% if form.city.errors %}<div class="error-text">{{ form.city.errors|striptags }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="{{ form.gym_size.id_for_label }}">Gym Size</label>
+          {{ form.gym_size }}
+          {% if form.gym_size.errors %}<div class="error-text">{{ form.gym_size.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label for="{{ form.preferred_language.id_for_label }}">Preferred Demo Language</label>
+          {{ form.preferred_language }}
+          {% if form.preferred_language.errors %}<div class="error-text">{{ form.preferred_language.errors|striptags }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="{{ form.source.id_for_label }}">How did you hear about us?</label>
+        {{ form.source }}
+        {% if form.source.errors %}<div class="error-text">{{ form.source.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="field">
+        <label for="{{ form.message.id_for_label }}">Message <span style="font-weight:400;color:#55556A;">(optional)</span></label>
+        {{ form.message }}
+        {% if form.message.errors %}<div class="error-text">{{ form.message.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <button type="submit">Request Demo</button>
+    </form>
+
+    <a href="/" class="back-link">&larr; Back to Home</a>
+  </div>
+</body>
+</html>

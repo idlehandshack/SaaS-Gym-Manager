@@ -316,3 +316,64 @@ def notify_staff_plan_changed(enrollment, old_plan, new_plan,*,changed_by=None,)
         },
         channel_id='entergym_orders',
     )
+
+
+def _get_superadmin_tokens() -> list[str]:
+    """
+    Active FCM tokens for superadmin users, across both device tables.
+    Superadmins aren't gym-scoped, so we check both StaffDevice and
+    UserDevice by user_id rather than filtering by gym.
+    """
+    from django.contrib.auth.models import User
+    from AuthFit.models import UserDevice  # local import avoids circular import
+
+    superadmin_ids = list(
+        User.objects.filter(is_superuser=True, is_active=True).values_list('id', flat=True)
+    )
+    if not superadmin_ids:
+        return []
+
+    staff_tokens = StaffDevice.objects.filter(
+        user_id__in=superadmin_ids, active=True
+    ).values_list('fcm_token', flat=True)
+    user_tokens = UserDevice.objects.filter(
+        user_id__in=superadmin_ids, active=True
+    ).values_list('fcm_token', flat=True)
+
+    return list(set(staff_tokens) | set(user_tokens))
+
+
+def notify_superadmins(
+    title: str,
+    body: str,
+    data: dict = None,
+    url: str = "/superadmin/dashboard/",
+    channel_id: str = 'entergym_admin',
+) -> bool:
+    """
+    Generic superadmin push — used by NotificationService for any event
+    type that should reach only superadmin accounts (not gym-scoped
+    staff). Returns True if at least one channel delivered.
+    """
+    from notifications.utils import send_web_push_to_superadmins
+
+    web_successes = 0
+    try:
+        web_successes = send_web_push_to_superadmins(title=title, body=body, url=url)
+    except Exception:
+        logger.exception("notify_superadmins: web push failed")
+
+    fcm_successes = 0
+    tokens = _get_superadmin_tokens()
+    if tokens:
+        fcm_successes = send_push_to_tokens(
+            tokens=tokens,
+            title=title,
+            body=body,
+            data=data or {},
+            channel_id=channel_id,
+        )
+    else:
+        logger.debug("notify_superadmins: no active superadmin FCM tokens")
+
+    return (web_successes > 0) or (fcm_successes > 0)

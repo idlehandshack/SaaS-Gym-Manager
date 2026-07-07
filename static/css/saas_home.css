@@ -2729,142 +2729,38 @@ img, svg   { max-width: 100%; }
 .cc-key     { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--text-lo); text-transform: uppercase; flex-shrink: 0; }
 .cc-val     { font-size: 0.875rem; color: var(--text-mid); text-align: right; }
 .cc-val:hover { color: var(--text-hi); }
-
-/* ─────────────────────────────────────────────────────────────────
-   14b  REQUEST A DEMO
-   ───────────────────────────────────────────────────────────────── */
-.demo-inner {
+.contact-demo-cta {
   max-width: 1200px;
-  margin: 56px auto 0;
-}
-
-.demo-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 36px;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.35);
-  max-width: 480px;
-}
-
-.demo-title {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: var(--text-hi);
-  margin-bottom: 24px;
-}
-
-.demo-form {
+  margin: 48px auto 0;
+  padding: 0 40px;
   display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.demo-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.demo-field label {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-lo);
-}
-
-.demo-field input,
-.demo-field select,
-.demo-field textarea {
-  width: 100%;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) - 4px);
-  padding: 12px 14px;
-  font-family: var(--sans);
-  font-size: 0.875rem;
-  color: var(--text-hi);
-  outline: none;
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.demo-field input::placeholder,
-.demo-field textarea::placeholder {
-  color: var(--text-lo);
-}
-
-.demo-field input:focus,
-.demo-field select:focus,
-.demo-field textarea:focus {
-  border-color: rgba(91,95,255,0.45);
-  background: rgba(255,255,255,0.05);
-}
-
-.demo-field textarea {
-  resize: vertical;
-  min-height: 84px;
-  font-family: var(--sans);
-}
-
-.demo-select-wrap {
-  position: relative;
-}
-.demo-select-wrap::after {
-  content: "";
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-right: 1.5px solid var(--text-lo);
-  border-bottom: 1.5px solid var(--text-lo);
-  transform: translateY(-65%) rotate(45deg);
-  pointer-events: none;
-}
-.demo-field select {
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-}
-
-.demo-submit {
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  gap: 10px;
-  width: 100%;
-  margin-top: 6px;
-  padding: 14px 20px;
-  border: none;
-  border-radius: 999px;
-  background: var(--orange, #2507e8);
-  color: #fff;
-  font-family: var(--sans);
-  font-weight: 600;
-  font-size: 0.9375rem;
-  cursor: pointer;
-  transition: filter 0.2s ease, transform 0.15s ease;
-}
-.demo-submit:hover { filter: brightness(1.08); }
-.demo-submit:active { transform: scale(0.98); }
-
-/* ─────────────────────────────────────────────────────────────────
-   RESPONSIVE — CONTACT / DEMO
-   ───────────────────────────────────────────────────────────────── */
-@media (max-width: 860px) {
-  .contact-section { padding: 80px 28px; }
-  .contact-inner   { grid-template-columns: 1fr; gap: 40px; }
-  .demo-inner      { margin-top: 40px; }
-  .demo-card       { max-width: 100%; padding: 28px; }
 }
 
+@media (max-width: 1100px) {
+  .contact-demo-cta { padding: 0 28px; }
+}
 @media (max-width: 640px) {
-  .contact-section { padding: 64px 16px; }
-  .demo-card { padding: 22px; }
-  .demo-title { font-size: 1.15rem; }
+  .contact-demo-cta { padding: 0 16px; margin-top: 32px; }
+  .contact-demo-cta .btn-request-demo { width: 100%; text-align: center; }
 }
+.btn-request-demo {
+  display: inline-block;
+  background: #5B5FFF;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 32px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+.btn-request-demo:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
 
 /* ─────────────────────────────────────────────────────────────────
    15  FOOTER

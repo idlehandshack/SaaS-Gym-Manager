@@ -10,7 +10,6 @@ class SecurityHeadersMiddleware:
     so templates can use it:
         <script nonce="{{ request.csp_nonce }}">...</script>
     """
-
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -19,7 +18,7 @@ class SecurityHeadersMiddleware:
         # Generate a fresh nonce per request — used in CSP + templates
         nonce = secrets.token_urlsafe(16)
         request.csp_nonce = nonce
-
+        admin_request = request.path.startswith("/admin/")
         response = self.get_response(request)
 
         # ── Standard security headers ─────────────────────────────────────
@@ -34,6 +33,22 @@ class SecurityHeadersMiddleware:
             "microphone=(), "
             "payment=()"
         )
+        if admin_request:
+            script_src = (
+                "'self' "
+                "'unsafe-inline' "
+                "https://cdn.jsdelivr.net "
+                "https://www.gstatic.com "
+                "https://www.googleapis.com"
+            )
+        else:
+            script_src = (
+                f"'self' "
+                f"'nonce-{nonce}' "
+                "https://cdn.jsdelivr.net "
+                "https://www.gstatic.com "
+                "https://www.googleapis.com"
+            )
 
         # ── Content Security Policy ───────────────────────────────────────
         #
@@ -66,11 +81,7 @@ class SecurityHeadersMiddleware:
         response["Content-Security-Policy"] = (
             f"default-src 'self'; "
 
-            f"script-src 'self' "
-            f"'nonce-{nonce}' "
-            f"https://cdn.jsdelivr.net "
-            f"https://www.gstatic.com "
-            f"https://www.googleapis.com; "
+            f"script-src {script_src}; "
 
             f"style-src 'self' "
             f"'unsafe-inline' "

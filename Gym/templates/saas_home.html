@@ -77,7 +77,6 @@
     />
     <link rel="icon" href="{% static 'images/favicons.ico' %}">
     <link rel="shortcut icon" href="{% static 'images/favicons.ico' %}">
-    <link rel="manifest" href="{% static 'js/manifest.json' %}" />
     <meta name="theme-color" content="#5B5FFF" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -134,13 +133,19 @@
             Manage memberships, attendance, billing, payments, and more with our all-in-one Gym Management Software. Includes an Admin Dashboard, Member App, and Gym Website. After your free trial, pay only <em>₹4.99 per active member </em>.
           </p>
           <div class="hero-cta">
+            {% if request.user.is_superuser %}
+            <button class="btn-secondary" id="enable-home-notification">
+                Enable Notifications
+            </button>
+            {% else %}
             <a
-              href="https://wa.me/917000032565"
-              class="btn-secondary"
-              target="_blank"
-              rel="noopener"
-              >Talk to us on WhatsApp</a
+            href="https://wa.me/917000032565"
+            class="btn-secondary"
+            target="_blank"
+            rel="noopener"
+            >Talk to us on WhatsApp</a
             >
+            {% endif %}
             <div class="hero-cta-row2">
               <a href="#pricing" class="hero-cta-pill hero-cta-pill--orange">
                 <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -394,9 +399,6 @@
               </div>
             </div>
           </div>
-        </div>
-        <div class="problem-cta">
-          <a href="/login/" class="btn-primary">See how it works →</a>
         </div>
       </div>
     </section>
@@ -2410,66 +2412,12 @@
           </div>
         </div>
       </div>
-
+    </div>
+    <div class="contact-demo-cta">
       <!-- ── Request a Demo ── -->
-      <div class="demo-inner">
-        <div class="demo-card">
-          <p class="demo-title">Request a Demo</p>
-
-          <form class="demo-form" id="demoForm" method="post" novalidate>
-            {% csrf_token %}
-
-            <div class="demo-field">
-              <label for="demoGymName">Gym Name</label>
-              <input
-                type="text"
-                id="demoGymName"
-                name="gym_name"
-                placeholder="Enter your gym name"
-                required
-              />
-            </div>
-
-            <div class="demo-field">
-              <label for="demoPhone">Phone Number</label>
-              <input
-                type="tel"
-                id="demoPhone"
-                name="phone_number"
-                placeholder="+91 XXXXX XXXXX"
-                required
-              />
-            </div>
-
-            <div class="demo-field">
-              <label for="demoLanguage">Preferred Demo Language</label>
-              <div class="demo-select-wrap">
-                <select id="demoLanguage" name="demo_language">
-                  <option value="english">English</option>
-                  <option value="hindi">Hindi</option>
-                  <option value="hinglish">Hinglish</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="demo-field">
-              <label for="demoMessage">Message (Optional)</label>
-              <textarea
-                id="demoMessage"
-                name="message"
-                rows="3"
-                placeholder="Tell us about your gym..."
-              ></textarea>
-            </div>
-
-            <button type="submit" class="demo-submit">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M14.5 1.5L7.5 8.5M14.5 1.5L10 14.5L7.5 8.5M14.5 1.5L1.5 6L7.5 8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Request Demo
-            </button>
-          </form>
-        </div>
+      <a href="{% url 'demoRequest:request_demo' %}" class="btn-request-demo">
+        Request a Demo
+      </a>
       </div>
     </section>
 
@@ -2492,7 +2440,7 @@
           </p>
 
           <div class="footer-social">
-            <a href="#" class="footer-social-btn" aria-label="Instagram" target="_blank" rel="noopener">
+            <a href="https://www.instagram.com/entergym.in/" class="footer-social-btn" aria-label="Instagram" target="_blank" rel="noopener">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.8"/>
                 <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
@@ -2749,7 +2697,11 @@
           }, 3200);
         }
       })();
- 
+      document
+        .getElementById("enable-home-notification")
+        .addEventListener("click", async () => {
+            await window.EnterGYMPush.requestAndSubscribe();
+        });
       /* ── FAQ accordion ── */
       document.querySelectorAll('.faq-q').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2853,5 +2805,13 @@
         applyModeForViewport();
       })();
     </script>
+    {% if request.user.is_authenticated %}
+      {% if VAPID_PUBLIC_KEY %}
+        <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
+        <script src="{% static 'js/push_subscribe.js' %}" defer></script>
+        <script src="{% static 'js/notification_permission.js' %}" defer></script>
+        <script src="{% static 'js/sw_register.js' %}" defer></script>
+      {% endif %}
+    {% endif %}
   </body>
 </html>

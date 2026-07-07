@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'Gym',
     'billing',
     'reviews',
+    'demoRequest',
 ]
 
 JAZZMIN_UI_TWEAKS = {
@@ -241,6 +242,10 @@ LOGGING = {
         'django.security': {
             'handlers': ['console'],
             'level': 'WARNING',
+        },
+        'demoRequest': {
+            'handlers': ['console'],
+            'level': 'INFO',
         },
     },
 }

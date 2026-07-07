@@ -175,3 +175,18 @@ def send_web_push_to_gym_staff(
     )
 
     return total_successes
+
+
+def send_web_push_to_superadmins(title: str, body: str, url: str = "/superadmin/dashboard/") -> int:
+    """
+    Web push → every active superadmin browser/PWA subscription.
+    Mirrors send_web_push_to_gym_staff but is NOT gym-scoped, since
+    superadmins aren't tied to a single gym.
+    """
+    from django.contrib.auth.models import User
+
+    total_successes = 0
+    superadmins = User.objects.filter(is_superuser=True, is_active=True)
+    for user in superadmins:
+        total_successes += send_web_push(user=user, title=title, body=body, url=url)
+    return total_successes
