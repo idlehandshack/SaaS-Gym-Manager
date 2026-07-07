@@ -1,279 +1,236 @@
 // ============================================================
-//  geo_attendance.js  v7
-//  /api/geo-mark-attendance/ is @csrf_exempt so SW messages
-//  no longer need to carry csrfToken.
-//  Manual button still sends X-CSRFToken (good practice).
-//  Security: no gym coords, no userId in client code.
+//  geo_attendance.js
+//
+//  Owns:
+//   - calling /api/mark-attendance/
+//   - attendance UI (loading, success, errors)
+//   - deciding whether background tracking should start, by
+//     checking /api/attendance-status/ AFTER a successful mark
+//   - wiring the Service Worker messages related to attendance
+//     (REQUEST_LOC → get a fix via loc_permission.js; ATTENDANCE_MARKED)
+//
+//  Never calls navigator.geolocation directly — always goes through
+//  window.EnterGYMLocation.
 // ============================================================
 
 (function () {
   'use strict';
 
-  const cfg = window.GYM_CONFIG || {};
-  const { isAuthenticated, isEnrolled, userHash } = cfg;
-  const onAttendancePage = window.location.pathname.includes('attendence');
-
-  // ── Location cache (localStorage, 10 min TTL) ────────────────
-  const LOC_KEY    = `gym_loc_${userHash || 'anon'}`;
-  const LOC_MAX_MS = 10 * 60 * 1000;
-
-  function saveLoc(lat, lng) {
-    try {
-      localStorage.setItem(LOC_KEY, JSON.stringify({ lat, lng, ts: Date.now() }));
-    } catch { /* storage full or private mode */ }
+  function getCookie(name) {
+    return document.cookie
+      .split(';')
+      .map(c => c.trim())
+      .find(c => c.startsWith(name + '='))
+      ?.split('=')[1] ?? '';
   }
 
-  function loadLoc() {
-    try {
-      const raw = localStorage.getItem(LOC_KEY);
-      if (!raw) return null;
-      const loc = JSON.parse(raw);
-      if (Date.now() - loc.ts > LOC_MAX_MS) return null;
-      return loc;
-    } catch { return null; }
-  }
+  // ── Entry point called from the Mark Attendance button ──────
+  function checkLocationAndSubmit() {
+    const btn = document.getElementById('btn-attend');
+    if (!btn || btn.disabled) return;
 
-  // ── CSRF token (only used by manual button fetch) ────────────
-  function getCsrf() {
-    const m = document.cookie.match(/(^|;)\s*csrftoken=([^;]+)/);
-    return m ? m[2] : '';
-  }
-
-  // ── Send message to active Service Worker ────────────────────
-  function swPost(msg) {
-    if (navigator.serviceWorker?.controller) {
-      navigator.serviceWorker.controller.postMessage(msg);
+    if (!window.EnterGYMLocation) {
+      console.error('EnterGYM: loc_permission.js not loaded');
+      showGeoError('LOCATION MODULE UNAVAILABLE — please reload the page.');
+      return;
     }
-  }
 
-  // ── Register Service Worker ──────────────────────────────────
-  async function registerSW() {
-    if (!('serviceWorker' in navigator)) return null;
+    hideGeoError();
+
+    window.EnterGYMLocation.checkLocationAndSubmit(
+      function onSuccess(position) {
+        submitAttendance(
+          position.coords.latitude,
+          position.coords.longitude,
+          btn
+        );
+      },
+      function onBlocked() {
+        // loc_permission.js already renders the blocked card / modal.
+      }
+    );
+  }
+  // ── POST coordinates to Django ───────────────────────────────
+  async function submitAttendance(lat, lng, btn) {
+    setButtonLoading(btn, true);
+
     try {
-      const reg = await navigator.serviceWorker.register(
-        '/sw.js', { scope: '/', updateViaCache: 'none' }
+      const res = await EnterGYMFetch.fetchWithTimeout(
+          '/api/mark-attendance/',
+          {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': getCookie('csrftoken')
+              },
+              credentials: 'include',
+              body: JSON.stringify({lat, lng})
+          }
       );
-      reg.update();
-      return reg;
-    } catch { return null; }
-  }
 
-  // ── Tell SW to start polling ──────────────────────────────────
-  function sendStartGeo() {
-    swPost({
-      type:   'START_GEO',
-      config: {
-        isEnrolled: Boolean(isEnrolled),
-        userHash:   userHash || '',
-        // ✅ NO gymLat, NO gymLng, NO radius, NO userId
-      },
-    });
+      let data = {};
+      try { data = await res.json(); } catch (_) { /* non-JSON response */ }
 
-    // If we have a cached position, give it to SW immediately
-    const loc = loadLoc();
-    if (loc) {
-      setTimeout(() => swPost({ type: 'REPORT_LOC', lat: loc.lat, lng: loc.lng }), 400);
+      if (res.ok && data.status === 'success') {
+        hideGeoError();
+        markAttendanceSuccess(btn);
+        maybeStartBackgroundTracking();   // ← decision point 1: success
+        return;
+      }
+
+      if (data.status === 'exists') {
+        hideGeoError();
+        markAttendanceSuccess(btn);
+        maybeStartBackgroundTracking();   // ← decision point 2: exists
+        return;
+      }
+
+      if (data.status === 'out_of_range') {
+        showGeoError('OUT OF RANGE — you must be inside the gym to mark attendance', data.distance_message);
+        setButtonLoading(btn, false);
+        return;
+      }
+
+      if (res.status === 429) {
+        showGeoError('TOO MANY ATTEMPTS — please wait a moment and try again');
+        setButtonLoading(btn, false);
+        return;
+      }
+
+      if (res.status === 403) {
+        showGeoError(data.message || 'NOT AUTHORIZED — please contact gym staff');
+        setButtonLoading(btn, false);
+        return;
+      }
+
+      // expired / not_enrolled / rate_limited / error — no tracking start
+      showGeoError('ATTENDANCE FAILED — please try again');
+      setButtonLoading(btn, false);
+
+    } catch (err) {
+      showGeoError('NETWORK ERROR — please check your connection and try again');
+      setButtonLoading(btn, false);
     }
   }
 
-  // ── Listen for SW messages ───────────────────────────────────
-  function listenToSW() {
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      const { type } = event.data || {};
+  // ── Background tracking gate ─────────────────────────────────
+  // Called ONLY after the attendance request has already completed
+  // (success or exists), so there is no race with START_GEO firing
+  // before the manual POST lands.
+  async function maybeStartBackgroundTracking() {
+    try {
+      const res = await EnterGYMFetch.fetchWithTimeout('/api/attendance-status/', {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (!res.ok) return;
 
-      if (type === 'REQUEST_LOC') {
-        const cached = loadLoc();
-        if (cached) {
-          swPost({ type: 'REPORT_LOC', lat: cached.lat, lng: cached.lng });
-          refreshLocCache();
-        } else {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              saveLoc(pos.coords.latitude, pos.coords.longitude);
-              swPost({ type: 'REPORT_LOC', lat: pos.coords.latitude, lng: pos.coords.longitude });
-            },
-            () => { /* silent */ },
-            { enableHighAccuracy: true, timeout: 8000, maximumAge: 30_000 }
-          );
-        }
-      }
+      const { enrolled, marked } = await res.json();
 
-      if (type === 'ATTENDANCE_MARKED' && onAttendancePage) {
-        setTimeout(() => window.location.reload(), 1200);
+      if (enrolled === true && marked === false) {
+        startBackgroundTracking();
       }
+      // enrolled === false → do nothing
+      // marked === true    → do nothing (nothing left to auto-mark)
+    } catch (_) {
+      // Network hiccup — silently skip; the user already has attendance
+      // marked (or existing) either way, so this is non-critical.
+    }
+  }
+
+  function startBackgroundTracking() {
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+    const cfg = window.GYM_CONFIG || {};
+    navigator.serviceWorker.controller.postMessage({
+      type: 'START_GEO',
+      config: { isEnrolled: true, userHash: cfg.userHash || '' },
     });
   }
 
-  function refreshLocCache() {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => saveLoc(pos.coords.latitude, pos.coords.longitude),
-      () => { /* silent */ },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
-    );
+  // ── UI helpers ────────────────────────────────────────────────
+  function setButtonLoading(btn, isLoading) {
+    if (!btn) return;
+    btn.disabled = isLoading;
+    btn.classList.toggle('loading', isLoading);
   }
+  function initAutomaticAttendance() {
+    const btn = document.getElementById('btn-attend');
+    if (btn && btn.disabled) return;          // already marked today server-side
 
-  function silentlyCache() {
-    if (!navigator.geolocation) return;
-    if (loadLoc()) { refreshLocCache(); return; }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        saveLoc(pos.coords.latitude, pos.coords.longitude);
-        swPost({ type: 'CACHE_LOC', lat: pos.coords.latitude, lng: pos.coords.longitude });
-      },
-      () => { /* no permission yet */ },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
-    );
-  }
+    if (!window.EnterGYMLocation) return;
 
-  // ── POST coords to server (manual button) ────────────────────
-  async function postToServer(lat, lng) {
-    const res = await fetch('/api/geo-mark-attendance/', {
-      method:      'POST',
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken':  getCsrf(),   // still good practice for manual fetches
-      },
-      body: JSON.stringify({ lat, lng }),
+    window.EnterGYMLocation.getPermissionState((state) => {
+      if (state !== 'granted') return;         // 'prompt' / 'denied' / 'unknown' → no-op
+      maybeStartBackgroundTracking();
     });
-    if (res.status === 429) return { status: 'rate_limited' };
-    try { return await res.json(); } catch { return { status: 'error' }; }
+  }
+  function markAttendanceSuccess(btn) {
+    if (!btn) return;
+    btn.classList.remove('loading');
+    btn.classList.add('marked');
+    btn.disabled = true;
+    const label = document.getElementById('btn-label');
+    if (label) {
+      label.innerHTML = '<span class="check-icon">✓</span> ATTENDANCE LOGGED';
+    }
+    const banner = document.getElementById('auto-mark-banner');
+    if (banner) banner.style.display = 'none';
   }
 
-  // ── UI helpers ───────────────────────────────────────────────
-  function showGeoError(msg, distance) {
-  const box  = document.getElementById('geo-error');
-  const txt  = document.getElementById('geo-error-text');
-  const dist = document.getElementById('geo-distance');
-  if (txt) txt.textContent = msg;
-  if (dist) dist.textContent = distance != null ? `📍 ${distance}m FROM GYM` : '';
-  if (box) box.style.display = 'block';
+  function showGeoError(text, distance) {
+    const errEl  = document.getElementById('geo-error');
+    const txtEl  = document.getElementById('geo-error-text');
+    const distEl = document.getElementById('geo-distance');
+    if (errEl && txtEl) {
+      txtEl.textContent = '⊘ ' + text;
+      errEl.style.display = 'block';
+      if (distEl) distEl.textContent = distance || '';
+    }
   }
 
   function hideGeoError() {
-  const box  = document.getElementById('geo-error');
-  const dist = document.getElementById('geo-distance');
-  if (box) box.style.display = 'none';
-  if (dist) dist.textContent = '';
+    const errEl = document.getElementById('geo-error');
+    if (errEl) errEl.style.display = 'none';
   }
 
-  function setBtn(state) {
-    const btn   = document.getElementById('btn-attend');
-    const label = document.getElementById('btn-label');
-    if (!btn || !label) return;
-    if (state === 'loading') {
-      btn.disabled      = true;
-      label.textContent = '◈ LOCATING…';
-    } else if (state === 'marked') {
-      btn.disabled = true;
-      btn.classList.add('marked');
-      label.innerHTML = '<span class="check-icon">✓</span> ATTENDANCE LOGGED';
-    } else {
-      btn.disabled    = false;
-      label.innerHTML = '<span class="pulse-ring"></span>◈ MARK ATTENDANCE';
-    }
-  }
+  // ── Service Worker message wiring (attendance-related only) ───
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', function (event) {
+      const msg = event.data || {};
 
-  // ── Manual button press handler ──────────────────────────────
-  window.checkLocationAndSubmit = function () {
-    hideGeoError();
-    if (!navigator.geolocation) {
-      showGeoError('⊘ GEOLOCATION NOT SUPPORTED BY THIS BROWSER');
-      return;
-    }
-
-    function handleResult(data) {
-      switch (data?.status) {
-        case 'success':
-          setBtn('marked');
-          hideGeoError();
-          setTimeout(() => window.location.reload(), 1200);
-          break;
-        case 'exists':
-          setBtn('marked');
-          hideGeoError();
-          break;
-        case 'out_of_range':
-          setBtn('idle');
-          showGeoError('⊘ NOT AT GYM — MUST BE WITHIN GYM PREMISES', data.distance);
-          break;
-        case 'expired':
-          setBtn('idle');
-          showGeoError('⊘ MEMBERSHIP EXPIRED — PLEASE RENEW');
-          break;
-        case 'not_enrolled':
-          setBtn('idle');
-          showGeoError('⊘ NOT ENROLLED — PLEASE ENROLL FIRST');
-          break;
-        case 'rate_limited':
-          setBtn('idle');
-          showGeoError('⊘ TOO MANY ATTEMPTS — TRY AGAIN IN A MINUTE');
-          break;
-        default:
-          setBtn('idle');
-          showGeoError('⊘ ERROR — PLEASE TRY AGAIN');
+      if (msg.type === 'ATTENDANCE_MARKED') {
+        const btn = document.getElementById('btn-attend');
+        markAttendanceSuccess(btn);
+        return;
       }
-    }
 
-    const cached = loadLoc();
-    if (cached) {
-      setBtn('loading');
-      postToServer(cached.lat, cached.lng).then(handleResult).catch(() => {
-        setBtn('idle');
-        showGeoError('⊘ NETWORK ERROR — CHECK CONNECTION');
-      });
-      refreshLocCache();
-      return;
-    }
-
-    setBtn('loading');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        saveLoc(lat, lng);
-        postToServer(lat, lng).then(handleResult).catch(() => {
-          setBtn('idle');
-          showGeoError('⊘ NETWORK ERROR — CHECK CONNECTION');
-        });
-      },
-      (err) => {
-        setBtn('idle');
-        showGeoError(
-          err.code === 1 ? '⊘ LOCATION BLOCKED — Allow location in browser settings' :
-          err.code === 2 ? '⊘ LOCATION UNAVAILABLE — Check GPS / Network' :
-                           '⊘ LOCATION TIMED OUT — Try again'
+      // SW wants a fresh GPS fix for its 30s poll. GPS retrieval itself
+      // is loc_permission.js's job — we just relay the result back.
+      if (msg.type === 'REQUEST_LOC') {
+        if (!window.EnterGYMLocation) return;
+        window.EnterGYMLocation.getFreshPosition(
+          (pos) => {
+            navigator.serviceWorker.controller?.postMessage({
+              type: 'REPORT_LOC',
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+            });
+          },
+          () => { /* silent — background fix failed, SW retries in 30s */ }
         );
-      },
-      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 }
-    );
-  };
-
-  async function requestNotifPermission() {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'default') await Notification.requestPermission();
+      }
+    });
   }
-
-  async function init() {
-    if (!isAuthenticated) return;
-    const reg = await registerSW();
-    if (!reg) return;
-    listenToSW();
-    if (!isEnrolled) return;
-    await requestNotifPermission();
-    silentlyCache();
-    if (navigator.serviceWorker.controller) {
-      sendStartGeo();
-    } else {
-      navigator.serviceWorker.addEventListener('controllerchange', () => sendStartGeo());
+  // ── Wire up the button + auto-start on load ───────────────────
+  document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('btn-attend');
+    if (btn && !btn.disabled) {
+      btn.removeEventListener('click', checkLocationAndSubmit);
+      btn.addEventListener('click', checkLocationAndSubmit);
     }
-    navigator.serviceWorker.ready.then(() => setTimeout(sendStartGeo, 800));
-  }
+    initAutomaticAttendance();
+  });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  window.checkLocationAndSubmit = checkLocationAndSubmit;
 
 })();

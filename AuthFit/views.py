@@ -38,7 +38,6 @@ from django.http import HttpResponseRedirect
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth,TruncDay
 from AuthFit.rate_limit import check_login_attempt, reset_attempt, record_failed_attempt ,get_client_ip
-from .attendance import mark_attendance
 from .forms import UserLogin , CompleteProfileForm , QuickEnrollmentForm
 from urllib.parse import quote
 from Shop.notifications import notify_staff_new_enrollment
@@ -52,6 +51,9 @@ from billing.services.change_membership_plan import (
         change_membership_plan, PlanChangeError)
 from AuthFit.signals import _version_cache_key , _VERSION_CACHE_TTL ,update_enrollment_embeddings
 from Gym.branding import get_gym_branding
+from AuthFit.attendance import mark_attendance as mark_device_attendance
+from AuthFit.geo_logic import mark_geo_attendance
+from reviews.models import Review
 logger = logging.getLogger(__name__)
 
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
@@ -65,6 +67,10 @@ def robots_txt(request):
     Sitemap: https://entergym.in/sitemap.xml
     """
     return HttpResponse(content, content_type="text/plain")
+
+def _is_json_request(request):
+    ct = request.META.get('CONTENT_TYPE', '')
+    return 'application/json' in ct
 
 def custom_403_view(request, exception=None):
     context = {
@@ -438,28 +444,57 @@ def save_embeddings_batch(request):
 
 
 @csrf_exempt
+@require_POST
 def mark_attendance_api(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "POST required"}, status=405)
+    """
+    POST /api/mark-attendance/
+    Single attendance endpoint for BOTH:
+      1. Face/device attendance  -> body: {"unique_id": "...", "gym_id": "..."}
+         (desktop app, API-key/device auth — unchanged behavior)
+      2. Browser/geo attendance  -> body: {"lat": float, "lng": float}
+         (manual tap + background Service Worker — requires logged-in session)
+
+    Routing is by payload shape, not by URL, so there is exactly one
+    attendance endpoint and no duplicated attendance business rules.
+    """
+    if not _is_json_request(request):
+        return JsonResponse({'status': 'error', 'error': 'JSON required'}, status=415)
+
     try:
-        if not _check_internal_key(request):
-            return JsonResponse({"error": "Unauthorized"}, status=403)
+        body = json.loads(request.body)
+    except (ValueError, json.JSONDecodeError):
+        return JsonResponse({'status': 'error', 'error': 'Invalid JSON'}, status=400)
 
-        data      = json.loads(request.body)
-        unique_id = data.get("unique_id")
-        gym_id    = data.get("gym_id")
+    # ── Path 1: device / face attendance (existing behavior) ───────
+    if 'unique_id' in body:
+        unique_id = body.get('unique_id')
+        gym_id = body.get('gym_id') or getattr(request, 'gym', None) and request.gym.pk
+        result = mark_device_attendance(unique_id, gym_id=gym_id)
+        status_code = 200 if result.get('status') in ('success', 'exists') else 400
+        return JsonResponse(result, status=status_code)
 
-        if not unique_id:
-            return JsonResponse({"error": "Missing unique_id"}, status=400)
+    # ── Path 2: browser geo attendance — requires session auth ─────
+    if 'lat' in body and 'lng' in body:
+        if not request.user.is_authenticated:
+            return JsonResponse({'status': 'error', 'error': 'Login required'}, status=401)
 
-        result = mark_attendance(unique_id, gym_id=gym_id)
-        return JsonResponse(result)
+        try:
+            lat = float(body['lat'])
+            lng = float(body['lng'])
+        except (TypeError, ValueError):
+            return JsonResponse({'status': 'error', 'error': 'Invalid coordinates'}, status=400)
 
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-    except Exception:
-        logger.exception("Error in mark_attendance_api")
-        return JsonResponse({"error": "Internal error"}, status=500)
+        gym = getattr(request, 'gym', None)
+        result = mark_geo_attendance(request.user, gym, lat, lng)
+
+        status_map = {
+            'success': 200, 'exists': 200,
+            'out_of_range': 403, 'not_enrolled': 403, 'expired': 403,
+            'rate_limited': 429, 'error': 400,
+        }
+        return JsonResponse(result, status=status_map.get(result['status'], 400))
+
+    return JsonResponse({'status': 'error', 'error': 'Missing unique_id or lat/lng'}, status=400)
 
 
 @csrf_exempt
@@ -691,10 +726,19 @@ def homePage(request):
 
     # ── SaaS root domain — no gym context ─────────────────────────────────
     if gym is None:
+        verified_reviews = (
+            Review.objects
+            .filter(is_published=True, is_hidden=False)
+            .select_related('gym', 'gym__owner')
+            .order_by('-approved_at')[:9]
+        )
+
+        context = {'verified_reviews': verified_reviews}
+
         if request.user.is_superuser:
-            gyms = Gym.objects.all().order_by('gym_name')
-            return render(request, 'saas_home.html', {'gyms': gyms})
-        return render(request, 'saas_home.html')
+            context['gyms'] = Gym.objects.all().order_by('gym_name')
+
+        return render(request, 'saas_home.html', context)
 
     # ── Gym domain — load gym-specific content ─────────────────────────────
     notif_key         = f"notifications_{gym.pk}"
@@ -1126,6 +1170,7 @@ def enrollment(request):
             user=request.user,
             paidAmount=0,
             pendingAmount=selected_plan.price,
+            profile_completed=bool(email and gender and address),
         )
         enroll.save()
 
@@ -1244,7 +1289,7 @@ def complete_profile(request):
             obj.profile_completed = required_filled
 
             obj.save(update_fields=[
-                'email', 'gender', 'address', 'reference', 'face_image', 'profile_completed'
+                'email', 'gender', 'address', 'reference','profile_completed'
             ])
 
             cache.delete(f"enrollment_{request.user.id}_{gym.pk}")

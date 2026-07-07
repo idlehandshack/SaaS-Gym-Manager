@@ -45,8 +45,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="{% static 'css/home.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/loc_modal.css' %}">
-    <!-- Preload mobile image for small screens -->
   </head>
   <body>
     <!-- ===================== NOTIFICATION BAR ===================== -->
@@ -762,7 +760,6 @@
         </span>
       </div>
     </footer>
-
     <script src="{% static 'js/home.js' %}" defer></script>
     <script nonce="{{ request.csp_nonce }}">
       document.querySelectorAll('.pricing-card').forEach(card => {
@@ -772,14 +769,9 @@
       });
       window.GYM_CONFIG = JSON.parse('{{ GYM_CONFIG_JSON|escapejs }}');
     </script>
-    {% if not isStaff %}
-    <script src="{% static 'js/loc_permission.js' %}"></script>
-    {% endif %}
     {% if enrolled %}
     <script src="{% static 'js/geo_attendance.js' %}"></script>
-    {% endif %}
-    {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
-    <script src="{% static 'js/push_subscribe.js' %}"></script>
+    <script src="{% static 'js/fetch_utils.js' %}" defer></script>
     {% endif %}
     <script src="{% static 'js/RefreshTrigger.js' %}"></script>
   </body>

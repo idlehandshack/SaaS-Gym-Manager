@@ -17,6 +17,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/notification_card.css' %}"/>
+    <script nonce="{{ request.csp_nonce }}">
+      window.addEventListener('load', function() {
+        var el = document.getElementById('loc-css');
+        if (el) el.rel = 'stylesheet';
+      });
+    </script>
   <style>
     /* ── TOKENS (matched to today_attendance.html) ── */
     :root {
@@ -650,7 +657,9 @@
         </div>
         <a href="{% url 'complete_profile' %}" class="profile-banner-btn">Complete Profile</a>
       </div>
-  {% endif %}
+    {% else %}
+      <div id="notif-permission-slot"></div>
+    {% endif %}
   <!-- ══ MAIN CONTENT ══ -->
   <main class="profile-page">
     <div class="main">
@@ -805,10 +814,8 @@
             </div>
           </div>
         </div>
-      </div><!-- /.info-card -->
-
-    </div><!-- /.main -->
-    <!-- ══ INVOICE HISTORY ══ -->
+      </div>
+    </div>
     <div class="invoices-section">
       <div class="invoices-heading">Payment & Invoice History</div>
       <div class="invoice-card">
@@ -829,6 +836,7 @@
         <div class="invoice-empty">No invoices yet. Once a payment is recorded, your invoice will appear here.</div>
         {% endfor %}
       </div>
+
     </div>
   </main>
   {% if enrollment and enrollment.paymentStatus == 'Pending' and gym.upi_enabled and gym.upi_id %}
@@ -1166,11 +1174,14 @@
     {% if VAPID_PUBLIC_KEY %}
       <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
       <script src="{% static 'js/push_subscribe.js' %}" defer></script>
+      <script src="{% static 'js/notification_permission.js' %}" defer></script>
     {% endif %}
   {% endif %}
   <script src="{% static 'js/messages.js' %}"></script>
   <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
-  <script src="{% static 'js/geo_attendance.js' %}" defer></script>
+  <script src="{% static 'js/sw_register.js' %}" defer></script>
+  <script src="{% static 'js/fetch_utils.js' %}" defer></script>
   <script src="{% static 'js/loc_permission.js' %}" defer></script>
+  <script src="{% static 'js/geo_attendance.js' %}" defer></script>
 </body>
 </html>

@@ -1207,7 +1207,24 @@
             </button>
 
             <div class="testi-stage" id="testiStage">
-
+              {% if verified_reviews %}
+                {% for review in verified_reviews %}
+                <div class="testi-card{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.counter0 }}">
+                  <span class="testi-verified-badge">✔ Verified Gym</span>
+                  <div class="testi-stars">{% for i in "12345" %}{% if forloop.counter <= review.overall_rating %}★{% else %}☆{% endif %}{% endfor %}</div>
+                  <p class="testi-quote">{{ review.final_review }}</p>
+                  <div class="testi-author">
+                    <div class="avatar" style="background:#5b5fff20;color:#5b5fff;width:40px;height:40px;font-size:0.78rem;">
+                      {{ review.gym.gym_name|slice:":2"|upper }}
+                    </div>
+                    <div class="testi-info">
+                      <strong>{{ review.gym.owner.get_full_name|default:review.gym.owner.username }}</strong>
+                      <span class="testi-gym">{{ review.gym.gym_name }}{% if review.gym.city %} <span class="testi-city">· {{ review.gym.city }}</span>{% endif %}</span>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              {% else %}
               <div class="testi-card is-active" data-index="0">
                 <div class="testi-stars">★★★★★</div>
                 <p class="testi-quote">
@@ -1255,7 +1272,7 @@
                   </div>
                 </div>
               </div>
-
+            {% endif %}
             </div>
 
             <button class="testi-arrow testi-arrow--next" id="testiNext" aria-label="Next testimonial">

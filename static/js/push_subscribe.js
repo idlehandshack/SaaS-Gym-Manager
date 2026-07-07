@@ -1,4 +1,11 @@
 // EnterGYM Web Push Subscription Handler
+//
+// IMPORTANT: This file no longer calls Notification.requestPermission()
+// automatically on page load. It only:
+//   1. Silently re-syncs an EXISTING subscription to the server (no popup).
+//   2. Exposes window.EnterGYMPush.requestAndSubscribe() so the
+//      notification permission card can trigger the actual browser
+//      prompt only after the user opts in.
 
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -17,58 +24,87 @@ function getCookie(name) {
         ?.split('=')[1] ?? '';
 }
 
-async function subscribeToWebPush() {
-    // Read VAPID key from meta element — injected for ALL authenticated users,
-    // not just staff. If missing, the user is unauthenticated; skip silently.
+function getVapidKey() {
     const metaEl = document.getElementById('vapid-meta');
-    if (!metaEl) return;
+    return metaEl ? metaEl.dataset.key : '';
+}
 
-    const vapidKey = metaEl.dataset.key;
+async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+    const controller = new AbortController();
+
+    const timer = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        return await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+// ── Silent path: only touches an EXISTING subscription, never prompts ──
+async function resyncExistingSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const vapidKey = getVapidKey();
     if (!vapidKey) return;
 
-    // Check browser support
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.log('EnterGYM: Web push not supported on this browser.');
-        return;
-    }
-
-    // Don't ask again if user already denied
+    // If the user already denied, there's nothing to sync and we must
+    // never call requestPermission() again.
     if (Notification.permission === 'denied') return;
 
     try {
         const reg = await navigator.serviceWorker.ready;
-
-        // Check if already subscribed
         const existing = await reg.pushManager.getSubscription();
         if (existing) {
-            // Already subscribed — make sure server has it (handles re-logins,
-            // new devices, and subscription rotation)
             await syncSubscriptionToServer(existing);
-            return;
         }
+        // NOTE: if permission is 'granted' but there's no subscription yet
+        // (e.g. cleared site data), we deliberately do nothing here — the
+        // notification card handles (re)subscribing on user action.
+    } catch (err) {
+        console.error('EnterGYM: push resync error:', err);
+    }
+}
 
-        // Ask permission and subscribe
+// ── Explicit path: called by the notification permission card AFTER ──
+// ── the user has clicked "Enable Notifications" -> "Continue"        ──
+async function requestAndSubscribe() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return { status: 'unsupported' };
+    }
+
+    const vapidKey = getVapidKey();
+    if (!vapidKey) return { status: 'unsupported' };
+
+    try {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
-            console.log('EnterGYM: Notification permission denied.');
-            return;
+            return { status: permission }; // 'denied' or 'default'
         }
 
-        const subscription = await reg.pushManager.subscribe({
-            userVisibleOnly:      true,
-            applicationServerKey: urlBase64ToUint8Array(vapidKey),
-        });
+        const reg = await navigator.serviceWorker.ready;
+
+        let subscription = await reg.pushManager.getSubscription();
+        if (!subscription) {
+            subscription = await reg.pushManager.subscribe({
+                userVisibleOnly:      true,
+                applicationServerKey: urlBase64ToUint8Array(vapidKey),
+            });
+        }
 
         await syncSubscriptionToServer(subscription);
-        console.log('EnterGYM: Web push subscription saved!');
+        return { status: 'granted' };
 
     } catch (err) {
         console.error('EnterGYM: Push subscription error:', err);
+        return { status: 'error', error: err };
     }
 }
 
 async function syncSubscriptionToServer(subscription) {
-    await fetch('/push/subscribe/', {
+    await fetchWithTimeout('/push/subscribe/', {
         method:  'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -78,9 +114,12 @@ async function syncSubscriptionToServer(subscription) {
     });
 }
 
-// Run when page loads
+// Expose the explicit, user-initiated entry point for other scripts.
+window.EnterGYMPush = { requestAndSubscribe };
+
+// Run only the SILENT resync path on load — never prompts.
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', subscribeToWebPush);
+    document.addEventListener('DOMContentLoaded', resyncExistingSubscription);
 } else {
-    subscribeToWebPush();
+    resyncExistingSubscription();
 }

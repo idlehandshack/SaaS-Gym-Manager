@@ -1,6 +1,6 @@
 from django.urls import path, reverse, include
 from AuthFit import views
-from AuthFit.geo_views import geo_mark_attendance, serve_sw, attendance_status
+from AuthFit.geo_views import  serve_sw, attendance_status
 from . import device_views
 from django.contrib.auth import views as auth_views
 from Gym.views import (
@@ -8,11 +8,7 @@ from Gym.views import (
     add_staff_profile, gym_detail_json, add_gym_page, search_owner_by_phone,
     subscriptions_page, add_subscription_plan, edit_subscription_plan,
     delete_subscription_plan, change_gym_plan, platform_insights_page,
-    api_kpi_summary, api_engagement_analytics,api_low_performing_gyms, api_member_distribution,
-    api_member_growth, api_payment_analytics, api_platform_activity,
-    api_platform_growth, api_renewal_churn, api_revenue_analytics,
-    api_subscription_analytics, api_system_health, api_top_performing_gyms,
-    api_dashboard, api_notifications,
+    api_system_health,api_dashboard, api_notifications,
 )
 
 from django.contrib.sitemaps.views import sitemap
@@ -98,7 +94,6 @@ urlpatterns = [
     path('owner/member/<int:enrollment_id>/change-plan/', views.change_membership_plan_view, name='change_membership_plan'),
 
     # ── Background geo auto-mark ─────────────────────────
-    path('api/geo-mark-attendance/', geo_mark_attendance, name='geo_mark_attendance'),
     path('api/attendance-status/', attendance_status),
     path('sw.js', serve_sw, name='sw'),
     path('manifest.json', views.manifest, name='manifest'),

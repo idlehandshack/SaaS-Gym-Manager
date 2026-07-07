@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'notifications',
     'Gym',
     'billing',
+    'reviews',
 ]
 
 JAZZMIN_UI_TWEAKS = {
@@ -88,7 +89,7 @@ PASSWORD_HASHERS = [
 ]
 
 ROOT_URLCONF = 'Fitness.urls'
-
+OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

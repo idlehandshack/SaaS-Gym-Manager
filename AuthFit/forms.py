@@ -176,4 +176,4 @@ class CompleteProfileForm(forms.ModelForm):
     """Member-facing — personal fields only. Req 6: nothing membership/financial-related exposed."""
     class Meta:
         model = Enrollment
-        fields = ['email', 'gender', 'address', 'reference', 'face_image']
+        fields = ['email', 'gender', 'address', 'reference']

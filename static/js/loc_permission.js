@@ -2,230 +2,368 @@
 //  loc_permission.js
 //  Place in: static/js/loc_permission.js
 //
-//  Shows a friendly modal the FIRST TIME a logged-in user
-//  visits the site asking for location permission.
-//  - If allowed  → saves GPS to localStorage, never shows again
-//  - If skipped  → records skip in localStorage, never shows again
-//  - If browser already granted/denied → never shows (silent)
+//  REDESIGNED BEHAVIOR (per "Location Permission" spec)
+//  ------------------------------------------------------------
+//  - NEVER requests location on page load.
+//  - NEVER calls navigator.geolocation.getCurrentPosition() until
+//    the user explicitly taps "Mark Attendance" AND (if needed)
+//    confirms the explanation modal.
+//  - Exposes window.EnterGYMLocation.checkLocationAndSubmit(onReady)
+//    which geo_attendance.js calls from the Mark Attendance button.
+//  - Detects granted / prompt / denied via the Permissions API and
+//    reacts to permission changes live (no reload needed).
 //
-//  Load this in base.html BEFORE geo_attendance.js
+//  Load this in base.html / attendance page BEFORE geo_attendance.js
 // ============================================================
 
 (function () {
   'use strict';
 
-  const ASKED_KEY  = 'gym_loc_asked';   // localStorage flag
-  const LOC_KEY    = 'gym_location';
-
-  // Only run for authenticated users
   const cfg = window.GYM_CONFIG || {};
-  if (!cfg.isAuthenticated) return;
 
-  // ── Already asked before? Skip. ─────────────────────────────
-  if (localStorage.getItem(ASKED_KEY)) return;
+  let modalEl        = null;
+  let blockedCardEl   = null;
+  let permissionStatus = null; // PermissionStatus object, if supported
 
-  // ── Browser already granted permission? Cache & skip modal. ─
-  if (navigator.permissions) {
-    navigator.permissions.query({ name: 'geolocation' }).then(result => {
-      if (result.state === 'granted') {
-        // Already allowed — silently cache and mark as asked
-        localStorage.setItem(ASKED_KEY, 'granted');
-        silentCache();
-        return;
-      }
-      if (result.state === 'denied') {
-        // Already denied — mark as asked, don't show modal
-        localStorage.setItem(ASKED_KEY, 'denied');
-        return;
-      }
-      // 'prompt' state — show our custom modal
-      showModal();
-    }).catch(() => {
-      // permissions API not supported — show modal anyway
-      showModal();
-    });
-  } else {
-    // No permissions API (Safari) — show modal
-    showModal();
+  // ── Public entry point ──────────────────────────────────────
+  // Called when the user taps "Mark Attendance".
+  // onSuccess(position) is invoked once we actually have a GPS fix.
+  // onBlocked() is invoked if permission is denied (UI already shown here).
+  function checkLocationAndSubmit(onSuccess, onBlocked) {
+    if (!navigator.geolocation) {
+      showUnsupportedError();
+      return;
+    }
+
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' }).then(status => {
+        attachChangeListener(status);
+        handlePermissionState(status.state, onSuccess, onBlocked);
+      }).catch(() => {
+        // Permissions API failed — fall back to explanation modal first
+        showExplanationModal(onSuccess, onBlocked);
+      });
+    } else {
+      // No Permissions API (older Safari) — always show explanation modal
+      // first; getCurrentPosition is only called after user confirms.
+      showExplanationModal(onSuccess, onBlocked);
+    }
+  }
+  // ── Read-only permission check (no GPS, no modal) ────────────
+  // Used by geo_attendance.js on page load to decide whether it's
+  // safe to auto-start background tracking. Never requests GPS and
+  // never shows any UI — just reports the current browser state.
+  function getPermissionState(callback) {
+    if (!navigator.geolocation) {
+      callback('unsupported');
+      return;
+    }
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then(status => callback(status.state))   // 'granted' | 'denied' | 'prompt'
+        .catch(() => callback('unknown'));
+    } else {
+      // No Permissions API (older Safari) — we cannot know without
+      // prompting, and prompting is not allowed here, so treat as
+      // unknown/prompt-like: caller should NOT auto-start.
+      callback('unknown');
+    }
   }
 
-  // ── Silently grab GPS and store in localStorage ──────────────
-  function silentCache() {
-    if (!navigator.geolocation) return;
+  function handlePermissionState(state, onSuccess, onBlocked) {
+    if (state === 'granted') {
+      // No modal — go straight to GPS, no extra click for the user.
+      requestPosition(onSuccess, onBlocked);
+    } else if (state === 'denied') {
+      showBlockedCard(onBlocked);
+    } else {
+      // 'prompt' — explain before the browser dialog appears.
+      showExplanationModal(onSuccess, onBlocked);
+    }
+  }
+
+  // ── Live permission-change listener ─────────────────────────
+  function attachChangeListener(status) {
+    if (!status || permissionStatus === status) return;
+    permissionStatus = status;
+    status.onchange = function () {
+      if (status.state === 'granted') {
+        removeBlockedCard();
+        removeModal();
+      } else if (status.state === 'denied') {
+        removeModal();
+      }
+    };
+  }
+
+  // ── Explanation modal (shown BEFORE first browser prompt) ───
+  function showExplanationModal(onSuccess, onBlocked) {
+    removeModal();
+
+    modalEl = document.createElement('div');
+    modalEl.id = 'loc-explain-modal';
+    modalEl.setAttribute('role', 'dialog');
+    modalEl.setAttribute('aria-modal', 'true');
+    modalEl.setAttribute('aria-labelledby', 'loc-explain-title');
+    modalEl.innerHTML = `
+      <div class="loc-modal-backdrop"></div>
+      <div class="loc-modal-card" tabindex="-1">
+        <span class="loc-modal-icon" aria-hidden="true">📍</span>
+        <h2 class="loc-modal-title" id="loc-explain-title">Location Required</h2>
+        <p class="loc-modal-body">
+          To prevent fake attendance and ensure you are physically present
+          inside your gym, EnterGYM needs temporary access to your current
+          location when you mark attendance.
+        </p>
+        <p class="loc-modal-body loc-modal-subtle">
+          Your location is only checked at the moment you tap
+          <strong>Mark Attendance</strong>. It is never continuously monitored.
+        </p>
+
+        <div class="loc-privacy-box">
+          <h3 class="loc-privacy-title">🔒 Your Privacy Matters</h3>
+          <ul class="loc-privacy-list">
+            <li>We do <strong>not</strong> continuously track your location</li>
+            <li>We do <strong>not</strong> store your live location history</li>
+            <li>We do <strong>not</strong> sell or share your location</li>
+            <li>We do <strong>not</strong> access location while you browse</li>
+          </ul>
+          <p class="loc-privacy-footer">
+            Location is requested only when you choose to mark attendance.
+            You can change this anytime from your browser settings.
+          </p>
+        </div>
+
+        <div class="loc-modal-actions">
+          <button class="btn-loc-continue" id="btn-loc-continue">Continue</button>
+          <button class="btn-loc-cancel" id="btn-loc-cancel">Cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modalEl);
+    document.body.style.overflow = 'hidden';
+
+    const card = modalEl.querySelector('.loc-modal-card');
+    card.focus();
+    trapFocus(modalEl, card);
+
+    document.getElementById('btn-loc-continue').addEventListener('click', () => {
+      const btn = document.getElementById('btn-loc-continue');
+      btn.disabled = true;
+      btn.textContent = 'Requesting…';
+      // First and only place we call getCurrentPosition after "prompt".
+      requestPosition(
+        (pos) => { removeModal(); if (onSuccess) onSuccess(pos); },
+        (err) => { removeModal(); if (onBlocked) onBlocked(err); }
+      );
+    });
+
+    document.getElementById('btn-loc-cancel').addEventListener('click', () => {
+      removeModal();
+    });
+
+    modalEl.querySelector('.loc-modal-backdrop').addEventListener('click', removeModal);
+
+    function onKeydown(e) {
+      if (e.key === 'Escape') removeModal();
+    }
+    modalEl.addEventListener('keydown', onKeydown);
+  }
+
+  function removeModal() {
+    if (modalEl) {
+      modalEl.remove();
+      modalEl = null;
+    }
+    document.body.style.overflow = '';
+  }
+
+  // ── Blocked / denied permission card ────────────────────────
+  function showBlockedCard(onBlocked) {
+    removeBlockedCard();
+
+    blockedCardEl = document.createElement('div');
+    blockedCardEl.id = 'loc-blocked-card';
+    blockedCardEl.setAttribute('role', 'alertdialog');
+    blockedCardEl.setAttribute('aria-modal', 'true');
+    blockedCardEl.innerHTML = `
+      <div class="loc-modal-backdrop"></div>
+      <div class="loc-modal-card" tabindex="-1">
+        <span class="loc-modal-icon" aria-hidden="true">🚫</span>
+        <h2 class="loc-modal-title">Location Permission Disabled</h2>
+        <p class="loc-modal-body">
+          Location permission is currently disabled. EnterGYM requires your
+          location only while marking attendance, to verify that you are
+          physically inside your gym.
+        </p>
+        <p class="loc-modal-body loc-modal-subtle">
+          Attendance cannot be recorded until Location permission is enabled.
+        </p>
+        <div class="loc-modal-actions">
+          <button class="btn-loc-continue" id="btn-loc-how">How to Enable</button>
+          <button class="btn-loc-cancel" id="btn-loc-blocked-cancel">Cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(blockedCardEl);
+    document.body.style.overflow = 'hidden';
+
+    const card = blockedCardEl.querySelector('.loc-modal-card');
+    card.focus();
+    trapFocus(blockedCardEl, card);
+
+    document.getElementById('btn-loc-how').addEventListener('click', showHowToEnable);
+    document.getElementById('btn-loc-blocked-cancel').addEventListener('click', removeBlockedCard);
+    blockedCardEl.querySelector('.loc-modal-backdrop').addEventListener('click', removeBlockedCard);
+
+    blockedCardEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') removeBlockedCard();
+    });
+
+    if (onBlocked) onBlocked();
+  }
+
+  function removeBlockedCard() {
+    if (blockedCardEl) {
+      blockedCardEl.remove();
+      blockedCardEl = null;
+    }
+    document.body.style.overflow = '';
+  }
+
+  // ── "How to Enable" instructions modal ──────────────────────
+  function showHowToEnable() {
+    removeBlockedCard();
+    removeModal();
+
+    modalEl = document.createElement('div');
+    modalEl.id = 'loc-howto-modal';
+    modalEl.setAttribute('role', 'dialog');
+    modalEl.setAttribute('aria-modal', 'true');
+    modalEl.innerHTML = `
+      <div class="loc-modal-backdrop"></div>
+      <div class="loc-modal-card" tabindex="-1">
+        <span class="loc-modal-icon" aria-hidden="true">📍</span>
+        <h2 class="loc-modal-title">Enable Location Access</h2>
+
+        <div class="loc-howto-section">
+          <h3>Desktop Browsers</h3>
+          <ol>
+            <li>Click the lock icon beside the website address.</li>
+            <li>Open Site Settings.</li>
+            <li>Change Location permission to Allow.</li>
+            <li>Refresh the page.</li>
+            <li>Try marking attendance again.</li>
+          </ol>
+        </div>
+
+        <div class="loc-howto-section">
+          <h3>Android Chrome</h3>
+          <ol>
+            <li>Tap the lock icon or browser menu.</li>
+            <li>Open Site Settings.</li>
+            <li>Tap Permissions.</li>
+            <li>Enable Location.</li>
+            <li>Return to EnterGYM and mark attendance again.</li>
+          </ol>
+        </div>
+
+        <div class="loc-howto-section">
+          <h3>Installed App (PWA)</h3>
+          <p>
+            Enable Location from either your browser's Site Settings or your
+            device's Operating System App Permissions, depending on your device.
+          </p>
+        </div>
+
+        <div class="loc-modal-actions">
+          <button class="btn-loc-cancel" id="btn-loc-howto-close">Close</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modalEl);
+
+    const card = modalEl.querySelector('.loc-modal-card');
+    card.focus();
+    trapFocus(modalEl, card);
+
+    document.getElementById('btn-loc-howto-close').addEventListener('click', removeModal);
+    modalEl.querySelector('.loc-modal-backdrop').addEventListener('click', removeModal);
+    modalEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') removeModal();
+    });
+  }
+
+  // ── Actual GPS request (only ever called after grant/continue) ─
+  function requestPosition(onSuccess, onError) {
     navigator.geolocation.getCurrentPosition(
-      pos => {
-        localStorage.setItem(LOC_KEY, JSON.stringify({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          ts:  Date.now(),
-        }));
-      },
-      () => { /* silent fail */ },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
+      (pos) => { if (onSuccess) onSuccess(pos); },
+      (err) => { handleGeoError(err, onError); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   }
 
-  // ── Build & inject modal HTML ────────────────────────────────
-  function showModal() {
-    // Small delay so the page renders first (better UX)
-    setTimeout(() => {
-      const modal = document.createElement('div');
-      modal.id = 'loc-permission-modal';
-      modal.innerHTML = `
-        <div class="loc-modal-card">
-          <span class="loc-modal-icon">📍</span>
-          <h2 class="loc-modal-title">ENABLE LOCATION</h2>
-          <p class="loc-modal-body">
-            EnterGYM uses your location to make attendance <strong>automatic</strong>.
-          </p>
-          <ul class="loc-modal-features">
-            <li>
-              <span class="feat-icon">⚡</span>
-              <div>
-                <strong>Auto-mark attendance</strong>
-                Walk into the gym and attendance marks itself — no tapping required.
-              </div>
-            </li>
-            <li>
-              <span class="feat-icon">🔒</span>
-              <div>
-                <strong>Private & secure</strong>
-                Your location is only checked against the gym. Never stored on our servers.
-              </div>
-            </li>
-            <li>
-              <span class="feat-icon">📵</span>
-              <div>
-                <strong>Phone in your pocket</strong>
-                Works in the background — you don't need to open the app.
-              </div>
-            </li>
-          </ul>
-          <div class="loc-modal-actions">
-            <button class="btn-loc-allow" id="btn-loc-allow">
-              ◈ ALLOW LOCATION ACCESS
-            </button>
-            <button class="btn-loc-skip" id="btn-loc-skip">
-              Skip for now
-            </button>
-          </div>
-          <p class="loc-modal-privacy">
-            Location is only used on your device to check gym proximity.<br>
-            We never track or store your location on our servers.
-          </p>
-        </div>
-      `;
-
-      document.body.appendChild(modal);
-
-      // ── Allow button ─────────────────────────────────────────
-      document.getElementById('btn-loc-allow').addEventListener('click', () => {
-        const btn = document.getElementById('btn-loc-allow');
-        btn.classList.add('loading');
-        btn.textContent = 'REQUESTING…';
-
-        if (!navigator.geolocation) {
-          closeModal(modal);
-          localStorage.setItem(ASKED_KEY, 'unsupported');
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          pos => {
-            // ✅ Granted — save location and flag
-            localStorage.setItem(LOC_KEY, JSON.stringify({
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              ts:  Date.now(),
-            }));
-            localStorage.setItem(ASKED_KEY, 'granted');
-
-            // Tell SW about the new location
-            if (navigator.serviceWorker.controller) {
-              navigator.serviceWorker.controller.postMessage({
-                type: 'CACHE_LOC',
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-              });
-            }
-
-            closeModal(modal, true);   // true = show success flash
-          },
-          error => {
-            // ❌ Denied or failed
-            localStorage.setItem(ASKED_KEY, error.code === 1 ? 'denied' : 'failed');
-            closeModal(modal);
-
-            // Show a gentle inline message if on attendance page
-            if (cfg.onAttendancePage) {
-              const errEl = document.getElementById('geo-error');
-              const txtEl = document.getElementById('geo-error-text');
-              if (errEl && txtEl) {
-                txtEl.textContent = '⊘ LOCATION DENIED — tap the 🔒 lock icon in your browser to enable';
-                errEl.style.display = 'block';
-              }
-            }
-          },
-          { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 }
-        );
-      });
-
-      // ── Skip button ──────────────────────────────────────────
-      document.getElementById('btn-loc-skip').addEventListener('click', () => {
-        localStorage.setItem(ASKED_KEY, 'skipped');
-        closeModal(modal);
-      });
-
-      // ── Close on backdrop click ──────────────────────────────
-      modal.addEventListener('click', e => {
-        if (e.target === modal) {
-          localStorage.setItem(ASKED_KEY, 'skipped');
-          closeModal(modal);
-        }
-      });
-
-    }, 800);   // 800ms delay — page loads first
+  function handleGeoError(err, onError) {
+    if (err.code === err.PERMISSION_DENIED) {
+      showBlockedCard();
+    } else if (err.code === err.POSITION_UNAVAILABLE) {
+      showInlineError('Unable to determine your current location. Please ensure GPS is enabled and try again.');
+    } else if (err.code === err.TIMEOUT) {
+      showInlineError('Location request timed out. Please move to an area with better GPS signal and try again.');
+    } else {
+      showInlineError('An unexpected error occurred while retrieving your location. Please try again.');
+    }
+    if (onError) onError(err);
   }
 
-  // ── Close modal with optional success flash ──────────────────
-  function closeModal(modal, success = false) {
-    modal.style.transition = 'opacity 0.3s ease';
-    modal.style.opacity    = '0';
+  function showUnsupportedError() {
+    showInlineError('Your browser does not support location services required for attendance.');
+  }
 
-    setTimeout(() => {
-      modal.remove();
+  function showInlineError(text) {
+    const errEl = document.getElementById('geo-error');
+    const txtEl = document.getElementById('geo-error-text');
+    if (errEl && txtEl) {
+      txtEl.textContent = '⊘ ' + text;
+      errEl.style.display = 'block';
+    }
+  }
 
-      if (success) {
-        // Flash a small success toast
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-          position: fixed;
-          bottom: 24px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(57,255,110,0.1);
-          border: 1px solid rgba(57,255,110,0.4);
-          border-radius: 8px;
-          padding: 12px 24px;
-          font-family: 'Share Tech Mono', monospace;
-          font-size: 13px;
-          color: #39ff6e;
-          letter-spacing: 1px;
-          z-index: 99999;
-          white-space: nowrap;
-          box-shadow: 0 0 20px rgba(57,255,110,0.2);
-          animation: toastIn 0.3s ease forwards;
-        `;
-        toast.textContent = '✓ LOCATION ENABLED — AUTO-ATTENDANCE ACTIVE';
-        document.body.appendChild(toast);
+  // ── Simple focus trap for modals ────────────────────────────
+  function trapFocus(container, initialFocusEl) {
+    const focusable = container.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last  = focusable[focusable.length - 1];
 
-        setTimeout(() => {
-          toast.style.transition = 'opacity 0.4s ease';
-          toast.style.opacity = '0';
-          setTimeout(() => toast.remove(), 400);
-        }, 3000);
+    container.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
-    }, 300);
+    });
   }
-
+  // NOTE: nothing runs automatically on load. No permission is ever
+  // requested until checkLocationAndSubmit() is called from a user
+  // click (see geo_attendance.js's Mark Attendance handler).
+  // ── Start background tracking once permission is granted ───
+  function startBackgroundTracking(userHash) {
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+    navigator.serviceWorker.controller.postMessage({
+      type: 'START_GEO',
+      config: { isEnrolled: true, userHash: userHash || '' },
+    });
+  }
+  // ── Expose public API ────────────────────────────────────────
+  window.EnterGYMLocation = {
+    checkLocationAndSubmit: checkLocationAndSubmit,
+    getFreshPosition: requestPosition,
+    getPermissionState: getPermissionState,
+  };
 })();

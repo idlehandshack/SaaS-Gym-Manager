@@ -1,193 +1,184 @@
 /* ============================================================
-   Location Permission Modal
-   Add to: static/css/base.css  OR  as a separate file
+   loc_modal.css
+   Location permission modal + blocked-card styles.
+   Matches EnterGYM matte-black / neon-orange design system.
+   Place in: static/css/loc_modal.css
    ============================================================ */
 
-/* ── Backdrop ── */
-#loc-permission-modal {
+#loc-explain-modal,
+#loc-blocked-card,
+#loc-howto-modal {
   position: fixed;
   inset: 0;
-  z-index: 99999;
+  z-index: 100000;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(2, 4, 8, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  opacity: 0;
-  animation: modalFadeIn 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
+  padding: 16px;
 }
 
-@keyframes modalFadeIn {
-  to { opacity: 1; }
-}
-
-/* ── Card ── */
-.loc-modal-card {
-  background: #080e18;
-  border: 1px solid rgba(0, 220, 255, 0.25);
-  border-radius: 16px;
-  padding: 36px 28px 28px;
-  max-width: 360px;
-  width: calc(100% - 40px);
-  text-align: center;
-  position: relative;
-  box-shadow:
-    0 0 0 1px rgba(0,220,255,0.08),
-    0 24px 60px rgba(0,0,0,0.6),
-    0 0 40px rgba(0,220,255,0.06);
-  transform: translateY(20px);
-  animation: modalSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
-}
-
-@keyframes modalSlideUp {
-  to { transform: translateY(0); }
-}
-
-/* top cyan line */
-.loc-modal-card::before {
-  content: '';
+.loc-modal-backdrop {
   position: absolute;
-  top: 0; left: 20%; right: 20%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #00dcff, transparent);
-  border-radius: 2px;
+  inset: 0;
+  background: rgba(2, 4, 8, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: locFadeIn 0.25s ease;
 }
 
-/* ── Icon ── */
+.loc-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: rgba(8, 14, 24, 0.92);
+  border: 1px solid rgba(255, 122, 32, 0.35);
+  border-radius: 14px;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(255, 122, 32, 0.15), 0 20px 60px rgba(0,0,0,0.5);
+  animation: locScaleIn 0.25s cubic-bezier(.16,1,.3,1);
+  outline: none;
+}
+
+@keyframes locFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes locScaleIn {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 .loc-modal-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  display: block;
-  filter: drop-shadow(0 0 12px rgba(0,220,255,0.4));
-  animation: iconPulse 2s ease-in-out infinite;
-}
-@keyframes iconPulse {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(0,220,255,0.3)); }
-  50%       { filter: drop-shadow(0 0 20px rgba(0,220,255,0.7)); }
-}
-
-/* ── Title ── */
-.loc-modal-title {
-  font-family: 'Orbitron', 'Inter', monospace;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: #00dcff;
+  display: inline-block;
+  font-size: 40px;
   margin-bottom: 12px;
-  text-shadow: 0 0 20px rgba(0,220,255,0.4);
 }
 
-/* ── Body text ── */
+.loc-modal-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+
 .loc-modal-body {
-  font-family: 'Rajdhani', 'Inter', sans-serif;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #c8d8e8;
+  margin-bottom: 12px;
+}
+
+.loc-modal-subtle {
+  color: #8fa3b3;
+  font-size: 13.5px;
+}
+
+.loc-privacy-box {
+  text-align: left;
+  background: rgba(255, 122, 32, 0.06);
+  border: 1px solid rgba(255, 122, 32, 0.2);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 16px 0;
+}
+
+.loc-privacy-title {
+  font-family: 'Rajdhani', sans-serif;
   font-size: 14px;
-  color: #8aa0b0;
-  line-height: 1.6;
+  font-weight: 700;
+  color: #ff7a20;
   margin-bottom: 8px;
 }
 
-.loc-modal-body strong {
-  color: #c8d8e8;
-}
-
-/* ── Feature list ── */
-.loc-modal-features {
+.loc-privacy-list {
   list-style: none;
   padding: 0;
-  margin: 16px 0 24px;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  margin: 0 0 10px 0;
 }
-.loc-modal-features li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-family: 'Rajdhani', 'Inter', sans-serif;
+.loc-privacy-list li {
   font-size: 13px;
-  color: #8aa0b0;
-}
-.loc-modal-features li .feat-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-.loc-modal-features li strong {
   color: #c8d8e8;
-  display: block;
-  font-size: 13px;
+  padding: 3px 0;
 }
 
-/* ── Buttons ── */
+.loc-privacy-footer {
+  font-size: 12px;
+  color: #6f8494;
+  margin: 0;
+}
+
 .loc-modal-actions {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-top: 8px;
 }
 
-.btn-loc-allow {
-  width: 100%;
-  padding: 14px;
-  background: transparent;
-  border: 1px solid #00dcff;
+.btn-loc-continue,
+.btn-loc-cancel {
+  min-height: 44px;
   border-radius: 8px;
-  color: #00dcff;
-  font-family: 'Orbitron', 'Inter', monospace;
+  font-family: 'Orbitron', monospace;
   font-size: 13px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-loc-continue {
+  background: rgba(255, 122, 32, 0.12);
+  border: 1px solid #ff7a20;
+  color: #ff7a20;
   font-weight: 700;
-  letter-spacing: 2px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 20px rgba(0,220,255,0.15), inset 0 0 20px rgba(0,220,255,0.04);
 }
-.btn-loc-allow:hover {
-  background: rgba(0,220,255,0.1);
-  box-shadow: 0 0 35px rgba(0,220,255,0.35), inset 0 0 30px rgba(0,220,255,0.08);
-  transform: translateY(-1px);
+.btn-loc-continue:hover:not(:disabled) {
+  background: rgba(255, 122, 32, 0.22);
+  box-shadow: 0 0 20px rgba(255, 122, 32, 0.3);
 }
-/* scan sweep */
-.btn-loc-allow::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 40%, rgba(0,220,255,0.15) 50%, transparent 60%);
-  transform: translateX(-100%);
-  animation: btnSweep 2.5s linear infinite;
-}
-@keyframes btnSweep { to { transform: translateX(200%); } }
-
-.btn-loc-skip {
-  width: 100%;
-  padding: 10px;
-  background: transparent;
-  border: none;
-  color: #4a6070;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  cursor: pointer;
-  letter-spacing: 1px;
-  transition: color 0.2s;
-}
-.btn-loc-skip:hover { color: #8aa0b0; }
-
-/* ── Loading state ── */
-.btn-loc-allow.loading {
-  opacity: 0.7;
+.btn-loc-continue:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
-  pointer-events: none;
 }
-.btn-loc-allow.loading::after { display: none; }
 
-/* ── Privacy note ── */
-.loc-modal-privacy {
-  margin-top: 16px;
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  color: #2a3a48;
+.btn-loc-cancel {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #8fa3b3;
+  font-weight: 600;
+}
+.btn-loc-cancel:hover {
+  border-color: rgba(255,255,255,0.3);
+  color: #c8d8e8;
+}
+
+/* How-to-enable instructions */
+.loc-howto-section {
+  text-align: left;
+  margin-bottom: 14px;
+}
+.loc-howto-section h3 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13.5px;
+  color: #00dcff;
+  margin-bottom: 6px;
   letter-spacing: 0.5px;
+}
+.loc-howto-section ol {
+  padding-left: 18px;
+  color: #c8d8e8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.loc-howto-section p {
+  font-size: 13px;
+  color: #c8d8e8;
   line-height: 1.5;
+}
+
+@media (max-width: 420px) {
+  .loc-modal-card { padding: 22px 18px; }
+  .loc-modal-title { font-size: 16px; }
 }

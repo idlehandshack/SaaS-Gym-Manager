@@ -24,14 +24,8 @@
   <noscript>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" />
-    <link rel="stylesheet" href="{% static 'css/loc_modal.css' %}" />
   </noscript>
-
-  <!-- ── VAPID META (from base.html) ── -->
-  {% if VAPID_PUBLIC_KEY and enrolled or VAPID_PUBLIC_KEY and request.user.is_staff %}
-  <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
-  {% endif %}
-
+  <link rel="stylesheet" href="{% static 'css/loc_modal.css' %}" />
   <style>
     /* ── RESET & TOKENS ── */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -550,22 +544,6 @@
 
   </div>
   </main>
-  <!-- ── BANNER + BUTTON WIRING ── -->
-  <script nonce="{{ request.csp_nonce }}">
-  {% if not already_mark %}
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    document.getElementById('auto-mark-banner').style.display = 'block';
-  }
-  {% endif %}
-
-  var btn = document.getElementById('btn-attend');
-  if (btn && !btn.disabled) {
-    btn.addEventListener('click', function () {
-      checkLocationAndSubmit();
-    });
-  }
-  </script>
-
   <!-- ── FLASH MESSAGE CLOSE ── -->
   <script nonce="{{ request.csp_nonce }}">
     document.querySelectorAll('.close-btn').forEach(function (b) {
@@ -670,11 +648,18 @@
 
   })();
   </script>
-
-  <!-- ── GYM CONFIG + GEO + PUSH (from base.html) ── -->
+  <script nonce="{{ request.csp_nonce }}">
+    {% if not already_mark %}
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      document.getElementById('auto-mark-banner').style.display = 'block';
+    }
+    {% endif %}
+  </script>
   <script nonce="{{ request.csp_nonce }}">
     window.GYM_CONFIG = JSON.parse("{{ GYM_CONFIG_JSON|escapejs }}");
   </script>
+  <script src="{% static 'js/sw_register.js' %}" defer></script>
+  <script src="{% static 'js/fetch_utils.js' %}" defer></script>
   <script src="{% static 'js/loc_permission.js' %}" defer></script>
   <script src="{% static 'js/geo_attendance.js' %}" defer></script>
   {% if request.user.is_authenticated %}
