@@ -308,8 +308,11 @@
         <div class="plan-price"><sup>&#8377;</sup>{{ p.price }}</div>
         <div class="plan-duration">{{ p.duration_days }} Days</div>
         <div class="plan-actions">
-          <button class="plan-btn btn-edit"
-                  onclick="openEdit('{{ p.id }}', '{{ p.plan|escapejs }}', {{ p.price }}, {{ p.duration_days }})">
+          <button type="button" class="plan-btn btn-edit js-edit-plan"
+                  data-id="{{ p.id }}"
+                  data-name="{{ p.plan }}"
+                  data-price="{{ p.price }}"
+                  data-duration="{{ p.duration_days }}">
             Edit
           </button>
           <form method="post" style="flex:1" onsubmit="return confirm('Delete &quot;{{ p.plan|escapejs }}&quot;? This cannot be undone.');">
@@ -361,37 +364,58 @@
   </div>
 
   <script nonce="{{ request.csp_nonce }}">
-    const overlay  = document.getElementById('overlay');
-    const panel    = document.getElementById('panel');
-    const form     = document.getElementById('planForm');
+  const overlay  = document.getElementById('overlay');
+  const panel    = document.getElementById('panel');
+  const form     = document.getElementById('planForm');
 
-    function openPanel() {
-      overlay.classList.add('open');
-      panel.classList.add('open');
-    }
-    function closePanel() {
-      overlay.classList.remove('open');
-      panel.classList.remove('open');
-    }
+  function openPanel() {
+    overlay.classList.add('open');
+    panel.classList.add('open');
+  }
+  function closePanel() {
+    overlay.classList.remove('open');
+    panel.classList.remove('open');
+  }
 
-    document.getElementById('openAddBtn').addEventListener('click', () => {
-      document.getElementById('panelTitle').textContent = 'New Plan';
-      document.getElementById('panelSubmitBtn').textContent = 'Create Plan';
-      document.getElementById('planIdInput').value = '';
-      form.reset();
-      openPanel();
+  document.getElementById('openAddBtn').addEventListener('click', () => {
+    document.getElementById('panelTitle').textContent = 'New Plan';
+    document.getElementById('panelSubmitBtn').textContent = 'Create Plan';
+    document.getElementById('planIdInput').value = '';
+    form.reset();
+    openPanel();
+  });
+
+  function openEdit(id, name, price, duration) {
+    document.getElementById('panelTitle').textContent = 'Edit Plan';
+    document.getElementById('panelSubmitBtn').textContent = 'Save Changes';
+    document.getElementById('planIdInput').value = id;
+    document.getElementById('planNameInput').value = name;
+    document.getElementById('planPriceInput').value = price;
+    document.getElementById('planDurationInput').value = duration;
+    openPanel();
+  }
+
+  // Bind Edit buttons (CSP-safe — no inline onclick)
+  document.querySelectorAll('.js-edit-plan').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      openEdit(
+        btn.dataset.id,
+        btn.dataset.name,
+        btn.dataset.price,
+        btn.dataset.duration
+      );
     });
+  });
 
-    function openEdit(id, name, price, duration) {
-      document.getElementById('panelTitle').textContent = 'Edit Plan';
-      document.getElementById('panelSubmitBtn').textContent = 'Save Changes';
-      document.getElementById('planIdInput').value = id;
-      document.getElementById('planNameInput').value = name;
-      document.getElementById('planPriceInput').value = price;
-      document.getElementById('planDurationInput').value = duration;
-      openPanel();
-    }
-  </script>
+  // Bind Delete confirm (CSP-safe — no inline onsubmit)
+  document.querySelectorAll('.js-delete-form').forEach((f) => {
+    f.addEventListener('submit', (e) => {
+      if (!confirm(`Delete "${f.dataset.name}"? This cannot be undone.`)) {
+        e.preventDefault();
+      }
+    });
+  });
+</script>
 
 </body>
 </html>
