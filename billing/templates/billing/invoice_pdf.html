@@ -472,6 +472,12 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
           <td class="dl">Financial Year</td>
           <td class="dv">{{ invoice.financial_year }}</td>
         </tr>
+        {% if invoice.related_payment %}
+        <tr>
+          <td class="dl">Payment Mode</td>
+          <td class="dv">{{ invoice.related_payment.get_payment_method_display|default:"—" }}</td>
+        </tr>
+        {% endif %}
         <tr>
           <td class="dl">Place of Supply</td>
           <td class="dv">{{ invoice.place_of_supply_state }} ({{ invoice.place_of_supply_code }})</td>
