@@ -8,7 +8,7 @@ from Gym.views import (
     add_staff_profile, gym_detail_json, add_gym_page, search_owner_by_phone,
     subscriptions_page, add_subscription_plan, edit_subscription_plan,
     delete_subscription_plan, change_gym_plan, platform_insights_page,
-    api_system_health,api_dashboard, api_notifications,
+    api_system_health,api_dashboard, api_notifications,record_platform_payment
 )
 
 from django.contrib.sitemaps.views import sitemap
@@ -92,6 +92,7 @@ urlpatterns = [
     path('api/gyms/login/', views.gym_login_api, name='gym_login_api'),
     path('aiattendance/', views.aiattendance, name='aiattendance'),
     path('owner/member/<int:enrollment_id>/change-plan/', views.change_membership_plan_view, name='change_membership_plan'),
+    path("superadmin/gym/<uuid:gym_id>/record-payment/",record_platform_payment, name="record_platform_payment"),
 
     # ── Background geo auto-mark ─────────────────────────
     path('api/attendance-status/', attendance_status),

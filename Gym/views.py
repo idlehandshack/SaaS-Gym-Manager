@@ -12,12 +12,12 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 import json as json_lib
-
+from .models import PlatformSubscriptionPayment
 from .forms import UPISettingsForm, GymCreateForm, StaffProfileCreateForm, GymGSTProfileForm
 from .models import Gym, SubscriptionPlan, StaffProfile, GymGSTProfile
 from AuthFit.views import _gym_role_required
 from .services import platform_insights as pi
-
+import calendar
 
 @_gym_role_required('gym_owner')
 def upi_payment_settings(request):
@@ -247,27 +247,25 @@ def saas_dashboard(request):
         )
     )
     total_revenue = rev["total"] or 0
-    avg_revenue = round(total_revenue / active_gyms) if active_gyms else 0
     estimated_mrr = gyms.filter(active=True, subscription_end__gte=today).aggregate(
         mrr=Coalesce(
             Sum("plan__price_monthly"), 0,
             output_field=DecimalField(max_digits=10, decimal_places=2)
         )
     )["mrr"] or 0
+    software_total_revenue = PlatformSubscriptionPayment.objects.aggregate(
+        total=Coalesce(Sum("amount"), 0, output_field=DecimalField(max_digits=14, decimal_places=2))
+    )["total"] or 0
 
-    try:
-        from AuthFit.models import Enrollment
-        monthly_revenue = Enrollment.objects.filter(
-            gym__isnull=False, created_at__date__gte=month_start
-        ).aggregate(
-            total=Coalesce(
-                Sum("Amount"), 0,
-                output_field=DecimalField(max_digits=12, decimal_places=2)
-            )
-        )["total"] or 0
-    except Exception:
-        monthly_revenue = 0
+    software_month_revenue = PlatformSubscriptionPayment.objects.filter(
+        paid_on__gte=month_start
+    ).aggregate(
+        total=Coalesce(Sum("amount"), 0, output_field=DecimalField(max_digits=12, decimal_places=2))
+    )["total"] or 0
 
+    
+    days_in_month = calendar.monthrange(today.year, today.month)[1]
+    software_revenue_per_day = round(software_month_revenue / days_in_month, 2) if days_in_month else 0
     plan_stats = [
         {"name": p.name, "count": gyms.filter(plan=p).count(), "monthly": p.price_monthly}
         for p in SubscriptionPlan.objects.all()
@@ -290,8 +288,8 @@ def saas_dashboard(request):
         "total_members": total_members,
         "total_member_limit": total_member_limit,
         "total_revenue": total_revenue,
-        "monthly_revenue": monthly_revenue,
-        "avg_revenue": avg_revenue,
+        "software_total_revenue": software_total_revenue,
+        "software_revenue_per_day": software_revenue_per_day,
         "estimated_mrr": estimated_mrr,
         "plan_stats": plan_stats,
         "top_gyms": gyms.order_by("-revenue")[:5],
@@ -299,6 +297,41 @@ def saas_dashboard(request):
         "BASE_DOMAIN": "entergym.in",
     })
 
+@superuser_required
+@require_POST
+def record_platform_payment(request, gym_id):
+    from .models import PlatformSubscriptionPayment
+    gym = get_object_or_404(Gym, pk=gym_id)
+
+    amount = request.POST.get("amount")
+    period_start = request.POST.get("period_start")
+    period_end = request.POST.get("period_end")
+    notes = request.POST.get("notes", "").strip()
+
+    errors = {}
+    try:
+        amount = float(amount)
+        if amount <= 0:
+            errors["amount"] = ["Amount must be positive."]
+    except (TypeError, ValueError):
+        errors["amount"] = ["Enter a valid amount."]
+
+    if not period_start or not period_end:
+        errors["period"] = ["Both period start and end are required."]
+
+    if errors:
+        return JsonResponse({"success": False, "errors": errors}, status=400)
+
+    payment = PlatformSubscriptionPayment.objects.create(
+        gym=gym,
+        plan=gym.plan,
+        amount=amount,
+        period_start=period_start,
+        period_end=period_end,
+        notes=notes,
+        recorded_by=request.user,
+    )
+    return JsonResponse({"success": True, "payment_id": payment.id})
 
 @superuser_required
 def all_gyms_view(request):

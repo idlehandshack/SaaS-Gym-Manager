@@ -570,12 +570,6 @@ img{display:block;max-width:100%}
       </div>
 
       {% with total=gyms|length %}
-      {% comment %}
-        Django-computed values passed via view context:
-        total_gyms, active_gyms, inactive_gyms, expiring_7, expiring_15, expiring_30,
-        expired_gyms, total_members, total_revenue, avg_revenue, total_owners,
-        active_pct, near_limit_count, new_this_month
-      {% endcomment %}
       <div class="kpi-grid">
 
         <div class="kpi-card" style="--kpi-accent:#ff7a0010;--kpi-bg:var(--orange-dim);--kpi-color:var(--orange)">
@@ -649,10 +643,10 @@ img{display:block;max-width:100%}
             <div class="kpi-icon">
               <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             </div>
-            <span class="kpi-trend neutral">Per active gym</span>
+            <span class="kpi-trend neutral">Per Day Earning</span>
           </div>
-          <div class="kpi-value">₹{{ avg_revenue|default:"0" }}</div>
-          <div class="kpi-label">Avg Revenue per Gym</div>
+          <div class="kpi-value">₹{{ software_revenue_per_day|default:"0" }}</div>
+          <div class="kpi-label">Avg daily platform earnings</div>
         </div>
 
         <div class="kpi-card" style="--kpi-accent:#10b98110;--kpi-bg:#10b98118;--kpi-color:#10b981">
@@ -744,9 +738,9 @@ img{display:block;max-width:100%}
           <div class="rev-sub">All-time enrollment payments</div>
         </div>
         <div class="rev-card">
-          <div class="rev-label">Monthly Revenue</div>
-          <div class="rev-value">₹{{ monthly_revenue|default:"0" }}</div>
-          <div class="rev-sub">This calendar month</div>
+          <div class="rev-label">Software Revenue</div>
+          <div class="rev-value">₹{{ software_total_revenue|default:"0" }}</div>
+          <div class="rev-sub">Total earned from gym subscriptions</div>
         </div>
         <div class="rev-card">
           <div class="rev-label">Estimated MRR</div>
@@ -754,9 +748,9 @@ img{display:block;max-width:100%}
           <div class="rev-sub">Based on active subscriptions</div>
         </div>
         <div class="rev-card">
-          <div class="rev-label">Avg Revenue / Gym</div>
-          <div class="rev-value">₹{{ avg_revenue|default:"0" }}</div>
-          <div class="rev-sub">Per active gym</div>
+          <div class="rev-label">Revenue / Day</div>
+          <div class="rev-value">₹{{ software_revenue_per_day|default:"0" }}</div>
+          <div class="rev-sub">Avg daily platform earnings</div>
         </div>
       </div>
     </div>

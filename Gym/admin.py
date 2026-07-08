@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from cloudinary.utils import cloudinary_url
 from .models import Gym, SubscriptionPlan, StaffProfile , GymGSTProfile
-
+from .models import PlatformSubscriptionPayment
 
 # ──────────────────────────────────────────────────────────────────────────────
 # SubscriptionPlan
@@ -15,7 +15,11 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
     search_fields = ['name']
     ordering      = ['price_monthly']
 
-
+@admin.register(PlatformSubscriptionPayment)
+class PlatformSubscriptionPaymentAdmin(admin.ModelAdmin):
+    list_display = ("gym", "amount", "paid_on", "period_start", "period_end")
+    list_filter = ("paid_on",)
+    search_fields = ("gym__gym_name",)
 # ──────────────────────────────────────────────────────────────────────────────
 # Gym
 # ──────────────────────────────────────────────────────────────────────────────

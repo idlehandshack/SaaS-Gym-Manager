@@ -1,18 +1,8 @@
 # AuthFit/admin.py
 
 from django.contrib import admin
-from django.urls import path
 from django.utils.html import format_html
-from django.db.models import Sum, Count, Max
-from django.db.models.functions import ExtractWeekDay, ExtractHour, TruncMonth, TruncDay
-from django.utils import timezone
-from django.template.response import TemplateResponse
-from django.core.cache import cache
 from django.http import HttpResponseForbidden
-from datetime import timedelta
-from collections import defaultdict
-import json
-
 from cloudinary.utils import cloudinary_url
 
 from .models import (

@@ -238,3 +238,29 @@ class GymGSTProfile(models.Model):
 
     class Meta:
         verbose_name = "GST Profile"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Platform Subscription Payment (Arrow SoftTech's own revenue ledger —
+# records what a gym actually paid YOU to use EnterGYM. No invoicing, just a log.)
+# ──────────────────────────────────────────────────────────────────────────────
+class PlatformSubscriptionPayment(models.Model):
+    gym          = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name="platform_payments")
+    plan         = models.ForeignKey(SubscriptionPlan, on_delete=models.PROTECT, related_name="platform_payments")
+    amount       = models.DecimalField(max_digits=10, decimal_places=2)
+    paid_on      = models.DateField(default=timezone.now)
+    period_start = models.DateField(help_text="Billing period this payment covers (start)")
+    period_end   = models.DateField(help_text="Billing period this payment covers (end)")
+    notes        = models.CharField(max_length=255, blank=True, help_text="e.g. UPI ref no., 'cash', 'renewal'")
+    recorded_by  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                      related_name="platform_payments_recorded")
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-paid_on']
+        indexes = [models.Index(fields=['gym', 'paid_on'])]
+        verbose_name = "Platform Subscription Payment"
+        verbose_name_plural = "Platform Subscription Payments"
+
+    def __str__(self):
+        return f"{self.gym.gym_name} — ₹{self.amount} on {self.paid_on}"
