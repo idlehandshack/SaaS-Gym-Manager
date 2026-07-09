@@ -20,7 +20,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ app_short_name }}">
-
+    <link rel="stylesheet" href="{% static 'css/notification_card.css' %}"/>
     <title>
     {% if gym %}{{ gym.gym_name }} | Fitness Center{% if gym.city %} in {{ gym.city }}{% endif %}
     {% else %}EnterGYM | Gym Management Platform{% endif %}
@@ -169,6 +169,7 @@
                   {% if gym.enable_store %}
                   <li><a href="/manage/orders/">Order Management</a></li>
                   {% endif %}
+                  <li><a href="#" class="owner-notif-btn">Enable Notifications</a></li>
                 </ul>
               </li>
 
@@ -348,6 +349,9 @@
         {% if gym.enable_store %}
         <li class="nav-solo"><a href="/manage/orders/">Order Management <span>↗</span></a></li>
         {% endif %}
+        <li class="nav-solo">
+            <a href="#" class="owner-notif-btn">Enable Notifications</a>
+        </li>
 
         {% else %}
         <li class="active"><a href="/">Home <span>↗</span></a></li>
@@ -761,12 +765,18 @@
       </div>
     </footer>
     <script src="{% static 'js/home.js' %}" defer></script>
+    {% if request.user.is_authenticated %}
+      {% if VAPID_PUBLIC_KEY %}
+        <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
+        <script src="{% static 'js/push_subscribe.js' %}" defer></script>
+        {% if isStaff %}
+        <script src="{% static 'js/owner_notification_permission.js' %}" defer></script>
+        {% endif %}
+        <script src="{% static 'js/sw_register.js' %}" defer></script>
+      {% endif %}
+    {% endif %}
+
     <script nonce="{{ request.csp_nonce }}">
-      document.querySelectorAll('.pricing-card').forEach(card => {
-        card.addEventListener('click', () => {
-          togglePricing(card);
-        });
-      });
       window.GYM_CONFIG = JSON.parse('{{ GYM_CONFIG_JSON|escapejs }}');
     </script>
     {% if enrolled %}

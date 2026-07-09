@@ -5,7 +5,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {# FIX: gym name in title #}
     <title>Confirm Order — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %} Store</title>
       {% if favicon_url %}
     <link rel="icon" href="{{ favicon_url }}">
@@ -14,11 +13,10 @@
     <link rel="icon" href="{% static 'images/favicon.ico' %}">
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
   {% endif %}
-    {% endif %}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
     <style>
@@ -97,8 +95,9 @@
       .card-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 
       .product-row { display: flex; gap: clamp(12px, 2.5vw, 20px); align-items: center; flex-wrap: wrap; }
-      .product-thumb { width: clamp(68px, 12vw, 88px); height: clamp(68px, 12vw, 88px); flex-shrink: 0; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); }
+      .product-thumb { width: clamp(68px, 12vw, 88px); height: clamp(68px, 12vw, 88px); flex-shrink: 0; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
       .product-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .product-thumb .no-image { font-family: var(--font-d); font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-lo); }
       .product-info { flex: 1; min-width: 0; }
       .product-name { font-family: var(--font-d); font-weight: 800; font-size: clamp(1rem, 2.5vw, 1.25rem); text-transform: uppercase; letter-spacing: .01em; margin-bottom: 6px; word-break: break-word; }
       .product-meta-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -159,7 +158,6 @@
     <!-- NAVBAR -->
     <nav class="top-nav">
       <div class="nav-inner container">
-        {# FIX: gym name in navbar brand #}
         <a class="nav-brand" href="{% url 'product_list' %}">
           {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
           <span class="acc">Store</span>
@@ -197,17 +195,21 @@
             <p class="card-title">Order Summary</p>
             <div class="product-row">
               <div class="product-thumb">
-                {% if product.image %}
-                  <img src="{{ product.image.url }}" alt="{{ product.name }}" />
-                {% else %}
-                  <img src="https://images.unsplash.com/photo-1596716075191-236f0df56070?q=80&w=400&auto=format&fit=crop" alt="Product" />
-                {% endif %}
+                {% with img=product.global_product.image %}
+                  {% if img %}
+                    <img src="{{ img.url }}" alt="{{ product.name }}" />
+                  {% else %}
+                    <span class="no-image">No Image</span>
+                  {% endif %}
+                {% endwith %}
               </div>
               <div class="product-info">
                 <div class="product-name">{{ product.name }}</div>
                 <div class="product-meta-row">
                   {% if flavor %}
-                    <span class="meta-chip orange">{{ flavor.name }}</span>
+                    <span class="meta-chip orange">
+                      {{ flavor.global_flavor.flavor_name }}{% if flavor.global_flavor.weight %} — {{ flavor.global_flavor.weight }}{% endif %}
+                    </span>
                   {% endif %}
                   <span class="meta-chip">Qty: {{ quantity }}</span>
                   <span class="meta-chip">₹{{ unit_price|floatformat:0 }} / unit</span>
@@ -242,11 +244,9 @@
               <div class="delivery-text">
                 <div class="delivery-title">
                   <i class="bi bi-lightning-fill me-1"></i>
-                  {# FIX: gym name in delivery title #}
                   {% if gym %}{{ gym.gym_name }}{% else %}Gym{% endif %} Delivery
                 </div>
                 <div class="delivery-sub">
-                  {# FIX: gym address from DB — was hardcoded "EnterGYM Address" #}
                   {% if gym and gym.address %}
                     {{ gym.address }}
                   {% else %}
@@ -267,19 +267,13 @@
 
               <div class="price-table">
                 <div class="price-row">
-                  <span>Base Price</span>
-                  <span class="val">₹{{ product.base_price|floatformat:0 }}</span>
+                  <span>Unit Price</span>
+                  <span class="val">₹{{ unit_price|floatformat:0 }}</span>
                 </div>
-                {% if product.discount > 0 %}
+                {% if flavor and flavor.discount_price %}
                 <div class="price-row savings">
-                  <span>Discount ({{ product.discount }}%)</span>
-                  <span class="val">− ₹{{ product.discount_amount|floatformat:0 }}</span>
-                </div>
-                {% endif %}
-                {% if flavor and flavor.price_adjustment != 0 %}
-                <div class="price-row">
-                  <span>Flavour Adjustment</span>
-                  <span class="val">{% if flavor.price_adjustment > 0 %}+{% endif %}₹{{ flavor.price_adjustment|floatformat:0 }}</span>
+                  <span>Discount Applied</span>
+                  <span class="val">Was ₹{{ flavor.selling_price|floatformat:0 }}</span>
                 </div>
                 {% endif %}
                 <div class="price-row">
@@ -295,20 +289,18 @@
                   <span class="val">₹{{ total_price|floatformat:0 }}</span>
                 </div>
               </div>
-
-              <form method="post" action="{% url 'place_order' %}">
-                {% csrf_token %}
-                <input type="hidden" name="product_id" value="{{ product.id }}" />
-                <input type="hidden" name="flavor"     value="{% if flavor %}{{ flavor.id }}{% else %}standard{% endif %}" />
-                <input type="hidden" name="quantity"   value="{{ quantity }}" />
-                <button type="submit" id="order-btn" class="btn-place">
+              <form method="post" action="{% url 'place_order' %}" id="place-order-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="product_id" value="{{ product.id }}">
+                   <input type="hidden" name="flavor"     value="{% if flavor %}{{ flavor.id }}{% else %}standard{% endif %}" />
+                  <input type="hidden" name="quantity" value="{{ quantity }}">
+                  <button type="submit" id="order-btn" class="btn-place" id="place-order-btn">
                   <i class="bi bi-lightning-fill me-2"></i> Place Order
                 </button>
               </form>
 
               <p class="secure-note">
                 <i class="bi bi-shield-check"></i> Secure · Cash on Delivery at
-                {# FIX: gym name in secure note #}
                 {% if gym %}{{ gym.gym_name }}{% else %}Gym{% endif %}
               </p>
             </div>
@@ -327,6 +319,6 @@
         btn.style.cursor  = 'not-allowed';
       });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
   </body>
 </html>

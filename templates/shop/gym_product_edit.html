@@ -1,0 +1,356 @@
+<!doctype html>
+{% load static %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %} — {{ gym_product.name }}</title>
+    {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    <link rel="shortcut icon" href="{{ favicon_url }}">
+    {% else %}
+    <link rel="icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+    {% endif %}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+
+    <style>
+      /* ── TOKENS (shared with catalog_browse.html) ── */
+      :root {
+        --bg: #080808;
+        --surface: #111111;
+        --surface-2: #1a1a1a;
+        --border: rgba(255, 255, 255, 0.06);
+        --orange: #ff5a00;
+        --orange-glow: rgba(255, 90, 0, 0.25);
+        --gold: #ffca28;
+        --text-hi: #f5f5f5;
+        --text-lo: #555;
+        --text-mid: #999;
+        --radius-card: 18px;
+        --radius-btn: 40px;
+        --font-display: "Barlow Condensed", sans-serif;
+        --font-body: "Barlow", sans-serif;
+        --t: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        --nav-h: 60px;
+      }
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg);
+        color: var(--text-hi);
+        font-family: var(--font-body);
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+        min-height: 100vh;
+      }
+
+      /* ── NAV ── */
+      .store-nav {
+        position: sticky; top: 0; z-index: 200;
+        height: var(--nav-h);
+        background: rgba(8,8,8,0.94);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--border);
+        display: flex; align-items: center;
+      }
+      .nav-inner {
+        width: 100%; max-width: 1400px; margin: 0 auto;
+        padding: 0 clamp(16px, 4vw, 40px);
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      }
+      .nav-brand {
+        font-family: var(--font-display);
+        font-weight: 900;
+        font-size: clamp(1.1rem, 3vw, 1.5rem);
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--text-hi);
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        display: flex; align-items: center; gap: 8px;
+        transition: color var(--t);
+      }
+      .nav-brand .acc { color: var(--orange); }
+      .nav-brand:hover { color: var(--text-hi); }
+      .nav-brand .back-icon {
+        width: 28px; height: 28px; border-radius: 50%;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.75rem; flex-shrink: 0;
+        transition: background var(--t);
+      }
+      .nav-brand:hover .back-icon { background: rgba(255,90,0,0.15); }
+
+      .nav-new {
+        display: flex; align-items: center; gap: 7px;
+        font-family: var(--font-display);
+        font-size: 0.78rem; font-weight: 700;
+        letter-spacing: 0.12em; text-transform: uppercase;
+        color: #fff; text-decoration: none;
+        padding: 8px 18px;
+        background: var(--orange); border-radius: var(--radius-btn);
+        transition: background var(--t), transform var(--t), box-shadow var(--t);
+        white-space: nowrap; flex-shrink: 0;
+        border: none; cursor: pointer;
+      }
+      .nav-new:hover {
+        background: #e65200; transform: translateY(-1px); color: #fff;
+        box-shadow: 0 6px 20px rgba(255,90,0,0.35);
+      }
+      .nav-new i { font-size: 0.85rem; }
+
+      /* ── HERO ── */
+      .store-header {
+        position: relative;
+        padding: clamp(48px, 8vw, 90px) 0 clamp(40px, 6vw, 64px);
+        text-align: center; overflow: hidden;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: clamp(36px, 5vw, 56px);
+      }
+      .store-header::before {
+        content: ""; position: absolute; inset: 0;
+        opacity: 0.35; z-index: 0;
+      }
+      .store-header::after {
+        content: ""; position: absolute; inset: 0;
+        background: linear-gradient(to bottom, rgba(8,8,8,0.55) 0%, rgba(8,8,8,0.97) 100%);
+        z-index: 1;
+      }
+      .header-inner {
+        position: relative; z-index: 2;
+        padding: 0 clamp(16px, 4vw, 40px);
+        max-width: 640px; margin: 0 auto;
+      }
+      .header-eyebrow {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-family: var(--font-display);
+        font-size: clamp(0.68rem, 1.8vw, 0.82rem); font-weight: 700;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--orange); margin-bottom: clamp(12px, 2vw, 18px);
+        padding: 6px 16px;
+        border: 1px solid rgba(255,90,0,0.3); border-radius: var(--radius-btn);
+        background: rgba(255,90,0,0.07);
+      }
+      .store-header h1 {
+        font-family: var(--font-display); font-weight: 900;
+        font-size: clamp(2rem, 6.5vw, 3.6rem);
+        line-height: 0.98; letter-spacing: -0.01em;
+        text-transform: uppercase; margin-bottom: clamp(10px, 2vw, 16px);
+        word-break: break-word;
+      }
+      .store-header p {
+        color: var(--text-mid);
+        font-size: clamp(0.85rem, 2vw, 0.98rem);
+        max-width: 460px; margin: 0 auto; line-height: 1.6;
+      }
+
+      .shop-alert {
+        max-width: 640px; margin: 16px auto 0; padding: 12px 16px;
+        border-radius: 8px; font-size: 14px; text-align: center;
+      }
+      .shop-alert-success { background: #0f2a1a; color: #4dff88; border: 1px solid #1a4d2e; }
+      .shop-alert-error   { background: #2a0f0f; color: #ff6b6b; border: 1px solid #4d1a1a; }
+
+      /* ── MAIN ── */
+      .store-main {
+        max-width: 760px; margin: 0 auto;
+        padding: 0 clamp(16px, 4vw, 40px) clamp(48px, 6vw, 80px);
+      }
+      .section-label {
+        font-family: var(--font-display); font-size: 0.72rem; font-weight: 700;
+        letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-lo);
+        margin-bottom: clamp(16px, 2.5vw, 22px);
+        display: flex; align-items: center; gap: 12px;
+      }
+      .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+      /* ── FORM CARD ── */
+      .form-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        padding: clamp(20px, 3vw, 32px);
+        margin-bottom: clamp(24px, 3vw, 32px);
+      }
+      .form-label {
+        display: block; font-family: var(--font-display);
+        font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+        color: var(--text-mid); margin: 18px 0 8px;
+      }
+      .form-label:first-child { margin-top: 0; }
+      .form-label-sm {
+        display: block; font-family: var(--font-display);
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+        color: var(--text-lo); margin-bottom: 5px;
+      }
+      .checkbox-label {
+        display: flex; align-items: center; gap: 9px;
+        color: var(--text-mid); font-size: 0.85rem; margin-top: 16px;
+      }
+      .field-errors { color: #ff6b6b; font-size: 0.78rem; margin-top: 6px; }
+
+      /* Django-rendered widgets ({{ field }}) share this styling */
+      input[type=text], input[type=number], textarea, select {
+        width: 100%; padding: 10px 14px;
+        background: var(--surface-2); border: 1px solid var(--border);
+        border-radius: 10px; color: var(--text-hi);
+        font-family: var(--font-body); font-size: 0.88rem;
+        outline: none; transition: border-color var(--t);
+        box-sizing: border-box;
+      }
+      input[type=text]:focus, input[type=number]:focus, textarea:focus, select:focus {
+        border-color: rgba(255,90,0,0.4);
+      }
+      input[type=checkbox] { width: auto; accent-color: var(--orange); }
+      .form-input-disabled { opacity: 0.45; }
+
+      /* ── FLAVOR CARDS ── */
+      .flavor-edit-card { border-top: 1px solid var(--border); padding-top: 18px; margin-top: 18px; }
+      .flavor-edit-card:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+      .flavor-edit-header {
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+        margin-bottom: 12px; color: var(--text-hi); font-size: 0.95rem;
+        font-family: var(--font-display); font-weight: 700; letter-spacing: 0.01em;
+      }
+      .stock-history-link {
+        color: var(--orange); text-decoration: none; font-size: 0.75rem;
+        font-family: var(--font-display); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+      }
+      .stock-history-link:hover { text-decoration: underline; }
+      .flavor-edit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      @media (max-width: 600px) { .flavor-edit-grid { grid-template-columns: 1fr 1fr; } }
+      .muted { color: var(--text-lo); font-weight: 400; }
+
+      .detail-submit {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        width: 100%; padding: 13px 0;
+        background: var(--orange); border: none; border-radius: var(--radius-btn);
+        color: #fff; font-family: var(--font-display); font-weight: 700;
+        font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase;
+        cursor: pointer;
+        transition: background var(--t), transform var(--t), box-shadow var(--t);
+      }
+      .detail-submit:hover {
+        background: #e65200; transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255,90,0,0.35);
+      }
+
+      @media (max-width: 380px) {
+        .nav-new span { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- ══ STICKY NAV ── -->
+    <nav class="store-nav">
+      <div class="nav-inner">
+        <a class="nav-brand" href="{% url 'gym_store_manage' %}">
+          <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
+          {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
+          <span class="acc">My Store</span>
+        </a>
+        <a class="nav-new" href="{% url 'stock_adjustment' gym_product.flavors.first.id %}">
+          <i class="bi bi-clock-history"></i>
+          <span>Stock History</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- ══ HERO ── -->
+    <header class="store-header">
+      <div class="header-inner">
+        <div class="header-eyebrow">
+          <i class="bi bi-pencil-fill"></i> Manage Listing
+        </div>
+        <h1>{{ gym_product.name }}</h1>
+        <p>Brand, name, category, and flavor names are managed by admin. You control visibility, description, and pricing/stock below.</p>
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="shop-alert shop-alert-{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- ══ MAIN ── -->
+    <main class="store-main">
+      <form method="post" class="product-form">
+        {% csrf_token %}
+
+        <p class="section-label">Store Settings</p>
+        <div class="form-card">
+          <label class="form-label">Custom Description (optional)</label>
+          {{ product_form.custom_description }}
+
+          <label class="form-label">Display Order</label>
+          {{ product_form.display_order }}
+
+          <label class="checkbox-label">
+            {{ product_form.is_visible }} Visible to members
+          </label>
+          {% if product_form.errors %}
+            <div class="field-errors">{{ product_form.errors }}</div>
+          {% endif %}
+        </div>
+
+        <p class="section-label">Flavors &amp; Pricing</p>
+        <div class="form-card">
+          {% for flavor, flavor_form in flavor_forms %}
+          <div class="flavor-edit-card">
+            <div class="flavor-edit-header">
+              <span><strong>{{ flavor.global_flavor.flavor_name }}</strong>{% if flavor.global_flavor.weight %}<span class="muted"> — {{ flavor.global_flavor.weight }}</span>{% endif %}</span>
+              <a href="{% url 'stock_adjustment' flavor.id %}" class="stock-history-link">Stock history <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="flavor-edit-grid">
+              <div>
+                <label class="form-label-sm">Selling Price</label>
+                {{ flavor_form.selling_price }}
+              </div>
+              <div>
+                <label class="form-label-sm">Discount Price</label>
+                {{ flavor_form.discount_price }}
+              </div>
+              <div>
+                <label class="form-label-sm">Cost Price</label>
+                {{ flavor_form.cost_price }}
+              </div>
+              <div>
+                <label class="form-label-sm">Current Stock</label>
+                <input type="text" value="{{ flavor.stock }}" disabled class="form-input-disabled">
+              </div>
+              <div>
+                <label class="form-label-sm">Minimum Stock</label>
+                {{ flavor_form.minimum_stock }}
+              </div>
+              <div>
+                <label class="form-label-sm">SKU</label>
+                {{ flavor_form.sku }}
+              </div>
+            </div>
+            <label class="checkbox-label">
+              {{ flavor_form.active }} Active
+            </label>
+            {% if flavor_form.errors %}
+              <div class="field-errors">{{ flavor_form.errors }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <button type="submit" class="detail-submit"><i class="bi bi-check2-circle"></i> Save Changes</button>
+      </form>
+    </main>
+
+    <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+  </body>
+</html>

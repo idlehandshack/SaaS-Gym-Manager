@@ -3,22 +3,37 @@
 from django.contrib import admin
 from django.core.exceptions import PermissionDenied
 
-from .models import Product, ProductFlavor, Order, StaffDevice
-
+from .models import (
+    GlobalProduct, GlobalProductFlavor,
+    GymProduct, GymProductFlavor,
+    Order, StaffDevice,
+)
+from .models import GymInventoryMovement
+from django import forms as django_forms
 
 # ── Base admin for gym-scoped Shop models ─────────────────────────────────────
-#
-# Product and ProductFlavor are platform-global (no gym FK) — they use
-# a simpler base that only gates on superuser.
-#
-# Order and StaffDevice are gym-scoped — they use GymScopedShopAdmin.
+class GymProductFlavorAdminForm(django_forms.ModelForm):
+    class Meta:
+        model = GymProductFlavor
+        fields = '__all__'
 
+    def clean(self):
+        cleaned = super().clean()
+        selling_price  = cleaned.get('selling_price')
+        discount_price = cleaned.get('discount_price')
+        if (
+            discount_price is not None
+            and selling_price is not None
+            and discount_price > selling_price
+        ):
+            self.add_error('discount_price', "Cannot be greater than selling price.")
+        return cleaned
 class GymScopedShopAdmin(admin.ModelAdmin):
     """
-    Base for Order and StaffDevice — both have gym FK.
+    Base for models with a gym FK (GymProduct, Order, StaffDevice).
     Superuser sees all gyms. Gym staff sees only their gym.
     """
-
+    list_per_page = 50
     def get_gym(self, request):
         return getattr(request, 'gym', None)
 
@@ -74,93 +89,184 @@ class GymScopedShopAdmin(admin.ModelAdmin):
         return cols
 
 
-# ── Product — platform-global, superuser only ─────────────────────────────────
-#
-# Products have no gym FK — they're shared across all gyms.
-# Only the SaaS superuser should manage the product catalog.
-# Gym owners see products (read-only) but cannot add/edit/delete them.
+# ── GlobalProduct — platform-global, superuser reviews approval ──────────────
 
-@admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
-    list_display   = ['name', 'base_price', 'discount', 'discounted_price_display', 'in_stock', 'active']
-    list_filter    = ['active']
-    search_fields  = ['name']
-    ordering       = ['name']
-    readonly_fields = ['discounted_price_display', 'discount_amount_display']
+class GlobalProductFlavorInline(admin.TabularInline):
+    model = GlobalProductFlavor
+    extra = 1
+    fields = ['flavor_name', 'weight', 'image']
 
-    @admin.display(description='Discounted Price')
-    def discounted_price_display(self, obj):
-        return f"Rs.{obj.discounted_price:.2f}"
 
-    @admin.display(description='Discount Amount')
-    def discount_amount_display(self, obj):
-        return f"Rs.{obj.discount_amount:.2f}"
+@admin.register(GlobalProduct)
+class GlobalProductAdmin(admin.ModelAdmin):
+    list_display   = ['name','category', 'approval_status', 'active', 'created_by']
+    list_filter    = ['approval_status', 'active', 'brand', 'category']
+    search_fields  = ['name', 'brand', 'category', 'slug']
+    ordering       = ['-created_at']
+    readonly_fields = ['slug', 'created_by', 'created_at', 'updated_at']
+    inlines        = [GlobalProductFlavorInline]
+    actions        = ['approve_products', 'reject_products']
+    list_per_page = 50
+
+    def save_model(self, request, obj, form, change):
+        if not change and not obj.created_by_id:
+            obj.created_by = request.user
+        if obj.approval_status == GlobalProduct.Approval.APPROVED and not obj.approved_by_id:
+            obj.approved_by = request.user
+        super().save_model(request, obj, form, change)
+
+    @admin.action(description='Approve selected products')
+    def approve_products(self, request, queryset):
+        for product in queryset:
+            product.approval_status = GlobalProduct.Approval.APPROVED
+            product.approved_by = request.user
+            product.save(update_fields=['approval_status', 'approved_by'])
+
+    @admin.action(description='Reject selected products')
+    def reject_products(self, request, queryset):
+        queryset.update(approval_status=GlobalProduct.Approval.REJECTED)
 
     def has_add_permission(self, request):
-        # Only superuser can add products to the global catalog
-        return request.user.is_superuser
+        return request.user.is_superuser or request.user.is_staff
 
     def has_change_permission(self, request, obj=None):
+        # Any gym staff can propose edits via "Create New Product";
+        # only superuser can edit brand/name/category/flavors on approved items
         if request.user.is_superuser:
             return True
-        return False
+        if obj is None:
+            return True
+        return obj.approval_status == GlobalProduct.Approval.PENDING
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
 
 
-# ── ProductFlavor — platform-global, superuser only ───────────────────────────
-
-@admin.register(ProductFlavor)
-class ProductFlavorAdmin(admin.ModelAdmin):
-    list_display  = ['product', 'name', 'stock', 'available_stock_display', 'final_price_display', 'in_stock']
-    list_filter   = ['product']
-    search_fields = ['name', 'product__name']
-    ordering      = ['product__name', 'name']
-
-    @admin.display(description='Available Stock')
-    def available_stock_display(self, obj):
-        return obj.available_stock
-
-    @admin.display(description='Final Price')
-    def final_price_display(self, obj):
-        return f"Rs.{obj.final_price:.2f}"
-
+@admin.register(GlobalProductFlavor)
+class GlobalProductFlavorAdmin(admin.ModelAdmin):
+    list_display  = ['global_product', 'flavor_name', 'weight']
+    list_filter   = ['global_product']
+    search_fields = ['flavor_name', 'global_product__name']
+    ordering      = ['global_product__name', 'flavor_name']
+    list_per_page = 50
     def has_add_permission(self, request):
         return request.user.is_superuser
 
     def has_change_permission(self, request, obj=None):
-        if request.user.is_superuser:
-            return True
-        return False
+        return request.user.is_superuser
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
-    
-    def has_view_permission(self, request, obj=None):
+
+
+# ── GymProduct — gym-scoped import record ─────────────────────────────────────
+
+class GymProductFlavorInline(admin.TabularInline):
+    model = GymProductFlavor
+    form = GymProductFlavorAdminForm
+    extra = 0
+    fields = [
+        'global_flavor', 'selling_price', 'discount_price', 'cost_price',
+        'stock', 'sku', 'minimum_stock', 'active',
+    ]
+    readonly_fields = ['stock']
+
+@admin.register(GymProduct)
+class GymProductAdmin(GymScopedShopAdmin):
+    list_display  = ['global_product', 'gym', 'active', 'is_visible', 'created_at']
+    list_select_related = (
+    "gym",
+    "global_product",
+    )
+    list_filter   = ['active', 'is_visible']
+    search_fields = ['global_product__name', 'global_product__brand',"gym__gym_name",]
+    ordering      = ['display_order', '-created_at']
+    inlines       = [GymProductFlavorInline]
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        if not request.user.is_superuser and 'global_product' not in readonly:
+            readonly.append('global_product')
+        return readonly
+
+
+@admin.register(GymProductFlavor)
+class GymProductFlavorAdmin(GymScopedShopAdmin):
+    form = GymProductFlavorAdminForm
+    list_display  = ['gym_product', 'gym_column', 'global_flavor', 'discount_price', 'stock', 'active']
+    list_select_related = (
+        "gym_product",
+        "gym_product__gym",
+        "global_flavor",
+    )
+    list_filter   = ['active']
+    search_fields = ['gym_product__global_product__name', 'sku']
+    ordering      = ['gym_product']
+
+    @admin.display(description='Gym')
+    def gym_column(self, obj):
+        return obj.gym_product.gym
+
+    def get_list_display(self, request):
+        return self.list_display
+
+    def get_readonly_fields(self, request, obj=None):
+        # CHANGED — override instead of inheriting the parent's auto-append,
+        # since GymScopedShopAdmin.get_readonly_fields() blindly appends
+        # 'gym', which doesn't exist as a field on this model.
+        return list(super(GymScopedShopAdmin, self).get_readonly_fields(request, obj))
+
+    def get_fields(self, request, obj=None):
+        # CHANGED — same reasoning: parent's get_fields() tries to remove
+        # 'gym' from the field list, which is a no-op-safe check normally,
+        # but skip it entirely here for clarity/correctness.
+        return list(super(GymScopedShopAdmin, self).get_fields(request, obj))
+
+    def get_gym(self, request):
+        return getattr(request, 'gym', None)
+
+    def get_queryset(self, request):
+        qs = super(GymScopedShopAdmin, self).get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        gym = self.get_gym(request)
+        if not gym:
+            return qs.none()
+        return qs.filter(gym_product__gym=gym)
+
+    def has_change_permission(self, request, obj=None):
+        if obj is None:
+            return True
+        gym = self.get_gym(request)
+        if gym and obj.gym_product.gym_id != gym.pk:
+            return False
         return True
 
+    def has_delete_permission(self, request, obj=None):
+        return self.has_change_permission(request, obj)
 
 # ── Order — gym-scoped ────────────────────────────────────────────────────────
 
 @admin.register(Order)
 class OrderAdmin(GymScopedShopAdmin):
     list_display  = [
-        'id', 'user', 'product', 'flavor', 'quantity',
-        'total_price', 'status', 'ordered_at',
+        'id', 'user', 'gym_flavor', 'quantity', 'total_price', 'status',
     ]
+    list_select_related = (
+        "user",
+        "gym",
+        "gym_product",
+        "gym_flavor",
+    )
     list_filter   = ['status']
-    search_fields = ['user__username', 'product__name']
+    search_fields = ['user__username', 'gym_product__global_product__name']
     ordering      = ['-ordered_at']
-    readonly_fields = ['ordered_at', 'updated_at', 'total_price']
+    readonly_fields = ['ordered_at', 'updated_at', 'total_price', 'unit_price']
 
-    # Gym staff can update order status (Pending→Confirmed→Delivered)
-    # but cannot change the product, quantity, or price
     def get_readonly_fields(self, request, obj=None):
         readonly = list(super().get_readonly_fields(request, obj))
         if not request.user.is_superuser:
-            # Staff can only change status — everything else is locked
-            for field in ['user', 'product', 'flavor', 'quantity']:
+            for field in ['user', 'gym_product', 'gym_flavor', 'quantity']:
                 if field not in readonly:
                     readonly.append(field)
         return readonly
@@ -169,7 +275,6 @@ class OrderAdmin(GymScopedShopAdmin):
 
     @admin.action(description='Mark selected orders as Confirmed')
     def mark_confirmed(self, request, queryset):
-        # Scope action to current gym
         gym = self.get_gym(request)
         if gym:
             queryset = queryset.filter(gym=gym)
@@ -188,9 +293,39 @@ class OrderAdmin(GymScopedShopAdmin):
         if gym:
             queryset = queryset.filter(gym=gym)
         queryset.update(status=Order.Status.CANCELLED)
+@admin.register(GymInventoryMovement)
+class GymInventoryMovementAdmin(admin.ModelAdmin):
+    list_display  = ['gym_product_flavor', 'movement_type','stock_after', 'created_by']
+    list_select_related = (
+        "gym_product_flavor",
+        "gym_product_flavor__gym_product",
+        "created_by",
+    )
+    list_filter   = ['movement_type']
+    search_fields = ['gym_product_flavor__gym_product__global_product__name', 'reason']
+    ordering      = ['-created_at']
+    readonly_fields = [f.name for f in GymInventoryMovement._meta.fields]  # fully immutable in admin
+    list_per_page = 50
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        gym = getattr(request, 'gym', None)
+        if not gym:
+            return qs.none()
+        return qs.filter(gym_product_flavor__gym_product__gym=gym)
 
-# ── StaffDevice — gym-scoped ──────────────────────────────────────────────────
+    def has_add_permission(self, request):
+        return False  # movements are only created via StockMovementService
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False  # immutable audit trail — even superuser can't delete
+
+# ── StaffDevice — unchanged ────────────────────────────────────────────────────
 
 @admin.register(StaffDevice)
 class StaffDeviceAdmin(GymScopedShopAdmin):
@@ -198,18 +333,19 @@ class StaffDeviceAdmin(GymScopedShopAdmin):
     list_filter   = ['active']
     search_fields = ['device_name', 'fcm_token', 'user__username']
     ordering      = ['-last_seen']
+    list_select_related = (
+        "gym",
+        "user",
+    )
     readonly_fields = ['fcm_token', 'last_seen']
 
     def has_add_permission(self, request):
-        # Devices are registered by the app — never created manually
         return False
 
     actions = ['deactivate_selected', 'activate_selected']
 
     @admin.action(description='Deactivate selected devices')
     def deactivate_selected(self, request, queryset):
-        # Scope action to current gym — prevents staff from
-        # deactivating another gym's devices via action on a crafted queryset
         gym = self.get_gym(request)
         if gym:
             queryset = queryset.filter(gym=gym)

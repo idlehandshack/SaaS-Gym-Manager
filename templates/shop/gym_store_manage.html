@@ -1,0 +1,494 @@
+<!doctype html>
+{% load static %}
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Store — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %} Admin</title>
+    {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    <link rel="shortcut icon" href="{{ favicon_url }}">
+    {% else %}
+    <link rel="icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+    {% endif %}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+
+    <style>
+      :root {
+        --bg: #060606;
+        --surface: #0e0e0e;
+        --surface-2: #161616;
+        --surface-3: #1e1e1e;
+        --border: rgba(255,255,255,0.07);
+        --border-hi: rgba(255,255,255,0.13);
+        --orange: #ff5a00;
+        --orange-dim: rgba(255,90,0,0.10);
+        --orange-mid: rgba(255,90,0,0.20);
+        --green: #5de87c;
+        --green-dim: rgba(93,232,124,0.08);
+        --yellow: #ffca28;
+        --yellow-dim: rgba(255,202,40,0.08);
+        --blue: #4db8ff;
+        --blue-dim: rgba(77,184,255,0.08);
+        --red: #ef5350;
+        --red-dim: rgba(239,83,80,0.08);
+        --text-hi: #f0f0f0;
+        --text-mid: #888;
+        --text-lo: #444;
+        --font-d: "Barlow Condensed", sans-serif;
+        --font-b: "Barlow", sans-serif;
+        --t: 0.22s cubic-bezier(0.4,0,0.2,1);
+        --radius: 14px;
+        --radius-sm: 8px;
+        --radius-card: 18px;
+        --pill: 40px;
+        --sidebar-w: 220px;
+      }
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        background: var(--bg);
+        color: var(--text-hi);
+        font-family: var(--font-b);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+
+      /* ── OVERLAY (mobile drawer backdrop) ── */
+      .sidebar-overlay {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.65);
+        z-index: 199; backdrop-filter: blur(2px);
+      }
+      .sidebar-overlay.show { display: block; }
+
+      /* ── SIDEBAR ── */
+      .sidebar {
+        position: fixed; left: 0; top: 0; bottom: 0;
+        width: var(--sidebar-w);
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex; flex-direction: column;
+        z-index: 200; padding: 28px 0 24px;
+        transition: transform var(--t);
+      }
+      .sidebar-brand { padding: 0 24px 28px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+      .sidebar-brand .logo {
+        font-family: var(--font-d); font-weight: 900; font-size: 1.4rem;
+        text-transform: uppercase; letter-spacing: -0.01em;
+        color: var(--text-hi); text-decoration: none; display: block; line-height: 1.15;
+      }
+      .sidebar-brand .logo .acc { color: var(--orange); }
+      .sidebar-gym-name {
+        display: block; margin-top: 4px; font-family: var(--font-d);
+        font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em;
+        text-transform: uppercase; color: var(--text-mid);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .sidebar-brand .role-pill {
+        display: inline-block; margin-top: 10px;
+        background: var(--orange-dim); border: 1px solid var(--orange-mid);
+        color: var(--orange); border-radius: 4px;
+        font-family: var(--font-d); font-size: 0.65rem; font-weight: 700;
+        letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 9px;
+      }
+      .sidebar-close {
+        display: none; background: none; border: none; color: var(--text-mid);
+        font-size: 1.2rem; cursor: pointer; padding: 4px; margin-left: auto; line-height: 1;
+      }
+      .sidebar-brand-row { display: flex; align-items: flex-start; justify-content: space-between; }
+      .sidebar-nav { padding: 0 12px; flex: 1; }
+      .nav-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 11px 14px; border-radius: var(--radius-sm);
+        font-family: var(--font-d); font-size: 0.82rem; font-weight: 700;
+        letter-spacing: 0.08em; text-transform: uppercase;
+        color: var(--text-mid); text-decoration: none;
+        transition: background var(--t), color var(--t); margin-bottom: 2px;
+      }
+      .nav-item i { font-size: 0.95rem; }
+      .nav-item:hover { background: var(--surface-2); color: var(--text-hi); }
+      .nav-item.active { background: var(--orange-dim); color: var(--orange); border: 1px solid var(--orange-mid); }
+      .sidebar-footer { padding: 16px 24px 0; border-top: 1px solid var(--border); margin-top: auto; }
+      .sidebar-user { font-family: var(--font-d); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-lo); }
+      .sidebar-user strong { display: block; color: var(--text-mid); font-size: 0.8rem; margin-top: 2px; }
+
+      /* ── MAIN ── */
+      .main { margin-left: var(--sidebar-w); min-height: 100vh; }
+
+      /* ── TOP BAR ── */
+      .topbar {
+        background: rgba(6,6,6,0.92);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 28px;
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        position: sticky; top: 0; z-index: 100;
+      }
+      .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+      .menu-btn {
+        display: none; background: var(--surface-2); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); color: var(--text-mid); font-size: 1.1rem;
+        width: 36px; height: 36px; align-items: center; justify-content: center;
+        cursor: pointer; flex-shrink: 0;
+      }
+      .topbar-title {
+        font-family: var(--font-d); font-weight: 900; font-size: 1.45rem;
+        text-transform: uppercase; letter-spacing: -0.01em; white-space: nowrap;
+      }
+      .topbar-gym-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: var(--orange-dim); border: 1px solid var(--orange-mid);
+        color: var(--orange); border-radius: 6px;
+        font-family: var(--font-d); font-size: 0.65rem; font-weight: 700;
+        letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 9px;
+        white-space: nowrap; flex-shrink: 0;
+      }
+      .topbar-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+      .btn-new {
+        display: inline-flex; align-items: center; gap: 7px;
+        font-family: var(--font-d); font-size: 0.76rem; font-weight: 700;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        color: #fff; text-decoration: none;
+        padding: 9px 18px; background: var(--orange); border-radius: var(--pill);
+        transition: background var(--t), transform var(--t), box-shadow var(--t);
+        white-space: nowrap; border: none; cursor: pointer;
+      }
+      .btn-new:hover { background: #e65200; color: #fff; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,90,0,0.35); }
+
+      /* SEARCH */
+      .search-wrap { position: relative; }
+      .search-wrap i {
+        position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+        color: var(--text-lo); font-size: 0.82rem; pointer-events: none;
+      }
+      .search-input {
+        background: var(--surface-2); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); padding: 8px 12px 8px 32px;
+        color: var(--text-hi); font-family: var(--font-b); font-size: 0.85rem;
+        outline: none; width: 220px; transition: border-color var(--t), width var(--t);
+      }
+      .search-input::placeholder { color: var(--text-lo); }
+      .search-input:focus { border-color: var(--border-hi); width: 260px; }
+
+      /* ── ALERTS ── */
+      .alerts-wrap { padding: 18px 28px 0; }
+      .shop-alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: 4px; }
+      .shop-alert-success { background: var(--green-dim); color: var(--green); border: 1px solid rgba(93,232,124,0.25); }
+      .shop-alert-error   { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,83,80,0.25); }
+      .shop-alert-warning { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(255,202,40,0.25); }
+
+      /* ── MAIN CONTENT ── */
+      .table-area { padding: 24px 28px 60px; }
+      .section-label {
+        font-family: var(--font-d); font-size: 0.72rem; font-weight: 700;
+        letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-lo);
+        margin-bottom: 20px; display: flex; align-items: center; gap: 12px;
+      }
+      .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+      /* ── TABLE CARD ── */
+      .manage-table-wrap {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        overflow: hidden;
+        background: var(--surface);
+        animation: fadeUp 0.4s cubic-bezier(0.4,0,0.2,1) both;
+      }
+      .manage-table-scroll { overflow-x: auto; }
+      .admin-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+      .admin-table thead th {
+        text-align: left; padding: 14px 18px;
+        background: var(--surface-2);
+        color: var(--text-lo);
+        font-family: var(--font-d);
+        font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.14em; text-transform: uppercase;
+        border-bottom: 1px solid var(--border);
+      }
+      .admin-table tbody td {
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-hi);
+        font-size: 0.88rem;
+        vertical-align: middle;
+      }
+      .admin-table tbody tr:last-child td { border-bottom: none; }
+      .admin-table tbody tr { transition: background var(--t); }
+      .admin-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+      .manage-product-name {
+        font-family: var(--font-d);
+        font-weight: 700; font-size: 0.95rem;
+        letter-spacing: 0.01em; color: var(--text-hi);
+        display: block;
+      }
+      .muted { color: var(--text-lo); font-size: 0.76rem; display: block; margin-top: 2px; }
+
+      .status-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 4px 12px; border-radius: var(--pill);
+        font-family: var(--font-d); font-size: 0.68rem; font-weight: 700;
+        letter-spacing: 0.06em; text-transform: uppercase;
+        border: 1px solid transparent;
+      }
+      .status-pending   { background: var(--yellow-dim); color: var(--yellow); border-color: rgba(255,202,40,0.25); }
+      .status-confirmed { background: var(--blue-dim);   color: var(--blue);   border-color: rgba(77,184,255,0.25); }
+      .status-delivered { background: var(--green-dim);  color: var(--green);  border-color: rgba(93,232,124,0.25); }
+      .status-cancelled { background: var(--red-dim);    color: var(--red);    border-color: rgba(239,83,80,0.25); }
+
+      .manage-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+      .inline-form { display: inline-block; margin: 0; }
+      .mini-btn {
+        padding: 6px 14px; border-radius: var(--pill); border: 1px solid transparent;
+        font-family: var(--font-d); font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.06em; text-transform: uppercase;
+        cursor: pointer; text-decoration: none; display: inline-block;
+        transition: background var(--t), transform var(--t);
+      }
+      .mini-btn:hover { transform: translateY(-1px); }
+      .mini-btn-confirm { background: var(--green-dim); color: var(--green); border-color: rgba(93,232,124,0.25); }
+      .mini-btn-confirm:hover { background: rgba(93,232,124,0.18); }
+      .mini-btn-cancel { background: var(--red-dim); color: var(--red); border-color: rgba(239,83,80,0.25); }
+      .mini-btn-cancel:hover { background: rgba(239,83,80,0.18); }
+
+      /* ── EMPTY ── */
+      .empty-state {
+        padding: 64px 24px; text-align: center;
+        border: 1px dashed var(--border); border-radius: var(--radius-card); background: var(--surface);
+      }
+      .empty-state i { font-size: 2.2rem; color: var(--text-lo); margin-bottom: 14px; display: block; }
+      .empty-state h5 { font-family: var(--font-d); font-weight: 800; font-size: 1.15rem; text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 6px; }
+      .empty-state p { color: var(--text-lo); font-size: 0.85rem; margin-bottom: 18px; }
+      .empty-state .btn-new { display: inline-flex; }
+
+      @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+      /* ══ RESPONSIVE ══ */
+      @media (max-width: 1100px) { .topbar-gym-badge { display: none; } }
+      @media (max-width: 900px) {
+        .sidebar { transform: translateX(-100%); box-shadow: none; }
+        .sidebar.open { transform: translateX(0); box-shadow: 4px 0 40px rgba(0,0,0,0.6); }
+        .sidebar-close { display: flex; }
+        .menu-btn { display: flex; }
+        .main { margin-left: 0; }
+        .topbar { padding: 12px 16px; }
+        .topbar-title { font-size: 1.2rem; }
+        .topbar-gym-badge { display: inline-flex; }
+        .alerts-wrap { padding: 16px 16px 0; }
+        .table-area { padding: 18px 16px 56px; }
+        .search-input { width: 150px; }
+        .search-input:focus { width: 180px; }
+        .btn-new span { display: none; }
+      }
+      @media (max-width: 640px) {
+        .admin-table thead th:nth-child(2),
+        .admin-table tbody td:nth-child(2) { display: none; } /* hide Variants col on small screens */
+      }
+      @media (max-width: 576px) {
+        .topbar-title { font-size: 1.1rem; }
+        .search-input { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ══ SIDEBAR ══ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-row">
+          <div>
+            <a class="logo" href="{% url 'product_list' %}">
+              {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
+              <span class="acc"> Store</span>
+            </a>
+            {% if gym %}
+            <span class="sidebar-gym-name">
+              <i class="bi bi-geo-alt-fill" style="font-size:.65rem;margin-right:3px;"></i>
+              {{ gym.gym_code }}
+            </span>
+            {% endif %}
+          </div>
+          <button class="sidebar-close" id="sidebar-close-btn" aria-label="Close menu">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <span class="role-pill">Staff Panel</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="{% url 'admin_orders' %}">
+          <i class="bi bi-box-seam"></i> Orders
+        </a>
+        <a class="nav-item" href="{% url 'product_dashboard' %}">
+          <i class="bi bi-bar-chart-line"></i> Dashboard
+        </a>
+        <a class="nav-item active" href="{% url 'gym_store_manage' %}">
+          <i class="bi bi-bag"></i> My Store
+        </a>
+        <a class="nav-item " href="{% url 'catalog_browse' %}">
+          <i class="bi bi-gear"></i> Catalog
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          Logged in as
+          <strong>{{ request.user.username }}</strong>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ══ MAIN ══ -->
+    <div class="main">
+
+      <!-- TOP BAR -->
+      <div class="topbar">
+        <div class="topbar-left">
+          <button class="menu-btn" id="menu-btn" aria-label="Open menu" aria-expanded="false">
+            <i class="bi bi-list"></i>
+          </button>
+          <div class="topbar-title">My Store</div>
+          {% if gym %}
+          <span class="topbar-gym-badge">
+            <i class="bi bi-building"></i>
+            {{ gym.gym_name }}
+          </span>
+          {% endif %}
+        </div>
+        <div class="topbar-actions">
+          <form method="get" class="search-wrap">
+            <i class="bi bi-search"></i>
+            <input type="text" name="q" value="{{ query }}" class="search-input" placeholder="Search name, brand, SKU…" autocomplete="off" />
+          </form>
+          <a class="btn-new" href="{% url 'catalog_browse' %}">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            <span>Browse Catalog</span>
+          </a>
+        </div>
+      </div>
+
+      {% if messages %}
+      <div class="alerts-wrap">
+        {% for message in messages %}
+          <div class="shop-alert shop-alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- TABLE -->
+      <div class="table-area">
+        <p class="section-label">
+          {% if query %}Results for "{{ query }}"{% else %}Your Products{% endif %}
+        </p>
+
+        {% if products %}
+        <div class="manage-table-wrap">
+          <div class="manage-table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Variants</th>
+                  <th>Visible</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for product in products %}
+                <tr>
+                  <td>
+                    <span class="manage-product-name">{{ product.name }}</span>
+                    {% if product.global_product.brand %}<span class="muted">{{ product.global_product.brand }}</span>{% endif %}
+                  </td>
+                  <td>{{ product.flavors.count }}</td>
+                  <td>
+                    {% if product.is_visible %}
+                      <span class="status-badge status-delivered"><i class="bi bi-eye-fill"></i> Visible</span>
+                    {% else %}
+                      <span class="status-badge status-pending"><i class="bi bi-eye-slash-fill"></i> Hidden</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if product.active %}
+                      <span class="status-badge status-confirmed"><i class="bi bi-check-circle-fill"></i> Active</span>
+                    {% else %}
+                      <span class="status-badge status-cancelled"><i class="bi bi-x-circle-fill"></i> Removed</span>
+                    {% endif %}
+                  </td>
+                  <td class="manage-actions">
+                    {% if product.active %}
+                      <a href="{% url 'gym_product_edit' product.id %}" class="mini-btn mini-btn-confirm">Edit</a>
+                      <form method="post" action="{% url 'gym_product_remove' product.id %}" class="inline-form" onsubmit="return confirm('Remove this product from your store?');">
+                        {% csrf_token %}
+                        <button type="submit" class="mini-btn mini-btn-cancel">Remove</button>
+                      </form>
+                    {% else %}
+                      <form method="post" action="{% url 'gym_product_restore' product.id %}" class="inline-form">
+                        {% csrf_token %}
+                        <button type="submit" class="mini-btn mini-btn-confirm">Restore</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <i class="bi bi-box-seam"></i>
+          <h5>Your store is empty</h5>
+          <p>Browse the catalog to import your first products.</p>
+          <a href="{% url 'catalog_browse' %}" class="btn-new">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            <span>Browse the Catalog</span>
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+    <!-- /main -->
+
+    <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+    <script nonce="{{ request.csp_nonce }}">
+      (function () {
+        const sidebar  = document.getElementById('sidebar');
+        const overlay  = document.getElementById('sidebar-overlay');
+        const menuBtn  = document.getElementById('menu-btn');
+        const closeBtn = document.getElementById('sidebar-close-btn');
+
+        function openSidebar() {
+          sidebar.classList.add('open');
+          overlay.classList.add('show');
+          menuBtn && menuBtn.setAttribute('aria-expanded', 'true');
+          document.body.style.overflow = 'hidden';
+        }
+        function closeSidebar() {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('show');
+          menuBtn && menuBtn.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+        }
+
+        menuBtn  && menuBtn.addEventListener('click', openSidebar);
+        closeBtn && closeBtn.addEventListener('click', closeSidebar);
+        overlay  && overlay.addEventListener('click', closeSidebar);
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeSidebar(); });
+        window.addEventListener('resize', function() { if (window.innerWidth > 900) closeSidebar(); });
+      })();
+    </script>
+  </body>
+</html>

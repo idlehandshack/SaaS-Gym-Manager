@@ -5,7 +5,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {# FIX: gym name in title #}
     <title>Order Placed — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %} Store</title>
       {% if favicon_url %}
     <link rel="icon" href="{{ favicon_url }}">
@@ -14,11 +13,10 @@
     <link rel="icon" href="{% static 'images/favicon.ico' %}">
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
   {% endif %}
-    {% endif %}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
     <style>
@@ -120,6 +118,10 @@
         border-color: rgba(255,90,0,.3);
         color: var(--orange); background: var(--orange-dim);
       }
+      .order-chip.status-pending   { border-color: rgba(255,184,77,.3);  color: #ffb84d; background: rgba(255,184,77,.08); }
+      .order-chip.status-confirmed { border-color: rgba(77,184,255,.3);  color: #4db8ff; background: rgba(77,184,255,.08); }
+      .order-chip.status-delivered { border-color: var(--green-bdr);     color: var(--green); background: var(--green-bg); }
+      .order-chip.status-cancelled { border-color: rgba(255,107,107,.3); color: #ff6b6b; background: rgba(255,107,107,.08); }
 
       .track-strip {
         background: var(--green-bg); border: 1px solid var(--green-bdr);
@@ -205,7 +207,6 @@
       <h1 class="success-title">Order<br />Confirmed!</h1>
       <p class="success-sub">
         Your order has been placed successfully.<br />
-        {# FIX: gym name in pickup message #}
         It'll be ready for pickup at
         <strong>{% if gym %}{{ gym.gym_name }}{% else %}the gym{% endif %}</strong>
         within <strong>24 hours</strong>.
@@ -213,13 +214,15 @@
 
       <div class="order-chip-row">
         <div class="order-chip highlight">Order #{{ order.id }}</div>
-        <div class="order-chip">{{ order.product.name }}</div>
-        {% if order.flavor %}
-          <div class="order-chip">{{ order.flavor.name }}</div>
+        <div class="order-chip">{{ order.gym_product.name }}</div>
+        {% if order.gym_flavor %}
+          <div class="order-chip">
+            {{ order.gym_flavor.global_flavor.flavor_name }}{% if order.gym_flavor.global_flavor.weight %} — {{ order.gym_flavor.global_flavor.weight }}{% endif %}
+          </div>
         {% endif %}
         <div class="order-chip">Qty {{ order.quantity }}</div>
         <div class="order-chip">₹{{ order.total_price|floatformat:0 }}</div>
-        {# FIX: show which gym this order was placed at #}
+        <div class="order-chip status-{{ order.status|lower }}">{{ order.status }}</div>
         {% if gym %}
         <div class="order-chip">{{ gym.gym_name }}</div>
         {% endif %}
@@ -230,11 +233,9 @@
         <div class="track-text">
           <div class="track-label">
             <i class="bi bi-geo-alt-fill me-1"></i>
-            {# FIX: gym name in pickup label #}
             {% if gym %}{{ gym.gym_name }}{% else %}Gym{% endif %} Pickup
           </div>
           <div class="track-sub">
-            {# FIX: gym address from DB, not hardcoded #}
             {% if gym and gym.address %}
               {{ gym.address }}
             {% elif enrollment and enrollment.address %}
@@ -260,6 +261,6 @@
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
   </body>
 </html>

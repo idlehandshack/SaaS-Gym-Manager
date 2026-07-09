@@ -5,7 +5,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {# FIX: gym name in title #}
     <title>{{ product.name }} — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %} Store</title>
       {% if favicon_url %}
     <link rel="icon" href="{{ favicon_url }}">
@@ -14,11 +13,10 @@
     <link rel="icon" href="{% static 'images/favicon.ico' %}">
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
   {% endif %}
-    {% endif %}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
     <style>
@@ -133,6 +131,11 @@
         transition: transform .55s var(--ease);
       }
       .image-frame:hover img { transform: scale(1.04); }
+      .image-frame .no-image {
+        width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+        color: var(--text-lo); font-family: var(--font-display); font-size: .95rem;
+        letter-spacing: .08em; text-transform: uppercase;
+      }
       .image-glow {
         position: absolute; inset: -1px; border-radius: var(--radius-lg);
         box-shadow: 0 0 70px rgba(255,90,0,.08), inset 0 0 40px rgba(0,0,0,.45);
@@ -210,6 +213,9 @@
       .btn-check:checked + .flavor-chip {
         border-color: var(--orange); color: var(--orange);
         background: var(--orange-dim); transform: translateY(-2px);
+      }
+      .btn-check:disabled + .flavor-chip {
+        opacity: .4; cursor: not-allowed; text-decoration: line-through;
       }
       .flavor-chip .chip-price {
         font-size: .72rem; font-weight: 500; opacity: .7;
@@ -325,6 +331,13 @@
       .description-body { color: var(--text-mid); line-height: 1.8; font-size: .93rem; max-width: 800px; }
       .description-body p { margin-bottom: 1em; }
 
+      /* ─── ALERT ───────────────────────────────────── */
+      .shop-alert {
+        padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: var(--space-md);
+        font-size: .85rem; line-height: 1.5;
+      }
+      .shop-alert-warning { background: rgba(255,184,77,.08); color: #ffb84d; border: 1px solid rgba(255,184,77,.25); }
+
       /* ─── ANIMATIONS ──────────────────────────────── */
       @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
       .fade-in   { animation: fadeUp .45s var(--ease) both; }
@@ -367,10 +380,11 @@
   </head>
   <body>
 
+    {% with first_flavor=product.flavors.first %}
+
     <!-- ── NAVBAR ──────────────────────────────────── -->
     <nav class="navbar-custom">
       <div class="navbar-inner container">
-        {# FIX: gym name in navbar brand #}
         <a class="navbar-brand" href="{% url 'product_list' %}">
           {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
           <span class="accent">Store</span>
@@ -392,7 +406,6 @@
     <main class="container detail-page">
 
       <div class="breadcrumb-strip">
-        {# FIX: breadcrumb shows gym name #}
         <a href="{% url 'product_list' %}">
           {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %} Store
         </a>
@@ -406,14 +419,16 @@
         <div class="fade-in fade-in-1">
           <div class="image-panel">
             <div class="image-frame">
-              {% if product.discount > 0 %}
-                <span class="img-badge">{{ product.discount }}% OFF</span>
+              {% if first_flavor and first_flavor.discount_price %}
+                <span class="img-badge">SALE</span>
               {% endif %}
-              {% if product.image %}
-                <img src="{{ product.image.url }}" alt="{{ product.name }}" width="600" height="600" loading="eager" decoding="async" />
-              {% else %}
-                <img src="https://images.unsplash.com/photo-1596716075191-236f0df56070?q=80&w=800&auto=format&fit=crop" alt="Protein Supplement" width="600" height="600" loading="eager" decoding="async" />
-              {% endif %}
+              {% with img=product.global_product.image %}
+                {% if img %}
+                <img src="{{ img.url }}" alt="{{ product.name }}" width="600" height="600" loading="eager" decoding="async" />
+                {% else %}
+                <div class="no-image">No Image</div>
+                {% endif %}
+              {% endwith %}
               <div class="image-glow"></div>
             </div>
           </div>
@@ -423,16 +438,22 @@
         <div class="fade-in fade-in-2">
           <div class="info-panel">
 
-            <p class="product-eyebrow">Supplements</p>
+            <p class="product-eyebrow">
+              {% if product.global_product.brand %}{{ product.global_product.brand }}{% else %}Supplements{% endif %}
+            </p>
             <h1 class="product-title">{{ product.name }}</h1>
 
             <div class="price-block">
-              <span class="price-current" id="price-display">
-                ₹{{ product.discounted_price|floatformat:0 }}
-              </span>
-              {% if product.discount > 0 %}
-                <span class="price-original">₹{{ product.base_price|floatformat:0 }}</span>
-                <span class="price-savings">{{ product.discount }}% off</span>
+              {% if first_flavor and first_flavor.selling_price %}
+                <span class="price-current" id="price-display">
+                  ₹{{ first_flavor.final_price|floatformat:0 }}
+                </span>
+                {% if first_flavor.discount_price %}
+                <span class="price-original">₹{{ first_flavor.selling_price|floatformat:0 }}</span>
+                <span class="price-savings">Save ₹{{ first_flavor.discount_price|floatformat:0 }}</span>
+                {% endif %}
+              {% else %}
+                <span class="price-current" id="price-display">Price unavailable</span>
               {% endif %}
             </div>
             <p class="price-tax">Inclusive of all taxes</p>
@@ -444,21 +465,24 @@
               <span class="field-label">Choose Flavour</span>
               <div class="flavor-grid">
                 {% for flavor in product.flavors.all %}
-                <input
-                  type="radio" class="btn-check"
-                  name="flavor_select" id="flavor_{{ flavor.id }}"
-                  value="{{ flavor.id }}"
-                  data-stock="{{ flavor.available_stock }}"
-                  {% if forloop.first %}checked{% endif %}
-                />
-                <label
-                  class="flavor-chip" for="flavor_{{ flavor.id }}"
-                  data-price="{{ flavor.final_price|floatformat:0 }}"
-                  data-stock="{{ flavor.available_stock }}"
-                >
-                  {{ flavor.name }}
-                  <span class="chip-price">₹{{ flavor.final_price|floatformat:0 }}</span>
-                </label>
+                  {% if flavor.active %}
+                  <input
+                    type="radio" class="btn-check"
+                    name="flavor_select" id="flavor_{{ flavor.id }}"
+                    value="{{ flavor.id }}"
+                    data-stock="{{ flavor.available_stock }}"
+                    {% if not flavor.in_stock %}disabled{% endif %}
+                    {% if forloop.first %}checked{% endif %}
+                  />
+                  <label
+                    class="flavor-chip" for="flavor_{{ flavor.id }}"
+                    data-price="{{ flavor.final_price|floatformat:0 }}"
+                    data-stock="{{ flavor.available_stock }}"
+                  >
+                    {{ flavor.global_flavor.flavor_name }}{% if flavor.global_flavor.weight %} — {{ flavor.global_flavor.weight }}{% endif %}
+                    <span class="chip-price">₹{{ flavor.final_price|floatformat:0 }}</span>
+                  </label>
+                  {% endif %}
                 {% endfor %}
               </div>
             </div>
@@ -473,14 +497,14 @@
                     <i class="bi bi-dash"></i>
                   </button>
                   <input type="number" class="qty-input" id="qty-input"
-                    min="1" max="{{ product.get_available_stock }}" value="1" aria-label="Quantity" />
+                    min="1" max="{% if first_flavor %}{{ first_flavor.available_stock }}{% else %}1{% endif %}" value="1" aria-label="Quantity" />
                   <button type="button" class="qty-btn" id="qty-plus" aria-label="Increase quantity">
                     <i class="bi bi-plus"></i>
                   </button>
                 </div>
               </div>
 
-              {% if product.in_stock %}
+              {% if first_flavor and first_flavor.in_stock %}
                 <div class="stock-indicator in-stock">
                   <span class="stock-dot"></span> In Stock
                 </div>
@@ -491,16 +515,20 @@
               {% endif %}
             </div>
 
+            {% if order_block_reason %}
+            <div class="shop-alert shop-alert-warning">{{ order_block_reason }}</div>
+            {% endif %}
+
             {% if can_order_products %}
             <form method="post" action="{% url 'confirm_order' product.id %}" id="form-buy">
               {% csrf_token %}
               <input type="hidden" name="flavor" id="buy-flavor-input"
-                value="{% if product.flavors.all %}{{ product.flavors.first.id }}{% else %}standard{% endif %}" />
+                value="{% if first_flavor %}{{ first_flavor.id }}{% else %}standard{% endif %}" />
               <input type="hidden" name="quantity" id="buy-qty-input" value="1" />
               <button type="submit" class="btn-buy"
-                {% if not product.in_stock %}disabled{% endif %} aria-label="Buy now">
+                {% if not first_flavor or not first_flavor.in_stock %}disabled{% endif %} aria-label="Buy now">
                 <i class="bi bi-lightning-fill"></i>
-                {% if product.in_stock %}
+                {% if first_flavor and first_flavor.in_stock %}
                   Buy Now — Deliver to {% if gym %}{{ gym.gym_name }}{% else %}Gym{% endif %}
                 {% else %}
                   Out of Stock
@@ -508,14 +536,7 @@
               </button>
             </form>
           {% else %}
-            {# Membership gate — button is purely decorative, no form wrapping it #}
             <div class="membership-block-wrap">
-              {% if order_block_reason %}
-              <div class="membership-warning">
-                <i class="bi bi-shield-exclamation"></i>
-                {{ order_block_reason }}
-              </div>
-              {% endif %}
               <button type="button" class="btn-buy btn-buy--blocked" disabled aria-disabled="true">
                 <i class="bi bi-lock-fill"></i>
                 Membership Required
@@ -544,31 +565,35 @@
 
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+    {% endwith %}
+
+    <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
     <script nonce="{{ request.csp_nonce }}">
     (function () {
       const priceDisplay = document.getElementById("price-display");
       const qtyInput     = document.getElementById("qty-input");
       const buyFlavor    = document.getElementById("buy-flavor-input");
       const buyQty       = document.getElementById("buy-qty-input");
+      const buyBtn       = document.querySelector('#form-buy .btn-buy');
       if (!qtyInput) return;
 
       let maxQty = parseInt(qtyInput.max, 10) || 1;
 
-      function clamp(v) { return Math.min(Math.max(v, 1), maxQty); }
-      function setQty(v) { qtyInput.value = v; buyQty.value = v; }
+      function clamp(v) { return Math.min(Math.max(v, 1), Math.max(maxQty, 1)); }
+      function setQty(v) { qtyInput.value = v; if (buyQty) buyQty.value = v; }
 
       document.querySelectorAll('input[name="flavor_select"]').forEach(function (radio) {
         radio.addEventListener("change", function () {
-          buyFlavor.value = this.value;
+          if (buyFlavor) buyFlavor.value = this.value;
           const lbl = document.querySelector('label[for="' + this.id + '"]');
           if (!lbl) return;
           if (lbl.dataset.price && priceDisplay)
             priceDisplay.textContent = "₹" + lbl.dataset.price;
           if (lbl.dataset.stock) {
-            maxQty = parseInt(lbl.dataset.stock, 10) || 1;
+            maxQty = parseInt(lbl.dataset.stock, 10) || 0;
             qtyInput.max = maxQty;
             setQty(clamp(parseInt(qtyInput.value, 10)));
+            if (buyBtn) buyBtn.disabled = maxQty < 1;
           }
         });
       });

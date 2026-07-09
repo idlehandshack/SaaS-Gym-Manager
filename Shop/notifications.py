@@ -126,7 +126,10 @@ def _get_staff_tokens(gym) -> list[str]:
 
     return list(
         StaffDevice.objects
-        .filter(gym=gym, active=True)       # gym-scoped
+        .filter(gym=gym, active=True,user__staff_profile__role__in=[
+                'gym_owner',
+                'receptionist',
+            ],)      
         .values_list('fcm_token', flat=True)
     )
 
@@ -134,15 +137,7 @@ def _get_staff_tokens(gym) -> list[str]:
 # ── Domain-specific notifications ─────────────────────────────────────────────
 
 def notify_staff_new_order(order) -> None:
-    """
-    Push a 'new order' alert to every active staff device at this order's gym.
-
-    Call via transaction.on_commit() after order is saved:
-        transaction.on_commit(lambda: notify_staff_new_order(order))
-
-    order.gym is now available because Order model has gym FK.
-    """
-    gym         = order.gym
+    gym = order.gym
 
     if gym and not gym.enable_store:
         logger.debug(
@@ -150,13 +145,13 @@ def notify_staff_new_order(order) -> None:
             getattr(gym, 'gym_code', None),
         )
         return
-    
-    flavor_part = f" ({order.flavor.name})" if order.flavor else ""
+
+    flavor_part = f" ({order.gym_flavor.global_flavor.flavor_name})" if order.gym_flavor else ""  # CHANGED
     customer    = order.user.get_full_name().strip() or order.user.username
 
     title = f"New Order #{order.id}"
     body  = (
-        f"{customer} ordered {order.product.name}{flavor_part} "
+        f"{customer} ordered {order.gym_product.name}{flavor_part} "   # CHANGED — was order.product.name
         f"x {order.quantity} - Rs.{int(order.total_price)}"
     )
 
