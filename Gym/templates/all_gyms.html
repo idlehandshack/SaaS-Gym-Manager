@@ -82,7 +82,37 @@ img{display:block;max-width:100%}
 .search-input:focus{border-color:#3a3a4a;background:var(--bg-card)}
 .table-count{font-size:.72rem;color:var(--text-muted);margin-left:auto}
 
-.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-wrap{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  position:relative;
+}
+.table-wrap::-webkit-scrollbar{
+  height:8px;
+}
+.table-wrap::-webkit-scrollbar-thumb{
+  background:var(--orange);
+  border-radius:4px;
+}
+.table-wrap::-webkit-scrollbar-track{
+  background:var(--bg-elevated);
+}
+
+.data-table th:last-child,
+.data-table td:last-child{
+  position:sticky;
+  right:0;
+  background:var(--bg-card);
+  z-index:5;
+  box-shadow:-8px 0 8px -8px rgba(0,0,0,.4);
+}
+.data-table thead th:last-child{
+  background:var(--bg-elevated);
+}
+.data-table td.payment-actions-cell{
+  min-width:230px;
+}
 .data-table{width:100%;border-collapse:collapse;font-size:.78rem;white-space:nowrap}
 .data-table thead{background:var(--bg-elevated)}
 .data-table th{padding:10px 14px;text-align:left;font-size:.67rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border)}
@@ -108,7 +138,8 @@ img{display:block;max-width:100%}
 .contact-cell{display:flex;flex-direction:column;gap:2px}
 .contact-cell .phone{color:var(--text-primary);font-weight:500}
 .contact-cell .email{font-size:.7rem;color:var(--text-muted)}
-
+.badge.payment-visible{background:var(--yellow-dim);color:var(--yellow)}
+.badge.payment-hidden{background:var(--green-dim);color:var(--green)}
 .empty-state{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:.8rem}
 
 /* Modal (used only by Gym Detail Modal now) */
@@ -135,7 +166,7 @@ img{display:block;max-width:100%}
 .btn-sm:hover{color:var(--text-primary);border-color:#3a3a4a}
 .btn-sm.primary{background:var(--orange);border-color:var(--orange);color:#000}
 .btn-sm.primary:hover{background:#e06d00;border-color:#e06d00}
-
+.payment-actions-cell{ /* no visual change, just a hook for JS below */ }
 .gdm-tab-btn{padding:10px 14px;font-size:.78rem;font-weight:600;color:var(--text-secondary);border-bottom:2px solid transparent;background:none}
 .gdm-tab-btn.active{color:var(--orange);border-bottom-color:var(--orange)}
 
@@ -165,11 +196,13 @@ img{display:block;max-width:100%}
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
-      <rect width="28" height="28" rx="6" fill="#ff7a00"/>
-      <rect x="5" y="11" width="8" height="6" rx="1.5" fill="white" opacity="0.9"/>
-      <rect x="15" y="8" width="8" height="12" rx="1.5" fill="white"/>
-    </svg>
+    <img
+        src="{% static 'images/Logo1s.png' %}"
+        alt="EnterGYM Logo"
+        class="brand-logo"
+        width="40"
+        height="40"
+    />
     <span class="logo-name">EnterGYM</span>
     <span class="logo-badge">SAAS</span>
   </div>
@@ -264,16 +297,15 @@ img{display:block;max-width:100%}
           <thead>
             <tr>
               <th>Gym</th>
-              <th>Code</th>
               <th>Owner</th>
               <th>Owner Phone</th>
-              <th>Owner Email</th>
               <th>Plan</th>
               <th>Status</th>
               <th>Members</th>
-              <th>Trainers</th>
               <th>Expiry Date</th>
               <th>Days Left</th>
+              <th>Payment Button</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="gymTableBody">
@@ -292,16 +324,10 @@ img{display:block;max-width:100%}
                 <span class="gym-name-cell">{{ gym.gym_name }}</span>
               </div>
             </td>
-            <td><span class="gym-code">{{ gym.gym_code }}</span></td>
             <td>{{ gym.owner.get_full_name|default:gym.owner.username }}</td>
             <td>
               <div class="contact-cell">
                 <span class="phone">{{ gym.contact_phone|default:gym.whatsapp_number|default:"—" }}</span>
-              </div>
-            </td>
-            <td>
-              <div class="contact-cell">
-                <span class="email">{{ gym.contact_email|default:gym.owner.email|default:"—" }}</span>
               </div>
             </td>
             <td style="color:var(--text-muted)">{{ gym.plan.name|default:"—" }}</td>
@@ -312,7 +338,6 @@ img{display:block;max-width:100%}
               {% else %}<span class="badge inactive">Inactive</span>{% endif %}
             </td>
             <td>{{ gym.member_count|default:0 }} / {{ gym.member_limit }}</td>
-            <td>{{ gym.trainer_count|default:0 }} / {{ gym.trainer_limit }}</td>
             <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem">{{ gym.subscription_end|default:"—" }}</td>
             <td>
               {% if days != None %}
@@ -321,10 +346,32 @@ img{display:block;max-width:100%}
                 </span>
               {% else %}<span class="text-muted">—</span>{% endif %}
             </td>
+            <td>
+              {% if gym.show_subscription_payment %}
+                <span class="badge payment-visible">Visible</span>
+              {% else %}
+                <span class="badge payment-hidden">Hidden</span>
+              {% endif %}
+            </td>
+            <td class="payment-actions-cell">
+              {% if gym.show_subscription_payment %}
+                <button type="button" class="btn-sm primary payment-confirm-btn" data-gym-id="{{ gym.id }}">
+                  Confirm Payment
+                </button>
+                <button type="button" class="btn-sm payment-disable-btn" data-gym-id="{{ gym.id }}">
+                  Disable Payment
+                </button>
+              {% else %}
+                <button type="button" class="btn-sm primary payment-enable-btn" data-gym-id="{{ gym.id }}">
+                  Enable Payment
+                </button>
+              {% endif %}
+            </td>
           </tr>
+          
           {% endwith %}
           {% empty %}
-          <tr><td colspan="11"><div class="empty-state">No gyms registered yet. Click "Add New Gym" to create one.</div></td></tr>
+          <tr><td colspan="10"><div class="empty-state">No gyms registered yet. Click "Add New Gym" to create one.</div></td></tr>
           {% endfor %}
           </tbody>
         </table>
@@ -463,7 +510,47 @@ img{display:block;max-width:100%}
     return m ? m.pop() : '';
   }
   const csrftoken = getCookie('csrftoken');
+  // ── Manual Subscription Payment (Super Admin) — CSP-safe, no inline onclick ──
+  function toggleSubscriptionPayment(gymId, action) {
+    // action: 'enable' | 'disable'
+    fetch(`/gyms/${gymId}/payment/${action}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken },
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) location.reload();
+        else alert('Something went wrong. Please try again.');
+      });
+  }
 
+  function confirmSubscriptionPayment(gymId) {
+    if (!confirm('Confirm you have verified this payment in your bank account? '
+      + 'This will extend the subscription by 30 days from today.')) return;
+
+    fetch(`/gyms/${gymId}/payment/confirm/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken },
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) location.reload();
+        else alert('Something went wrong. Please try again.');
+      });
+  }
+  document.querySelectorAll('.payment-actions-cell').forEach(cell => {
+    cell.addEventListener('click', e => e.stopPropagation());
+  });
+
+  document.querySelectorAll('.payment-enable-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleSubscriptionPayment(btn.dataset.gymId, 'enable'));
+  });
+  document.querySelectorAll('.payment-disable-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleSubscriptionPayment(btn.dataset.gymId, 'disable'));
+  });
+  document.querySelectorAll('.payment-confirm-btn').forEach(btn => {
+    btn.addEventListener('click', () => confirmSubscriptionPayment(btn.dataset.gymId));
+  });
   function openGdm(gymId) {
     currentGymId = gymId;
     fetch(`/gyms/${gymId}/detail/`)

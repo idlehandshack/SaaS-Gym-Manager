@@ -15,16 +15,14 @@ from django.core.exceptions import PermissionDenied
 # Base admin mixin — scopes every changelist to request.gym
 # ──────────────────────────────────────────────────────────────────────────────
 class GymScopedAdmin(admin.ModelAdmin):
-    """
-    Base class for all AuthFit model admins.
-    - Superuser sees everything (cross-gym).
-    - Gym owner / staff sees and can only touch their own gym's data.
-    """
- 
+    list_per_page = 50
+    show_full_result_count = False
+    show_facets = admin.ShowFacets.NEVER
+
     def get_gym(self, request):
         """Returns request.gym — None for superusers (sees all)."""
         return getattr(request, 'gym', None)
- 
+
     # ── 1. Scope the changelist ───────────────────────────────────────────
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -32,21 +30,21 @@ class GymScopedAdmin(admin.ModelAdmin):
         if gym is None:
             return qs                        # superuser — all gyms
         return qs.filter(gym=gym)
- 
+
     # ── 2. Hide gym field for non-superusers ──────────────────────────────
     def get_fields(self, request, obj=None):
         fields = list(super().get_fields(request, obj))
         if not request.user.is_superuser and 'gym' in fields:
             fields.remove('gym')
         return fields
- 
+
     def get_readonly_fields(self, request, obj=None):
         readonly = list(super().get_readonly_fields(request, obj))
         # Superuser can see gym as readonly so they know which tenant owns the record
         if request.user.is_superuser and 'gym' not in readonly:
             readonly.append('gym')
         return readonly
- 
+
     # ── 3. Auto-assign gym on save ────────────────────────────────────────
     def save_model(self, request, obj, form, change):
         gym = self.get_gym(request)
@@ -59,7 +57,7 @@ class GymScopedAdmin(admin.ModelAdmin):
                 "You cannot modify records belonging to another gym."
             )
         super().save_model(request, obj, form, change)
- 
+
     # ── 4. Prevent delete of other gym's objects ──────────────────────────
     def has_change_permission(self, request, obj=None):
         if obj is None:
@@ -68,7 +66,7 @@ class GymScopedAdmin(admin.ModelAdmin):
         if gym and obj.gym_id != gym.pk:
             return False
         return True
- 
+
     def has_delete_permission(self, request, obj=None):
         if obj is None:
             return True
@@ -76,7 +74,7 @@ class GymScopedAdmin(admin.ModelAdmin):
         if gym and obj.gym_id != gym.pk:
             return False
         return True
- 
+
     # ── 5. Scope FK dropdowns to current gym ─────────────────────────────
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         gym = self.get_gym(request)
@@ -86,9 +84,15 @@ class GymScopedAdmin(admin.ModelAdmin):
                 from Gym.models import Gym
                 kwargs['queryset'] = Gym.objects.filter(pk=gym.pk)
             elif db_field.name == 'selectPlan' or db_field.name == 'plan':
-                kwargs['queryset'] = MembershipPlan.objects.filter(gym=gym)
+                # .only() trims the columns pulled for the dropdown widget —
+                # same filtered queryset as before, just lighter per row.
+                kwargs['queryset'] = MembershipPlan.objects.filter(
+                    gym=gym
+                ).only('id', 'plan', 'price')
             elif db_field.name == 'trainer':
-                kwargs['queryset'] = Trainer.objects.filter(gym=gym)
+                kwargs['queryset'] = Trainer.objects.filter(
+                    gym=gym
+                ).only('id', 'name')
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -117,24 +121,44 @@ def _get_gym_or_403(request):
 class UserDeviceAdmin(GymScopedAdmin):
     list_display  = ['user', 'device_name', 'active', 'last_seen']
     list_filter   = ['active']
-    search_fields = ['user__username', 'device_name']
+    # user__username: '^' = prefix search (index-usable), not icontains —
+    # usernames are looked up, not free-text searched.
+    search_fields = ['^user__username']
     ordering      = ['-last_seen']
     readonly_fields = ['last_seen', 'fcm_token']
- 
+    date_hierarchy = 'last_seen'
+    autocomplete_fields = ['user']
+    # Resolves 'user' FK in list_display in the same query instead of N+1.
+    list_select_related = ('user',)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            # 'gym' column only rendered for superusers (see get_list_display
+            # below) — only join it for them.
+            qs = qs.select_related('gym')
+        return qs
+
     def get_list_display(self, request):
         cols = list(self.list_display)
         if request.user.is_superuser and 'gym' not in cols:
             cols.insert(0, 'gym')
         return cols
 
+
 @admin.register(GymNotification)
 class GymNotificationAdmin(GymScopedAdmin):
-    list_display  = ['icon', 'message', 'is_active', 'order', 'created_at']
+    list_display  = ['icon', 'message', 'is_active', 'order']
     list_filter   = ['is_active']
     list_editable = ['is_active', 'order']
-    search_fields = ['message']
     ordering      = ['order', 'created_at']
- 
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            qs = qs.select_related('gym')
+        return qs
+
     # Superuser also sees which gym each notification belongs to
     def get_list_display(self, request):
         cols = list(self.list_display)
@@ -146,22 +170,39 @@ class GymNotificationAdmin(GymScopedAdmin):
 @admin.register(Contact)
 class ContactAdmin(GymScopedAdmin):
     list_display  = ['name', 'phonenumber', 'email', 'timestamp']
-    search_fields = ['name', 'phonenumber', 'email']
+    # name: partial/free-text (people search "Sharma", not full names)
+    # phonenumber: '=' exact — always looked up as a whole number, never substring
+    # email: '^' prefix — partial local-part/domain lookups are common
+    search_fields = ['name', '=phonenumber', '^email']
     ordering      = ['-timestamp']
     readonly_fields = ['timestamp']
- 
+    date_hierarchy = 'timestamp'
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            qs = qs.select_related('gym')
+        return qs
+
     def get_list_display(self, request):
         cols = list(self.list_display)
         if request.user.is_superuser and 'gym' not in cols:
             cols.insert(0, 'gym')
         return cols
 
+
 @admin.register(Trainer)
 class TrainerAdmin(GymScopedAdmin):
     list_display  = ['name', 'gender', 'phone', 'salary']
-    search_fields = ['name', 'phone']
+    list_filter = ['gender']
     ordering      = ['name']
- 
+    search_fields = ['name', '=phone']
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            qs = qs.select_related('gym')
+        return qs
+
     def get_list_display(self, request):
         cols = list(self.list_display)
         if request.user.is_superuser and 'gym' not in cols:
@@ -173,10 +214,29 @@ class TrainerAdmin(GymScopedAdmin):
 class AttendenceAdmin(GymScopedAdmin):
     list_display  = ['user', 'date', 'timestamp']
     list_filter   = ['date']
-    search_fields = ['user__username']
+    # '^' prefix — usernames are looked up, not free-text searched
+    search_fields = ['^user__username']
     ordering      = ['-date', '-timestamp']
     readonly_fields = ['date', 'timestamp']
- 
+    date_hierarchy = 'date'
+    autocomplete_fields = ['user']
+    # Resolves 'user' FK in list_display in the same query instead of N+1.
+    list_select_related = ('user',)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            qs = qs.select_related('gym')
+        # NOTE: if member_id / member_name / pending_amount / remaining_day
+        # are ever added to list_display, uncomment the line below.
+        # As written, `obj.user.enrollment` in _enrollment() does not match
+        # the real reverse accessor for a plain (non-OneToOne) ForeignKey —
+        # that accessor is `enrollment_set`, not `enrollment` — so today
+        # these four methods always fall into the except-branch and return
+        # '—'. Flagging only; not changed, per "no business logic changes."
+        # qs = qs.prefetch_related('user__enrollment_set')
+        return qs
+
     def get_list_display(self, request):
         cols = list(self.list_display)
         if request.user.is_superuser and 'gym' not in cols:
@@ -218,14 +278,24 @@ class EnrollmentAdmin(GymScopedAdmin):
         'paymentStatus', 'DueDate', 'is_expired',
     ]
     list_filter   = ['paymentStatus', 'gender']
-    search_fields = ['unique_id', 'fullname', 'phone']
+    search_fields = ['=unique_id', 'fullname', '=phone']
     readonly_fields = ['unique_id', 'doj', 'created_at']
     ordering      = ['-created_at']
- 
+    date_hierarchy = 'DueDate'
+    list_select_related = ('selectPlan', 'trainer')
+    autocomplete_fields = ['user']
+
     @admin.display(boolean=True, description='Expired')
     def is_expired(self, obj):
         return obj.is_expired
- 
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        qs = qs.select_related('selectPlan')
+        if request.user.is_superuser:
+            qs = qs.select_related('gym')
+        return qs
+
     def get_list_display(self, request):
         cols = list(self.list_display)
         if request.user.is_superuser and 'gym' not in cols:

@@ -12,13 +12,12 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 import json as json_lib
-from .models import PlatformSubscriptionPayment
 from .forms import UPISettingsForm, GymCreateForm, StaffProfileCreateForm, GymGSTProfileForm
-from .models import Gym, SubscriptionPlan, StaffProfile, GymGSTProfile
+from .models import Gym, SubscriptionPlan, StaffProfile ,PlatformSettings ,PlatformSubscriptionPayment
 from AuthFit.views import _gym_role_required
 from .services import platform_insights as pi
 import calendar
-
+from urllib.parse import quote
 @_gym_role_required('gym_owner')
 def upi_payment_settings(request):
     gym = getattr(request, 'gym', None)
@@ -683,3 +682,97 @@ def change_gym_plan(request, gym_id):
 
     gym.save()
     return JsonResponse({"success": True})
+
+@superuser_required
+@require_POST
+def enable_subscription_payment(request, gym_id):
+    """
+    Turns ON the 'Pay Subscription' button for exactly this gym's
+    Owner/Receptionist. Does not touch any other gym's state.
+    """
+    gym = get_object_or_404(Gym, pk=gym_id)
+    gym.show_subscription_payment = True
+    gym.save(update_fields=["show_subscription_payment", "updated_at"])
+    messages.success(request, f"Payment button enabled for '{gym.gym_name}'.")
+    return JsonResponse({"success": True, "show_subscription_payment": True})
+
+
+@superuser_required
+@require_POST
+def disable_subscription_payment(request, gym_id):
+    """
+    Turns OFF the 'Pay Subscription' button for this gym without changing
+    anything else (no subscription dates touched).
+    """
+    gym = get_object_or_404(Gym, pk=gym_id)
+    gym.show_subscription_payment = False
+    gym.save(update_fields=["show_subscription_payment", "updated_at"])
+    messages.success(request, f"Payment button disabled for '{gym.gym_name}'.")
+    return JsonResponse({"success": True, "show_subscription_payment": False})
+
+
+@superuser_required
+@require_POST
+def confirm_subscription_payment(request, gym_id):
+    """
+    Called by Super Admin AFTER manually confirming the bank credit.
+    - Extends the subscription by 30 days from today
+    - Re-activates the gym
+    - Hides the payment button again (cycle resets)
+    """
+    gym = get_object_or_404(Gym, pk=gym_id)
+    today = timezone.now().date()
+
+    gym.subscription_start = today
+    gym.subscription_end = today + timedelta(days=30)
+    gym.show_subscription_payment = False
+    gym.active = True
+    gym.save(update_fields=[
+        "subscription_start", "subscription_end",
+        "show_subscription_payment", "active", "updated_at",
+    ])
+
+    messages.success(
+        request,
+        f"Payment confirmed for '{gym.gym_name}'. Subscription extended to "
+        f"{gym.subscription_end.strftime('%d %b %Y')}."
+    )
+    return JsonResponse({
+        "success": True,
+        "subscription_end": gym.subscription_end.isoformat(),
+        "show_subscription_payment": False,
+        "active": True,
+    })
+
+
+@login_required
+def gym_payment_page(request):
+    gym = getattr(request, 'gym', None)
+    if gym is None:
+        raise PermissionDenied("No gym context available.")
+
+    if request.staff_role not in ('gym_owner', 'receptionist'):
+        raise PermissionDenied("You do not have permission to view this page.")
+
+    if not gym.show_subscription_payment:
+        raise PermissionDenied("Subscription payment is not currently enabled for your gym.")
+
+    platform = PlatformSettings.load()
+
+    upi_link = None
+    if platform.upi_id:
+        note = f"EnterGYM Subscription - {gym.gym_name}"
+        upi_link = (
+            "upi://pay?"
+            f"pa={quote(platform.upi_id)}"
+            f"&pn={quote(platform.upi_display_name or 'Arrow SoftTech')}"
+            f"&tn={quote(note)}"
+            "&cu=INR"
+        )
+
+    return render(request, "gym_payment_page.html", {
+        "gym": gym,
+        "upi_link": upi_link,
+        "platform_upi_id": platform.upi_id,
+        "platform_upi_name": platform.upi_display_name or "Arrow SoftTech",
+    })

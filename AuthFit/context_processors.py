@@ -221,3 +221,16 @@ def gym_branding(request):
         "app_name": b["app_name"],
         "app_short_name": b["app_short_name"],
     }
+
+def gym_theme(request):
+    """
+    Exposes the selected UI theme for the current tenant as `gym_theme`.
+
+    Performance: reads from `request.gym`, which GymMiddleware has already
+    resolved (and which itself is expected to be cached/memoized per-request
+    by that middleware). No additional DB query happens here — we only touch
+    an attribute already in memory.
+    """
+    gym = getattr(request, 'gym', None)
+    theme = getattr(gym, 'theme', None) or 'default'
+    return {'gym_theme': theme}

@@ -107,6 +107,7 @@ TEMPLATES = [
                 'notifications.context_processors.vapid_key',
                 'AuthFit.context_processors.gym_context',
                 'AuthFit.context_processors.gym_branding',
+                'AuthFit.context_processors.gym_theme',
             ],
         },
     }
@@ -197,7 +198,8 @@ if DEBUG:
 else:
     SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SESSION_CACHE_ALIAS = 'default'
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 30
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 90
+SESSION_SAVE_EVERY_REQUEST = True
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  
 SESSION_COOKIE_HTTPONLY = True

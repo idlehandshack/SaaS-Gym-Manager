@@ -44,7 +44,15 @@
     <meta property="og:type" content="website" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="{% static 'css/home.css' %}" />
+    {% if gym_theme == 'blue' %}
+    <link rel="stylesheet" href="{% static 'css/home_blue.css' %}">
+    {% elif gym_theme == 'pink' %}
+      <link rel="stylesheet" href="{% static 'css/home_pink.css' %}">
+    {% elif gym_theme == 'green' %}
+      <link rel="stylesheet" href="{% static 'css/home_green.css' %}">
+    {% else %}
+      <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    {% endif %}
   </head>
   <body>
     <!-- ===================== NOTIFICATION BAR ===================== -->
@@ -170,6 +178,11 @@
                   <li><a href="/manage/orders/">Order Management</a></li>
                   {% endif %}
                   <li><a href="#" class="owner-notif-btn">Enable Notifications</a></li>
+                  {% if gym.show_subscription_payment %}
+                    {% if request.staff_role == "gym_owner" or request.staff_role == "receptionist" %}
+                    <li><a href="{% url 'gym_payment_page' %}" style="color:#ff7a00;font-weight:700;">Pay Subscription</a></li>
+                    {% endif %}
+                  {% endif %}
                 </ul>
               </li>
 
@@ -177,10 +190,14 @@
               <li><a href="/">Home</a></li>
               {% if not enrolled %}
               <li><a href="#Price">Free Trial</a></li>
+              <li><a href="/enrollment/">Join Now</a></li>
+              {% else %}
+              <li><a href="/attendence/">Attendance</a></li>
               {% endif %}
               <li><a href="#About">About</a></li>
               <li><a href="/contact/">Contact</a></li>
               <li><a href="/workout/">Workout</a></li>
+              
               {% if enrolled and gym.enable_store %}
               <li><a href="/products/">Supplements</a></li>
               {% endif %}
@@ -352,6 +369,13 @@
         <li class="nav-solo">
             <a href="#" class="owner-notif-btn">Enable Notifications</a>
         </li>
+        {% if gym.show_subscription_payment %}
+          {% if request.staff_role == "gym_owner" or request.staff_role == "receptionist" %}
+        <li class="nav-solo">
+            <a href="{% url 'gym_payment_page' %}" style="color:#ff7a00;">Pay Subscription <span>↗</span></a>
+        </li>
+            {% endif %}
+        {% endif %}
 
         {% else %}
         <li class="active"><a href="/">Home <span>↗</span></a></li>
@@ -599,10 +623,18 @@
       <picture>
           <source
               media="(max-width:768px)"
-              srcset="{% static 'images/Registration_mobile.webp' %}">
-
+              {% if gym_theme == 'pink' %}
+              srcset="{% static 'images/female-mobile.webp' %}"
+              {% else %}
+              srcset="{% static 'images/Registration_mobile.webp' %}"
+              {% endif %}>
+              
           <img
+              {% if gym_theme == 'pink' %}
+              src="{% static 'images/female-desktop.webp' %}"
+              {% else %}
               src="{% static 'images/Registration_desktop.webp' %}"
+              {% endif %}
               class="cta-bg"
               width="1920"
               height="1080"

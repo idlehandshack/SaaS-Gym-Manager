@@ -121,7 +121,29 @@ class Gym(models.Model):
         default="Membership Payment",
         help_text="Transaction note (tn) attached to the UPI deep link."
     )
-
+    THEME_CHOICES = [
+        ('default', 'Default'),
+        ('blue',    'Blue'),
+        ('black',   'Black'),
+        ('pink',    'Pink'),
+        ('green',   'Green'),
+        ('red',     'Red'),
+    ]
+    theme = models.CharField(
+        max_length=20,
+        choices=THEME_CHOICES,
+        default='default',
+        help_text="Predefined UI color palette for this gym's dashboard/site."
+    )
+    show_subscription_payment = models.BooleanField(
+        default=False,
+        help_text=(
+            "When True, this gym's Owner/Receptionist see the 'Pay Subscription' "
+            "button on their dashboard. Toggled only by the Super Admin from "
+            "the All Gyms page. Has nothing to do with the existing payment "
+            "gateway/upload system — this is purely a manual-payment flag."
+        ),
+    )
     # ── Helpers ───────────────────────────────────────────────────────────
     @property
     def is_subscription_active(self):
@@ -264,3 +286,33 @@ class PlatformSubscriptionPayment(models.Model):
 
     def __str__(self):
         return f"{self.gym.gym_name} — ₹{self.amount} on {self.paid_on}"
+    
+class PlatformSettings(models.Model):
+    upi_id = models.CharField(
+        max_length=100, blank=True,
+        help_text="Your (Arrow SoftTech's) UPI ID for receiving gym subscription payments, e.g. yourname@oksbi"
+    )
+    upi_display_name = models.CharField(
+        max_length=120, blank=True,
+        help_text="Name shown in the gym owner's UPI app during payment, e.g. 'Arrow SoftTech'"
+    )
+
+    class Meta:
+        verbose_name = "Platform Settings"
+        verbose_name_plural = "Platform Settings"
+
+    def __str__(self):
+        return "Platform Settings"
+
+    def save(self, *args, **kwargs):
+        # Enforce singleton — always overwrite row with pk=1, never allow a second row.
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        pass  # prevent accidental deletion of the only settings row
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

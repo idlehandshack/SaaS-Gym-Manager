@@ -3,9 +3,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from cloudinary.utils import cloudinary_url
-from .models import Gym, SubscriptionPlan, StaffProfile , GymGSTProfile
-from .models import PlatformSubscriptionPayment
-
+from .models import Gym, SubscriptionPlan, StaffProfile , GymGSTProfile ,PlatformSubscriptionPayment ,PlatformSettings
 # ──────────────────────────────────────────────────────────────────────────────
 # SubscriptionPlan
 # ──────────────────────────────────────────────────────────────────────────────
@@ -25,9 +23,9 @@ class PlatformSubscriptionPaymentAdmin(admin.ModelAdmin):
 # ──────────────────────────────────────────────────────────────────────────────
 @admin.register(Gym)
 class GymAdmin(admin.ModelAdmin):
-    list_display    = ('gym_name', 'gym_code', 'logo_preview', 'favicon_preview', 'active', 'plan','enable_store', 'enable_attendance', 'enable_trainers', 'upi_enabled')
+    list_display    = ('gym_name', 'gym_code', 'logo_preview', 'favicon_preview', 'active', 'plan', 'theme','enable_store', 'enable_attendance', 'enable_trainers', 'upi_enabled')
     list_editable   = ('enable_store', 'enable_attendance', 'enable_trainers')
-    list_filter     = ['active', 'plan']
+    list_filter     = ['active', 'plan', 'theme']
     search_fields   = ['gym_name', 'gym_code', 'owner__username']
     readonly_fields = ['id', 'logo_preview_large', 'favicon_preview_large',
                     'splash_logo_preview_large', 'days_until_expiry',
@@ -39,7 +37,7 @@ class GymAdmin(admin.ModelAdmin):
             'fields': ('id', 'gym_name', 'gym_code', 'owner'),
         }),
         ('Subscription', {
-            'fields': ('plan', 'active', 'subscription_start', 'subscription_end',
+            'fields': ('plan', 'active', 'subscription_start', 'subscription_end','show_subscription_payment',
                        'days_until_expiry', 'member_limit', 'trainer_limit'),
         }),
         ('Module Flags', {
@@ -60,6 +58,7 @@ class GymAdmin(admin.ModelAdmin):
                     'favicon', 'favicon_preview_large',
                     'splash_logo', 'splash_logo_preview_large',
                     'theme_color',
+                    'theme', 
                     'contact_email', 'contact_phone',
                     'whatsapp_number', 'address', 'city', 'website',
                     'app_download_url'),
@@ -245,3 +244,14 @@ class GymGSTProfileAdmin(admin.ModelAdmin):
             'fields': ('signature_image',)
         }),
     )
+
+@admin.register(PlatformSettings)
+class PlatformSettingsAdmin(admin.ModelAdmin):
+    list_display = ('upi_id', 'upi_display_name')
+
+    def has_add_permission(self, request):
+        # Block "Add" if a row already exists — keeps it a true singleton in the UI too.
+        return not PlatformSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
