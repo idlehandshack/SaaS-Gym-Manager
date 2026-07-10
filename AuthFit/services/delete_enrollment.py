@@ -4,7 +4,7 @@ from django.core.cache import cache
 from django.utils import timezone
 import cloudinary.uploader
 
-from AuthFit.models import Enrollment, Attendence, EnrollmentDeletionLog
+from AuthFit.models import  Attendence, EnrollmentDeletionLog
 
 logger = logging.getLogger(__name__)
 

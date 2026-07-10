@@ -2114,8 +2114,6 @@ def _build_delete_enrollment_page(request, gym):
     elif del_status == "pending_signup":
         base_qs = base_qs.filter(user__isnull=True)
     elif del_status == "duplicate":
-        # Computed below — pull the full candidate list then filter in Python
-        # since duplicate detection needs a phone-frequency aggregate.
         dup_phones = (
             Enrollment.objects
             .filter(gym=gym, is_deleted=False)
@@ -2268,6 +2266,8 @@ def delete_enrollment_view(request, enrollment_id):
         }, status=500)
 
     return JsonResponse({"success": True, "message": msg})
+
+
 @_gym_staff_required
 @require_POST
 def freeze_membership_apply(request):
