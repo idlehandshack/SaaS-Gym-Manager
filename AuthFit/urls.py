@@ -8,7 +8,7 @@ from Gym.views import (
     add_staff_profile, gym_detail_json, add_gym_page, search_owner_by_phone,
     subscriptions_page, add_subscription_plan, edit_subscription_plan,
     delete_subscription_plan, change_gym_plan, platform_insights_page,
-    api_system_health,api_dashboard, api_notifications,record_platform_payment,enable_subscription_payment , disable_subscription_payment ,confirm_subscription_payment,gym_payment_page
+    api_system_health,api_dashboard, api_notifications,record_platform_payment,enable_subscription_payment , disable_subscription_payment ,confirm_subscription_payment,gym_payment_page,api_public_live_stats
 )
 
 from django.contrib.sitemaps.views import sitemap
@@ -117,4 +117,5 @@ urlpatterns = [
     path("gyms/<uuid:gym_id>/payment/disable/",disable_subscription_payment, name="disable_subscription_payment"),
     path("gyms/<uuid:gym_id>/payment/confirm/",confirm_subscription_payment, name="confirm_subscription_payment"),
     path("pay-subscription/", gym_payment_page, name="gym_payment_page"),
+    path("api/public/live-stats/", api_public_live_stats, name="public_live_stats"),
 ]

@@ -18,6 +18,7 @@ from AuthFit.views import _gym_role_required
 from .services import platform_insights as pi
 import calendar
 from urllib.parse import quote
+from .services import live_stats as ls
 @_gym_role_required('gym_owner')
 def upi_payment_settings(request):
     gym = getattr(request, 'gym', None)
@@ -776,3 +777,6 @@ def gym_payment_page(request):
         "platform_upi_id": platform.upi_id,
         "platform_upi_name": platform.upi_display_name or "Arrow SoftTech",
     })
+
+def api_public_live_stats(request):
+    return JsonResponse(ls.get_live_stats())

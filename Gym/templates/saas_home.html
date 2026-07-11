@@ -206,22 +206,22 @@
                 preload="auto"
                 aria-hidden="true">
                 <source src="{% static 'images/earth.mp4' %}" type="video/mp4">
-            </video>
+              </video>
               <div class="g-stats" aria-label="Live statistics">
                 <div class="g-stat">
-                  <span class="g-stat-val" id="statCI">247</span>
-                  <span class="g-stat-lbl">check-ins</span>
+                  <span class="g-stat-val" id="statMembers">—</span>
+                  <span class="g-stat-lbl">members</span>
                 </div>
                 <div class="g-stat">
-                  <span class="g-stat-val" style="color:#10b981" id="statGyms">34</span>
+                  <span class="g-stat-val" style="color:#10b981" id="statGyms">—</span>
                   <span class="g-stat-lbl">gyms live</span>
                 </div>
                 <div class="g-stat">
-                  <span class="g-stat-val" style="color:#8b8fff">₹2.4L</span>
-                  <span class="g-stat-lbl">MTD rev</span>
+                  <span class="g-stat-val" style="color:#8b8fff" id="statRevenue">—</span>
+                  <span class="g-stat-lbl">gym's revenue</span>
                 </div>
                 <div class="g-stat">
-                  <span class="g-stat-val" style="color:#f59e0b">99.9%</span>
+                  <span class="g-stat-val" style="color:#f59e0b" id="statUptime">—</span>
                   <span class="g-stat-lbl">uptime</span>
                 </div>
               </div>
@@ -2499,7 +2499,7 @@
         </div>
       </div>
     </footer>
-
+    <script src="{% static 'js/live_stats.js' %}" defer></script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
