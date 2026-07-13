@@ -7,20 +7,9 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from AuthFit.models import Enrollment, MembershipPlan, Trainer
 from django.db import transaction
-
+from django.utils import timezone
 
 class UserLogin(UserCreationForm):
-    """
-    Signup form for gym members.
-    Phone number is used as the Django username.
-
-    Multi-tenancy:
-        Same phone allowed across gyms (one Django User, multiple Enrollments).
-        Duplicate blocked only if user is already enrolled at THIS gym.
-
-    Usage:
-        form = UserLogin(request.POST, gym=request.gym)
-    """
 
     username = forms.CharField(
         label="Phone Number",
@@ -112,32 +101,38 @@ class QuickEnrollmentForm(forms.Form):
     payment_method = forms.ChoiceField(choices=Enrollment.METHOD, required=False)
     payment_date = forms.DateField(required=False)
 
+    # NEW — lets the owner backdate old members' plan start.
+    membership_start_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        help_text="Choose the actual date when the member's plan started. "
+                   "Leave today's date for new members.",
+    )
+
     def __init__(self, *args, gym=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.gym = gym
         self.fields['plan'].queryset = MembershipPlan.objects.filter(gym=gym)
         self.fields['trainer'].queryset = Trainer.objects.filter(gym=gym)
+        self.fields['membership_start_date'].initial = timezone.localdate()
         self._matched_user = None
+
+    def clean_membership_start_date(self):
+        # Empty input → default to today, per spec.
+        return self.cleaned_data.get('membership_start_date') or timezone.localdate()
 
     def clean(self):
         cleaned = super().clean()
         phone = cleaned.get('phone')
         if phone and self.gym:
-            # Req 9 — is there already a Django User with this phone number?
-            # (Assumes username == phone, matching loginPage()'s auth call.
-            #  Swap this lookup if your User model stores phone elsewhere.)
             self._matched_user = User.objects.filter(username=phone).first()
 
             if self._matched_user:
-                # Req 8 — block staff from creating a second enrollment
-                # for someone already enrolled at this gym.
                 if Enrollment.objects.filter(gym=self.gym, user=self._matched_user).exists():
                     raise forms.ValidationError(
                         "This phone number belongs to a member already enrolled at this gym."
                     )
             else:
-                # Only pending (unlinked) rows need the uniqueness check here —
-                # this mirrors the DB-level UniqueConstraint on (gym, phone) WHERE user IS NULL.
                 if Enrollment.objects.filter(gym=self.gym, phone=phone, user__isnull=True).exists():
                     raise forms.ValidationError(
                         "A pending enrollment already exists for this phone number."
@@ -156,19 +151,20 @@ class QuickEnrollmentForm(forms.Form):
             phone=self.cleaned_data['phone'],
             selectPlan=plan,
             trainer=self.cleaned_data.get('trainer'),
-            user=matched_user,                              # Req 9: attach immediately if found
+            user=matched_user,
             source="MEMBER" if matched_user else "OWNER",
             profile_completed=False,
             paidAmount=paid,
             paymentMethod=self.cleaned_data.get('payment_method') or None,
             paymentDate=self.cleaned_data.get('payment_date'),
             paymentStatus="Done" if paid >= plan.price else "Pending",
+            # NEW — feeds Enrollment.save()'s DueDate calculation.
+            membership_start_date=self.cleaned_data['membership_start_date'],
         )
         if matched_user and matched_user.email:
-            # Req 3 — backfill email from the existing account, never overwrite staff input
             enrollment.email = matched_user.email
 
-        enrollment.save()   # Req 10: Amount / pendingAmount / DueDate / unique_id all computed in Enrollment.save() — untouched
+        enrollment.save()   # Amount / pendingAmount / DueDate / unique_id computed here, from membership_start_date
         return enrollment
 
 

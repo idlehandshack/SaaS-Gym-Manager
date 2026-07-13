@@ -43,7 +43,7 @@ class Trainer(models.Model):
     gender = models.CharField(
         max_length=1, choices=GENDER_CHOICES, default='M')
     address = models.TextField()
-    phone = models.CharField(max_length=10)
+    phone = models.CharField(max_length=10) 
     salary = models.IntegerField()
     objects = GymManager()
     def __str__(self):
@@ -78,7 +78,12 @@ class Enrollment(models.Model):
     ]
 
     unique_id = models.CharField(max_length=10, editable=False, db_index=True)
-
+    membership_start_date = models.DateField(
+        default=timezone.localdate,
+        help_text="Actual membership start date. Used to calculate DueDate — "
+                "lets owners backdate enrollment for members who joined "
+                "before EnterGYM. Distinct from `doj` (record-creation date).",
+    )
     # CHANGED: nullable — a Quick Enrollment can exist before signup
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, null=True, blank=True
@@ -173,7 +178,7 @@ class Enrollment(models.Model):
     # ==============================
     def save(self, *args, **kwargs):
 
-        # Generate unique ID
+    # Generate unique ID
         if not self.unique_id:
             self.unique_id = self.generate_unique_id()
 
@@ -182,8 +187,13 @@ class Enrollment(models.Model):
             self.Amount = self.selectPlan.price
 
             if not self.DueDate and self.selectPlan.duration_days:
-                today = timezone.now().date()
-                self.DueDate = today + timedelta(days=self.selectPlan.duration_days)
+                # Use membership_start_date (defaults to today) instead of
+                # always anchoring to "today" — this lets Quick Enrollment
+                # backdate old members correctly. If DueDate was already set
+                # manually (e.g. renew_membership, change_membership_plan),
+                # we never touch it here.
+                start_date = self.membership_start_date or timezone.now().date()
+                self.DueDate = start_date + timedelta(days=self.selectPlan.duration_days)
             self.pendingAmount = self.selectPlan.price - self.paidAmount
 
         super().save(*args, **kwargs)

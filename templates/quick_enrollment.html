@@ -12,14 +12,6 @@
     <link rel="icon" href="{% static 'images/favicon.ico' %}">
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
   {% endif %}
-
-  <link rel="manifest" href="{% static 'js/manifest.json' %}" />
-  <meta name="theme-color" content="#080808" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta name="apple-mobile-web-app-title" content="EnterGYM" />
-
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -504,6 +496,30 @@
             {% endfor %}
           </div>
           <input type="hidden" name="trainer" id="trainerInput" />
+        </div>
+        <!-- ── Membership Start Date (NEW — backdated enrollment support) ── -->
+        <div style="margin-top: 12px;">
+          <label for="membershipStartDateInput" style="
+            display:block; font-family: var(--font-d); font-size:.72rem; font-weight:700;
+            letter-spacing:.1em; text-transform:uppercase; color: var(--text-mid); margin-bottom:8px;">
+            Membership Start Date
+          </label>
+          <input
+            class="field"
+            type="date"
+            name="membership_start_date"
+            id="membershipStartDateInput"
+            value="{{ form.membership_start_date.value|default:today_iso }}"
+          />
+          <small style="display:block; margin-top:6px; font-size:12.5px; color: var(--text-mid);">
+            Choose the actual date when the member's plan started. Leave today's date for new members.
+          </small>
+          {% if form.membership_start_date.errors %}
+          <div class="form-error" style="margin-top:8px; margin-bottom:0;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>{{ form.membership_start_date.errors.0 }}</span>
+          </div>
+          {% endif %}
         </div>
 
         <!-- ── Payment (Optional) ── -->

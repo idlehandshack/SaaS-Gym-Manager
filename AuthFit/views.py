@@ -1062,7 +1062,7 @@ def quick_enrollment(request):
         }
         for e in rows
     ]
-    return render(request, "quick_enrollment.html", {"form": form, "pending": pending, "gym": gym})
+    return render(request, "quick_enrollment.html", {"form": form, "pending": pending, "gym": gym,"today_iso": timezone.localdate().isoformat(),})
 
 
 # ──────────────────────────────────────────────────────────────────────────────
