@@ -10,10 +10,12 @@ from Gym.views import (
     delete_subscription_plan, change_gym_plan, platform_insights_page,
     api_system_health,api_dashboard, api_notifications,record_platform_payment,enable_subscription_payment , disable_subscription_payment ,confirm_subscription_payment,gym_payment_page,api_public_live_stats,plans_page
 )
-
+from AuthFit.views_expiry_reminder import (
+    SendExpiryReminderView,
+    SendExpiryReminderPageView,
+)
 from django.contrib.sitemaps.views import sitemap
 from django.contrib.sitemaps import Sitemap
-
 
 class StaticViewSitemap(Sitemap):
     changefreq = 'weekly'
@@ -93,6 +95,10 @@ urlpatterns = [
     path('aiattendance/', views.aiattendance, name='aiattendance'),
     path('owner/member/<int:enrollment_id>/change-plan/', views.change_membership_plan_view, name='change_membership_plan'),
     path("superadmin/gym/<uuid:gym_id>/record-payment/",record_platform_payment, name="record_platform_payment"),
+    path('api/send-expiry-reminders/', SendExpiryReminderView.as_view(), name='send-expiry-reminders'),
+    path('admin-tools/expiry-reminders/',SendExpiryReminderPageView.as_view(),
+    name='expiry-reminders-page',
+    ),
 
     # ── Background geo auto-mark ─────────────────────────
     path('api/attendance-status/', attendance_status),

@@ -141,6 +141,14 @@ class Gym(models.Model):
             "gateway/upload system — this is purely a manual-payment flag."
         ),
     )
+    last_expiry_reminder_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp of the last manual 'Send Expiry Reminder' click for this gym. "
+                   "Used to enforce a once-per-calendar-day limit. Compared against "
+                   "timezone.localdate() — not UTC date — so gyms see the limit reset at "
+                   "their local midnight from the server's perspective.",
+    )
     # ── Helpers ───────────────────────────────────────────────────────────
     @property
     def is_subscription_active(self):

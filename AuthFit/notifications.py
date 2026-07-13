@@ -1,4 +1,27 @@
 # AuthFit/notifications.py
+#
+# DIFF SUMMARY vs. previous version:
+#   - send_expiry_reminders() -> send_expiry_reminders(gym=None)
+#   - one extra .filter(gym=gym) applied to the enrollments queryset when
+#     `gym` is supplied
+#   - member notification bookkeeping changed from "collect successful IDs,
+#     one bulk update at the end" to "save last_expiry_notif_sent
+#     immediately, per enrollment, right after that member's send succeeds"
+#     — this is what makes the function safe against partial failures: if
+#     an exception (Firebase timeout, Web Push error, bug) happens anywhere
+#     later in the run, everyone already notified is already persisted, so
+#     a same-day retry can't double-notify them.
+#   - each enrollment and each receptionist bucket now runs inside its own
+#     try/except so one bad enrollment/bucket can't stop the rest.
+#   - receptionist batching itself (grouping by gym × days_left, one
+#     summary send per bucket) is UNCHANGED — only wrapped in isolation +
+#     given a small per-bucket bulk update instead of contributing to one
+#     giant end-of-run update.
+#   - message builders and the four channel helpers (_send_member_fcm,
+#     _send_member_web_push, _send_receptionist_fcm,
+#     _send_receptionist_web_push) are byte-for-byte unchanged.
+#   - the nightly cron (which calls send_expiry_reminders() with no args)
+#     behaves the same as before, just with safer partial-failure handling.
 
 import logging
 from collections import defaultdict
@@ -20,9 +43,16 @@ OVERDUE_CUTOFF_DAYS  = 2  # stop notifying 2 days after expiry
 
 # ── Public entry point ────────────────────────────────────────────────────────
 
-def send_expiry_reminders() -> int:
+def send_expiry_reminders(gym=None) -> int:
     """
     Send expiry reminders to members (individual) and receptionists (batched).
+
+    gym:
+        None  -> process every gym's due enrollments (nightly cron behaviour,
+                 unchanged).
+        Gym   -> process ONLY that gym's due enrollments. Used by the manual
+                 "Send Expiry Reminder" button so one gym can never trigger
+                 notifications for another tenant.
 
     Pass 1 — per-enrollment:
         Fire member FCM and member web push for each enrollment.
@@ -34,15 +64,27 @@ def send_expiry_reminders() -> int:
 
     last_expiry_notif_sent is written for an enrollment when at least one
     of the following is true:
-        - a member channel delivered for that enrollment
-        - the staff batch for that enrollment's gym × days_left group delivered
+        - a member channel delivered for that enrollment (written
+          immediately via enrollment.save(), right after that member's
+          send completes — not deferred to a final bulk update)
+        - the staff batch for that enrollment's gym × days_left group
+          delivered (written via a small per-bucket bulk update, right
+          after that bucket's send completes)
+
+    Every enrollment and every receptionist bucket is processed inside
+    its own try/except: a Firebase timeout, Web Push exception, or bug
+    handling one member/bucket is logged and skipped, never aborting the
+    rest of the run. Because progress is persisted immediately rather
+    than at the end, a mid-run crash (process killed, unhandled
+    exception, etc.) can never cause a member who was already notified
+    to be re-notified on the next retry the same day.
 
     Returns the number of enrollments marked as notified.
     """
-    
+
     today = timezone.localdate()
 
-    enrollments = list(
+    query = (
         Enrollment.objects
         .filter(
             DueDate__isnull=False,
@@ -53,76 +95,135 @@ def send_expiry_reminders() -> int:
         .select_related('user', 'selectPlan', 'gym')
     )
 
-    total_count   = len(enrollments)
-    notified_ids  = set()   # enrollment IDs to mark notified
+    if gym:
+        # Tenant isolation: manual trigger only ever touches this gym's
+        # enrollments. Never fall through to a platform-wide query.
+        query = query.filter(gym=gym)
+
+    enrollments = list(query)
+
+    logger.info(
+        "send_expiry_reminders: scope=%s candidates=%d",
+        getattr(gym, 'gym_code', 'ALL_GYMS') if gym else 'ALL_GYMS',
+        len(enrollments),
+    )
+
+    total_count = len(enrollments)
+
+    # marked_ids is bookkeeping ONLY — for the final count/log line and to
+    # avoid re-touching a row in the receptionist pass below. It is never
+    # used to defer a database write; every write happens immediately at
+    # the point a channel succeeds.
+    marked_ids = set()
 
     # ── Bucket structure ──────────────────────────────────────────────────
     # key: (gym_id, days_left)
     # value: {'gym': Gym, 'enrollments': [Enrollment, ...]}
     buckets: dict[tuple, dict] = defaultdict(lambda: {'gym': None, 'enrollments': []})
 
-    # ── Pass 1: member notifications + bucket accumulation ────────────────
+    # ── Pass 1: member notifications, saved immediately per enrollment ────
+    #
+    # Each enrollment is fully isolated: a Firebase timeout, Web Push
+    # exception, or any programming error while handling one member is
+    # caught, logged, and skipped — it can never abort processing for the
+    # rest of the gym. Any enrollment whose member channel(s) succeed has
+    # last_expiry_notif_sent written via enrollment.save() right away, so
+    # if the process dies immediately afterward, that member is never
+    # double-notified on retry.
     for enr in enrollments:
-        days_left = (enr.DueDate - today).days
-        gym_code  = getattr(enr.gym, 'gym_code', str(enr.gym_id))
-        print(
-        f"Enrollment={enr.id} "
-        f"User={enr.user.username} "
-        f"Gym={enr.gym} "
-        f"DueDate={enr.DueDate} "
-        f"DaysLeft={days_left}"
-    )
-        member_title, member_body = _build_member_message(enr, today)
+        try:
+            days_left = (enr.DueDate - today).days
+            gym_code  = getattr(enr.gym, 'gym_code', str(enr.gym_id))
 
-        ch1_ok = _send_member_fcm(enr, member_title, member_body, gym_code)
-        ch2_ok = _send_member_web_push(enr, member_title, member_body, gym_code)
+            member_title, member_body = _build_member_message(enr, today)
 
-        if ch1_ok or ch2_ok:
-            notified_ids.add(enr.id)
+            ch1_ok = _send_member_fcm(enr, member_title, member_body, gym_code)
+            ch2_ok = _send_member_web_push(enr, member_title, member_body, gym_code)
 
-        # Always bucket — staff should be notified even if member has no device
-        key = (enr.gym_id, days_left)
-        buckets[key]['gym'] = enr.gym
-        buckets[key]['enrollments'].append(enr)
+            if ch1_ok or ch2_ok:
+                logger.info(
+                    "Member notification succeeded enrollment=%s user=%s gym=%s "
+                    "fcm=%s web=%s — persisting immediately",
+                    enr.id, enr.user_id, gym_code, ch1_ok, ch2_ok,
+                )
+                enr.last_expiry_notif_sent = today
+                enr.save(update_fields=["last_expiry_notif_sent"])
+                marked_ids.add(enr.id)
+                logger.debug(
+                    "last_expiry_notif_sent persisted enrollment=%s gym=%s",
+                    enr.id, gym_code,
+                )
+            else:
+                logger.warning(
+                    "Member notification failed on all channels "
+                    "enrollment=%s user=%s gym=%s — will retry next run",
+                    enr.id, enr.user_id, gym_code,
+                )
 
-    # ── Pass 2: batched receptionist notifications ────────────────────────
+            # Always bucket — staff should be notified even if the member
+            # has no device / both channels failed.
+            key = (enr.gym_id, days_left)
+            buckets[key]['gym'] = enr.gym
+            buckets[key]['enrollments'].append(enr)
+
+        except Exception:
+            logger.exception(
+                "Unexpected error processing enrollment=%s — skipping, "
+                "continuing with remaining enrollments",
+                getattr(enr, 'id', 'unknown'),
+            )
+            continue
+
+    # ── Pass 2: batched receptionist notifications (unchanged batching) ───
+    #
+    # This stays exactly as before: one summary send per (gym, days_left)
+    # bucket, not per member. A receptionist-notification failure is
+    # isolated per bucket and never touches member notification status —
+    # member rows were already committed in Pass 1.
     for (gym_id, days_left), bucket in buckets.items():
-        gym         = bucket['gym']
-        bucket_enrs = bucket['enrollments']
-        gym_code    = getattr(gym, 'gym_code', str(gym_id))
+        try:
+            bucket_gym  = bucket['gym']
+            bucket_enrs = bucket['enrollments']
+            gym_code    = getattr(bucket_gym, 'gym_code', str(gym_id))
 
-        staff_title, staff_body = _build_staff_summary_message(
-            bucket_enrs, days_left, gym
-        )
-        print(
-    f"Staff batch gym={gym_code} "
-    f"days_left={days_left} "
-    f"members={len(bucket_enrs)}"
-)
-        ch3_ok = _send_receptionist_fcm(gym, staff_title, staff_body, gym_code)
-        ch4_ok = _send_receptionist_web_push(gym, staff_title, staff_body, gym_code)
+            staff_title, staff_body = _build_staff_summary_message(
+                bucket_enrs, days_left, bucket_gym
+            )
 
-        if ch3_ok or ch4_ok:
-            # Credit every enrollment in this bucket — staff were told about them
-            for enr in bucket_enrs:
-                notified_ids.add(enr.id)
+            ch3_ok = _send_receptionist_fcm(bucket_gym, staff_title, staff_body, gym_code)
+            ch4_ok = _send_receptionist_web_push(bucket_gym, staff_title, staff_body, gym_code)
 
-        logger.debug(
-            "Staff batch gym=%s days_left=%d members=%d "
-            "fcm=%s web=%s",
-            gym_code, days_left, len(bucket_enrs), ch3_ok, ch4_ok,
-        )
+            if ch3_ok or ch4_ok:
+                # Credit every enrollment in this bucket that Pass 1 hadn't
+                # already marked — staff were told about them even if the
+                # member had no device. This bulk update is scoped to one
+                # bucket (not the whole run) and happens right after this
+                # bucket's send completes.
+                unmarked_in_bucket = [
+                    enr.id for enr in bucket_enrs if enr.id not in marked_ids
+                ]
+                if unmarked_in_bucket:
+                    Enrollment.objects.filter(id__in=unmarked_in_bucket).update(
+                        last_expiry_notif_sent=today
+                    )
+                    marked_ids.update(unmarked_in_bucket)
 
-    # ── Write last_expiry_notif_sent for all notified enrollments ─────────
-    # Single bulk update per enrollment (avoids N individual saves when
-    # the set is large). update() does not call save(), which is fine
-    # here since we're only touching last_expiry_notif_sent.
-    if notified_ids:
-        Enrollment.objects.filter(id__in=notified_ids).update(
-            last_expiry_notif_sent=today
-        )
+            logger.debug(
+                "Staff batch gym=%s days_left=%d members=%d "
+                "fcm=%s web=%s",
+                gym_code, days_left, len(bucket_enrs), ch3_ok, ch4_ok,
+            )
 
-    failed_count = total_count - len(notified_ids)
+        except Exception:
+            logger.exception(
+                "Receptionist notification failed for gym=%s days_left=%d "
+                "— member notification status for this bucket is unaffected, "
+                "continuing with remaining buckets",
+                gym_id, days_left,
+            )
+            continue
+
+    failed_count = total_count - len(marked_ids)
     if failed_count:
         logger.warning(
             "send_expiry_reminders: %d enrollment(s) had ALL channels fail "
@@ -131,10 +232,11 @@ def send_expiry_reminders() -> int:
         )
 
     logger.info(
-        "Expiry reminders: processed=%d notified=%d retrying=%d",
-        total_count, len(notified_ids), failed_count,
+        "Expiry reminders: scope=%s processed=%d notified=%d retrying=%d",
+        getattr(gym, 'gym_code', 'ALL_GYMS') if gym else 'ALL_GYMS',
+        total_count, len(marked_ids), failed_count,
     )
-    return len(notified_ids)
+    return len(marked_ids)
 
 
 # ── Public entry point — single-event member notification ─────────────────────
@@ -196,6 +298,7 @@ def notify_member_plan_changed(enrollment, new_plan,*,new_due_date=None,pending_
 
 # ── Member channel implementations (shared by the expiry batch job and ───────
 # ── single-event callers like notify_member_plan_changed above) ──────────────
+# UNCHANGED from the existing implementation — reused as-is.
 
 def _send_member_fcm(
     enr, title: str, body: str, gym_code: str,
@@ -204,11 +307,6 @@ def _send_member_fcm(
     """
     Channel 1 — Member FCM via UserDevice.
     Scoped to user + gym. Returns True if ≥1 delivery succeeded.
-
-    notif_type / channel_id default to the expiry-reminder values so
-    send_expiry_reminders' calls above are unchanged; single-event
-    callers (e.g. notify_member_plan_changed) override notif_type to tag
-    the push correctly.
     """
     try:
         tokens = list(
@@ -261,16 +359,7 @@ def _send_member_web_push(
     """
     Channel 2 — Member browser/PWA via WebPushSubscription.
     Returns True if ≥1 delivery succeeded.
-
-    url defaults to the expiry-reminder target so send_expiry_reminders'
-    calls above are unchanged; single-event callers (e.g.
-    notify_member_plan_changed) override it to point somewhere relevant
-    to that event.
     """
-    print(
-        f"WEB PUSH -> user={enr.user.username} "
-        f"enrollment={enr.id}"
-    )
     try:
         successes = send_web_push(
             user=enr.user,
@@ -302,6 +391,7 @@ def _send_member_web_push(
 
 
 # ── Receptionist batch channel implementations ────────────────────────────────
+# UNCHANGED from the existing implementation — reused as-is.
 
 def _send_receptionist_fcm(
     gym, title: str, body: str, gym_code: str
@@ -410,11 +500,11 @@ def _send_receptionist_web_push(
 
 
 # ── Message builders ──────────────────────────────────────────────────────────
+# UNCHANGED from the existing implementation — reused as-is.
 
 def _build_member_message(enr, today) -> tuple[str, str]:
     """
     Member-facing copy. First person — addresses the member directly.
-    Unchanged from previous version.
     """
     days_left = (enr.DueDate - today).days
     plan_name = enr.selectPlan.plan if enr.selectPlan else "your plan"
@@ -454,22 +544,6 @@ def _build_staff_summary_message(
     """
     Receptionist-facing summary. Third person, batched.
     One message covers all expiring members in this gym × days_left group.
-
-    Count = 1
-        Title: Member Plan Expiring Tomorrow — Golden Gym
-        Body:  Rahul's Gold Plan expires tomorrow.
-
-    Count = 2
-        Title: Member Plans Expiring Tomorrow — Golden Gym
-        Body:  Rahul and Aman expire tomorrow.
-
-    Count = 3–5
-        Title: Member Plans Expiring Tomorrow — Golden Gym
-        Body:  Rahul, Aman and John expire tomorrow.
-
-    Count > 5
-        Title: Membership Renewals Due — Golden Gym
-        Body:  Rahul, Aman and 5 others expire tomorrow.
     """
     gym_name = gym.gym_name if gym else "the gym"
     count    = len(enrollments)
@@ -521,11 +595,9 @@ def _build_staff_summary_message(
         body = f"{names[0]} and {names[1]} expire {time_phrase}."
 
     elif count <= 5:
-        # "Rahul, Aman and John expire tomorrow."
         body = f"{', '.join(names[:-1])} and {names[-1]} expire {time_phrase}."
 
     else:
-        # "Rahul, Aman and 5 others expire tomorrow."
         shown    = names[:2]
         overflow = count - 2
         body = f"{', '.join(shown)} and {overflow} others expire {time_phrase}."

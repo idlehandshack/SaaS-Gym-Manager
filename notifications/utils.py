@@ -47,18 +47,8 @@ def send_web_push(user, title: str, body: str, url: str = "/") -> int:
         user=user,
         active=True,
     )
-    logger.warning(
-    "WEB PUSH DEBUG user=%s subs=%s",
-    user.username,
-    subscriptions.count(),
-)
     success_count = 0
-
     for sub in subscriptions:
-        logger.warning(
-    "Sending to endpoint %.80s",
-    sub.endpoint
-)
         try:
             webpush(
                 subscription_info={
@@ -86,11 +76,6 @@ def send_web_push(user, title: str, body: str, url: str = "/") -> int:
                 "Web push sent to user_id=%s endpoint=%.50s",
                 user.id, sub.endpoint,
             )
-            logger.warning(
-    "SUCCESS endpoint %.80s",
-    sub.endpoint
-)
-
         except WebPushException as e:
             response_status = getattr(e.response, "status_code", None)
             logger.warning(
@@ -151,7 +136,7 @@ def send_web_push_to_gym_staff(
         from Gym.models import StaffProfile
         staff_user_ids = (
             StaffProfile.objects
-            .filter(gym=gym, active=True, role='receptionist')
+            .filter(gym=gym, active=True, role__in=['gym_owner', 'receptionist'])
             .values_list('user_id', flat=True)
         )
         staff_users = User.objects.filter(

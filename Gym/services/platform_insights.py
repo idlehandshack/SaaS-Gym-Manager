@@ -23,7 +23,7 @@ import subprocess
 import time
 from datetime import timedelta
 from typing import Any
-
+from django.db.models import OuterRef, Subquery
 from django.core.cache import cache
 from django.db.models import Avg, Count, DecimalField, Q, Sum
 from django.db.models.functions import Coalesce, TruncDate, TruncMonth
@@ -118,6 +118,16 @@ def get_cached(name: str, builder, filters: dict[str, Any] | None = None):
         cache.set(key, data, CACHE_TTL)
     return data
 
+def _revenue_subquery():
+    """Standalone per-gym revenue sum — no join with staff, so no fan-out."""
+    from AuthFit.models import Enrollment
+    return (
+        Enrollment.objects
+        .filter(gym=OuterRef("pk"), is_deleted=False)
+        .values("gym")
+        .annotate(total=Sum("Amount"))
+        .values("total")
+    )
 
 # --------------------------------------------------------------------------- #
 # Shared querysets / filter application
@@ -135,7 +145,8 @@ def _base_gym_qs():
                 distinct=True,
             ),
             revenue=Coalesce(
-                Sum("enrollment__Amount"), 0,
+                Subquery(_revenue_subquery(), output_field=DecimalField(max_digits=12, decimal_places=2)),
+                0,
                 output_field=DecimalField(max_digits=12, decimal_places=2),
             ),
         )
@@ -319,7 +330,7 @@ def _get_service_status(service_name: str) -> str:
 def _get_cpu_usage():
     try:
         import psutil
-        return round(psutil.cpu_percent(interval=0.3))
+        return round(psutil.cpu_percent(interval=1), 1)
     except Exception:
         return None
 

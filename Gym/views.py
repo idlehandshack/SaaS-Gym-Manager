@@ -15,10 +15,13 @@ import json as json_lib
 from .forms import UPISettingsForm, GymCreateForm, StaffProfileCreateForm, GymGSTProfileForm
 from .models import Gym, SubscriptionPlan, StaffProfile ,PlatformSettings ,PlatformSubscriptionPayment
 from AuthFit.views import _gym_role_required
+from AuthFit.models import Enrollment
 from .services import platform_insights as pi
 import calendar
 from urllib.parse import quote
 from .services import live_stats as ls
+from django.db.models import OuterRef, Subquery
+
 @_gym_role_required('gym_owner')
 def upi_payment_settings(request):
     gym = getattr(request, 'gym', None)
@@ -197,7 +200,13 @@ def api_low_performing_gyms(request):
 def saas_dashboard(request):
     today = timezone.now().date()
     month_start = today.replace(day=1)
-
+    revenue_subq = (
+        Enrollment.objects  # make sure Enrollment is imported at top of views.py
+        .filter(gym=OuterRef("pk"), is_deleted=False)
+        .values("gym")
+        .annotate(total=Sum("Amount"))
+        .values("total")
+    )
     gyms = (
         Gym.objects
         .select_related("plan", "owner")
@@ -209,13 +218,14 @@ def saas_dashboard(request):
                 distinct=True,
             ),
             revenue=Coalesce(
-                Sum("enrollment__Amount"), 0,
-                output_field=DecimalField(max_digits=12, decimal_places=2)
+                Subquery(revenue_subq, output_field=DecimalField(max_digits=12, decimal_places=2)),
+                0,
+                output_field=DecimalField(max_digits=12, decimal_places=2),
             ),
         )
         .order_by("-created_at")
     )
-
+    
     total_gyms = gyms.count()
     active_gyms = gyms.filter(active=True, subscription_end__gte=today).count()
     inactive_gyms = total_gyms - active_gyms
@@ -253,6 +263,7 @@ def saas_dashboard(request):
             output_field=DecimalField(max_digits=10, decimal_places=2)
         )
     )["mrr"] or 0
+
     software_total_revenue = PlatformSubscriptionPayment.objects.aggregate(
         total=Coalesce(Sum("amount"), 0, output_field=DecimalField(max_digits=14, decimal_places=2))
     )["total"] or 0
@@ -266,6 +277,7 @@ def saas_dashboard(request):
     
     days_in_month = calendar.monthrange(today.year, today.month)[1]
     software_revenue_per_day = round(software_month_revenue / days_in_month, 2) if days_in_month else 0
+
     plan_stats = [
         {"name": p.name, "count": gyms.filter(plan=p).count(), "monthly": p.price_monthly}
         for p in SubscriptionPlan.objects.all()
@@ -333,9 +345,19 @@ def record_platform_payment(request, gym_id):
     )
     return JsonResponse({"success": True, "payment_id": payment.id})
 
+
 @superuser_required
 def all_gyms_view(request):
     today = timezone.now().date()
+
+    revenue_subq = (
+        Enrollment.objects
+        .filter(gym=OuterRef("pk"), is_deleted=False)
+        .values("gym")
+        .annotate(total=Sum("Amount"))
+        .values("total")
+    )
+
     gyms = (
         Gym.objects
         .select_related("plan", "owner")
@@ -345,8 +367,9 @@ def all_gyms_view(request):
                 "staff", filter=Q(staff__role="trainer", staff__active=True), distinct=True,
             ),
             revenue=Coalesce(
-                Sum("enrollment__Amount"), 0,
-                output_field=DecimalField(max_digits=12, decimal_places=2)
+                Subquery(revenue_subq, output_field=DecimalField(max_digits=12, decimal_places=2)),
+                0,
+                output_field=DecimalField(max_digits=12, decimal_places=2),
             ),
         )
         .order_by("-created_at")
@@ -781,13 +804,9 @@ def gym_payment_page(request):
 def api_public_live_stats(request):
     return JsonResponse(ls.get_live_stats())
 
-
 def plans_page(request):
     """Public pricing page — no login required."""
     plans = list(SubscriptionPlan.objects.all().order_by("price_monthly"))
-
-    # Mark the middle plan as "featured" automatically, unless a plan's
-    # feature_flags explicitly sets {"featured": true/false}.
     mid_index = len(plans) // 2 if len(plans) % 2 else max(len(plans) // 2 - 1, 0)
     all_flags = set()
     for i, plan in enumerate(plans):
