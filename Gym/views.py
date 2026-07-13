@@ -780,3 +780,23 @@ def gym_payment_page(request):
 
 def api_public_live_stats(request):
     return JsonResponse(ls.get_live_stats())
+
+
+def plans_page(request):
+    """Public pricing page — no login required."""
+    plans = list(SubscriptionPlan.objects.all().order_by("price_monthly"))
+
+    # Mark the middle plan as "featured" automatically, unless a plan's
+    # feature_flags explicitly sets {"featured": true/false}.
+    mid_index = len(plans) // 2 if len(plans) % 2 else max(len(plans) // 2 - 1, 0)
+    all_flags = set()
+    for i, plan in enumerate(plans):
+        flags = plan.feature_flags or {}
+        all_flags.update(flags.keys())
+        plan.is_featured = flags.get("featured", i == mid_index and len(plans) > 1)
+        plan.flag_items = [(k.replace("_", " ").title(), bool(v)) for k, v in flags.items() if k != "featured"]
+
+    return render(request, "plans_page.html", {
+        "plans": plans,
+        "all_flag_names": sorted(f for f in all_flags if f != "featured"),
+    })

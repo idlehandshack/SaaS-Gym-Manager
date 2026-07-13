@@ -17,18 +17,15 @@ from django.dispatch import receiver
 # Subscription Plans (SaaS tiers defined by the software owner)
 # ──────────────────────────────────────────────────────────────────────────────
 class SubscriptionPlan(models.Model):
-    name            = models.CharField(max_length=60, unique=True)   # "Starter", "Pro", "Enterprise"
+    name            = models.CharField(max_length=60, unique=True) 
     price_monthly   = models.DecimalField(max_digits=10, decimal_places=2)
     member_limit    = models.PositiveIntegerField(default=100)
     trainer_limit   = models.PositiveIntegerField(default=5)
-    feature_flags   = models.JSONField(default=dict, blank=True)     # {"face_recognition": true, …}
-
+    feature_flags   = models.JSONField(default=dict, blank=True)   
     def __str__(self):
         return self.name
-
     class Meta:
         ordering = ['price_monthly']
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Gym  (one row = one tenant)
