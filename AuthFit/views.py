@@ -1906,7 +1906,7 @@ def create_payment_view(request):
 
 @_gym_staff_required
 def today_attendance(request):
-    gym   = getattr(request, 'gym', None) 
+    gym   = getattr(request, 'gym', None)
     today = timezone.localdate()
 
     cache_key = f"today_attendance_{gym.pk if gym else 'super'}_{today}"
@@ -1929,6 +1929,9 @@ def today_attendance(request):
         qs = qs.filter(gym=gym)
 
     morning, evening = [], []
+    alerts = []  # members needing attention: expired, expiring soon, or pending payment
+
+    EXPIRING_SOON_THRESHOLD = 3  # days
 
     for rec in qs:
         # FIX: scope enrollment lookup to this gym
@@ -1953,37 +1956,69 @@ def today_attendance(request):
             except Exception:
                 logger.exception("Cloudinary URL error for user %s", rec.user.id)
 
+        pending_amount = float(enrollment.pendingAmount) if enrollment else 0
+        is_expired     = enrollment.is_expired if enrollment else False
+        days_remaining = enrollment.days_remaining if enrollment else None
+
+        is_expiring_soon = (
+            not is_expired
+            and days_remaining is not None
+            and days_remaining <= EXPIRING_SOON_THRESHOLD
+        )
+        has_pending = pending_amount > 0
+
+        # Priority rank for sorting the alerts strip: expired > expiring soon > pending only
+        if is_expired:
+            alert_rank = 0
+        elif is_expiring_soon:
+            alert_rank = 1
+        elif has_pending:
+            alert_rank = 2
+        else:
+            alert_rank = None
+
         entry = {
-            "id":             rec.id,
-            "time":           rec.timestamp.strftime("%I:%M %p"),
-            "name":           enrollment.fullname if enrollment else rec.user.username,
-            "unique_id":      enrollment.unique_id if enrollment else "—",
-            "image_url":      image_url,
-            "pending_amount": float(enrollment.pendingAmount) if enrollment else 0,
-            "due_date":       enrollment.DueDate.strftime("%d %b %Y") if enrollment and enrollment.DueDate else "—",
-            "is_expired":     enrollment.is_expired if enrollment else False,
-            "phone":          enrollment.phone if enrollment else "—",
-            "address":        enrollment.address if enrollment else "—",
-            "plan":           enrollment.selectPlan.plan if enrollment and enrollment.selectPlan else "—",
-            "plan_price":     float(enrollment.selectPlan.price) if enrollment and enrollment.selectPlan else 0,
-            "trainer":        enrollment.trainer.name if enrollment and enrollment.trainer else "No Trainer",
-            "gender":         enrollment.get_gender_display() if enrollment else "—",
-            "doj":            enrollment.doj.strftime("%d %b %Y") if enrollment and enrollment.doj else "—",
-            "payment_status": enrollment.paymentStatus if enrollment else "—",
-            "days_remaining": enrollment.days_remaining if enrollment else 0,
-            "payment_date":   enrollment.paymentDate.strftime("%d %b %Y") if enrollment and enrollment.paymentDate else "—",
+            "id":               rec.id,
+            "time":             rec.timestamp.strftime("%I:%M %p"),
+            "name":             enrollment.fullname if enrollment else rec.user.username,
+            "unique_id":        enrollment.unique_id if enrollment else "—",
+            "image_url":        image_url,
+            "pending_amount":   pending_amount,
+            "due_date":         enrollment.DueDate.strftime("%d %b %Y") if enrollment and enrollment.DueDate else "—",
+            "is_expired":       is_expired,
+            "is_expiring_soon": is_expiring_soon,
+            "has_pending":      has_pending,
+            "alert_rank":       alert_rank,
+            "phone":            enrollment.phone if enrollment else "—",
+            "address":          enrollment.address if enrollment else "—",
+            "plan":             enrollment.selectPlan.plan if enrollment and enrollment.selectPlan else "—",
+            "plan_price":       float(enrollment.selectPlan.price) if enrollment and enrollment.selectPlan else 0,
+            "trainer":          enrollment.trainer.name if enrollment and enrollment.trainer else "No Trainer",
+            "gender":           enrollment.get_gender_display() if enrollment else "—",
+            "doj":              enrollment.doj.strftime("%d %b %Y") if enrollment and enrollment.doj else "—",
+            "payment_status":   enrollment.paymentStatus if enrollment else "—",
+            "days_remaining":   days_remaining,
+            "payment_date":     enrollment.paymentDate.strftime("%d %b %Y") if enrollment and enrollment.paymentDate else "—",
         }
+
         (morning if rec.timestamp.hour < 14 else evening).append(entry)
 
+        if alert_rank is not None:
+            alerts.append(entry)
+
+    # Show most urgent alerts first: expired > expiring soon > pending, then highest pending amount
+    alerts.sort(key=lambda e: (e["alert_rank"], -e["pending_amount"]))
+
     context = {
-        "sections": [("Morning", "🌅", morning), ("Evening", "🌆", evening)],
-        "today":    today,
-        "total":    len(morning) + len(evening),
-        "gym" : gym,
+        "sections":     [("Morning", "🌅", morning), ("Evening", "🌆", evening)],
+        "alerts":       alerts,
+        "alerts_count": len(alerts),
+        "today":        today,
+        "total":        len(morning) + len(evening),
+        "gym":          gym,
     }
     cache.set(cache_key, context, timeout=120)
     return render(request, "today_attendance.html", context)
-
 
 @_gym_staff_required
 def freeze_membership(request):

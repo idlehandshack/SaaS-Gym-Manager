@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
   <style>
@@ -36,6 +36,9 @@
       --red:         #ef5350;
       --red-dim:     rgba(239,83,80,.10);
       --red-bdr:     rgba(239,83,80,.28);
+      --yellow:      #f4c542;
+      --yellow-dim:  rgba(244,197,66,.10);
+      --yellow-bdr:  rgba(244,197,66,.28);
       --text-hi:     #f5f5f5;
       --text-mid:    #888;
       --text-lo:     #444;
@@ -162,6 +165,36 @@
     .section-label::after {
       content: ""; flex: 1; height: 1px; background: var(--border);
     }
+    .section-label.attention span { color: var(--orange); }
+
+    /* ── ALERTS BANNER (wrapper around the attention section) ── */
+    .alerts-wrap {
+      border: 1px solid var(--orange-bdr);
+      background: linear-gradient(180deg, var(--orange-dim), transparent 60%);
+      border-radius: var(--radius-lg);
+      padding: clamp(14px,3vw,20px);
+      margin-bottom: clamp(8px,2vw,12px);
+    }
+    .alerts-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 4px;
+    }
+    .alerts-title {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--font-d); font-weight: 800;
+      font-size: clamp(1rem,3vw,1.2rem); text-transform: uppercase;
+      letter-spacing: .01em; color: var(--text-hi);
+    }
+    .alerts-title i { color: var(--orange); }
+    .alerts-count-badge {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 800;
+      background: var(--orange); color: #111;
+      padding: 3px 10px; border-radius: var(--radius-pill);
+    }
+    .alerts-sub {
+      font-family: var(--font-b); font-size: .78rem; color: var(--text-mid);
+      margin-bottom: 12px;
+    }
 
     /* ── ATT CARD ── */
     .att-card {
@@ -176,6 +209,8 @@
     }
     .att-card:hover  { border-color: var(--orange-bdr); background: var(--surface-2); }
     .att-card.expired { border-left: 3px solid var(--red); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+    .att-card.expiring { border-left: 3px solid var(--yellow); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+    .att-card.in-alerts { background: var(--surface-2); }
 
     /* time block */
     .att-time { min-width: clamp(54px,14vw,72px); text-align: center; flex-shrink: 0; }
@@ -192,11 +227,12 @@
     .att-divider { width: 1px; height: 36px; background: var(--border-2); flex-shrink: 0; }
 
     /* avatar */
+    .att-avatar-wrap { position: relative; flex-shrink: 0; }
     .att-avatar {
       width: clamp(34px,9vw,42px); height: clamp(34px,9vw,42px);
       border-radius: 50%; object-fit: cover;
       border: 1px solid var(--border-2); flex-shrink: 0;
-      background: var(--surface-2);
+      background: var(--surface-2); display: block;
     }
     .att-avatar-placeholder {
       width: clamp(34px,9vw,42px); height: clamp(34px,9vw,42px);
@@ -206,6 +242,14 @@
       color: var(--text-lo); font-family: var(--font-d);
       font-size: clamp(13px,3.5vw,17px); font-weight: 900;
     }
+    .att-alert-dot {
+      position: absolute; bottom: -2px; right: -2px;
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid var(--surface);
+    }
+    .att-alert-dot.dot-red    { background: var(--red); }
+    .att-alert-dot.dot-yellow { background: var(--yellow); }
+    .att-alert-dot.dot-orange { background: var(--orange); }
 
     /* info */
     .att-info { flex: 1; min-width: 0; }
@@ -220,6 +264,16 @@
       font-size: clamp(9px,2.5vw,11px); letter-spacing: .18em;
       font-weight: 700; margin-top: 2px;
     }
+    .att-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+    .att-tag {
+      font-family: var(--font-d); font-size: clamp(7.5px,1.8vw,9px);
+      font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: var(--radius-pill);
+      white-space: nowrap; line-height: 1.5;
+    }
+    .att-tag.tag-expired  { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red-bdr); }
+    .att-tag.tag-expiring { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow-bdr); }
+    .att-tag.tag-pending  { background: var(--orange-dim); color: var(--orange); border: 1px solid var(--orange-bdr); }
 
     /* meta */
     .att-meta { text-align: right; flex-shrink: 0; min-width: clamp(60px,16vw,80px); }
@@ -235,6 +289,7 @@
       font-weight: 700; text-transform: uppercase;
     }
     .att-due.expired-tag { color: var(--red); }
+    .att-due.expiring-tag { color: var(--yellow); }
 
     .att-chevron {
       color: var(--text-lo); font-size: .85rem; flex-shrink: 0;
@@ -247,6 +302,7 @@
       letter-spacing: .18em; text-align: center; padding: 24px 0;
       font-weight: 700; text-transform: uppercase;
     }
+    .empty-state.good { color: var(--green); }
 
     /* ── SLIDE PANEL ── */
     .panel-backdrop {
@@ -310,6 +366,23 @@
       border-radius: 2px; margin: 12px 0 clamp(16px,3vw,24px);
     }
 
+    /* alert banner inside panel */
+    .panel-alert-banner {
+      display: none;
+      align-items: flex-start; gap: 10px;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: clamp(16px,3vw,22px);
+      font-family: var(--font-b); font-size: .82rem; font-weight: 600;
+      line-height: 1.4;
+    }
+    .panel-alert-banner.show { display: flex; }
+    .panel-alert-banner.level-red    { background: var(--red-dim);    border: 1px solid var(--red-bdr);    color: #ffb4b2; }
+    .panel-alert-banner.level-yellow { background: var(--yellow-dim); border: 1px solid var(--yellow-bdr); color: #ffe3a1; }
+    .panel-alert-banner.level-orange { background: var(--orange-dim); border: 1px solid var(--orange-bdr); color: #ffc199; }
+    .panel-alert-banner i { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
+    .panel-alert-banner strong { display: block; font-family: var(--font-d); letter-spacing: .04em; text-transform: uppercase; font-size: .78rem; margin-bottom: 2px; }
+
     .panel-body {
       padding: 0 clamp(16px,4vw,24px) clamp(24px,4vw,36px); flex: 1;
     }
@@ -335,7 +408,24 @@
     .detail-value.highlight { color: var(--orange); }
     .detail-value.success   { color: var(--green); }
     .detail-value.danger    { color: var(--red); }
+    .detail-value.warning   { color: var(--yellow); }
     .panel-divider { height: 1px; background: var(--border); margin: clamp(14px,3vw,20px) 0; }
+
+    /* quick action buttons in panel */
+    .panel-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: clamp(16px,3vw,22px); }
+    .panel-action-btn {
+      flex: 1; min-width: 120px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-family: var(--font-d); font-size: .74rem; font-weight: 800;
+      letter-spacing: .06em; text-transform: uppercase;
+      padding: 9px 10px; border-radius: var(--radius-sm);
+      text-decoration: none; cursor: pointer; border: 1px solid var(--border-2);
+      background: var(--surface-2); color: var(--text-hi);
+      transition: border-color var(--t), background var(--t);
+    }
+    .panel-action-btn:hover { border-color: var(--orange-bdr); background: var(--orange-dim); color: var(--orange); }
+    .panel-action-btn.primary { background: var(--orange); color: #111; border-color: var(--orange); }
+    .panel-action-btn.primary:hover { opacity: .9; background: var(--orange); color: #111; }
 
     /* ── ANIMATIONS ── */
     @keyframes fadeUp {
@@ -346,13 +436,11 @@
     /* ── RESPONSIVE ── */
     @media (max-width: 440px) {
       .slide-panel { border-left: none; }
-      .detail-grid { grid-template-columns: 1fr; }
-      .detail-item.full { grid-column: 1; }
-      .att-uid { letter-spacing: .1em; }
     }
     @media (max-width: 360px) {
       .att-time { min-width: 48px; }
       .att-meta { min-width: 52px; }
+      .detail-grid { gap: 10px; }
     }
     @supports (padding: env(safe-area-inset-left)) {
       .nav-inner {
@@ -361,6 +449,7 @@
       }
       .slide-panel {
         padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
       }
     }
   </style>
@@ -393,6 +482,68 @@
   <!-- ── ATTENDANCE LIST ── -->
   <main class="att-page">
 
+    <!-- ── NEEDS ATTENTION (expired / expiring soon / pending payment) ── -->
+    {% if alerts %}
+    <div class="alerts-wrap">
+      <div class="alerts-head">
+        <div class="alerts-title"><i class="bi bi-exclamation-triangle-fill"></i> Needs Attention</div>
+        <div class="alerts-count-badge">{{ alerts_count }}</div>
+      </div>
+      <div class="alerts-sub">Members who checked in today with an expired plan, a plan expiring soon, or a pending payment.</div>
+
+      {% for r in alerts %}
+      <div class="att-card in-alerts {% if r.is_expired %}expired{% elif r.is_expiring_soon %}expiring{% endif %}" data-json="{{ r|data_json }}">
+
+        <div class="att-avatar-wrap">
+          {% if r.image_url %}
+            <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy" />
+          {% else %}
+            <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
+          {% endif %}
+          {% if r.is_expired %}
+            <span class="att-alert-dot dot-red"></span>
+          {% elif r.is_expiring_soon %}
+            <span class="att-alert-dot dot-yellow"></span>
+          {% elif r.has_pending %}
+            <span class="att-alert-dot dot-orange"></span>
+          {% endif %}
+        </div>
+
+        <div class="att-info">
+          <div class="att-name">{{ r.name }}</div>
+          <div class="att-uid">UID · {{ r.unique_id }}</div>
+          <div class="att-tags">
+            {% if r.is_expired %}
+              <span class="att-tag tag-expired"><i class="bi bi-x-circle"></i> Expired</span>
+            {% elif r.is_expiring_soon %}
+              <span class="att-tag tag-expiring"><i class="bi bi-hourglass-split"></i>
+                {% if r.days_remaining == 0 %}Expires Today{% elif r.days_remaining == 1 %}1 Day Left{% else %}{{ r.days_remaining }} Days Left{% endif %}
+              </span>
+            {% endif %}
+            {% if r.has_pending %}
+              <span class="att-tag tag-pending"><i class="bi bi-cash-coin"></i> Pending</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="att-meta">
+          {% if r.pending_amount > 0 %}
+            <div class="att-pending has-pending">₹{{ r.pending_amount|floatformat:0 }}</div>
+          {% else %}
+            <div class="att-pending"></div>
+          {% endif %}
+          <div class="att-due {% if r.is_expired %}expired-tag{% elif r.is_expiring_soon %}expiring-tag{% endif %}">
+            {% if r.is_expired %}EXPIRED{% else %}{{ r.due_date }}{% endif %}
+          </div>
+        </div>
+
+        <i class="bi bi-chevron-right att-chevron"></i>
+
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     {% for section_name, section_icon, records in sections %}
     <div class="section-label">
       <span>{{ section_icon }} {{ section_name }}</span>
@@ -400,7 +551,7 @@
 
     {% if records %}
       {% for r in records %}
-      <div class="att-card {% if r.is_expired %}expired{% endif %}" data-json="{{ r|data_json }}">
+      <div class="att-card {% if r.is_expired %}expired{% elif r.is_expiring_soon %}expiring{% endif %}" data-json="{{ r|data_json }}">
 
         <div class="att-time">
           <div class="time-val">{{ r.time }}</div>
@@ -408,11 +559,20 @@
         </div>
         <div class="att-divider"></div>
 
-        {% if r.image_url %}
-          <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy" />
-        {% else %}
-          <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
-        {% endif %}
+        <div class="att-avatar-wrap">
+          {% if r.image_url %}
+            <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy" />
+          {% else %}
+            <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
+          {% endif %}
+          {% if r.is_expired %}
+            <span class="att-alert-dot dot-red"></span>
+          {% elif r.is_expiring_soon %}
+            <span class="att-alert-dot dot-yellow"></span>
+          {% elif r.has_pending %}
+            <span class="att-alert-dot dot-orange"></span>
+          {% endif %}
+        </div>
 
         <div class="att-info">
           <div class="att-name">{{ r.name }}</div>
@@ -425,7 +585,7 @@
           {% else %}
             <div class="att-pending"></div>
           {% endif %}
-          <div class="att-due {% if r.is_expired %}expired-tag{% endif %}">
+          <div class="att-due {% if r.is_expired %}expired-tag{% elif r.is_expiring_soon %}expiring-tag{% endif %}">
             {% if r.is_expired %}EXPIRED{% else %}{{ r.due_date }}{% endif %}
           </div>
         </div>
@@ -462,6 +622,24 @@
     </div>
 
     <div class="panel-body">
+
+      <!-- Alert banner: shown only when the member has an active issue -->
+      <div class="panel-alert-banner" id="pAlertBanner">
+        <i class="bi bi-exclamation-triangle-fill" id="pAlertIcon"></i>
+        <div>
+          <strong id="pAlertTitle"></strong>
+          <span id="pAlertText"></span>
+        </div>
+      </div>
+
+      <div class="panel-actions">
+        <a class="panel-action-btn primary" id="pCallBtn" href="#">
+          <i class="bi bi-telephone-fill"></i> Call
+        </a>
+        <a class="panel-action-btn" id="pWhatsappBtn" href="#" target="_blank" rel="noopener">
+          <i class="bi bi-whatsapp"></i> WhatsApp
+        </a>
+      </div>
 
       <div class="panel-section-title">Personal</div>
       <div class="detail-grid">
@@ -523,8 +701,7 @@
 
     </div>
   </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
   <script nonce="{{ request.csp_nonce }}">
   (function () {
     const panel    = document.getElementById('slidePanel');
@@ -545,6 +722,43 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closePanel();
     });
+
+    function digitsOnly(phone) {
+      return (phone || '').replace(/[^\d+]/g, '');
+    }
+
+    function setAlertBanner(r) {
+      const banner = document.getElementById('pAlertBanner');
+      const icon   = document.getElementById('pAlertIcon');
+      const title  = document.getElementById('pAlertTitle');
+      const text   = document.getElementById('pAlertText');
+
+      banner.classList.remove('level-red', 'level-yellow', 'level-orange', 'show');
+
+      let level = null, titleText = '', bodyText = '';
+
+      if (r.is_expired) {
+        level = 'level-red';
+        titleText = 'Plan Expired';
+        bodyText  = 'This member\'s plan expired on ' + (r.due_date || '—') + '. Renew before their next visit.';
+      } else if (r.is_expiring_soon) {
+        level = 'level-yellow';
+        const d = r.days_remaining;
+        titleText = 'Plan Expiring Soon';
+        bodyText  = (d === 0 ? 'Expires today' : d === 1 ? 'Expires in 1 day' : ('Expires in ' + d + ' days')) +
+                    ' (' + (r.due_date || '—') + '). Remind them to renew.';
+      } else if (r.has_pending) {
+        level = 'level-orange';
+        titleText = 'Payment Pending';
+        bodyText  = '₹' + r.pending_amount + ' is still due from this member.';
+      }
+
+      if (level) {
+        banner.classList.add(level, 'show');
+        title.textContent = titleText;
+        text.textContent  = bodyText;
+      }
+    }
 
     function openPanel(r) {
       const img = document.getElementById('pAvatar');
@@ -580,18 +794,37 @@
 
       const due = document.getElementById('pDue');
       due.textContent = r.due_date || '—';
-      due.className   = 'detail-value ' + (r.is_expired ? 'danger' : '');
+      due.className   = 'detail-value ' + (r.is_expired ? 'danger' : r.is_expiring_soon ? 'warning' : '');
 
       const days = document.getElementById('pDays');
       days.textContent = r.is_expired             ? 'EXPIRED'
                        : r.days_remaining != null  ? r.days_remaining + ' days'
                        : '—';
       days.className = 'detail-value ' + (
-        r.is_expired           ? 'danger'    :
-        r.days_remaining <= 5  ? 'highlight' : 'success'
+        r.is_expired            ? 'danger'  :
+        r.is_expiring_soon      ? 'warning' :
+        r.days_remaining <= 5   ? 'highlight' : 'success'
       );
 
       document.getElementById('pPayDate').textContent = r.payment_date || '—';
+
+      /* Quick actions */
+      const phoneDigits = digitsOnly(r.phone);
+      const callBtn = document.getElementById('pCallBtn');
+      const waBtn   = document.getElementById('pWhatsappBtn');
+      if (phoneDigits) {
+        callBtn.href = 'tel:' + phoneDigits;
+        callBtn.style.pointerEvents = '';
+        callBtn.style.opacity = '';
+        waBtn.href = 'https://wa.me/' + phoneDigits.replace(/^\+/, '');
+        waBtn.style.pointerEvents = '';
+        waBtn.style.opacity = '';
+      } else {
+        callBtn.href = '#'; callBtn.style.pointerEvents = 'none'; callBtn.style.opacity = '.4';
+        waBtn.href = '#'; waBtn.style.pointerEvents = 'none'; waBtn.style.opacity = '.4';
+      }
+
+      setAlertBanner(r);
 
       panel.classList.add('open');
       backdrop.classList.add('open');
