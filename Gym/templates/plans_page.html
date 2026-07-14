@@ -7,259 +7,211 @@
   <title>Plans — EnterGYM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="icon" href="{% static 'images/favicons.ico' %}">
-  <link rel="shortcut icon" href="{% static 'images/favicons.ico' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="{% static 'images/favicon.ico' %}">
+  <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #07090f;
-      --surface:   #0d1117;
-      --surface2:  #111827;
-      --border:    rgba(99,179,255,0.12);
-      --blue:      #3b82f6;
-      --blue-mid:  #2563eb;
-      --blue-dim:  rgba(59,130,246,0.08);
-      --text:      #e2e8f0;
-      --muted:     #6b7280;
-      --soft:      #94a3b8;
-      --green:     #22c55e;
-      --red:       #ef4444;
+      --bg:        #080b12;
+      --surface:   #0f141d;
+      --surface-2: #131a26;
+      --border:    rgba(94,150,255,0.14);
+      --border-2:  rgba(94,150,255,0.28);
+      --blue:      #4c8dff;
+      --blue-light:#7db0ff;
+      --blue-dim:  rgba(76,141,255,0.09);
+      --text:      #e8edf5;
+      --muted:     #7c8aa0;
+      --soft:      #a9b6c9;
+      --green:     #34d399;
       --mono:      'JetBrains Mono', monospace;
-      --nav-h:     58px;
+      --display:   'Sora', sans-serif;
+      --body:      'Manrope', sans-serif;
+      --nav-h:     60px;
+      --ease:      cubic-bezier(.22,.9,.32,1);
     }
 
     html { scroll-behavior: smooth; }
 
     body {
       background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.14), transparent 60%),
+        radial-gradient(ellipse 700px 400px at 90% 10%, rgba(76,141,255,0.08), transparent 55%);
       color: var(--text);
-      font-family: 'Inter', sans-serif;
+      font-family: var(--body);
       font-size: 15px;
-      line-height: 1.7;
+      line-height: 1.65;
       min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* ── NAV ── */
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 200;
-      background: rgba(7,9,15,0.9);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: var(--nav-h);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
     }
-    .nav-logo { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.4px; }
+
+    nav {
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(8,11,18,0.85);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { font-family: var(--display); font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
     .nav-logo span { color: var(--blue); }
     .nav-back {
-      font-size: 12px; font-weight: 500; color: var(--muted);
+      font-size: 12px; font-weight: 600; color: var(--muted);
       text-decoration: none; display: flex; align-items: center; gap: 6px;
-      transition: color .2s; white-space: nowrap;
+      transition: color .2s var(--ease);
     }
-    .nav-back:hover { color: var(--blue); }
+    .nav-back:hover { color: var(--blue-light); }
     .nav-back svg { width: 14px; height: 14px; flex-shrink: 0; }
 
-    /* ── HERO ── */
-    .hero { text-align: center; padding: 72px 24px 52px; position: relative; overflow: hidden; }
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: -80px; left: 50%; transform: translateX(-50%);
-      width: min(600px, 100vw); height: 400px;
-      background: radial-gradient(ellipse, rgba(37,99,235,0.22) 0%, transparent 70%);
-      pointer-events: none;
-    }
+    .hero { text-align: center; padding: 76px 24px 48px; position: relative; }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 7px;
-      background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25);
-      border-radius: 100px; padding: 5px 14px; font-size: 11px; font-weight: 600;
-      color: var(--blue); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px;
+      background: var(--blue-dim); border: 1px solid var(--border-2);
+      border-radius: 100px; padding: 5px 14px; font-family: var(--mono);
+      font-size: 11px; font-weight: 500; color: var(--blue-light);
+      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 26px;
     }
-    .hero-badge svg { width: 13px; height: 13px; }
     .hero h1 {
-      font-size: clamp(28px, 6vw, 56px); font-weight: 800; letter-spacing: -1.5px;
-      line-height: 1.1; color: #fff; margin-bottom: 16px;
+      font-family: var(--display); font-size: clamp(30px, 5.5vw, 52px);
+      font-weight: 700; letter-spacing: -1.4px; line-height: 1.1;
+      color: #fff; margin-bottom: 16px;
     }
-    .hero h1 span { color: var(--blue); }
-    .hero-sub { max-width: 540px; margin: 0 auto 28px; color: var(--soft); font-size: clamp(13px, 2vw, 15px); line-height: 1.65; }
-    .hero-meta {
-      display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
-      gap: 16px 24px; font-size: 11px; color: var(--muted); font-family: var(--mono);
+    .hero h1 span {
+      background: linear-gradient(100deg, var(--blue-light), var(--blue));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
     }
-    .hero-meta span { display: flex; align-items: center; gap: 6px; }
-    .hero-meta svg { width: 12px; height: 12px; color: var(--blue); flex-shrink: 0; }
+    .hero-sub { max-width: 520px; margin: 0 auto; color: var(--soft); font-size: clamp(13.5px, 2vw, 15.5px); }
 
-    /* ── STATS STRIP (used as quick-facts) ── */
-    .stats-strip {
-      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-      background: var(--surface); display: grid; grid-template-columns: repeat(4, 1fr);
-    }
-    .stat-card { padding: 24px 20px; display: flex; align-items: flex-start; gap: 12px; border-right: 1px solid var(--border); }
-    .stat-card:last-child { border-right: none; }
-    .stat-icon {
-      width: 38px; height: 38px; min-width: 38px; background: var(--blue-dim);
-      border: 1px solid rgba(59,130,246,0.2); border-radius: 9px;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .stat-icon svg { width: 17px; height: 17px; color: var(--blue); }
-    .stat-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px; }
-    .stat-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .layout { max-width: 1080px; margin: 0 auto; padding: 40px 32px 110px; }
 
-    /* ── LAYOUT ── */
-    .layout { max-width: 1180px; margin: 0 auto; padding: 64px 32px 100px; }
+    .section-lead { text-align: center; max-width: 480px; margin: 0 auto 40px; }
+    .section-lead p { font-size: 13px; color: var(--muted); }
 
-    .section-lead { text-align: center; max-width: 560px; margin: 0 auto 44px; }
-    .section-lead h2 {
-      font-size: clamp(20px, 3vw, 28px); font-weight: 700; color: #fff;
-      letter-spacing: -0.4px; margin-bottom: 10px;
-    }
-    .section-lead p { font-size: 13.5px; color: var(--soft); line-height: 1.6; }
-
-    /* ── PLAN CARDS ── */
     .plans-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 22px;
-      margin-bottom: 100px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      align-items: start;
     }
+
     .plan-card {
-      background: var(--surface);
+      background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 0;
-      position: relative;
-      transition: border-color .2s ease;
-    }
-    .plan-card:hover { border-color: rgba(59,130,246,0.35); }
-    .plan-card.featured {
-      border: 1px solid var(--blue);
-      background: linear-gradient(180deg, rgba(59,130,246,0.08) 0%, var(--surface) 55%);
-      box-shadow: 0 0 0 1px rgba(59,130,246,0.15), 0 24px 60px -28px rgba(37,99,235,0.45);
-    }
-    .plan-tag {
-      display: inline-block;
-      margin: 14px 0 0 24px;
-      background: var(--blue); color: #fff;
-      font-family: var(--mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase;
-      padding: 3px 9px; border-radius: 20px;
-    }
-    .plan-card summary { padding-top: 16px; }
-    .plan-card.featured summary { padding-top: 8px; }
-
-    /* summary = collapsed header, always visible */
-    .plan-card summary {
-      list-style: none;
+      border-radius: 18px;
+      overflow: hidden;
       cursor: pointer;
-      padding: 30px 24px 22px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
+      transition: border-color .3s var(--ease), box-shadow .3s var(--ease), transform .3s var(--ease);
+      grid-column: span 1;
     }
-    .plan-card summary::-webkit-details-marker { display: none; }
+    .plan-card:hover { border-color: var(--border-2); transform: translateY(-2px); }
+    .plan-card.active {
+      border-color: rgba(76,141,255,0.55);
+      box-shadow: 0 0 0 1px rgba(76,141,255,0.2), 0 30px 70px -30px rgba(76,141,255,0.5);
+      grid-column: 1 / -1;
+    }
+    @media (max-width: 720px) { .plan-card.active { grid-column: span 1; } }
 
-    .plan-summary-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .plan-head { padding: 26px 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .plan-head-left { display: flex; align-items: center; gap: 13px; min-width: 0; }
     .plan-icon {
-      width: 40px; height: 40px; min-width: 40px; border-radius: 10px;
-      background: var(--blue-dim); border: 1px solid rgba(59,130,246,0.2);
+      width: 40px; height: 40px; min-width: 40px; border-radius: 11px;
+      background: var(--blue-dim); border: 1px solid var(--border-2);
       display: flex; align-items: center; justify-content: center;
+      transition: background .3s var(--ease), transform .3s var(--ease);
     }
-    .plan-icon svg { width: 18px; height: 18px; color: var(--blue); }
-    .plan-name { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.2px; }
-    .plan-price { font-family: var(--mono); text-align: right; white-space: nowrap; }
-    .plan-price .amount { font-size: 22px; font-weight: 700; color: #fff; }
-    .plan-price .period { font-size: 11px; color: var(--muted); margin-left: 3px; }
+    .plan-card.active .plan-icon { background: var(--blue); transform: scale(1.05); }
+    .plan-icon svg { width: 18px; height: 18px; color: var(--blue-light); transition: color .3s var(--ease); }
+    .plan-card.active .plan-icon svg { color: #fff; }
+
+    .plan-name-wrap { min-width: 0; }
+    .plan-name { font-family: var(--display); font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.2px; }
+    .plan-count { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+    .plan-from { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .plan-from .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .plan-from .amount { font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--text); }
 
     .plan-chevron {
-      width: 16px; height: 16px; color: var(--muted); flex-shrink: 0;
-      transition: transform .2s ease;
+      width: 15px; height: 15px; color: var(--muted); flex-shrink: 0;
+      transition: transform .35s var(--ease), color .3s var(--ease);
     }
-    .plan-card[open] .plan-chevron { transform: rotate(180deg); }
+    .plan-card.active .plan-chevron { transform: rotate(180deg); color: var(--blue-light); }
 
-    /* expanded body */
-    .plan-body {
-      padding: 0 24px 26px;
-      border-top: 1px solid var(--border);
-      padding-top: 20px;
-    }
+    .plan-body { max-height: 0; overflow: hidden; transition: max-height .45s var(--ease); }
+    .plan-card.active .plan-body { max-height: 900px; }
+    .plan-body-inner { padding: 4px 24px 26px; border-top: 1px solid var(--border); margin: 0 24px; }
 
-    .plan-members {
-      font-size: 12.5px; color: var(--muted); margin-bottom: 14px;
-      display: flex; gap: 18px; flex-wrap: wrap;
-    }
-    .plan-members b { color: var(--text); font-weight: 600; }
+    .plan-limits { display: flex; gap: 28px; padding: 18px 0 20px; font-size: 12px; color: var(--muted); }
+    .plan-limits b { display: block; font-family: var(--mono); font-size: 15px; color: var(--text); font-weight: 600; margin-top: 3px; }
 
-    .plan-flags-inline {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px;
-    }
-    .flag-chip {
-      font-size: 11.5px; padding: 5px 11px; border-radius: 20px;
-      background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.18);
-      color: var(--soft); white-space: nowrap;
-    }
-    .flag-chip.off {
-      background: transparent; border: 1px solid var(--border); color: #4b5563;
-      text-decoration: line-through;
-    }
+    .ledger-label { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; font-family: var(--mono); }
 
-    .plan-cta {
-      display: block; text-align: center; text-decoration: none;
-      background: var(--blue); color: #fff;
-      font-weight: 600; font-size: 13.5px; letter-spacing: 0.01em;
-      padding: 12px 0; border-radius: 8px;
-      transition: background .2s ease, transform .15s ease;
+    .ledger { display: flex; flex-direction: column; gap: 0; border-top: 1px dashed var(--border-2); }
+    .ledger-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 4px; border-bottom: 1px dashed var(--border-2); gap: 12px; }
+    .ledger-left { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+    .ledger-duration { font-family: var(--display); font-size: 14.5px; font-weight: 700; color: #fff; white-space: nowrap; }
+    .ledger-save {
+      font-size: 10px; font-family: var(--mono); color: var(--green);
+      background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3);
+      padding: 2px 7px; border-radius: 20px; white-space: nowrap;
     }
-    .plan-cta:hover { background: var(--blue-mid); transform: translateY(-1px); }
-    .plan-card:not(.featured) .plan-cta { background: transparent; color: var(--text); border: 1px solid var(--border); }
-    .plan-card:not(.featured) .plan-cta:hover { border-color: var(--blue); color: var(--blue); }
+    .ledger-best {
+      font-size: 10px; font-family: var(--mono); color: var(--blue-light);
+      background: var(--blue-dim); border: 1px solid var(--border-2);
+      padding: 2px 7px; border-radius: 20px; white-space: nowrap;
+    }
+    .ledger-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+    .ledger-price { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; }
+    .ledger-select {
+      font-family: var(--body); font-size: 12px; font-weight: 700;
+      color: #fff; background: var(--blue); border: none;
+      padding: 8px 16px; border-radius: 8px; text-decoration: none;
+      transition: background .2s var(--ease), transform .15s var(--ease);
+      white-space: nowrap;
+    }
+    .ledger-select:hover { background: var(--blue-light); transform: translateY(-1px); }
+    .ledger-row.trial .ledger-select { background: transparent; border: 1px solid var(--border-2); color: var(--text); }
+    .ledger-row.trial .ledger-select:hover { border-color: var(--blue); color: var(--blue-light); }
 
-    /* ── Footer ── */
+    .feature-row { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .feature-chip {
+      font-size: 11px; line-height: 1; padding: 5px 10px; border-radius: 20px;
+      background: transparent; border: 1px solid var(--border-2);
+      color: var(--soft); white-space: nowrap; font-family: var(--body); font-weight: 500;
+    }
+    .feature-chip.off { opacity: 0.35; text-decoration: line-through; border-color: var(--border); }
+
     footer {
-      border-top: 1px solid var(--border); padding: 24px;
+      border-top: 1px solid var(--border); padding: 24px 32px;
       display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+      max-width: 1080px; margin: 0 auto;
     }
-    .footer-logo { font-size: 14px; font-weight: 700; color: var(--muted); }
+    .footer-logo { font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--muted); }
     .footer-logo span { color: var(--blue); }
     .footer-note { font-size: 11px; color: var(--muted); font-family: var(--mono); }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 900px) {
-      .stats-strip { grid-template-columns: repeat(2, 1fr); }
-      .stat-card { border-right: none; border-bottom: 1px solid var(--border); }
-      .stat-card:nth-child(odd) { border-right: 1px solid var(--border); }
-      .stat-card:nth-child(3), .stat-card:nth-child(4) { border-bottom: none; }
-      .layout { padding: 48px 24px 80px; }
-    }
 
     @media (max-width: 600px) {
       nav { padding: 0 16px; }
       .nav-back .back-label { display: none; }
-      .hero { padding: 48px 16px 36px; }
-      .hero h1 { letter-spacing: -0.8px; }
-      .stats-strip { grid-template-columns: 1fr; }
-      .stat-card { border-right: none !important; border-bottom: 1px solid var(--border); }
-      .stat-card:last-child { border-bottom: none; }
-      .layout { padding: 32px 16px 64px; }
-      .plans-grid { margin-bottom: 64px; }
-      footer { flex-direction: column; align-items: flex-start; gap: 6px; }
-    }
-
-    @media (min-width: 1200px) {
-      .layout { padding: 76px 40px 120px; }
+      .hero { padding: 52px 16px 36px; }
+      .layout { padding: 32px 16px 80px; }
+      .plan-head { padding: 22px 18px; }
+      .plan-body-inner { margin: 0 18px; padding: 4px 0 22px; }
+      .plan-from .label { display: none; }
+      .ledger-right { gap: 8px; }
+      footer { flex-direction: column; align-items: flex-start; gap: 6px; padding: 20px 16px; }
     }
   </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <div class="nav-logo">Enter<span>GYM</span></div>
   <a class="nav-back" href="/">
@@ -270,141 +222,191 @@
   </a>
 </nav>
 
-<!-- HERO -->
 <header class="hero">
-  <div class="hero-badge">
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-      <path d="M8 1l1.5 3.5L13 5l-2.5 2.5.5 3.5L8 9.5 5 11l.5-3.5L3 5l3.5-.5L8 1z"/>
-    </svg>
-    Subscription Plans
-  </div>
+  <div class="hero-badge">Membership Ledger</div>
   <h1>Pick the plan that <span>fits your gym.</span></h1>
-  <p class="hero-sub">Every plan runs the full EnterGYM stack — attendance, billing, staff, and member management. The difference is how much weight it can carry.</p>
-  <div class="hero-meta">
-    <span>
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-        <rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 7h12M5 1v4M11 1v4"/>
-      </svg>
-      Billed Monthly
-    </span>
-    <span>
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-        <circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2 2"/>
-      </svg>
-      Cancel Anytime
-    </span>
-    <span>
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-        <rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M2 8h12M5 4V2.5M11 4V2.5"/>
-      </svg>
-      Arrow SoftTech
-    </span>
-  </div>
+  <p class="hero-sub">Every plan runs the full EnterGYM stack — attendance, billing, staff, and member management. Tap a plan to open its ledger.</p>
 </header>
 
-<!-- STATS STRIP -->
-<div class="stats-strip">
-  <div class="stat-card">
-    <div class="stat-icon">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M8 1l1.5 3.5L13 5.5l-3 2.5 1 4L8 10l-3 2 1-4-3-2.5 3.5-.5L8 1z"/>
-      </svg>
-    </div>
-    <div>
-      <div class="stat-title">1-Month Free Trial</div>
-      <div class="stat-desc">Every new gym gets full access before paying anything.</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-        <rect x="2" y="5" width="12" height="9" rx="1.5"/><path d="M5 5V4a3 3 0 0 1 6 0v1"/>
-      </svg>
-    </div>
-    <div>
-      <div class="stat-title">No Hidden Fees</div>
-      <div class="stat-desc">The price you see is the price you pay, every month.</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M3 8h10M9 4l4 4-4 4"/>
-      </svg>
-    </div>
-    <div>
-      <div class="stat-title">Upgrade Instantly</div>
-      <div class="stat-desc">Move up a tier anytime — prorated, no downtime.</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-        <circle cx="8" cy="8" r="6"/><path d="M6 6l4 4M10 6l-4 4"/>
-      </svg>
-    </div>
-    <div>
-      <div class="stat-title">Cancel Anytime</div>
-      <div class="stat-desc">No lock-in contracts, no cancellation charges.</div>
-    </div>
-  </div>
-</div>
-
-<!-- MAIN LAYOUT -->
 <div class="layout">
-
-  <!-- PLAN CARDS -->
   <div class="section-lead">
-    <h2>Simple, transparent pricing</h2>
-    <p>Tap a plan to see what's included. All plans run core attendance, billing, and member management.</p>
+    <p>All prices in ₹, billed for the selected term. No setup fees, cancel anytime.</p>
   </div>
 
-  <div class="plans-grid">
-    {% for plan in plans %}
-    <details class="plan-card {% if plan.is_featured %}featured{% endif %}">
-      {% if plan.is_featured %}<span class="plan-tag">Most Picked</span>{% endif %}
-      <summary>
-        <div class="plan-summary-left">
-          <div class="plan-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M8 1l1.5 3.5L13 5l-2.5 2.5.5 3.5L8 9.5 5 11l.5-3.5L3 5l3.5-.5L8 1z"/>
-            </svg>
-          </div>
-          <span class="plan-name">{{ plan.name }}</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <p class="plan-price">
-            <span class="amount">₹{{ plan.price_monthly|floatformat:0 }}</span>
-            <span class="period">/mo</span>
-          </p>
-          <svg class="plan-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M4 6l4 4 4-4"/>
-          </svg>
-        </div>
-      </summary>
-      <div class="plan-body">
-        <div class="plan-members">
-          <span>Members <b>{{ plan.member_limit }}</b></span>
-          <span>Trainers <b>{{ plan.trainer_limit }}</b></span>
-        </div>
-        <div class="plan-flags-inline">
-          {% for flag, enabled in plan.flag_items %}
-          <span class="flag-chip {% if not enabled %}off{% endif %}">{{ flag }}</span>
-          {% endfor %}
-        </div>
-        <a href="{% url 'add_gym_page' %}?plan={{ plan.id }}" class="plan-cta">Choose {{ plan.name }}</a>
-      </div>
-    </details>
-    {% endfor %}
-  </div>
-
+  <div class="plans-grid" id="plansGrid"></div>
 </div>
 
-<!-- FOOTER -->
 <footer>
   <div class="footer-logo">Enter<span>GYM</span> · Arrow SoftTech</div>
-  <div class="footer-note">© 2026 Arrow SoftTech · Prices in INR, billed monthly.</div>
+  <div class="footer-note">© 2026 Arrow SoftTech · Prices in INR.</div>
 </footer>
+<script nonce="{{ request.csp_nonce }}" id="plans-data" type="application/json">
+{
+  {% for group_name, group_plans in plan_groups.items %}
+  "{{ group_name|escapejs }}": [
+    {% for plan in group_plans %}
+    {
+      "id": {{ plan.id }},
+      "name_str": "{{ plan.name|escapejs }}",
+      "price_monthly": "{{ plan.price_monthly }}",
+      "member_limit": {{ plan.member_limit|default:0 }},
+      "trainer_limit": {{ plan.trainer_limit|default:0 }},
+      "flags": [
+        {% for label, enabled in plan.flag_items %}
+        {"name": "{{ label|escapejs }}", "enabled": {{ enabled|yesno:"true,false" }}}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+      ]
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]{% if not forloop.last %},{% endif %}
+  {% endfor %}
+}
+</script>
+
+<script nonce="{{ request.csp_nonce }}" >
+(function () {
+  var raw = document.getElementById('plans-data').textContent;
+  var groups = {};
+  try { groups = JSON.parse(raw); } catch (e) { groups = {}; }
+  var order = Object.keys(groups);
+
+  function parseDuration(nameStr) {
+    var m = nameStr.match(/(\d+)\s*Month/i);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
+  function fmtPrice(v) {
+    var n = parseFloat(v || 0);
+    return '₹' + Math.round(n).toLocaleString('en-IN');
+  }
+
+  var icons = {
+    'Free Trial': '<path d="M8 1l1.5 3.5L13 5.5l-3 2.5 1 4L8 10l-3 2 1-4-3-2.5 3.5-.5L8 1z"/>',
+    'Starter': '<path d="M3 13V7l5-4 5 4v6M6 13V9h4v4"/>',
+    'Growth': '<path d="M2 12l4-4 3 3 5-6M14 5V3h-2"/>',
+    'Professional': '<circle cx="8" cy="5" r="3"/><path d="M4 14v-1a4 4 0 0 1 8 0v1"/>'
+  };
+
+  var descriptions = {
+    'Free Trial': 'Full access, on us — see if EnterGYM fits before you pay.',
+    'Starter': 'Core attendance and billing for gyms just getting organized.',
+    'Growth': 'Adds automation and outreach as your member base scales.',
+    'Professional': 'The complete stack — AI attendance, GPS, and priority support.'
+  };
+
+  var grid = document.getElementById('plansGrid');
+  var openCard = null;
+
+  order.forEach(function (key) {
+    var members = groups[key].slice();
+    // sort by duration ascending, trial (0) first
+    members.sort(function (a, b) { return parseDuration(a.name_str) - parseDuration(b.name_str); });
+
+    var isTrial = /free/i.test(key);
+    var card = document.createElement('div');
+    card.className = 'plan-card';
+
+    var cheapest = members.reduce(function (min, p) {
+      var v = parseFloat(p.price_monthly || 0);
+      return (min === null || v < min) ? v : min;
+    }, null);
+
+    var iconPath = icons[key] || icons['Starter'];
+    var desc = descriptions[key] || 'A plan built for your gym’s needs.';
+
+    var headHtml =
+      '<div class="plan-head">' +
+        '<div class="plan-head-left">' +
+          '<div class="plan-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">' + iconPath + '</svg></div>' +
+          '<div class="plan-name-wrap">' +
+            '<div class="plan-name">' + key + '</div>' +
+            '<div class="plan-count">' + (isTrial ? desc : members.length + ' term' + (members.length > 1 ? 's' : '') + ' available') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="plan-from">' +
+          (isTrial ? '' : '<span class="label">from</span><span class="amount">' + fmtPrice(cheapest) + '</span>') +
+          '<svg class="plan-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6l4 4 4-4"/></svg>' +
+        '</div>' +
+      '</div>';
+
+    var priceMap = members.map(function (p) {
+      var v = parseFloat(p.price_monthly || 0);
+      var dur = parseDuration(p.name_str) || 1;
+      return v / dur;
+    });
+    var baseMonthly = priceMap.length ? priceMap[0] : 0;
+
+    var ledgerRows = members.map(function (p, i) {
+      var dur = parseDuration(p.name_str);
+      var durLabel = isTrial ? 'Free Trial' : (dur ? dur + ' Month' + (dur > 1 ? 's' : '') : p.name_str);
+      var priceVal = parseFloat(p.price_monthly || 0);
+      var perMonth = dur ? priceVal / dur : priceVal;
+      var savingPct = baseMonthly > 0 ? Math.round((1 - perMonth / baseMonthly) * 100) : 0;
+      var isLast = i === members.length - 1;
+      var tagHtml = '';
+      if (isTrial) {
+        tagHtml = '';
+      } else if (isLast && members.length > 1 && dur >= 12) {
+        tagHtml = '<span class="ledger-best">Best Value</span>';
+      } else if (savingPct > 0) {
+        tagHtml = '<span class="ledger-save">Save ' + savingPct + '%</span>';
+      }
+      return (
+        '<div class="ledger-row' + (isTrial ? ' trial' : '') + '">' +
+          '<div class="ledger-left">' +
+            '<span class="ledger-duration">' + durLabel + '</span>' +
+            tagHtml +
+          '</div>' +
+          '<div class="ledger-right">' +
+            (isTrial ? '' : '<span class="ledger-price">' + fmtPrice(priceVal) + '</span>') +
+            '<a href="/add-gym/?plan=' + p.id + '" class="ledger-select">' + (isTrial ? 'Start Free' : 'Select') + '</a>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    var seen = {};
+    var featureChips = [];
+    members.forEach(function (p) {
+      (p.flags || []).forEach(function (f) {
+        if (!seen[f.name]) {
+          seen[f.name] = true;
+          featureChips.push('<span class="feature-chip' + (f.enabled ? '' : ' off') + '">' + f.name + '</span>');
+        }
+      });
+    });
+
+    var repPlan = members[0];
+    var bodyHtml =
+      '<div class="plan-body"><div class="plan-body-inner">' +
+        '<div class="plan-limits">' +
+          '<span>Member Limit<b>' + (repPlan.member_limit || '—') + ' Members</b></span>' +
+          '<span>Trainer Limit<b>' + (repPlan.trainer_limit || '—') + ' Trainers</b></span>' +
+        '</div>' +
+        '<div class="ledger-label">Available Plans</div>' +
+        '<div class="ledger">' + ledgerRows + '</div>' +
+        (featureChips.length ? '<div class="feature-row">' + featureChips.join('') + '</div>' : '') +
+      '</div></div>';
+
+    card.innerHTML = headHtml + bodyHtml;
+
+    card.addEventListener('click', function (e) {
+      if (e.target.closest('a.ledger-select')) return;
+      var willOpen = !card.classList.contains('active');
+      if (openCard && openCard !== card) openCard.classList.remove('active');
+      card.classList.toggle('active', willOpen);
+      openCard = willOpen ? card : null;
+      if (willOpen) {
+        setTimeout(function () {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 120);
+      }
+    });
+
+    grid.appendChild(card);
+  });
+})();
+</script>
 
 </body>
 </html>

@@ -1,5 +1,6 @@
 from __future__ import annotations
-
+from collections import OrderedDict
+import re
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Sum, Q, DecimalField
@@ -807,17 +808,25 @@ def api_public_live_stats(request):
     return JsonResponse(ls.get_live_stats())
 
 def plans_page(request):
-    """Public pricing page — no login required."""
-    plans = list(SubscriptionPlan.objects.all().order_by("price_monthly"))
-    mid_index = len(plans) // 2 if len(plans) % 2 else max(len(plans) // 2 - 1, 0)
-    all_flags = set()
-    for i, plan in enumerate(plans):
+    """Public pricing page."""
+    plans = SubscriptionPlan.objects.all().order_by("price_monthly")
+    grouped_plans = OrderedDict()
+    for plan in plans:
         flags = plan.feature_flags or {}
-        all_flags.update(flags.keys())
-        plan.is_featured = flags.get("featured", i == mid_index and len(plans) > 1)
-        plan.flag_items = [(k.replace("_", " ").title(), bool(v)) for k, v in flags.items() if k != "featured"]
-
-    return render(request, "plans_page.html", {
-        "plans": plans,
-        "all_flag_names": sorted(f for f in all_flags if f != "featured"),
-    })
+        # Feature chips
+        plan.flag_items = [
+            (key.replace("_", " ").title(),bool(value))
+            for key, value in flags.items()
+            if key != "featured"
+        ]
+        name = plan.name.strip()
+        # Detect group
+        if name.lower().startswith("free"):
+            group = "Free Trial"
+        else:
+            group = re.split(r"\s*-\s*", name)[0]
+        grouped_plans.setdefault(group, []).append(plan)
+    return render(request,"plans_page.html",{
+            "plan_groups": grouped_plans,
+        },
+    )
