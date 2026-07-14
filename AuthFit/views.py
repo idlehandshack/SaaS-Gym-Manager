@@ -2734,7 +2734,7 @@ def Refundpolicy(request):
     return render(request, "refundpolicy.html")
 
 def termcondition(request):
-    return render(request, "termcondtion.html")
+    return render(request, "termcondition.html")
 
 def privacypolicy(request):
     return render(request, "privacypolicy.html")

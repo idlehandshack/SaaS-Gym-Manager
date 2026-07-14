@@ -134,7 +134,7 @@
           </p>
           <div class="hero-cta">
             {% if request.user.is_superuser %}
-            <button class="btn-secondary" id="enable-home-notification">
+            <button class="hero-cta-pill hero-cta-pill--orange" id="enable-home-notification">
                 Enable Notifications
             </button>
             {% else %}
@@ -164,22 +164,6 @@
               </svg>
               Cost Calculator
             </a>
-            </div>
-          </div>
-          <div class="hero-proof">
-            <div class="proof-item">
-              <span class="proof-num" data-target="50000">0</span>
-              <span class="proof-label">members managed</span>
-            </div>
-            <div class="proof-divider"></div>
-            <div class="proof-item">
-              <span class="proof-num" data-target="34">0</span>
-              <span class="proof-label">gyms live</span>
-            </div>
-            <div class="proof-divider"></div>
-            <div class="proof-item">
-              <span class="proof-num" data-target="500000">0</span>
-              <span class="proof-label">attendance logs</span>
             </div>
           </div>
         </div>
@@ -407,7 +391,7 @@
       <div class="features-inner">
         <div class="features-header">
           <p class="feat-eyebrow-pill">What's inside</p>
-          <h2>Twelve systems.<br />One platform.</h2>
+          <h2>Thirteen systems.<br />One platform.</h2>
           <p class="section-sub">
             Each module was built for gym operators, not adapted from generic
             software.
@@ -611,6 +595,27 @@
               <div class="fv-card">
                   <img src="{% static 'images/features/face.webp' %}"
                       alt="GPS attendance map" class="fv-image">
+              </div>
+            </div>
+          </div>
+          <div class="feat-row">
+            <div class="feat-text">
+              <span class="feat-index">10</span>
+              <h3 class= "head-color">Online Supplement <span>Store</span></h3>
+              <p>
+                Sell protein, creatine, pre-workout, and other supplements directly from your gym.
+              </p>
+              <div class="dashboard-features">
+                <div class="feature-item">Create your own branded online store in minutes.</div>
+                <div class="feature-item">Manage products, categories, stock, and pricing from one dashboard.</div>
+                <div class="feature-item">Increase your gym's monthly revenue with zero extra staff.</div>
+                <div class="feature-item">Mobile-friendly shopping experience for customers.</div>
+              </div>
+            </div>
+            <div class="feat-visual feat-visual--face">
+              <div class="fv-card">
+                <img src="{% static 'images/features/store.webp' %}"
+                  alt="Face recognition attendance" class="fv-image">
               </div>
             </div>
           </div>
@@ -882,31 +887,90 @@
                 <p class="gw-card-subtitle">Auto-generated from your dashboard data</p>
               </div>
             </div>
+            <!-- ═══════════════════════════════════════════════
+                PREMIUM BROWSER-MOCKUP SCREENSHOT CAROUSEL
+                Replaces the old static .gw-img-wrap block
+                ═══════════════════════════════════════════════ -->
+            <div class="swc-browser" id="swc-browser" aria-roledescription="carousel" aria-label="EnterGYM website screenshots">
 
-            <!-- IMAGE PLACEHOLDER — replace src with your actual screenshot -->
-            <div class="gw-img-wrap">
-              <div class="gw-img-placeholder">
-                <img
-                  src="{% static 'images/website.webp' %}"
-                  alt="EnterGYM generated gym website"
-                  class="gw-img"
-                />
-                
+              <!-- Browser chrome bar (moved to top, macOS style) -->
+              <div class="swc-browser-bar">
+                <div class="swc-traffic">
+                  <span class="swc-dot swc-dot--red"></span>
+                  <span class="swc-dot swc-dot--yellow"></span>
+                  <span class="swc-dot swc-dot--green"></span>
+                </div>
+                <div class="swc-url-bar">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zm-3 8V7a3 3 0 116 0v3H9z" fill="currentColor"/>
+                  </svg>
+                  <span id="swc-url-text">yourgym.entergym.in</span>
+                </div>
+                <div class="swc-live-badge">
+                  <span class="swc-live-pulse"></span> Live
+                </div>
               </div>
-              <div class="gw-img-browser-bar">
-                <div class="gw-dots"><span></span><span></span><span></span></div>
-                <div class="gw-url-bar">yourgym.entergym.in</div>
+
+              <!-- Slides viewport -->
+              <div class="swc-viewport" id="swc-viewport">
+                <ul class="swc-track" id="swc-track" role="list">
+
+                  <li class="swc-slide" role="group" aria-roledescription="slide" aria-label="1 of 4">
+                    <img
+                      src="{% static 'images/orange.webp' %}"
+                      alt="EnterGYM generated gym website — home page"
+                      class="swc-img"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </li>
+
+                  <li class="swc-slide" role="group" aria-roledescription="slide" aria-label="2 of 4">
+                    <img
+                      src="{% static 'images/green.webp' %}"
+                      alt="EnterGYM generated gym website — membership plans"
+                      class="swc-img"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </li>
+
+                  <li class="swc-slide" role="group" aria-roledescription="slide" aria-label="3 of 4">
+                    <img
+                      src="{% static 'images/pink.webp' %}"
+                      alt="EnterGYM generated gym website — member dashboard"
+                      class="swc-img"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </li>
+                  <li class="swc-slide" role="group" aria-roledescription="slide" aria-label="4 of 4">
+                    <img
+                      src="{% static 'images/blue.webp' %}"
+                      alt="EnterGYM generated gym website — member dashboard"
+                      class="swc-img"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </li>
+
+                </ul>
               </div>
+
+              <!-- Arrows -->
+              <button type="button" class="swc-arrow swc-arrow--prev" id="swc-prev" aria-label="Previous screenshot">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <button type="button" class="swc-arrow swc-arrow--next" id="swc-next" aria-label="Next screenshot">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+
+              <!-- Dots -->
+              <div class="swc-dots" id="swc-dots" role="tablist" aria-label="Select screenshot"></div>
+
             </div>
 
             <ul class="gw-feature-list">
-              <li>
-                <span class="gw-check">✓</span>
-                <div>
-                  <strong>Working Hours</strong>
-                  <span>Display gym timings automatically from your settings</span>
-                </div>
-              </li>
               <li>
                 <span class="gw-check">✓</span>
                 <div>
@@ -1398,14 +1462,14 @@
         <!-- ============ PANEL: LAUNCHPAD ============ -->
         <div class="s5-panel" id="s5-panel-launchpad">
           <div class="s5-card">
-            <span class="s5-badge">Free Forever</span>
-            <h3 class="s5-card__title">Launchpad</h3>
+            <span class="s5-badge">New Gym</span>
+            <h3 class="s5-card__title">Trail</h3>
             <div class="s5-card__price">
               <span class="s5-card__price-amount">₹0</span>
               <span class="s5-card__price-unit">/month</span>
             </div>
             <p class="s5-card__price-note">
-              Up to 25 members &mdash; perfect for new gyms testing the waters.
+              Up to 40 members &mdash; perfect for new gyms testing the waters.
             </p>
             <ul class="s5-checklist">
               <li class="s5-check-item">
@@ -1420,35 +1484,7 @@
                     />
                   </svg>
                 </span>
-                Core member management
-              </li>
-              <li class="s5-check-item">
-                <span class="s5-check-icon">
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.8 7.2l2.6 2.6L11.2 4"
-                      stroke="#10b981"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                Manual attendance log
-              </li>
-              <li class="s5-check-item">
-                <span class="s5-check-icon">
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.8 7.2l2.6 2.6L11.2 4"
-                      stroke="#10b981"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                No card required
+                All Premium+ features
               </li>
             </ul>
             <a href="/login/" class="s5-btn s5-btn--primary">Start for free</a>
@@ -1569,18 +1605,7 @@
             <div class="s5-grid-card">
               <span class="s5-badge">Starter</span>
               <h4 class="s5-grid-card__title">1 Months</h4>
-              <div class="s5-grid-card__price">₹999</div>
-              <span class="s5-extra-branch">
-                <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                  <path
-                    d="M7 3v8M3 7h8"
-                    stroke="#10b981"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                ₹1,750 per additional branch
-              </span>
+              <div class="s5-grid-card__price">₹499</div>
               <ul class="s5-checklist">
                 <li class="s5-check-item">
                   <span class="s5-check-icon">
@@ -1594,7 +1619,7 @@
                       />
                     </svg>
                   </span>
-                  Member Up to 100
+                  Member Up to 75
                 </li>
                 <li class="s5-check-item">
                   <span class="s5-check-icon">
@@ -1610,6 +1635,17 @@
                   </span>
                   All Premium+ features
                 </li>
+              </ul>
+              <a href="/login/" class="s5-btn s5-btn--primary">Subscribe</a>
+              <div class="s5-terms-wrap">
+                <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
+              </div>
+            </div>
+            <div class="s5-grid-card s5-grid-card--popular">
+              <span class="s5-badge">Growth</span>
+              <h4 class="s5-grid-card__title">1 Months</h4>
+              <div class="s5-grid-card__price">₹849</div>
+              <ul class="s5-checklist">
                 <li class="s5-check-item">
                   <span class="s5-check-icon">
                     <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
@@ -1622,7 +1658,21 @@
                       />
                     </svg>
                   </span>
-                  Free migration
+                  Member Up to 120
+                </li>
+                <li class="s5-check-item">
+                  <span class="s5-check-icon">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M2.8 7.2l2.6 2.6L11.2 4"
+                        stroke="#10b981"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  All Premium+ features
                 </li>
               </ul>
               <a href="/login/" class="s5-btn s5-btn--primary">Subscribe</a>
@@ -1630,21 +1680,10 @@
                 <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
               </div>
             </div>
-            <div class="s5-grid-card s5-grid-card--popular">
-              <span class="s5-badge">Growth</span>
+            <div class="s5-grid-card">
+              <span class="s5-badge">Professional</span>
               <h4 class="s5-grid-card__title">1 Months</h4>
-              <div class="s5-grid-card__price">₹1,999</div>
-              <span class="s5-extra-branch">
-                <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                  <path
-                    d="M7 3v8M3 7h8"
-                    stroke="#10b981"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                ₹1,499 per additional branch
-              </span>
+              <div class="s5-grid-card__price">₹1,599</div>
               <ul class="s5-checklist">
                 <li class="s5-check-item">
                   <span class="s5-check-icon">
@@ -1673,84 +1712,6 @@
                     </svg>
                   </span>
                   All Premium+ features
-                </li>
-                <li class="s5-check-item">
-                  <span class="s5-check-icon">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.8 7.2l2.6 2.6L11.2 4"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  Free migration
-                </li>
-              </ul>
-              <a href="/login/" class="s5-btn s5-btn--primary">Subscribe</a>
-              <div class="s5-terms-wrap">
-                <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
-              </div>
-            </div>
-            <div class="s5-grid-card">
-              <span class="s5-badge">Professional</span>
-              <h4 class="s5-grid-card__title">1 Months</h4>
-              <div class="s5-grid-card__price">₹3,499</div>
-              <span class="s5-extra-branch">
-                <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                  <path
-                    d="M7 3v8M3 7h8"
-                    stroke="#10b981"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                ₹2,000 per additional branch
-              </span>
-              <ul class="s5-checklist">
-                <li class="s5-check-item">
-                  <span class="s5-check-icon">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.8 7.2l2.6 2.6L11.2 4"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  Member Up to 500
-                </li>
-                <li class="s5-check-item">
-                  <span class="s5-check-icon">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.8 7.2l2.6 2.6L11.2 4"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  All Premium+ features
-                </li>
-                <li class="s5-check-item">
-                  <span class="s5-check-icon">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.8 7.2l2.6 2.6L11.2 4"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  Free migration
                 </li>
               </ul>
               <a href="/login/" class="s5-btn s5-btn--primary">Subscribe</a>
@@ -1894,7 +1855,7 @@
                 class="s6-input"
                 id="calc-gym-name"
                 type="text"
-                placeholder="e.g. FitZone Gym"
+                placeholder="e.g. Muscle Garage Gym"
                 autocomplete="off"
               />
             </div>
@@ -2187,11 +2148,11 @@
 
             <div class="faq-item" data-faq-index="2">
               <button class="faq-q" aria-expanded="false">
-                <span>What is the Launchpad (free) plan?</span>
+                <span>What is the (free) plan?</span>
                 <span class="faq-icon" aria-hidden="true">+</span>
               </button>
               <div class="faq-a" hidden>
-                <p>The Launchpad plan is completely free — forever. It supports up to 25 active members and includes core member management and manual attendance. No credit card required. It's perfect for new gyms testing the platform before scaling up.</p>
+                <p>This plan is completely free — forever. It supports up to 40 active members and includes core member management and manual attendance. No credit card required. It's perfect for new gyms testing the platform before scaling up.</p>
               </div>
             </div>
 
@@ -2211,7 +2172,7 @@
                 <span class="faq-icon" aria-hidden="true">+</span>
               </button>
               <div class="faq-a" hidden>
-                <p>Yes, absolutely. You can switch between Launchpad, Pay-as-you-Go, and Fixed Subscription plans at any time with no penalty. There are no lock-in contracts. If you upgrade mid-cycle, the change takes effect from your next billing period.</p>
+                <p>Yes, absolutely. You can switch between Trail, Pay-as-you-Go, and Fixed Subscription plans at any time with no penalty. There are no lock-in contracts. If you upgrade mid-cycle, the change takes effect from your next billing period.</p>
               </div>
             </div>
 
@@ -2244,17 +2205,6 @@
                 <p>Yes. EnterGYM is built as a multi-tenant SaaS platform. Each branch operates with fully isolated data — separate members, attendance, payments, and reports. Gym owners can switch between branches instantly from one login without any risk of data overlap.</p>
               </div>
             </div>
-
-            <div class="faq-item" data-faq-index="14">
-              <button class="faq-q" aria-expanded="false">
-                <span>How long does migration from my existing system take?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>Migration is free and typically takes less than 24 hours. Just share your existing member list in any format — Excel, CSV, or even a WhatsApp contact export. Our team at Arrow SoftTech handles all the importing, configuration, and testing before going live.</p>
-              </div>
-            </div>
-
           </div>
 
           <!-- ── Column 2 ── -->
@@ -2326,7 +2276,7 @@
                 <span class="faq-icon" aria-hidden="true">+</span>
               </button>
               <div class="faq-a" hidden>
-                <p>Yes. EnterGYM uses a fully isolated multi-tenant architecture — your gym's data is completely separate from every other gym on the platform. We prevent IDOR attacks by deriving gym context from the authenticated user, not from URL parameters. The platform runs at 99.9% uptime with regular backups.</p>
+                <p>Yes. EnterGYM uses a fully isolated multi-tenant architecture — your gym's data is completely separate from every other gym on the platform. We prevent IDOR attacks by deriving gym context from the authenticated user, not from URL parameters. The platform runs at 99.8% uptime with regular backups.</p>
               </div>
             </div>
 
@@ -2336,7 +2286,7 @@
                 <span class="faq-icon" aria-hidden="true">+</span>
               </button>
               <div class="faq-a" hidden>
-                <p>EnterGYM is the most affordable gym management software in India. It starts completely free (Launchpad plan, up to 25 members). For growing gyms, Pay-as-you-Go starts at ₹4.99 per active member per month. Fixed subscriptions start at ₹3,499 for 3 months with unlimited members. No hidden fees, no feature lock-ins.</p>
+                <p>EnterGYM is the most affordable gym management software in India. It starts completely free (Trail plan, up to 40 members). For growing gyms, Pay-as-you-Go starts at ₹4.99 per active member per month. Fixed subscriptions start at ₹499 for 1 months with unlimited members. No hidden fees, no feature lock-ins.</p>
               </div>
             </div>
 
@@ -2406,7 +2356,7 @@
             <div class="cc-row">
               <span class="cc-key">Uptime</span>
               <span class="cc-val" style="color: #10b981"
-                >99.9% · All systems normal</span
+                >99.98% · All systems normal</span
               >
             </div>
           </div>
@@ -2492,9 +2442,11 @@
             <li><a href="/termandcondition/">Terms of Service</a></li>
             <li><a href="/refundpolicy/">Refund Policy</a></li>
           </ul>
+        </div>
+        <div class="footer-col">
           <div class="footer-uptime">
             <span class="uptime-dot"></span>
-            <span>All systems normal · 99.9% uptime</span>
+            <span>All systems normal <br> · 99.98% uptime</span>
           </div>
         </div>
       </div>
@@ -2593,7 +2545,7 @@
       ]
     }
     </script>
-    <script src="{% static 'js/saas_home.js' %}"></script>
+    <script src="{% static 'js/saas_home.js' %}" defer></script>
     <script nonce="{{ request.csp_nonce }}">
       (function () {
         /* Nav scroll */

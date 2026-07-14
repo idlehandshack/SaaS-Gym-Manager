@@ -327,6 +327,28 @@
     word-break: break-all;
   }
 
+  /* founder card */
+  .founder-card {
+    display: flex; gap: 20px; align-items: flex-start;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px 22px;
+    margin-top: 16px;
+  }
+  .founder-avatar {
+    width: 52px; height: 52px; min-width: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--indigo), #7b7fff);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 20px; color: #fff;
+  }
+  .founder-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; color: var(--off-white); margin-bottom: 2px; }
+  .founder-role { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--indigo-light); margin-bottom: 10px; }
+  .founder-details { font-size: 13.5px; color: var(--muted); line-height: 1.7; }
+  .founder-details strong { color: var(--off-white); }
+
   /* ── FOOTER ── */
   footer {
     border-top: 1px solid var(--border);
@@ -455,6 +477,8 @@
     .toc-toggle { font-size: 13px; padding: 12px 14px; }
     .toc-list a { font-size: 12.5px; padding: 6px 8px; }
 
+    .founder-card { flex-direction: column; gap: 12px; padding: 16px; }
+
     footer { padding: 24px 16px; gap: 10px; }
     .footer-logo { font-size: 15px; }
     .footer-copy { font-size: 10px; }
@@ -501,8 +525,8 @@
   <h1>Terms &amp; <span>Conditions</span></h1>
   <p class="hero-sub">These Terms govern your use of EnterGYM. We've written them to be fair, clear, and human-readable. If something is unclear, just ask — we're happy to explain.</p>
   <div class="hero-meta">
-    <div class="meta-item"><span class="dot"></span> Effective: 1 Jan 2026</div>
-    <div class="meta-item"><span class="dot"></span> Last Updated: 1 Jan 2026</div>
+    <div class="meta-item"><span class="dot"></span> Effective: 1 July 2026</div>
+    <div class="meta-item"><span class="dot"></span> Last Updated: 13 July 2026</div>
     <div class="meta-item"><span class="dot"></span> Arrow SoftTech</div>
   </div>
 </section>
@@ -534,7 +558,8 @@
         <li><a href="#s11">11. Termination</a></li>
         <li><a href="#s12">12. Changes to Terms</a></li>
         <li><a href="#s13">13. Governing Law</a></li>
-        <li><a href="#s14">14. Contact Us</a></li>
+        <li><a href="#s14">14. About Arrow SoftTech</a></li>
+        <li><a href="#s15">15. Contact Us</a></li>
       </ul>
     </div>
   </aside>
@@ -544,7 +569,7 @@
 
     <!-- Short Version -->
     <div class="short-version">
-      <strong>The short version:</strong> Use EnterGYM lawfully to manage your gym. You own your member data. We provide isolated, secure infrastructure for each gym. We'll give you advance notice of price or policy changes. Our liability is capped to 3 months of fees you paid.
+      <strong>The short version:</strong> Use EnterGYM lawfully to manage your gym. You own your member data. We provide isolated, secure infrastructure for each gym. We'll give you advance notice of price or policy changes. Our liability is capped to 1 months of fees you paid.
     </div>
 
     <!-- S1 -->
@@ -553,7 +578,7 @@
         <div class="section-num">1</div>
         <h2>About EnterGYM</h2>
       </div>
-      <p>EnterGYM is a cloud-based gym management platform operated by <strong>Arrow SoftTech</strong>. We provide gym owners with tools to manage members, billing, attendance, WhatsApp automation, push notifications, GST billing, and AI-powered features — all in one isolated, secure platform.</p>
+      <p>EnterGYM is a cloud-based gym management platform operated by <strong>Arrow SoftTech</strong>. We provide gym owners with tools to manage members, billing, attendance,push notifications, GST billing, and AI-powered features — all in one isolated, secure platform.</p>
       <p>Each gym on EnterGYM operates on a fully isolated subdomain (e.g., <span class="mono-tag">yourgym.entergym.in</span>), ensuring complete data separation between businesses.</p>
       <div class="info-cards">
         <div class="info-card">
@@ -562,11 +587,11 @@
         </div>
         <div class="info-card">
           <div class="info-card-label">✉️ Email</div>
-          <div class="info-card-value">support@entergym.in</div>
+          <div class="info-card-value">contact@entergym.in</div>
         </div>
         <div class="info-card">
           <div class="info-card-label">📍 Location</div>
-          <div class="info-card-value">Bhilai, Chhattisgarh, India</div>
+          <div class="info-card-value">Korba, Chhattisgarh, India</div>
         </div>
       </div>
     </div>
@@ -689,6 +714,10 @@
           <strong>📋 Membership Plans</strong>
           Configurable plans with durations, pricing, and GST categorization.
         </div>
+        <div class="feature-item">
+          <strong>🛒 Online Supplemnet Store</strong>
+          Sell gym supplements online with integrated inventory, order management, and secure payments to generate additional revenue.
+        </div>
       </div>
       <p style="margin-top:16px">We continuously improve EnterGYM. We may add, modify, or retire features with reasonable prior notice. Core features will not be removed without providing an equivalent or better alternative.</p>
     </div>
@@ -758,11 +787,10 @@
         <div class="section-num">9</div>
         <h2>Service Availability</h2>
       </div>
-      <p>We target 99.5% monthly uptime for the EnterGYM platform. Scheduled maintenance windows will be announced at least 24 hours in advance via the Admin Dashboard and email notification.</p>
+      <p>We target 99.98% monthly uptime for the EnterGYM platform. Scheduled maintenance windows will be announced at least 24 hours in advance via the Admin Dashboard and email notification.</p>
       <ul class="checklist">
         <li>Planned maintenance is typically scheduled between 2:00 AM – 5:00 AM IST</li>
         <li>Push notification delivery depends on third-party services (FCM, Web Push)</li>
-        <li>WhatsApp reminder delivery is subject to WhatsApp's own platform availability</li>
         <li>GPS attendance accuracy is subject to device hardware and location permissions</li>
       </ul>
       <p>We are not liable for downtime caused by third-party services, VPS provider outages, Cloudflare network disruptions, or force majeure events beyond our reasonable control.</p>
@@ -840,24 +868,55 @@
     <div class="section" id="s14">
       <div class="section-header">
         <div class="section-num">14</div>
+        <h2>About Arrow SoftTech</h2>
+      </div>
+      <p>Arrow SoftTech is an Indian software company focused on building modern, cloud-based business solutions for small and medium-sized businesses. Our mission is to simplify business operations through secure, scalable, and user-friendly software powered by the latest technologies.</p>
+      <p>Our flagship product, <strong>EnterGYM</strong>, is an all-in-one SaaS platform that helps gym owners manage memberships, billing, attendance, staff, notifications, GST invoicing, AI-powered features, and much more from a single dashboard.</p>
+
+      <div class="founder-card">
+        <div class="founder-avatar">SA</div>
+        <div>
+          <div class="founder-name">Sheikh Azmatulla</div>
+          <div class="founder-role">Founder &amp; Full-Stack Software Developer</div>
+          <div class="founder-details">
+            <strong>Age:</strong> 22 Years<br>
+            <strong>Education:</strong> B.Tech in Computer Science &amp; Engineering (Artificial Intelligence &amp; Machine Learning), 6th Semester Student <br>
+            <strong>Instagram:</strong>
+            <a href="https://instagram.com/sheikhazmatulla03"  style="text-decoration: none; color: inherit;" target="_blank" rel="noopener noreferrer">
+                @sheikhazmatulla03
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p style="margin-top:16px">Sheikh Azmatulla founded Arrow SoftTech with the vision of creating practical software solutions that solve real business problems. His expertise includes Python, Django, React Native, AI/ML, cloud technologies, and SaaS application development.</p>
+      <p>Arrow SoftTech is committed to continuously developing innovative, reliable, and affordable software products that help businesses grow through technology.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- S15 -->
+    <div class="section" id="s15">
+      <div class="section-header">
+        <div class="section-num">15</div>
         <h2>Contact Us</h2>
       </div>
       <p>If you have questions about these Terms, need clarification on any policy, or wish to report a concern, please reach out to us:</p>
       <div class="info-cards">
         <div class="info-card">
           <div class="info-card-label">📧 Email</div>
-          <div class="info-card-value">support@entergym.in</div>
+          <div class="info-card-value">contact@entergym.in</div>
         </div>
         <div class="info-card">
           <div class="info-card-label">💬 WhatsApp</div>
-          <div class="info-card-value">+91 XXXXX XXXXX</div>
+          <div class="info-card-value">+91 70000 32565</div>
         </div>
         <div class="info-card">
           <div class="info-card-label">📍 Address</div>
-          <div class="info-card-value">Bhilai, Chhattisgarh, India</div>
+          <div class="info-card-value">Korba, Chhattisgarh, India</div>
         </div>
       </div>
-      <p style="margin-top:20px">We aim to respond to all legal and Terms-related queries within <strong>2 business days</strong>.</p>
+      <p style="margin-top:20px">We aim to respond to all legal and Terms-related queries within <strong>1 business days</strong>.</p>
     </div>
 
   </div><!-- /content -->
@@ -867,14 +926,13 @@
 <footer>
   <div class="footer-logo">Enter<span>GYM</span></div>
   <div class="footer-links">
-    <a href="#">Privacy Policy</a>
-    <a href="#">Terms</a>
-    <a href="#">Contact</a>
+    <a href="/privacypolicy/">Privacy Policy</a>
+    <a href="https://wa.me/917000032565">Contact</a>
   </div>
   <div class="footer-copy">© 2026 Arrow SoftTech. All rights reserved.</div>
 </footer>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
   /* ── Mobile TOC toggle ── */
   const toggle = document.getElementById('tocToggle');
   const list   = document.getElementById('tocList');

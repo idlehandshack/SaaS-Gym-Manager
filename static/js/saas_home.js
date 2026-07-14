@@ -138,6 +138,129 @@ function onEnter(elements, callback, options) {
   });
 })();
 
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM SCREENSHOT CAROUSEL — vanilla JS, no dependencies
+   Handles: infinite loop, autoplay, arrows, dots, keyboard,
+   touch swipe, mouse drag, pause-on-hover.
+   ═══════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  const root = document.getElementById('swc-browser');
+  if (!root) return; // bail safely if markup isn't present on this page
+
+  const viewport = document.getElementById('swc-viewport');
+  const track    = document.getElementById('swc-track');
+  const slides   = Array.from(track.querySelectorAll('.swc-slide'));
+  const prevBtn  = document.getElementById('swc-prev');
+  const nextBtn  = document.getElementById('swc-next');
+  const dotsWrap = document.getElementById('swc-dots');
+  const total    = slides.length;
+
+  if (total === 0) return;
+
+  let current = 0;
+  let autoplayId = null;
+  const AUTOPLAY_MS = 4000;
+
+  const dotEls = slides.map((_, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'swc-dot-btn';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-label', 'Go to screenshot ' + (i + 1));
+    btn.addEventListener('click', () => goTo(i, true));
+    dotsWrap.appendChild(btn);
+    return btn;
+  });
+
+  function render() {
+    slides.forEach((slide, i) => {
+      slide.classList.remove('is-active', 'is-prev', 'is-next', 'is-hidden');
+      if (i === current) slide.classList.add('is-active');
+      else if (i === mod(current - 1)) slide.classList.add('is-prev');
+      else if (i === mod(current + 1)) slide.classList.add('is-next');
+      else slide.classList.add('is-hidden');
+    });
+    dotEls.forEach((dot, i) => {
+      dot.classList.toggle('is-active', i === current);
+      dot.setAttribute('aria-selected', i === current ? 'true' : 'false');
+    });
+  }
+
+  function mod(n) { return ((n % total) + total) % total; }
+
+  function goTo(index, userTriggered) {
+    current = mod(index);
+    render();
+    if (userTriggered) restartAutoplay();
+  }
+
+  function next(userTriggered) { goTo(current + 1, userTriggered); }
+  function prev(userTriggered) { goTo(current - 1, userTriggered); }
+
+  function startAutoplay() {
+    stopAutoplay();
+    autoplayId = setInterval(() => next(false), AUTOPLAY_MS);
+  }
+  function stopAutoplay() {
+    if (autoplayId) { clearInterval(autoplayId); autoplayId = null; }
+  }
+  function restartAutoplay() { stopAutoplay(); startAutoplay(); }
+
+  root.addEventListener('mouseenter', stopAutoplay);
+  root.addEventListener('mouseleave', startAutoplay);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopAutoplay(); else startAutoplay();
+  });
+
+  prevBtn.addEventListener('click', () => prev(true));
+  nextBtn.addEventListener('click', () => next(true));
+
+  root.setAttribute('tabindex', '0');
+  root.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); prev(true); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); next(true); }
+  });
+
+  let pointerDown = false;
+  let startX = 0;
+  let deltaX = 0;
+  const SWIPE_THRESHOLD = 50;
+
+  function onPointerDown(x) {
+    pointerDown = true;
+    startX = x;
+    deltaX = 0;
+    root.classList.add('is-dragging');
+    stopAutoplay();
+  }
+  function onPointerMove(x) {
+    if (!pointerDown) return;
+    deltaX = x - startX;
+  }
+  function onPointerUp() {
+    if (!pointerDown) return;
+    pointerDown = false;
+    root.classList.remove('is-dragging');
+    if (deltaX > SWIPE_THRESHOLD) prev(true);
+    else if (deltaX < -SWIPE_THRESHOLD) next(true);
+    else startAutoplay();
+    deltaX = 0;
+  }
+
+  viewport.addEventListener('touchstart', (e) => onPointerDown(e.touches[0].clientX), { passive: true });
+  viewport.addEventListener('touchmove',  (e) => onPointerMove(e.touches[0].clientX),  { passive: true });
+  viewport.addEventListener('touchend', onPointerUp);
+
+  viewport.addEventListener('mousedown', (e) => { e.preventDefault(); onPointerDown(e.clientX); });
+  window.addEventListener('mousemove', (e) => onPointerMove(e.clientX));
+  window.addEventListener('mouseup', onPointerUp);
+
+  render();
+  startAutoplay();
+});
 
 /* -----------------------------------------------------------------------------
    6. PLAN CALCULATOR

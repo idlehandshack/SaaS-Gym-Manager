@@ -340,33 +340,6 @@ img, svg   { max-width: 100%; }
   gap: 12px;
   margin-bottom: 48px;
 }
-
-/* Proof strip */
-.hero-proof { display: flex; align-items: center; flex-wrap: wrap; }
-
-.proof-item { display: flex; flex-direction: column; gap: 2px; padding-right: 28px; }
-.proof-num  {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.75rem;
-  color: var(--text-hi);
-  letter-spacing: -0.03em;
-}
-.proof-label {
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-lo);
-}
-.proof-divider {
-  width: 1px;
-  height: 36px;
-  background: var(--border);
-  margin: 0 28px 0 0;
-  flex-shrink: 0;
-}
-
 /* Terminal card (right col) */
 .hero-right { width: 100%; min-width: 0; }
 /* ── Hero CTA secondary row ── */
@@ -2761,7 +2734,275 @@ img, svg   { max-width: 100%; }
   transform: translateY(-1px);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   SCREENSHOT WEBSITE CAROUSEL (swc-*)
+   Self-contained module — safe to paste alongside existing CSS.
+   ═══════════════════════════════════════════════════════════════ */
+.swc-browser {
+  --swc-bg:      #0f172a;
+  --swc-glass:   rgba(20, 20, 30, 0.7);
+  --swc-border:  rgba(255, 255, 255, 0.08);
+  --swc-glow:    rgba(59, 130, 246, 0.35);
+  --swc-blue:    #3b82f6;
+  --swc-radius:  22px;
+  --swc-ease:    cubic-bezier(.22, .61, .36, 1);
+  --swc-dur:     800ms;
 
+  position: relative;
+  border-radius: var(--swc-radius);
+  background: var(--swc-bg);
+  border: 1px solid var(--swc-border);
+  overflow: hidden;
+  box-shadow:
+    0 35px 80px rgba(0,0,0,0.45),
+    0 0 0 1px rgba(255,255,255,0.04),
+    0 0 60px var(--swc-glow);
+  isolation: isolate;
+}
+
+/* ── Browser chrome bar ───────────────────────────── */
+.swc-browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--swc-glass);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid var(--swc-border);
+  position: relative;
+  z-index: 3;
+}
+.swc-traffic { display: flex; gap: 7px; flex-shrink: 0; }
+.swc-dot { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.swc-dot--red    { background: #ff5f57; }
+.swc-dot--yellow { background: #febc2e; }
+.swc-dot--green  { background: #28c840; }
+
+.swc-url-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  max-width: 320px;
+  margin: 0 auto;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--swc-border);
+  border-radius: 100px;
+  padding: 5px 14px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.02em;
+}
+.swc-url-bar svg { color: rgba(255,255,255,0.35); flex-shrink: 0; }
+
+.swc-live-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #34d399;
+  background: rgba(16,185,129,0.12);
+  border: 1px solid rgba(16,185,129,0.25);
+  padding: 4px 10px;
+  border-radius: 100px;
+}
+.swc-live-pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 6px #34d399;
+  animation: swc-pulse 2s ease-in-out infinite;
+}
+
+/* ── Viewport / track ─────────────────────────────── */
+.swc-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  perspective: 1400px;
+  touch-action: pan-y;
+  cursor: grab;
+}
+.swc-viewport:active { cursor: grabbing; }
+
+.swc-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Each slide sits stacked; JS toggles state classes */
+.swc-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform, opacity;
+  transform: translate3d(100%, 0, 0) scale(0.92);
+  opacity: 0;
+  z-index: 1;
+  transition:
+    transform var(--swc-dur) var(--swc-ease),
+    opacity   var(--swc-dur) var(--swc-ease);
+  backface-visibility: hidden;
+}
+
+/* Active slide: full scale, centered, sharp */
+.swc-slide.is-active {
+  transform: translate3d(0, 0, 0) scale(1);
+  opacity: 1;
+  z-index: 3;
+}
+
+/* Previous slide (queued to the left) */
+.swc-slide.is-prev {
+  transform: translate3d(-100%, 0, 0) scale(0.92);
+  opacity: 0.55;
+  z-index: 2;
+}
+
+/* Next slide (queued to the right) */
+.swc-slide.is-next {
+  transform: translate3d(100%, 0, 0) scale(0.92);
+  opacity: 0.55;
+  z-index: 2;
+}
+
+/* Slides not in prev/active/next stay hidden off to a side, no transition churn */
+.swc-slide.is-hidden {
+  opacity: 0;
+  z-index: 0;
+}
+
+.swc-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  will-change: transform;
+  transform: scale(1.03);
+  transition: transform 6s var(--swc-ease);
+}
+/* subtle continuous zoom while a slide is active — "Ken Burns" feel */
+.swc-slide.is-active .swc-img {
+  transform: scale(1.08);
+}
+
+/* Dragging state: kill transitions for 1:1 tracking */
+.swc-browser.is-dragging .swc-slide {
+  transition: none;
+}
+
+/* ── Arrows ────────────────────────────────────────── */
+.swc-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.swc-arrow:hover {
+  background: var(--swc-blue);
+  border-color: var(--swc-blue);
+  transform: translateY(-50%) scale(1.08);
+  box-shadow: 0 0 24px var(--swc-glow);
+}
+.swc-arrow:active { transform: translateY(-50%) scale(0.96); }
+.swc-arrow:focus-visible { outline: 2px solid var(--swc-blue); outline-offset: 2px; }
+.swc-arrow--prev { left: 16px; }
+.swc-arrow--next { right: 16px; }
+
+/* ── Dots ──────────────────────────────────────────── */
+.swc-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 0;
+  background: var(--swc-glass);
+  border-top: 1px solid var(--swc-border);
+  position: relative;
+  z-index: 3;
+}
+.swc-dot-btn {
+  width: 6px;
+  height: 6px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.25);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: width var(--swc-dur) var(--swc-ease), background 0.25s ease;
+}
+.swc-dot-btn:hover { background: rgba(255,255,255,0.5); }
+.swc-dot-btn.is-active {
+  width: 22px;
+  background: linear-gradient(90deg, var(--swc-blue), #60a5fa);
+}
+.swc-dot-btn:focus-visible { outline: 2px solid var(--swc-blue); outline-offset: 2px; }
+
+/* ── Responsive ────────────────────────────────────── */
+@media (max-width: 860px) {
+  .swc-viewport { aspect-ratio: 16 / 11; }
+  .swc-url-bar { max-width: 220px; }
+}
+
+@media (max-width: 640px) {
+  .swc-browser-bar { padding: 10px 12px; gap: 10px; }
+  .swc-live-badge { display: none; } /* reduce clutter on small screens */
+  .swc-url-bar { font-size: 0.65rem; max-width: 170px; }
+  .swc-viewport { aspect-ratio: 4 / 3; }
+
+  /* Hide adjacent-slide 3D scaling effect on mobile per spec — only active slide shown */
+  .swc-slide.is-prev,
+  .swc-slide.is-next { opacity: 0; }
+
+  .swc-arrow { width: 36px; height: 36px; }
+  .swc-arrow--prev { left: 8px; }
+  .swc-arrow--next { right: 8px; }
+  .swc-dots { padding: 12px 0; gap: 6px; }
+}
+
+@keyframes swc-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .swc-slide,
+  .swc-img,
+  .swc-arrow,
+  .swc-dot-btn {
+    transition-duration: 0.01ms !important;
+    animation: none !important;
+  }
+}
 /* ─────────────────────────────────────────────────────────────────
    15  FOOTER
    ───────────────────────────────────────────────────────────────── */

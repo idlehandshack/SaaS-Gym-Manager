@@ -283,13 +283,6 @@ img{display:block;max-width:100%}
           <span><b>{{ plan.member_limit }}</b> members</span>
           <span><b>{{ plan.trainer_limit }}</b> trainers</span>
         </div>
-        {% if plan.feature_flags %}
-        <div class="plan-card-flags">
-          {% for k, v in plan.feature_flags.items %}
-            {% if v %}<span class="badge plan-flag">{{ k }}</span>{% endif %}
-          {% endfor %}
-        </div>
-        {% endif %}
       </div>
       {% empty %}
       <div class="empty-state">No subscription plans yet. Click "Add New Plan" to create one.</div>
