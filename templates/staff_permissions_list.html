@@ -1,0 +1,429 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Permissions — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
+    {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    <link rel="shortcut icon" href="{{ favicon_url }}">
+    {% else %}
+    <link rel="icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+    {% endif %}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap"
+  rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+  <style>
+    /* ── TOKENS (matched to staff_permissions_edit.html) ── */
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #181818;
+      --surface-3:   #1e1e1e;
+      --border:      rgba(255,255,255,.06);
+      --border-2:    rgba(255,255,255,.11);
+      --orange:      #ff5a00;
+      --orange-dim:  rgba(255,90,0,.10);
+      --orange-bdr:  rgba(255,90,0,.28);
+      --green:       #5de87c;
+      --green-dim:   rgba(93,232,124,.10);
+      --green-bdr:   rgba(93,232,124,.28);
+      --red:         #ef5350;
+      --red-dim:     rgba(239,83,80,.10);
+      --red-bdr:     rgba(239,83,80,.28);
+      --text-hi:     #f5f5f5;
+      --text-mid:    #888;
+      --text-lo:     #444;
+      --font-d:      "Barlow Condensed", sans-serif;
+      --font-b:      "Barlow", sans-serif;
+      --ease:        cubic-bezier(.4,0,.2,1);
+      --t:           .22s;
+      --radius-lg:   18px;
+      --radius-md:   12px;
+      --radius-sm:   8px;
+      --radius-pill: 40px;
+      --nav-h:       60px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    .hero-animate {
+      opacity: 0;
+      transform: translateY(30px);
+      animation: smoothFade 0.5s ease-out forwards;
+    }
+    @keyframes smoothFade {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── STICKY NAV ── */
+    .store-nav {
+      position: sticky; top: 0; z-index: 200;
+      height: var(--nav-h);
+      background: rgba(8,8,8,.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .nav-inner {
+      width: 100%; padding: 0 clamp(16px,4vw,40px);
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .nav-brand {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.1rem,3vw,1.5rem);
+      text-transform: uppercase; text-decoration: none;
+      color: var(--text-hi); letter-spacing: -.01em;
+      white-space: nowrap; display: flex; align-items: center; gap: 8px;
+      transition: color var(--t);
+      min-width: 0;
+    }
+    .nav-brand .acc { color: var(--orange); }
+    .nav-logo {
+      height: 26px;
+      width: auto;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 6px rgba(255,90,0,.35));
+    }
+    .back-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; flex-shrink: 0;
+      transition: background var(--t);
+    }
+    .nav-brand:hover .back-icon { background: var(--orange-dim); }
+    .nav-brand:hover { color: var(--text-hi); }
+    .nav-badge {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      background: var(--orange-dim); color: var(--orange);
+      border: 1px solid var(--orange-bdr);
+      padding: 5px 14px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      position: relative;
+      padding: clamp(32px,6vw,56px) 0 clamp(24px,4vw,36px);
+      text-align: center; overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: clamp(24px,4vw,36px);
+    }
+    .page-header::before {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .header-inner {
+      position: relative; z-index: 1;
+      padding: 0 clamp(16px,4vw,40px);
+    }
+    .header-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
+      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 10px;
+      padding: 5px 14px;
+      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
+      background: var(--orange-dim);
+    }
+    .page-header h1 {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.9rem,6vw,3.2rem); line-height: .95;
+      letter-spacing: -.01em; text-transform: uppercase;
+      margin-bottom: 12px; color: var(--text-hi);
+    }
+    .page-header h1 .accent { color: var(--orange); }
+    .identity-row {
+      display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      justify-content: center;
+      font-family: var(--font-b); font-size: clamp(.85rem,2.2vw,.98rem);
+      color: var(--text-mid);
+    }
+    .identity-row strong { color: var(--text-hi); font-weight: 600; }
+
+    /* ── FLASH MESSAGES ── */
+    #message-container {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      width: 100%;
+      max-width: 400px;
+      padding: 0 16px;
+    }
+    .flash-message {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      margin-bottom: 12px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .flash-message.success { background: #166534; border: 1px solid #22c55e44; }
+    .flash-message.error   { background: #7f1d1d; border: 1px solid #ef444444; }
+    .flash-message.default { background: #1f2937; border: 1px solid #ffffff18; }
+    .close-btn {
+      margin-left: 10px;
+      font-size: 17px;
+      font-weight: 700;
+      border: none;
+      background: none;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .close-btn:hover { color: #fff; }
+
+    /* ── MAIN CONTENT ── */
+    .perms-page {
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
+    }
+
+    /* Toolbar / filter pills */
+    .staff-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 14px;
+      margin-bottom: clamp(18px, 3vw, 24px);
+    }
+    .staff-count {
+      font-family: var(--font-b); font-size: 13px; color: var(--text-mid);
+    }
+    .staff-count strong { color: var(--text-hi); font-weight: 600; }
+    .role-filters {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .role-pill {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      padding: 6px 14px; border-radius: var(--radius-pill);
+      border: 1px solid var(--border-2);
+      background: var(--surface-2);
+      color: var(--text-mid);
+      text-decoration: none;
+      cursor: pointer;
+      transition: background var(--t), border-color var(--t), color var(--t);
+    }
+    .role-pill:hover { color: var(--text-hi); border-color: var(--border-2); }
+    .role-pill.active {
+      background: var(--orange-dim); color: var(--orange); border-color: var(--orange-bdr);
+    }
+
+    /* Staff grid of cards */
+    .staff-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: clamp(14px, 2.5vw, 18px);
+    }
+
+    .staff-card {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-lg);
+      padding: clamp(16px, 2.5vw, 20px);
+      display: flex; align-items: center; gap: 14px;
+      text-decoration: none;
+      transition: border-color var(--t), background var(--t), transform .12s;
+    }
+    .staff-card:hover {
+      border-color: var(--orange-bdr);
+      background: var(--surface-2);
+      transform: translateY(-2px);
+    }
+
+    .staff-avatar {
+      width: 46px; height: 46px; border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--orange-dim);
+      border: 1px solid var(--orange-bdr);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-d); font-weight: 800; font-size: 1.1rem;
+      color: var(--orange); text-transform: uppercase;
+    }
+
+    .staff-info { flex: 1; min-width: 0; }
+    .staff-name {
+      font-family: var(--font-b); font-weight: 600; font-size: 14.5px;
+      color: var(--text-hi);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+    .staff-meta {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .role-badge {
+      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      background: var(--orange-dim); color: var(--orange);
+      border: 1px solid var(--orange-bdr);
+      padding: 3px 10px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+    .role-badge.trainer {
+      background: rgba(93,232,124,.10); color: var(--green); border-color: var(--green-bdr);
+    }
+    .staff-username {
+      font-family: "JetBrains Mono", monospace; font-size: 11.5px;
+      color: var(--text-mid);
+    }
+
+    .staff-arrow {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--surface-3); border: 1px solid var(--border-2);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-mid); font-size: .8rem; flex-shrink: 0;
+      transition: background var(--t), color var(--t);
+    }
+    .staff-card:hover .staff-arrow { background: var(--orange); color: #fff; }
+
+    .perms-empty {
+      background: var(--surface);
+      border: 1px dashed var(--border-2);
+      border-radius: var(--radius-lg);
+      padding: 40px 28px; text-align: center;
+      color: var(--text-mid); font-size: 13px;
+    }
+    .perms-empty i { font-size: 1.6rem; color: var(--text-lo); display: block; margin-bottom: 10px; }
+
+    @supports (padding: env(safe-area-inset-left)) {
+      .nav-inner {
+        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
+        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
+      }
+    }
+    @media (max-width: 480px) {
+      .nav-brand span:not(.acc) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ FLASH MESSAGES ══ -->
+  <div id="message-container">
+    {% for message in messages %}
+    <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}">
+      <span>{{ message }}</span>
+      <button class="close-btn">×</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ══ STICKY NAV ══ -->
+  <nav class="store-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/">
+        <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
+        {% if gym and gym.logo %}
+          <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }} logo" class="nav-logo" />
+        {% else %}
+          <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM Logo" class="nav-logo" />
+        {% endif %}
+        <span>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</span>
+        <span class="acc">Permissions</span>
+      </a>
+      <div class="nav-badge">Access Control</div>
+    </div>
+  </nav>
+
+  <!-- ══ PAGE HEADER ══ -->
+  <header class="page-header hero-animate">
+    <div class="header-inner">
+      <div class="header-eyebrow">
+        <i class="bi bi-shield-lock"></i> Staff Permissions
+      </div>
+      <h1>Manage <span class="accent">Access</span></h1>
+      <div class="identity-row">
+        Select a staff member to edit their permissions
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="perms-page">
+    <div class="staff-toolbar">
+      <div class="staff-count">
+        <strong>{{ staff|length }}</strong> staff member{{ staff|length|pluralize }}
+      </div>
+      <div class="role-filters">
+        <span class="role-pill active" data-filter="all">All</span>
+        <span class="role-pill" data-filter="receptionist">Receptionists</span>
+        <span class="role-pill" data-filter="trainer">Trainers</span>
+      </div>
+    </div>
+
+    {% if staff %}
+    <div class="staff-grid" id="staffGrid">
+      {% for staff_profile in staff %}
+      <a class="staff-card" data-role="{{ staff_profile.role }}"
+         href="{% url 'staff_permissions_edit' staff_profile.id %}">
+        <div class="staff-avatar">
+          {{ staff_profile.user.username|slice:":1" }}
+        </div>
+        <div class="staff-info">
+          <div class="staff-name">{{ staff_profile.user.get_full_name|default:staff_profile.user.username }}</div>
+          <div class="staff-meta">
+            <span class="role-badge {% if staff_profile.role == 'trainer' %}trainer{% endif %}">
+              {{ staff_profile.get_role_display }}
+            </span>
+            <span class="staff-username">@{{ staff_profile.user.username }}</span>
+          </div>
+        </div>
+        <div class="staff-arrow"><i class="bi bi-chevron-right"></i></div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="perms-empty">
+      <i class="bi bi-people"></i>
+      No receptionists or trainers found for this gym yet.
+    </div>
+    {% endif %}
+  </main>
+
+  <script src="{% static 'js/messages.js' %}"></script>
+  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+  <script nonce="{{ request.csp_nonce }}">
+    (function () {
+      var pills = document.querySelectorAll('.role-pill');
+      var cards = document.querySelectorAll('.staff-card');
+      pills.forEach(function (pill) {
+        pill.addEventListener('click', function () {
+          pills.forEach(function (p) { p.classList.remove('active'); });
+          pill.classList.add('active');
+          var filter = pill.getAttribute('data-filter');
+          cards.forEach(function (card) {
+            var show = filter === 'all' || card.getAttribute('data-role') === filter;
+            card.style.display = show ? '' : 'none';
+          });
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>

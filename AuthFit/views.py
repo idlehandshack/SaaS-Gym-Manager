@@ -55,6 +55,8 @@ from AuthFit.attendance import mark_attendance as mark_device_attendance
 from AuthFit.geo_logic import mark_geo_attendance
 from reviews.models import Review
 logger = logging.getLogger(__name__)
+from AuthFit.permissions import permission_required
+
 
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 ALLOWED_EXTENSIONS  = {'.jpg', '.jpeg', '.png', '.webp'}
@@ -856,7 +858,7 @@ def download_app(request):
     })
 
 
-@_gym_role_required('gym_owner', 'receptionist')
+@permission_required("can_manage_membership_plans")
 def membership_plans(request):
     gym = getattr(request, 'gym', None)
     if gym is None:
@@ -935,7 +937,7 @@ def membership_plans(request):
         "plans": plans,
     })
 
-@_gym_role_required('gym_owner', 'receptionist')
+@permission_required("can_manage_trainers")
 def trainers(request):
     gym = getattr(request, 'gym', None)
     if gym is None:
@@ -1023,7 +1025,7 @@ def trainers(request):
         "trainers": trainers,       
     })
 
-@_gym_role_required('gym_owner', 'receptionist')
+@permission_required("can_create_enrollment")
 def quick_enrollment(request):
     gym = getattr(request, 'gym', None)
 
@@ -2030,18 +2032,12 @@ def freeze_membership(request):
         qs = qs.filter(gym=gym)
     if query:
         qs = qs.filter(unique_id=query)
-
+    from AuthFit.permissions import has_permission
     paginator = Paginator(qs, 20)
     page_obj  = paginator.get_page(request.GET.get("page", 1))
 
-    can_change_plan = bool(
-        getattr(request, 'is_super_admin', False)
-        or getattr(request, 'staff_role', None) in ('gym_owner', 'receptionist')
-    )
-    can_delete_enrollment = bool(
-        getattr(request, 'is_super_admin', False)
-        or getattr(request, 'staff_role', None) == 'gym_owner'
-    )
+    can_change_plan = has_permission(request, "can_change_membership_plan")
+    can_delete_enrollment = has_permission(request, "can_delete_enrollment")
 
     plans = []
     change_plan_rows = []
@@ -2196,7 +2192,7 @@ def _build_delete_enrollment_page(request, gym):
  
 # 3) ADD this new view — the AJAX endpoint the modal posts to.
  
-@_gym_role_required('gym_owner', 'receptionist')
+@permission_required("can_change_membership_plan")
 @require_POST
 def change_membership_plan_view(request, enrollment_id):
     """
@@ -2255,7 +2251,7 @@ def change_membership_plan_view(request, enrollment_id):
  
     return JsonResponse({"success": True, **result})
 
-@_gym_role_required('gym_owner')
+@permission_required("can_delete_enrollment")
 @require_POST
 def delete_enrollment_view(request, enrollment_id):
     """

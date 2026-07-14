@@ -14,4 +14,5 @@ urlpatterns = [
     path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
     path('', include('reviews.urls_owner')),
     path('', include('demoRequest.urls')),
+    path('', include('Gym.urls')),
 ]

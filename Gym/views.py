@@ -21,8 +21,10 @@ import calendar
 from urllib.parse import quote
 from .services import live_stats as ls
 from django.db.models import OuterRef, Subquery
+from AuthFit.permissions import permission_required
 
-@_gym_role_required('gym_owner')
+
+@permission_required("can_manage_upi")
 def upi_payment_settings(request):
     gym = getattr(request, 'gym', None)
     if gym is None:

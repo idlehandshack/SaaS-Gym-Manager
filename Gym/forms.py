@@ -3,6 +3,13 @@ from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from .models import Gym, SubscriptionPlan, StaffProfile, GymGSTProfile
+from .models import StaffPermission, PERMISSION_DEFINITIONS
+
+class StaffPermissionForm(forms.ModelForm):
+    class Meta:
+        model = StaffPermission
+        fields = [f for f, _, _ in PERMISSION_DEFINITIONS]
+        widgets = {f: forms.CheckboxInput() for f, _, _ in PERMISSION_DEFINITIONS}
 
 class PlanChoiceField(forms.ModelChoiceField):
     """Shows price + limits directly in the dropdown option text."""

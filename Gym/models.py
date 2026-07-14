@@ -321,3 +321,107 @@ class PlatformSettings(models.Model):
     def load(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+    
+PERMISSION_DEFINITIONS = [
+    # (field_name, human label, group)
+    ("can_create_enrollment",          "Create Enrollment",          "Members"),
+    ("can_edit_enrollment",            "Edit Enrollment",            "Members"),
+    ("can_delete_enrollment",          "Delete Enrollment",          "Members"),
+    ("can_delete_duplicate_enrollment","Delete Duplicate Enrollment","Members"),
+    ("can_renew_membership",           "Renew Membership",           "Members"),
+    ("can_change_membership_plan",     "Change Membership Plan",     "Members"),
+
+    ("can_collect_payment",            "Collect Payment",            "Billing"),
+    ("can_refund_payment",             "Refund Payment",             "Billing"),
+    ("can_generate_invoice",           "Generate Invoice",           "Billing"),
+    ("can_delete_invoice",             "Delete Invoice",             "Billing"),
+    ("can_manage_membership_plans",    "Manage Membership Plans",    "Billing"),
+
+    ("can_manage_trainers",            "Manage Trainers",            "Staff"),
+    ("can_manage_staff",               "Manage Staff",               "Staff"),
+
+    ("can_view_dashboard",             "View Dashboard",             "Reports"),
+    ("can_view_reports",               "View Reports",               "Reports"),
+    ("can_view_revenue",               "View Revenue",               "Reports"),
+    ("can_export_reports",             "Export Reports",             "Reports"),
+
+    ("can_manage_settings",            "Settings",                   "Gym"),
+    ("can_manage_upi",                 "UPI",                        "Gym"),
+    ("can_manage_gst",                 "GST",                        "Gym"),
+    ("can_manage_subscription",        "Manage Subscription",        "Gym"),
+    ("can_delete_contacts",            "Delete Contacts",            "Gym"),
+
+    ("can_manage_face_recognition",    "Face Recognition",           "Attendance"),
+    ("can_manage_attendance",          "Attendance",                 "Attendance"),
+
+    ("can_send_expiry_notifications",  "Send Expiry Reminder",       "Notifications"),
+    ("can_manage_notifications",       "Push Notifications",         "Notifications"),
+
+    ("can_manage_store",               "Store (General)",            "Store"),
+    ("can_manage_products",            "Products",                   "Store"),
+    ("can_manage_orders",              "Orders",                     "Store"),
+]
+
+# Permissions granted to Trainers by default (attendance-only).
+_TRAINER_DEFAULT_TRUE = {
+    "can_manage_attendance",
+    "can_view_dashboard",
+}
+
+class StaffPermission(models.Model):
+    """
+    Fine-grained, per-staff-member permission flags.
+    OneToOne with StaffProfile — every receptionist/trainer gets exactly one row.
+    Gym Owners and Super Admins never consult this table (see has_permission()) —
+    it exists purely so an owner has something to toggle for their staff.
+    """
+    staff_profile = models.OneToOneField(
+        "Gym.StaffProfile",
+        on_delete=models.CASCADE,
+        related_name="permissions",
+    )
+
+    # Dynamically attach every boolean field defined above.
+    for _field_name, _label, _group in PERMISSION_DEFINITIONS:
+        locals()[_field_name] = models.BooleanField(default=False, verbose_name=_label)
+    del _field_name, _label, _group
+
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        verbose_name = "Staff Permission"
+        verbose_name_plural = "Staff Permissions"
+
+    def __str__(self):
+        return f"Permissions for {self.staff_profile.user.username}"
+
+    def apply_role_defaults(self, role):
+        """Reset every flag to the sensible default for `role`, then save."""
+        if role == "gym_owner":
+            for field_name, _, _ in PERMISSION_DEFINITIONS:
+                setattr(self, field_name, True)
+        elif role == "trainer":
+            for field_name, _, _ in PERMISSION_DEFINITIONS:
+                setattr(self, field_name, field_name in _TRAINER_DEFAULT_TRUE)
+        else:  # receptionist (and any future non-privileged role)
+            for field_name, _, _ in PERMISSION_DEFINITIONS:
+                setattr(self, field_name, False)
+
+
+@receiver(post_save, sender=StaffProfile)
+def create_or_sync_staff_permission(sender, instance, created, **kwargs):
+    """
+    On StaffProfile creation: create the StaffPermission row with role-based
+    defaults. We deliberately do NOT re-apply defaults on every subsequent
+    save (e.g. an owner toggling `active`) — that would silently wipe out
+    permissions an owner has already customized.
+    """
+    if not created:
+        return
+    perm, was_created = StaffPermission.objects.get_or_create(staff_profile=instance)
+    if was_created:
+        perm.apply_role_defaults(instance.role)
+        perm.save()
