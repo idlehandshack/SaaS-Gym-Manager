@@ -5,13 +5,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Trainers — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
-    {% if favicon_url %}
+     {% if favicon_url %}
     <link rel="icon" href="{{ favicon_url }}">
     <link rel="shortcut icon" href="{{ favicon_url }}">
-  {% else %}
+    {% else %}
     <link rel="icon" href="{% static 'images/favicon.ico' %}">
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
-  {% endif %}
+    {% endif %}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -438,8 +438,8 @@
 
         <div class="trainer-name">{{ t.name }}</div>
 
-        <div class="trainer-salary"><sup>&#8377;</sup>{{ t.salary }}</div>
-        <div class="trainer-salary-label">Monthly Salary</div>
+        <div class="trainer-salary"><sup>&#8377;</sup>{{ t.charge }}</div>
+        <div class="trainer-salary-label">Monthly Charge</div>
 
         <div class="trainer-meta">
           <div class="trainer-meta-row">
@@ -453,19 +453,18 @@
         </div>
 
         <div class="trainer-actions">
-          <button class="trainer-btn btn-edit"
-            onclick="openEdit(
-              '{{ t.id }}',
-              '{{ t.name|escapejs }}',
-              '{{ t.gender }}',
-              '{{ t.phone|escapejs }}',
-              '{{ t.address|escapejs }}',
-              {{ t.salary }}
-            )">
+          <button type="button" class="trainer-btn btn-edit js-edit-trainer"
+            data-id="{{ t.id }}"
+            data-name="{{ t.name }}"
+            data-gender="{{ t.gender }}"
+            data-phone="{{ t.phone }}"
+            data-address="{{ t.address }}"
+            data-salary="{{ t.charge }}">
             Edit
           </button>
-          <button class="trainer-btn btn-delete"
-            onclick="openDelete('{{ t.id }}', '{{ t.name|escapejs }}')">
+          <button type="button" class="trainer-btn btn-delete js-delete-trainer"
+            data-id="{{ t.id }}"
+            data-name="{{ t.name }}">
             Delete
           </button>
         </div>
@@ -481,13 +480,13 @@
   </main>
 
   <!-- ── Overlay ──────────────────────────────────────────────────────────── -->
-  <div class="overlay" id="overlay" onclick="closePanels()"></div>
+  <div class="overlay" id="overlay"></div>
 
   <!-- ── Create / Edit Panel ─────────────────────────────────────────────── -->
   <div class="panel" id="panel">
     <div class="panel-head">
       <span class="panel-title" id="panelTitle">New Trainer</span>
-      <button class="panel-close" onclick="closePanels()">&#10005;</button>
+      <button type="button" class="panel-close" id="panelCloseBtn">&#10005;</button>
     </div>
     <form class="panel-body" method="post" action="/trainers/" id="trainerForm">
       {% csrf_token %}
@@ -517,8 +516,8 @@
       </div>
 
       <div class="field">
-        <label for="panelSalary">Monthly Salary (&#8377;)</label>
-        <input type="number" name="salary" id="panelSalary"
+        <label for="panelSalary">Monthly Charge (&#8377;)</label>
+        <input type="number" name="charge" id="panelSalary"
                placeholder="e.g. 25000" min="0" step="1" required>
         <div class="field-hint">Must be a non-negative number.</div>
       </div>
@@ -545,57 +544,82 @@
     <div class="del-name" id="delTrainerName"></div>
     <div class="del-warn">This cannot be undone.</div>
     <div class="del-actions">
-      <button class="del-cancel" onclick="closePanels()">Cancel</button>
-      <button class="del-confirm" onclick="document.getElementById('deleteForm').submit()">Delete</button>
+      <button type="button" class="del-cancel" id="delCancelBtn">Cancel</button>
+      <button type="button" class="del-confirm" id="delConfirmBtn">Delete</button>
     </div>
   </div>
 
   <script nonce="{{ request.csp_nonce }}">
-    const overlay  = document.getElementById('overlay');
-    const panel    = document.getElementById('panel');
-    const delPanel = document.getElementById('delPanel');
+  const overlay  = document.getElementById('overlay');
+  const panel    = document.getElementById('panel');
+  const delPanel = document.getElementById('delPanel');
 
-    function openPanel() {
-      overlay.classList.add('open');
-      panel.classList.add('open');
-    }
-    function openDelPanel() {
-      overlay.classList.add('open');
-      delPanel.classList.add('open');
-    }
-    function closePanels() {
-      overlay.classList.remove('open');
-      panel.classList.remove('open');
-      delPanel.classList.remove('open');
-    }
+  function openPanel() {
+    overlay.classList.add('open');
+    panel.classList.add('open');
+  }
+  function openDelPanel() {
+    overlay.classList.add('open');
+    delPanel.classList.add('open');
+  }
+  function closePanels() {
+    overlay.classList.remove('open');
+    panel.classList.remove('open');
+    delPanel.classList.remove('open');
+  }
 
-    document.getElementById('openAddBtn').addEventListener('click', () => {
-      document.getElementById('panelTitle').textContent       = 'New Trainer';
-      document.getElementById('panelSubmitBtn').textContent   = 'Create Trainer';
-      document.getElementById('panelTrainerId').value         = '';
-      document.getElementById('trainerForm').reset();
-      document.getElementById('panelGender').selectedIndex    = 0;
-      openPanel();
+  document.getElementById('openAddBtn').addEventListener('click', () => {
+    document.getElementById('panelTitle').textContent       = 'New Trainer';
+    document.getElementById('panelSubmitBtn').textContent   = 'Create Trainer';
+    document.getElementById('panelTrainerId').value         = '';
+    document.getElementById('trainerForm').reset();
+    document.getElementById('panelGender').selectedIndex    = 0;
+    openPanel();
+  });
+
+  function openEdit(id, name, gender, phone, address, charge) {
+    document.getElementById('panelTitle').textContent       = 'Edit Trainer';
+    document.getElementById('panelSubmitBtn').textContent   = 'Save Changes';
+    document.getElementById('panelTrainerId').value         = id;
+    document.getElementById('panelName').value              = name;
+    document.getElementById('panelGender').value            = gender;
+    document.getElementById('panelPhone').value             = phone;
+    document.getElementById('panelAddress').value           = address;
+    document.getElementById('panelSalary').value            = charge;
+    openPanel();
+  }
+
+  function openDelete(id, name) {
+    document.getElementById('delTrainerId').value         = id;
+    document.getElementById('delTrainerName').textContent = name + ' will be permanently removed.';
+    openDelPanel();
+  }
+  overlay.addEventListener('click', closePanels);
+  document.getElementById('panelCloseBtn').addEventListener('click', closePanels);
+  document.getElementById('delCancelBtn').addEventListener('click', closePanels);
+  document.getElementById('delConfirmBtn').addEventListener('click', () => {
+    document.getElementById('deleteForm').submit();
+  });
+
+  document.querySelectorAll('.js-edit-trainer').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      openEdit(
+        btn.dataset.id,
+        btn.dataset.name,
+        btn.dataset.gender,
+        btn.dataset.phone,
+        btn.dataset.address,
+        btn.dataset.charge
+      );
     });
+  });
 
-    function openEdit(id, name, gender, phone, address, salary) {
-      document.getElementById('panelTitle').textContent       = 'Edit Trainer';
-      document.getElementById('panelSubmitBtn').textContent   = 'Save Changes';
-      document.getElementById('panelTrainerId').value         = id;
-      document.getElementById('panelName').value              = name;
-      document.getElementById('panelGender').value            = gender;
-      document.getElementById('panelPhone').value             = phone;
-      document.getElementById('panelAddress').value           = address;
-      document.getElementById('panelSalary').value            = salary;
-      openPanel();
-    }
-
-    function openDelete(id, name) {
-      document.getElementById('delTrainerId').value       = id;
-      document.getElementById('delTrainerName').textContent = name + ' will be permanently removed.';
-      openDelPanel();
-    }
-  </script>
+  document.querySelectorAll('.js-delete-trainer').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      openDelete(btn.dataset.id, btn.dataset.name);
+    });
+  });
+</script>
 
 </body>
 </html>

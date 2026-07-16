@@ -44,10 +44,10 @@ class Trainer(models.Model):
         max_length=1, choices=GENDER_CHOICES, default='M')
     address = models.TextField()
     phone = models.CharField(max_length=10) 
-    salary = models.IntegerField()
+    charge = models.IntegerField()
     objects = GymManager()
     def __str__(self):
-        return self.name
+        return f"{self.name} - ₹{self.charge}"
 
 
 class MembershipPlan(models.Model):

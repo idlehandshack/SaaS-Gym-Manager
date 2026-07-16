@@ -962,7 +962,7 @@ def trainers(request):
         gender      = request.POST.get("gender", "").strip()
         phone       = request.POST.get("phone", "").strip()
         address     = request.POST.get("address", "").strip()
-        salary_raw  = request.POST.get("salary", "").strip()
+        charge_raw = request.POST.get("charge", "").strip()
 
         def fail(msg):
             messages.error(request, msg)
@@ -986,8 +986,8 @@ def trainers(request):
             return fail("Address is required.")
 
         try:
-            salary = int(salary_raw)
-            if salary < 0:
+            charge = int(charge_raw)
+            if charge < 0:
                 raise ValueError
         except (ValueError, TypeError):
             return fail("Enter a valid non-negative salary.")
@@ -1001,8 +1001,8 @@ def trainers(request):
             trainer.gender  = gender
             trainer.phone   = phone
             trainer.address = address
-            trainer.salary  = salary
-            trainer.save(update_fields=["name", "gender", "phone", "address", "salary"])
+            trainer.charge  = charge
+            trainer.save(update_fields=["name", "gender", "phone", "address", "charge"])
             messages.success(request, "Trainer updated successfully.")
         else:
             Trainer.objects.create(
@@ -1011,7 +1011,7 @@ def trainers(request):
                 gender=gender,
                 phone=phone,
                 address=address,
-                salary=salary,
+                charge=charge,
             )
             messages.success(request, "Trainer created successfully.")
 

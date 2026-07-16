@@ -193,7 +193,7 @@ class ContactAdmin(GymScopedAdmin):
 
 @admin.register(Trainer)
 class TrainerAdmin(GymScopedAdmin):
-    list_display  = ['name', 'gender', 'phone', 'salary']
+    list_display  = ['name', 'gender', 'phone', 'charge']
     list_filter = ['gender']
     ordering      = ['name']
     search_fields = ['name', '=phone']

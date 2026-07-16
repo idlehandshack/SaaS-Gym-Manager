@@ -664,8 +664,10 @@
               class="dropdown-item trainer-item"
               data-id="{{ t.id }}"
               data-name="{{ t.name }}"
+              data-charge="{{ t.charge }}"
             >
               {{ t.name }}
+              <span class="color-price">₹{{ t.charge }}</span>
             </div>
             {% empty %}
             <div class="dropdown-item" style="pointer-events:none; opacity:.4;">No trainers available</div>
@@ -764,9 +766,9 @@
   }
 
   /* ── Trainer select ── */
-  function selectTrainer(id, name) {
+  function selectTrainer(id, name,charge) {
     const label = document.getElementById("selectedTrainer");
-    label.innerText = name;
+    label.innerText = name + "— ₹" + charge;
     label.classList.remove("placeholder");
     document.getElementById("trainerInput").value = id;
     closeAll();
@@ -801,7 +803,7 @@
     document.getElementById("trainerDropdown").addEventListener("click", function (e) {
       const item = e.target.closest(".dropdown-item");
       if (!item) return;
-      selectTrainer(item.dataset.id, item.dataset.name);
+      selectTrainer(item.dataset.id, item.dataset.name,item.dataset.charge);
     });
 
     /* Date of Birth */
