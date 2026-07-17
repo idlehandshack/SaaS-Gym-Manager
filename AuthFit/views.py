@@ -34,6 +34,7 @@ from AuthFit.models import (
     Contact, Enrollment, EnrollmentTransfer, MembershipPlan, Trainer,
     Attendence as Attendence_model, GymNotification
 )
+from django.db.models import Prefetch
 from django.http import HttpResponseRedirect
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth,TruncDay
@@ -56,8 +57,7 @@ from AuthFit.geo_logic import mark_geo_attendance
 from reviews.models import Review
 logger = logging.getLogger(__name__)
 from AuthFit.permissions import permission_required
-
-
+from Gym.utils.search import apply_search, get_search_context ,apply_related_search
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 ALLOWED_EXTENSIONS  = {'.jpg', '.jpeg', '.png', '.webp'}
 INTERNAL_API_KEY    = os.environ.get("INTERNAL_API_KEY", "")
@@ -1581,15 +1581,24 @@ def payment_management(request):
     status_filter = request.GET.get("filter", "pending")
     since         = timezone.now() - timedelta(days=7)
     METHOD_LABELS = {"C": "Cash", "U": "UPI", "B": "UPI + Cash"}
+
+    search_ctx = get_search_context(request)
+
+    # 1. Gym  → 2. Status filter  → 3. Search  → 4. Ordering
     qs = Enrollment.objects.select_related("selectPlan", "trainer")
     if gym:
         qs = qs.filter(gym=gym)
 
     if status_filter == "done":
-        qs = qs.filter(created_at__gte=since, paymentStatus="Done").order_by("-created_at")
+        qs = qs.filter(created_at__gte=since, paymentStatus="Done")
     else:
-        qs = qs.filter(paymentStatus="Pending").order_by("-created_at")
+        qs = qs.filter(paymentStatus="Pending")
 
+    qs = apply_search(qs, search_ctx["search_by"], search_ctx["search"])
+    qs = qs.order_by("-created_at")
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(qs, 25)
+    page_obj = paginator.get_page(page_number)
     rows = [
         {
             "id":                   e.id,
@@ -1610,21 +1619,26 @@ def payment_management(request):
             "days_remaining":       e.days_remaining,
             "is_expired":           e.is_expired,
         }
-        for e in qs
+        for e in page_obj
     ]
 
+    # Counts are unaffected by search — they reflect the tab totals, not the
+    # filtered result set, matching prior behavior.
     base_qs       = Enrollment.objects.filter(gym=gym) if gym else Enrollment.objects.all()
     pending_count = base_qs.filter(paymentStatus="Pending").count()
     paid_count    = base_qs.filter(created_at__gte=since, paymentStatus="Done").count()
 
     return render(request, "payment_management.html", {
         "rows":                 rows,
+        "page_obj":             page_obj,
         "status_filter":        status_filter,
         "total_pending_amount": sum(r["pending"] for r in rows),
         "total_count":          len(rows),
         "pending_count":        pending_count,
         "paid_count":           paid_count,
-        "gym": gym, 
+        "gym":                  gym, **search_ctx,
+        "extra_params_list": [("filter", status_filter)],
+        **search_ctx,
     })
 
 
@@ -1909,34 +1923,56 @@ def create_payment_view(request):
 def today_attendance(request):
     gym   = getattr(request, 'gym', None)
     today = timezone.localdate()
+    search_ctx = get_search_context(request)
+    search_by, search = search_ctx["search_by"], search_ctx["search"]
 
+    # Only cache the unfiltered view — searches are cheap DB-level queries
+    # and shouldn't pollute/invalidate the shared "today" cache entry.
     cache_key = f"today_attendance_{gym.pk if gym else 'super'}_{today}"
-    cached    = cache.get(cache_key)
-    if cached:
-        return render(request, "today_attendance.html", cached)
+    if not search:
+        cached = cache.get(cache_key)
+        if cached:
+            return render(request, "today_attendance.html", cached)
 
-    # FIX: use prefetch_related instead of select_related for reverse FK
-    # User → Enrollment is a FK (one user can have many enrollments across gyms)
-    # select_related("user__enrollment__...") silently fails for FK reverse paths
     qs = (
         Attendence_model.objects
         .filter(date=today)
         .select_related("user")
-        .prefetch_related("user__enrollment_set__selectPlan",
-                          "user__enrollment_set__trainer")
-        .order_by("timestamp")
+        .prefetch_related(
+            Prefetch(
+                "user__enrollment_set",
+                queryset=Enrollment.objects.filter(gym=gym).select_related(
+                    "selectPlan",
+                    "trainer",
+                ),
+                to_attr="gym_enrollment",
+            )
+        )
     )
     if gym:
         qs = qs.filter(gym=gym)
 
+    # Gym → search (DB-level, on the related enrollment) → ordering.
+    # apply_related_search folds the gym constraint into the same filter()
+    # call as the search lookup, so it can't cross-match a different gym's
+    # enrollment for the same user.
+    qs = apply_related_search(
+        qs, search_by, search,
+        relation_prefix="user__enrollment", gym=gym,
+    )
+    qs = qs.order_by("timestamp")
+
     morning, evening = [], []
-    alerts = []  # members needing attention: expired, expiring soon, or pending payment
+    alerts = []
+    EXPIRING_SOON_THRESHOLD = 3
 
-    EXPIRING_SOON_THRESHOLD = 3  # days
-
+    # The loop now only iterates over already-filtered rows.
     for rec in qs:
-        # FIX: scope enrollment lookup to this gym
-        enrollment = rec.user.enrollment_set.filter(gym=gym).first()
+        enrollment = (
+                        rec.user.gym_enrollment[0]
+                        if rec.user.gym_enrollment
+                        else None
+                    )
         image_url  = None
 
         if enrollment and enrollment.face_image:
@@ -1948,11 +1984,9 @@ def today_attendance(request):
                 )
                 if public_id:
                     image_url, _ = cloudinary_url(
-                        public_id,
-                        width=60, height=60,
+                        public_id, width=60, height=60,
                         crop="fill", gravity="face",
-                        fetch_format="auto", quality="auto",
-                        secure=True,
+                        fetch_format="auto", quality="auto", secure=True,
                     )
             except Exception:
                 logger.exception("Cloudinary URL error for user %s", rec.user.id)
@@ -1960,15 +1994,12 @@ def today_attendance(request):
         pending_amount = float(enrollment.pendingAmount) if enrollment else 0
         is_expired     = enrollment.is_expired if enrollment else False
         days_remaining = enrollment.days_remaining if enrollment else None
-
         is_expiring_soon = (
-            not is_expired
-            and days_remaining is not None
+            not is_expired and days_remaining is not None
             and days_remaining <= EXPIRING_SOON_THRESHOLD
         )
         has_pending = pending_amount > 0
 
-        # Priority rank for sorting the alerts strip: expired > expiring soon > pending only
         if is_expired:
             alert_rank = 0
         elif is_expiring_soon:
@@ -2003,11 +2034,9 @@ def today_attendance(request):
         }
 
         (morning if rec.timestamp.hour < 14 else evening).append(entry)
-
         if alert_rank is not None:
             alerts.append(entry)
 
-    # Show most urgent alerts first: expired > expiring soon > pending, then highest pending amount
     alerts.sort(key=lambda e: (e["alert_rank"], -e["pending_amount"]))
 
     context = {
@@ -2016,9 +2045,12 @@ def today_attendance(request):
         "alerts_count": len(alerts),
         "today":        today,
         "total":        len(morning) + len(evening),
-        "gym":          gym,
+        "gym":          gym,**search_ctx,
+        "extra_params_list": [],   # nothing else to preserve
+             **search_ctx,
     }
-    cache.set(cache_key, context, timeout=120)
+    if not search:
+        cache.set(cache_key, context, timeout=120)
     return render(request, "today_attendance.html", context)
 
 @_gym_staff_required

@@ -1,0 +1,143 @@
+{% comment %}
+Reusable search bar — matches the EnterGYM dark/orange design system
+(same tokens as enrollment.html: --surface-2, --orange, --orange-glow, --radius-pill).
+
+Include with:
+{% include "partials/search_form.html" with extra_params_list=extra_params_list %}
+
+extra_params_list: optional list of (key, value) tuples for GET params to
+preserve on submit (e.g. [("filter", status_filter)]). Pass from the view.
+{% endcomment %}
+
+<style>
+  .search-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 0 0 clamp(16px, 3vw, 24px);
+  }
+
+  .search-select-wrap {
+    position: relative;
+    min-width: 150px;
+  }
+
+  .search-select {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-hi);
+    border-radius: var(--radius-md);
+    padding: 12px 34px 12px 16px;
+    font-family: var(--font-d);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    outline: none;
+    color-scheme: dark;
+    transition: border-color var(--t), box-shadow var(--t);
+  }
+  .search-select:hover,
+  .search-select:focus {
+    border-color: var(--orange-bdr);
+    box-shadow: 0 0 0 3px var(--orange-glow);
+  }
+  .search-select-wrap::after {
+    content: "▼";
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--orange);
+    font-size: 9px;
+    pointer-events: none;
+  }
+  .search-select option {
+    background: var(--surface-2);
+    color: var(--text-hi);
+  }
+
+  .search-input {
+    flex: 1;
+    min-width: 180px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-hi);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    font-family: var(--font-b);
+    font-size: 15px;
+    outline: none;
+    transition: border-color var(--t), box-shadow var(--t);
+  }
+  .search-input::placeholder { color: var(--text-lo); }
+  .search-input:hover,
+  .search-input:focus {
+    border-color: var(--orange-bdr);
+    box-shadow: 0 0 0 3px var(--orange-glow);
+  }
+
+  .search-submit-btn {
+    background: var(--orange);
+    color: #000;
+    font-family: var(--font-d);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    border: none;
+    text-decoration:none;
+    border-radius: var(--radius-pill);
+    padding: 1px 2px;
+    cursor: pointer;
+    text-align:center;
+    transition: background var(--t), transform .15s, box-shadow var(--t);
+    box-shadow: 0 0 20px rgba(255,90,0,.30);
+    white-space: nowrap;
+  }
+  .search-submit-btn:hover {
+    background: #ff6a1a;
+    box-shadow: 0 0 32px rgba(255,90,0,.5);
+    transform: translateY(-1px);
+  }
+  .search-submit-btn:active { transform: translateY(0); }
+  @media (max-width: 600px) {
+    .search-bar { flex-direction: column; align-items: stretch; }
+    .search-select-wrap,
+    .search-input,
+    .search-submit-btn,
+    .search-reset-btn { width: 100%; min-width: 0; }
+    .search-select,
+    .search-input { min-height: 50px; font-size: 16px; }
+  }
+</style>
+
+<form method="get" class="search-bar">
+  {% for pair in extra_params_list %}
+    <input type="hidden" name="{{ pair.0 }}" value="{{ pair.1 }}">
+  {% endfor %}
+
+  <div class="search-select-wrap">
+    <select name="search_by" class="search-select">
+      {% for value, label in search_by_choices %}
+        <option value="{{ value }}" {% if value == search_by %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <input
+    type="text"
+    name="search"
+    value="{{ search }}"
+    placeholder="Search..."
+    class="search-input"
+  />
+
+  <button type="submit" class="search-submit-btn">Search</button>
+    <a href="?{% for pair in extra_params_list %}{{ pair.0 }}={{ pair.1 }}{% if not forloop.last %}&{% endif %}{% endfor %}" class="search-submit-btn">Reset</a>
+</form>

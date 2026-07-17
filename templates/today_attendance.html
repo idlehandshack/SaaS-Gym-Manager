@@ -167,6 +167,27 @@
     }
     .section-label.attention span { color: var(--orange); }
 
+    /* ── SECTION TABS (Morning / Evening) ── */
+    .att-tabs {
+      display: flex; gap: .6rem;
+      margin: clamp(20px,4vw,32px) 0 clamp(14px,3vw,20px);
+      flex-wrap: wrap;
+    }
+    .att-tab {
+      font-family: var(--font-d); font-size: .75rem; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      padding: 8px 20px; border-radius: var(--radius-pill);
+      background: var(--surface); border: 1px solid var(--border-2);
+      color: var(--text-mid); cursor: pointer; user-select: none;
+      transition: background var(--t), border-color var(--t), color var(--t);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .att-tab:hover { border-color: rgba(255,255,255,.25); color: var(--text-hi); }
+    .att-tab.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+    .att-tab .count { font-size: .68rem; opacity: .85; }
+    .att-tab-panel { display: none; }
+    .att-tab-panel.active { display: block; animation: fadeUp .3s var(--ease) both; }
+
     /* ── ALERTS BANNER (wrapper around the attention section) ── */
     .alerts-wrap {
       border: 1px solid var(--orange-bdr);
@@ -481,7 +502,7 @@
 
   <!-- ── ATTENDANCE LIST ── -->
   <main class="att-page">
-
+    {% include "partials/search_form.html" %}
     <!-- ── NEEDS ATTENTION (expired / expiring soon / pending payment) ── -->
     {% if alerts %}
     <div class="alerts-wrap">
@@ -544,59 +565,69 @@
     </div>
     {% endif %}
 
-    {% for section_name, section_icon, records in sections %}
-    <div class="section-label">
-      <span>{{ section_icon }} {{ section_name }}</span>
-    </div>
-
-    {% if records %}
-      {% for r in records %}
-      <div class="att-card {% if r.is_expired %}expired{% elif r.is_expiring_soon %}expiring{% endif %}" data-json="{{ r|data_json }}">
-
-        <div class="att-time">
-          <div class="time-val">{{ r.time }}</div>
-          <div class="time-label">Check-In</div>
-        </div>
-        <div class="att-divider"></div>
-
-        <div class="att-avatar-wrap">
-          {% if r.image_url %}
-            <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy" />
-          {% else %}
-            <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
-          {% endif %}
-          {% if r.is_expired %}
-            <span class="att-alert-dot dot-red"></span>
-          {% elif r.is_expiring_soon %}
-            <span class="att-alert-dot dot-yellow"></span>
-          {% elif r.has_pending %}
-            <span class="att-alert-dot dot-orange"></span>
-          {% endif %}
-        </div>
-
-        <div class="att-info">
-          <div class="att-name">{{ r.name }}</div>
-          <div class="att-uid">UID · {{ r.unique_id }}</div>
-        </div>
-
-        <div class="att-meta">
-          {% if r.pending_amount > 0 %}
-            <div class="att-pending has-pending">₹{{ r.pending_amount|floatformat:0 }}</div>
-          {% else %}
-            <div class="att-pending"></div>
-          {% endif %}
-          <div class="att-due {% if r.is_expired %}expired-tag{% elif r.is_expiring_soon %}expiring-tag{% endif %}">
-            {% if r.is_expired %}EXPIRED{% else %}{{ r.due_date }}{% endif %}
-          </div>
-        </div>
-
-        <i class="bi bi-chevron-right att-chevron"></i>
-
+    <!-- ── SECTION TABS (Morning / Evening / etc.) ── -->
+    <div class="att-tabs" id="attTabs">
+      {% for section_name, section_icon, records in sections %}
+      <div class="att-tab {% if forloop.first %}active{% endif %}" data-tab="attTabPanel{{ forloop.counter }}">
+        {{ section_icon }} {{ section_name }} <span class="count">({{ records|length }})</span>
       </div>
       {% endfor %}
-    {% else %}
-      <div class="empty-state">No {{ section_name|upper }} Check-Ins</div>
-    {% endif %}
+    </div>
+
+    <!-- ── TAB PANELS ── -->
+    {% for section_name, section_icon, records in sections %}
+    <div class="att-tab-panel {% if forloop.first %}active{% endif %}" id="attTabPanel{{ forloop.counter }}">
+
+      {% if records %}
+        {% for r in records %}
+        <div class="att-card {% if r.is_expired %}expired{% elif r.is_expiring_soon %}expiring{% endif %}" data-json="{{ r|data_json }}">
+
+          <div class="att-time">
+            <div class="time-val">{{ r.time }}</div>
+            <div class="time-label">Check-In</div>
+          </div>
+          <div class="att-divider"></div>
+
+          <div class="att-avatar-wrap">
+            {% if r.image_url %}
+              <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy" />
+            {% else %}
+              <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
+            {% endif %}
+            {% if r.is_expired %}
+              <span class="att-alert-dot dot-red"></span>
+            {% elif r.is_expiring_soon %}
+              <span class="att-alert-dot dot-yellow"></span>
+            {% elif r.has_pending %}
+              <span class="att-alert-dot dot-orange"></span>
+            {% endif %}
+          </div>
+
+          <div class="att-info">
+            <div class="att-name">{{ r.name }}</div>
+            <div class="att-uid">UID · {{ r.unique_id }}</div>
+          </div>
+
+          <div class="att-meta">
+            {% if r.pending_amount > 0 %}
+              <div class="att-pending has-pending">₹{{ r.pending_amount|floatformat:0 }}</div>
+            {% else %}
+              <div class="att-pending"></div>
+            {% endif %}
+            <div class="att-due {% if r.is_expired %}expired-tag{% elif r.is_expiring_soon %}expiring-tag{% endif %}">
+              {% if r.is_expired %}EXPIRED{% else %}{{ r.due_date }}{% endif %}
+            </div>
+          </div>
+
+          <i class="bi bi-chevron-right att-chevron"></i>
+
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">No {{ section_name|upper }} Check-Ins</div>
+      {% endif %}
+
+    </div>
     {% endfor %}
 
   </main>
@@ -812,16 +843,26 @@
       const phoneDigits = digitsOnly(r.phone);
       const callBtn = document.getElementById('pCallBtn');
       const waBtn   = document.getElementById('pWhatsappBtn');
+
       if (phoneDigits) {
-        callBtn.href = 'tel:' + phoneDigits;
-        callBtn.style.pointerEvents = '';
-        callBtn.style.opacity = '';
-        waBtn.href = 'https://wa.me/' + phoneDigits.replace(/^\+/, '');
-        waBtn.style.pointerEvents = '';
-        waBtn.style.opacity = '';
+          callBtn.href = 'tel:' + phoneDigits;
+          callBtn.style.pointerEvents = '';
+          callBtn.style.opacity = '';
+
+          const whatsappNumber = phoneDigits.startsWith('91')
+              ? phoneDigits
+              : '91' + phoneDigits;
+          waBtn.href = `https://wa.me/${whatsappNumber}`;
+          waBtn.style.pointerEvents = '';
+          waBtn.style.opacity = '';
       } else {
-        callBtn.href = '#'; callBtn.style.pointerEvents = 'none'; callBtn.style.opacity = '.4';
-        waBtn.href = '#'; waBtn.style.pointerEvents = 'none'; waBtn.style.opacity = '.4';
+          callBtn.href = '#';
+          callBtn.style.pointerEvents = 'none';
+          callBtn.style.opacity = '.4';
+
+          waBtn.href = '#';
+          waBtn.style.pointerEvents = 'none';
+          waBtn.style.opacity = '.4';
       }
 
       setAlertBanner(r);
@@ -836,6 +877,21 @@
       backdrop.classList.remove('open');
       document.body.style.overflow = '';
     }
+  })();
+  /* ── SECTION TABS (Morning / Evening / etc.) ── */
+  (function () {
+    const tabs   = document.querySelectorAll('.att-tab');
+    const panels = document.querySelectorAll('.att-tab-panel');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        const target = document.getElementById(tab.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
   })();
   </script>
 

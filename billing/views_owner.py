@@ -28,7 +28,7 @@ from billing.services.monthly_report import (
 from billing.services.pdf_generator import generate_invoice_pdf
 from django.core.exceptions import PermissionDenied
 logger = logging.getLogger('billing')
-
+from AuthFit.permissions import permission_required
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Access guard — gym_owner only
@@ -70,7 +70,7 @@ def _gym(request):
 # 1. Owner Dashboard
 # ──────────────────────────────────────────────────────────────────────────────
 
-@_gym_owner_required
+@permission_required("can_view_dashboard")
 def owner_dashboard(request):
     """
     Landing page for gym owners.
@@ -145,7 +145,7 @@ def owner_dashboard(request):
 # 2. Monthly Reports — list from R2
 # ──────────────────────────────────────────────────────────────────────────────
 
-@_gym_owner_required
+@permission_required("can_view_reports")
 @require_GET
 def owner_monthly_report_list(request):
     """
@@ -174,7 +174,7 @@ def owner_monthly_report_list(request):
     })
 
 
-@_gym_owner_required
+@permission_required("can_export_reports")
 @require_GET
 def owner_monthly_report_generate(request):
     """
@@ -222,7 +222,7 @@ def owner_monthly_report_generate(request):
 # 4. Invoice List
 # ──────────────────────────────────────────────────────────────────────────────
 
-@_gym_owner_required
+@permission_required("can_export_reports")
 @require_GET
 def owner_invoice_list(request):
     """
@@ -265,7 +265,7 @@ def owner_invoice_list(request):
 # 5. Invoice PDF — owner-scoped redirect to Cloudflare R2
 # ──────────────────────────────────────────────────────────────────────────────
 
-@_gym_owner_required
+@permission_required("can_export_reports")
 @require_GET
 def owner_invoice_pdf(request, pk):
     """

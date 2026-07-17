@@ -153,10 +153,12 @@ class Enrollment(models.Model):
     face_embeddings = models.JSONField(default=list, blank=True)
     class Meta:
         unique_together = ('gym', 'unique_id')
+        indexes = [
+            models.Index(fields=['gym', 'unique_id']),
+            models.Index(fields=['gym', 'phone']),
+            models.Index(fields=['gym', 'paymentStatus']),
+        ]
         constraints = [
-            # Prevent two *pending* (unlinked) enrollments sharing a phone in the same gym.
-            # Linked enrollments (user is set) are unrestricted — a member could
-            # theoretically re-enroll after leaving, matching existing behavior.
             models.UniqueConstraint(
                 fields=['gym', 'phone'],
                 condition=models.Q(user__isnull=True),
