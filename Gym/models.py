@@ -1,5 +1,5 @@
 """
-gyms/models.py
+Gym/models.py
 --------------
 Core multi-tenant model.  Every other app's models carry a FK to Gym.
 """
@@ -92,6 +92,13 @@ class Gym(models.Model):
         help_text="Supplement store & order management.")
     enable_attendance       = models.BooleanField(default=True,
         help_text="Geo-attendance and attendance analytics.")
+    enable_geo_attendance   = models.BooleanField(default=False,
+        help_text="GPS-based geo-fenced attendance specifically. Independent of"
+                "enable_attendance (which just controls the Attendance module/UI "
+                "visibility) and enable_face_recognition. Turn this off for gyms "
+                "using only Face Recognition, a biometric device, or no GPS check-in "
+                "at all — this stops all location JS, Service Worker polling, and "
+                "geo API calls for that gym.")
     enable_face_recognition = models.BooleanField(default=True,
         help_text="Face recognition enrollment and auto check-in.")
     enable_trainers         = models.BooleanField(default=True,
@@ -149,6 +156,7 @@ class Gym(models.Model):
                    "timezone.localdate() — not UTC date — so gyms see the limit reset at "
                    "their local midnight from the server's perspective.",
     )
+    
     # ── Helpers ───────────────────────────────────────────────────────────
     @property
     def is_subscription_active(self):

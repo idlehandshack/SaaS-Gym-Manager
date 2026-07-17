@@ -492,6 +492,7 @@ def mark_attendance_api(request):
         status_map = {
             'success': 200, 'exists': 200,
             'out_of_range': 403, 'not_enrolled': 403, 'expired': 403,
+            'disabled': 403,
             'rate_limited': 429, 'error': 400,
         }
         return JsonResponse(result, status=status_map.get(result['status'], 400))
@@ -778,6 +779,8 @@ def homePage(request):
                 user=request.user, gym=gym
             ).exists()
             cache.set(cache_key, enrolled, timeout=300)
+
+    geo_attendance_enabled = bool(gym.enable_geo_attendance)
     return render(request, 'gym_home.html', {
         "gym":               gym,
         "enrolled":          enrolled,
@@ -785,6 +788,7 @@ def homePage(request):
         "isSuperuser":       isSuperuser,
         "gym_notifications": gym_notifications,
         "plans":             plans,    
+        "geo_attendance_enabled": geo_attendance_enabled,
     })
 
 
@@ -1388,13 +1392,10 @@ def upload_profile_pic(request):
 @login_required
 def attendance_page(request):
     gym        = getattr(request, 'gym', None)
-    
-
-    
     enrollment = Enrollment.objects.filter(user=request.user, gym=gym).first()
     if not enrollment:
         return redirect('/enrollment/')
-
+    geo_enabled = bool(gym and gym.enable_geo_attendance)
     today = timezone.localdate()
     user  = request.user
 
@@ -1408,7 +1409,6 @@ def attendance_page(request):
         .filter(user=user, gym=gym)
         .order_by('-date')
     )
-
     return render(request, "attendence.html", {
         "enrollment":   enrollment,
         "records":      all_attended[:30],
@@ -1421,9 +1421,8 @@ def attendance_page(request):
         ),
         "today": today,
         "gym" : gym,
-        
+        "geo_enabled": geo_enabled,
     })
-
 
 @login_required
 @require_POST

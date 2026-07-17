@@ -31,8 +31,8 @@ class PlatformSubscriptionPaymentAdmin(admin.ModelAdmin):
 # ──────────────────────────────────────────────────────────────────────────────
 @admin.register(Gym)
 class GymAdmin(admin.ModelAdmin):
-    list_display    = ('gym_name', 'gym_code', 'logo_preview', 'favicon_preview', 'active', 'plan', 'theme','enable_store', 'enable_attendance', 'enable_trainers', 'upi_enabled')
-    list_editable   = ('enable_store', 'enable_attendance', 'enable_trainers')
+    list_display    = ('gym_name', 'gym_code', 'logo_preview', 'favicon_preview', 'active', 'plan', 'theme','enable_store', 'enable_attendance','enable_geo_attendance', 'enable_trainers', 'upi_enabled')
+    list_editable   = ('enable_store', 'enable_attendance', 'enable_geo_attendance', 'enable_trainers')
     list_filter     = ['active', 'plan', 'theme']
     search_fields   = ['gym_name', 'gym_code', 'owner__username']
     readonly_fields = ['id', 'logo_preview_large', 'favicon_preview_large',
@@ -52,12 +52,15 @@ class GymAdmin(admin.ModelAdmin):
             'fields': (
                 'enable_store',
                 'enable_attendance',
+                'enable_geo_attendance',
                 'enable_face_recognition',
                 'enable_trainers',
             ),
             'description': (
                 'Toggle individual modules on/off for this gym. '
-                'Disabling a module blocks all URLs and hides UI for that feature.'
+                'Disabling a module blocks all URLs and hides UI for that feature. '
+                'enable_geo_attendance is separate from enable_attendance — a gym can '
+                'keep Attendance visible (e.g. for face check-in) while GPS is off.'
             ),
         }),
         ('White-label', {

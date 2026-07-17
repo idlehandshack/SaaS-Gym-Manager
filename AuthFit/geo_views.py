@@ -68,6 +68,9 @@ def attendance_status(request):
     gym = getattr(request, 'gym', None)
     gym_pk = gym.pk if gym else 'none'
 
+    if gym is None or not gym.enable_geo_attendance:
+        return JsonResponse({'enrolled': False, 'marked': False,"geo_enabled": False,})  # tells JS: don't start tracking
+
     enroll_key = f"enrollment_status_{uid}_{gym_pk}"
     enroll_data = cache.get(enroll_key)
 

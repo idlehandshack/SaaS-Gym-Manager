@@ -434,6 +434,7 @@
     </div>
 
     <!-- MARK ATTENDANCE BUTTON -->
+    {% if geo_enabled %}
     <div class="mark-section">
       <form method="POST" id="attendance-form">
         {% csrf_token %}
@@ -471,6 +472,13 @@
         iPHONE USERS — KEEP THIS PAGE OPEN FOR AUTO-ATTENDANCE DETECTION
       </div>
     </div>
+    {% else %}
+    <div class="mark-section">
+      <div class="banner banner-cyan" style="display:block;">
+        ◈ ATTENDANCE FOR THIS GYM IS TRACKED VIA {% if enrollment.gym.enable_face_recognition %}FACE RECOGNITION{% else %}YOUR GYM'S CHECK-IN SYSTEM{% endif %} — NO ACTION NEEDED HERE.
+      </div>
+    </div>
+    {% endif %}
 
     <!-- STATS ROW -->
     <div class="stats-grid">
@@ -649,9 +657,10 @@
   })();
   </script>
   <script nonce="{{ request.csp_nonce }}">
-    {% if not already_mark %}
+    {% if geo_enabled and not already_mark %}
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      document.getElementById('auto-mark-banner').style.display = 'block';
+      const banner = document.getElementById('auto-mark-banner');
+      if (banner) banner.style.display = 'block';
     }
     {% endif %}
   </script>
@@ -660,8 +669,10 @@
   </script>
   <script src="{% static 'js/sw_register.js' %}" defer></script>
   <script src="{% static 'js/fetch_utils.js' %}" defer></script>
+  {% if geo_enabled %}
   <script src="{% static 'js/loc_permission.js' %}" defer></script>
   <script src="{% static 'js/geo_attendance.js' %}" defer></script>
+  {% endif %}
   {% if request.user.is_authenticated %}
     {% if VAPID_PUBLIC_KEY %}
       <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>

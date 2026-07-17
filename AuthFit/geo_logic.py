@@ -43,7 +43,13 @@ def mark_geo_attendance(user, gym, lat, lng):
     """
     uid = user.id
     gym_pk = gym.pk if gym else 'none'
-
+    
+    # ── Geo Attendance feature gate (per-gym) ───────────────────────
+    # Checked first, before any rate-limit/cache work, so a disabled gym
+    # costs nothing beyond this one attribute check.
+    if gym is None or not gym.enable_geo_attendance:
+        return {'status': 'disabled', 'error': 'GPS attendance is not enabled for this gym.'}
+    
     # ── Rate limit: 10 calls/min per user ──────────────────────────
     rl_key = f"geo_rl_{uid}"
     calls = cache.get(rl_key, 0)
