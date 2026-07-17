@@ -8,7 +8,7 @@ from Gym.views import (
     add_staff_profile, gym_detail_json, add_gym_page, search_owner_by_phone,
     subscriptions_page, add_subscription_plan, edit_subscription_plan,
     delete_subscription_plan, change_gym_plan, platform_insights_page,
-    api_system_health,api_dashboard, api_notifications,record_platform_payment,enable_subscription_payment , disable_subscription_payment ,confirm_subscription_payment,gym_payment_page,api_public_live_stats,plans_page
+    api_system_health,api_dashboard, api_notifications,record_platform_payment,enable_subscription_payment , disable_subscription_payment ,confirm_subscription_payment,gym_payment_page,api_public_live_stats,plans_page,orphan_users_page, orphan_user_delete, orphan_user_bulk_delete,
 )
 from AuthFit.views_expiry_reminder import (
     SendExpiryReminderView,
@@ -82,6 +82,9 @@ urlpatterns = [
     path('api/platform-insights/dashboard/', api_dashboard, name='api_pi_dashboard'),
     path('api/platform-insights/system-health/', api_system_health, name='api_pi_health'),
     path('api/platform-insights/notifications/', api_notifications, name='api_pi_notifications'),
+    path('superadmin/user-cleanup/', orphan_users_page, name='orphan_users_page'),
+    path('superadmin/user-cleanup/<int:user_id>/delete/', orphan_user_delete, name='orphan_user_delete'),
+    path('superadmin/user-cleanup/bulk-delete/', orphan_user_bulk_delete, name='orphan_user_bulk_delete'),
     
     # ── Existing APIs ──────────────────────────────────────────
     path('api/mark-attendance/', views.mark_attendance_api),

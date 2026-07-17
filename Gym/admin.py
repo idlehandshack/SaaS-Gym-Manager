@@ -3,7 +3,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from cloudinary.utils import cloudinary_url
-from .models import Gym, SubscriptionPlan, StaffProfile , GymGSTProfile ,PlatformSubscriptionPayment ,PlatformSettings ,StaffPermission
+from .models import Gym, SubscriptionPlan, StaffProfile , GymGSTProfile ,PlatformSubscriptionPayment ,PlatformSettings ,StaffPermission ,OrphanUserDeletionLog
 
 @admin.register(StaffPermission)
 class StaffPermissionAdmin(admin.ModelAdmin):
@@ -11,6 +11,18 @@ class StaffPermissionAdmin(admin.ModelAdmin):
     search_fields = ("staff_profile__user__username", "staff_profile__gym__gym_name")
     autocomplete_fields = ("staff_profile", "updated_by")
     list_filter = ("staff_profile__role", "staff_profile__gym")
+
+@admin.register(OrphanUserDeletionLog)
+class OrphanUserDeletionLogAdmin(admin.ModelAdmin):
+    list_display = ('username', 'deleted_user_id', 'deleted_by', 'deleted_at')
+    list_filter = ('deleted_at',)
+    search_fields = ('username', 'email')
+    readonly_fields = [f.name for f in OrphanUserDeletionLog._meta.fields]
+
+    def has_add_permission(self, request):
+        return False  # audit log — created only via the delete flow
+    def has_change_permission(self, request, obj=None):
+        return False
 
 # ──────────────────────────────────────────────────────────────────────────────
 # SubscriptionPlan

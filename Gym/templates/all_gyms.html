@@ -20,7 +20,7 @@ img{display:block;max-width:100%}
 :root{
   --bg-base:#0a0a0c;--bg-surface:#111115;--bg-elevated:#18181e;--bg-card:#1c1c24;
   --border:#2a2a38;--border-subtle:#1f1f2b;
-  --orange:#ff7a00;--orange-dim:#ff7a0018;
+  --orange:#5B5FFF;--orange-dim:#ff7a0018;
   --green:#22c55e;--green-dim:#22c55e18;
   --red:#ef4444;--red-dim:#ef444418;
   --yellow:#f59e0b;--yellow-dim:#f59e0b18;
@@ -228,6 +228,19 @@ img{display:block;max-width:100%}
     <a class="nav-item" href="{% url 'admin_catalog_home' %}">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       Supplements Product
+    </a>
+    <a class="nav-item" href="{% url 'orphan_users_page' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M14 4l6 6"/>
+          <path d="M10 8l6 6"/>
+          <path d="M9 9L4 20"/>
+          <path d="M3 20h10"/>
+          <path d="M18 3v2"/>
+          <path d="M17 4h2"/>
+          <path d="M20 8v2"/>
+          <path d="M19 9h2"/>
+      </svg>
+      User Cleanup
     </a>
   </div>
 

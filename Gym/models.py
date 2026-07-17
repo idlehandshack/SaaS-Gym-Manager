@@ -433,3 +433,28 @@ def create_or_sync_staff_permission(sender, instance, created, **kwargs):
     if was_created:
         perm.apply_role_defaults(instance.role)
         perm.save()
+
+# ── Orphan User Cleanup — audit log ─────────────────────────────────────────
+class OrphanUserDeletionLog(models.Model):
+    """
+    Permanent record of every user deleted via the Orphan User Cleanup tool.
+    Stored separately from the User row so the audit trail survives the delete.
+    """
+    deleted_user_id = models.PositiveIntegerField()
+    username        = models.CharField(max_length=150, help_text="Phone number / username at time of deletion")
+    email           = models.EmailField(blank=True)
+    date_joined     = models.DateTimeField(null=True, blank=True)
+    last_login      = models.DateTimeField(null=True, blank=True)
+    deleted_by      = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                         related_name="orphan_deletions_performed")
+    deleted_at      = models.DateTimeField(auto_now_add=True)
+    reason          = models.CharField(max_length=255, default="Orphan user cleanup — not linked to any gym")
+
+    class Meta:
+        ordering = ['-deleted_at']
+        indexes = [models.Index(fields=['deleted_at'])]
+        verbose_name = "Orphan User Deletion Log"
+        verbose_name_plural = "Orphan User Deletion Logs"
+
+    def __str__(self):
+        return f"Deleted user #{self.deleted_user_id} ({self.username}) by {self.deleted_by} at {self.deleted_at}"

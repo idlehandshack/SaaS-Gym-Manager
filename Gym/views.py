@@ -15,7 +15,6 @@ from django.contrib.auth.models import User
 import json as json_lib
 from .forms import UPISettingsForm, GymCreateForm, StaffProfileCreateForm, GymGSTProfileForm
 from .models import Gym, SubscriptionPlan, StaffProfile ,PlatformSettings ,PlatformSubscriptionPayment
-from AuthFit.views import _gym_role_required
 from AuthFit.models import Enrollment
 from .services import platform_insights as pi
 import calendar
@@ -23,6 +22,10 @@ from urllib.parse import quote
 from .services import live_stats as ls
 from django.db.models import OuterRef, Subquery
 from AuthFit.permissions import permission_required
+from .models import OrphanUserDeletionLog
+from .services import orphan_users as ou
+import json as json_lib
+from django.core.paginator import Paginator
 
 
 @permission_required("can_manage_upi")
@@ -830,3 +833,119 @@ def plans_page(request):
             "plan_groups": grouped_plans,
         },
     )
+
+@superuser_required
+def orphan_users_page(request):
+    """
+    Super Admin > User Cleanup.
+    Lists visitor accounts (30+ days old by default) with zero gym/staff
+    relationship, so they can be safely bulk-deleted.
+    """
+    qs = ou.orphan_users_base_queryset()
+    qs = ou.apply_filters(qs, request)
+
+    now = timezone.now()
+    paginator = Paginator(qs, 25)
+    page_obj = paginator.get_page(request.GET.get("page", 1))
+
+    rows = []
+    for u in page_obj.object_list:
+        age_days = (now - u.date_joined).days if u.date_joined else None
+        rows.append({
+            "id": u.id,
+            "username": u.username,
+            "full_name": u.get_full_name() or "—",
+            "email": u.email or "—",
+            "date_joined": u.date_joined,
+            "last_login": u.last_login,
+            "age_days": age_days,
+            "status": "Never Logged In" if not u.last_login else "Inactive Visitor",
+        })
+
+    total_orphans = ou.orphan_users_base_queryset().count()
+
+    return render(request, "orphan_users.html", {
+        "rows": rows,
+        "page_obj": page_obj,
+        "total_orphans": total_orphans,
+        "search": request.GET.get("search", ""),
+        "age_filter": request.GET.get("age_filter", ""),
+        "sort": request.GET.get("sort", "newest"),
+    })
+
+
+@superuser_required
+@require_POST
+def orphan_user_delete(request, user_id):
+    """
+    POST /superadmin/user-cleanup/<user_id>/delete/
+    Re-validates the orphan condition immediately before deleting
+    (protects against a race where the user joined a gym in the meantime),
+    then logs the deletion for audit purposes.
+    """
+    is_orphan, reason = ou.revalidate_orphan(user_id)
+    if not is_orphan:
+        return JsonResponse({"success": False, "error": reason}, status=400)
+
+    user = get_object_or_404(User, pk=user_id)
+
+    OrphanUserDeletionLog.objects.create(
+        deleted_user_id=user.id,
+        username=user.username,
+        email=user.email,
+        date_joined=user.date_joined,
+        last_login=user.last_login,
+        deleted_by=request.user,
+    )
+    user.delete()
+
+    return JsonResponse({"success": True})
+
+
+@superuser_required
+@require_POST
+def orphan_user_bulk_delete(request):
+    """
+    POST /superadmin/user-cleanup/bulk-delete/
+    Body: {"user_ids": [1, 2, 3]}
+    Re-validates every user individually — a user that fails revalidation
+    is skipped (not fatal to the rest of the batch) and reported back.
+    """
+    try:
+        data = json_lib.loads(request.body)
+    except json_lib.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    user_ids = data.get("user_ids", [])
+    if not user_ids:
+        return JsonResponse({"success": False, "error": "No users selected."}, status=400)
+
+    deleted, skipped = [], []
+
+    for uid in user_ids:
+        is_orphan, reason = ou.revalidate_orphan(uid)
+        if not is_orphan:
+            skipped.append({"id": uid, "reason": reason})
+            continue
+
+        user = User.objects.filter(pk=uid).first()
+        if not user:
+            skipped.append({"id": uid, "reason": "User no longer exists."})
+            continue
+
+        OrphanUserDeletionLog.objects.create(
+            deleted_user_id=user.id,
+            username=user.username,
+            email=user.email,
+            date_joined=user.date_joined,
+            last_login=user.last_login,
+            deleted_by=request.user,
+        )
+        user.delete()
+        deleted.append(uid)
+
+    return JsonResponse({
+        "success": True,
+        "deleted_count": len(deleted),
+        "skipped": skipped,
+    })
