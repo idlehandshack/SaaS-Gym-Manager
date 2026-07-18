@@ -7,13 +7,28 @@ from cloudinary.utils import cloudinary_url
 
 from .models import (
     Contact, Trainer, MembershipPlan, Attendence,
-    GymNotification, Enrollment, UserDevice
+    GymNotification, Enrollment, UserDevice ,LoginSupportQuery
 )
 from django.core.exceptions import PermissionDenied
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Base admin mixin — scopes every changelist to request.gym
 # ──────────────────────────────────────────────────────────────────────────────
+@admin.register(LoginSupportQuery)
+class LoginSupportQueryAdmin(admin.ModelAdmin):
+    list_display  = ['phone', 'email', 'problem_type', 'status', 'gym', 'created_at']
+    list_filter   = ['status', 'problem_type']
+    search_fields = ['=phone', '^email']
+    readonly_fields = ['phone', 'email', 'problem_type', 'description', 'user', 'gym', 'created_at']
+    date_hierarchy = 'created_at'
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return False  # tickets are only created via the support endpoint
+
+
 class GymScopedAdmin(admin.ModelAdmin):
     list_per_page = 50
     show_full_result_count = False

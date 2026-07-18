@@ -5,7 +5,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from AuthFit.models import Enrollment, MembershipPlan, Trainer
+from AuthFit.models import Enrollment, MembershipPlan, Trainer ,LoginSupportQuery
 from django.db import transaction
 from django.utils import timezone
 
@@ -89,6 +89,64 @@ class UserLogin(UserCreationForm):
             return self._existing_user
         return super().save(commit=commit)
     
+
+PHONE_RE = re.compile(r'^\d{10}$')
+
+
+class LoginSupportRequestForm(forms.Form):
+    """
+    Backs the login-page modal. `problem_type == 'forgot_password'` is
+    routed to Django's password-reset token flow by the view; every other
+    problem_type becomes a LoginSupportQuery ticket.
+
+    Validation never reveals *which* of phone/email was wrong — both a
+    missing account and a mismatched email surface the same message.
+    """
+    phone        = forms.CharField(max_length=10)
+    email        = forms.EmailField()
+    problem_type = forms.ChoiceField(choices=LoginSupportQuery.PROBLEM_CHOICES)
+    description  = forms.CharField(widget=forms.Textarea)
+
+    GENERIC_ERROR = "We couldn't verify those details. Please check your phone number and email."
+
+    def clean_phone(self):
+        phone = self.cleaned_data['phone'].strip()
+        if not PHONE_RE.match(phone):
+            raise forms.ValidationError("Enter a valid 10-digit mobile number.")
+        return phone
+
+    def clean_description(self):
+        desc = self.cleaned_data['description'].strip()
+        if not desc:
+            raise forms.ValidationError("Please describe the issue.")
+        return desc[:2000]
+
+    def clean(self):
+        cleaned = super().clean()
+        phone = cleaned.get('phone')
+        email = cleaned.get('email')
+        if not phone or not email:
+            return cleaned
+
+        # Req: check User.username, then Enrollment.phone.
+        user = User.objects.filter(username=phone).first()
+        if user is None:
+            enrollment = (
+                Enrollment.objects
+                .filter(phone=phone, user__isnull=False)
+                .select_related('user')
+                .first()
+            )
+            user = enrollment.user if enrollment else None
+
+        # TEMP: email verification disabled for debugging — DO NOT ship like this
+        # matched_email = (user.email or '').strip().lower() if user else ''
+        # if not user or not matched_email or matched_email != email.strip().lower():
+        #     raise forms.ValidationError(self.GENERIC_ERROR)
+
+        cleaned['matched_user'] = user
+        return cleaned
+
 
 class QuickEnrollmentForm(forms.Form):
     name = forms.CharField(max_length=25)

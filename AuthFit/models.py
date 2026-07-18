@@ -495,3 +495,57 @@ class EnrollmentTransfer(models.Model):
 
     def __str__(self):
         return f"{self.mobile_number}: {self.previous_gym} → {self.new_gym} ({self.status})"
+    
+class LoginSupportQuery(models.Model):
+    """
+    Support ticket created from the login-page 'Forgot Password / Need Help?'
+    modal for anything that isn't a straight password reset (Django's builtin
+    reset flow handles that path directly and never creates a row here).
+    """
+    PROBLEM_CHOICES = [
+        ('forgot_password',  'Forgot Password'),
+        ('unable_login',     'Unable to Login'),
+        ('account_locked',   'Account Locked'),
+        ('other',            'Other'),
+    ]
+    STATUS_CHOICES = [
+        ('open',        'Open'),
+        ('in_progress', 'In Progress'),
+        ('resolved',    'Resolved'),
+    ]
+
+    # Nullable — the root SaaS domain has no gym context, and a phone
+    # number might not resolve to any Enrollment at all.
+    gym  = models.ForeignKey(Gym, on_delete=models.CASCADE, null=True, blank=True, db_index=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                              related_name='login_support_queries')
+
+    phone        = models.CharField(max_length=10, db_index=True)
+    email        = models.EmailField()
+    problem_type = models.CharField(max_length=20, choices=PROBLEM_CHOICES, db_index=True)
+    description  = models.TextField()
+
+    status      = models.CharField(max_length=15, choices=STATUS_CHOICES, default='open', db_index=True)
+    created_at  = models.DateTimeField(auto_now_add=True, db_index=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    handled_by  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['phone']),
+            models.Index(fields=['status']),
+            models.Index(fields=['problem_type']),
+            models.Index(fields=['created_at']),
+        ]
+        verbose_name = "Login Support Query"
+        verbose_name_plural = "Login Support Queries"
+
+    def __str__(self):
+        return f"{self.phone} — {self.get_problem_type_display()} ({self.status})"
+
+    def mark_resolved(self, staff_user):
+        self.status = 'resolved'
+        self.resolved_at = timezone.now()
+        self.handled_by = staff_user
+        self.save(update_fields=['status', 'resolved_at', 'handled_by'])

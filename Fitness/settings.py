@@ -17,25 +17,20 @@ API_KEY = os.environ.get("INTERNAL_API_KEY", "")
 # Never use ["*"] — even in DEBUG it masks misconfiguration
 if DEBUG:
     ALLOWED_HOSTS = [
-        '.localhost',
-        '127.0.0.1',
-        '0.0.0.0',
-        'localhost',
-        'saas-gym-manager.onrender.com',
-        '*'
+        '.localhost', '127.0.0.1', '0.0.0.0', 'localhost', '*'
     ]
 else:
     ALLOWED_HOSTS = [
-        'saas-gym-manager.onrender.com',
-        'www.saas-gym-manager.onrender.com',
-        '.saas-gym-manager.onrender.com',   # wildcard: covers all gym subdomains
+        'entergym.in',
+        'www.entergym.in',
+        '.entergym.in',   # wildcard covers all gym subdomains
     ]
 
 # ── CSRF ──────────────────────────────────────────────────────────────────
 # Must cover every gym subdomain or members will get 403 on form POSTs
 CSRF_TRUSTED_ORIGINS = [
-    "https://saas-gym-manager.onrender.com",
-    "https://*.saas-gym-manager.onrender.com",   # gym subdomains
+    "https://entergym.in",
+    "https://*.entergym.in",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]
@@ -321,3 +316,11 @@ JAZZMIN_SETTINGS = {
         ]
     }
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ['EMAIL_HOST']
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ['EMAIL_HOST_USER']
+EMAIL_HOST_PASSWORD = os.environ['EMAIL_HOST_PASSWORD']
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)

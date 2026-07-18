@@ -58,6 +58,15 @@ from reviews.models import Review
 logger = logging.getLogger(__name__)
 from AuthFit.permissions import permission_required
 from Gym.utils.search import apply_search, get_search_context ,apply_related_search
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from .forms import LoginSupportRequestForm
+from AuthFit.models import LoginSupportQuery
+from AuthFit.support_rate_limit import is_support_request_rate_limited
+
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 ALLOWED_EXTENSIONS  = {'.jpg', '.jpeg', '.png', '.webp'}
 INTERNAL_API_KEY    = os.environ.get("INTERNAL_API_KEY", "")
@@ -137,6 +146,15 @@ def manifest(request):
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ──────────────────────────────────────────────────────────────────────────────
+def _superuser_required_local(view_fn):
+    @login_required
+    @functools.wraps(view_fn)
+    def wrapped(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied("Super admin access required.")
+        return view_fn(request, *args, **kwargs)
+    return wrapped
+
 def gym_favicon(request):
     """
     Serves the gym's favicon. Falls back to a default if none is set.
@@ -173,6 +191,126 @@ def gym_favicon(request):
     # Fall back to your static default favicon
     from django.templatetags.static import static
     return HttpResponseRedirect(static('favicon.ico'))
+
+def _send_password_reset_email(request, user, gym):
+    token_generator = PasswordResetTokenGenerator()
+    uid   = urlsafe_base64_encode(force_bytes(user.pk))
+    token = token_generator.make_token(user)
+    reset_url = request.build_absolute_uri(f"/accounts/reset/{uid}/{token}/")
+
+    context = {
+        "user": user,
+        "reset_url": reset_url,
+        "gym_name": gym.gym_name if gym else "EnterGYM",
+        "gym": gym,
+    }
+    subject = "Reset Your EnterGYM Password"
+    html_body = render_to_string("registration/password_reset_email.html", context)
+
+    if user.email:
+        try:
+            send_mail(
+                subject=subject,
+                message=html_body,
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+                recipient_list=[user.email],
+                html_message=html_body,
+                fail_silently=False,
+            )
+        except Exception:
+            logger.exception("Password reset email failed to send — user_id=%s", user.id)
+
+
+@require_POST
+def login_support_submit(request):
+    """
+    POST /support/submit/  — AJAX endpoint for the login-page
+    'Forgot Password / Need Help?' modal. CSRF-protected (session cookie
+    exists even for anonymous users; template must send the csrf token).
+    """
+    gym = getattr(request, 'gym', None)
+    ip  = get_client_ip(request)
+
+    form = LoginSupportRequestForm(request.POST)
+    if not form.is_valid():
+        non_field = form.errors.get('__all__')
+        msg = non_field[0] if non_field else next(iter(form.errors.values()))[0]
+        return JsonResponse({"error": msg}, status=400)
+
+    phone        = form.cleaned_data['phone']
+    email        = form.cleaned_data['email']
+    problem_type = form.cleaned_data['problem_type']
+    description  = form.cleaned_data['description']
+    user         = form.cleaned_data['matched_user']
+
+    if is_support_request_rate_limited(ip, phone):
+        logger.warning("Support request rate-limited — phone=%s ip=%s", phone, ip)
+        return JsonResponse({"error": "Too many requests. Please try again in an hour."}, status=429)
+
+    if problem_type == 'forgot_password':
+        _send_password_reset_email(request, user, gym)
+        logger.info(
+            "Password reset requested — phone=%s email=%s ip=%s ua=%s",
+            phone, email, ip, request.META.get('HTTP_USER_AGENT', '')[:200],
+        )
+        return JsonResponse({
+            "status": "success",
+            "message": "A password reset link has been sent to your registered email.",
+        })
+
+    LoginSupportQuery.objects.create(
+        gym=gym, user=user, phone=phone, email=email,
+        problem_type=problem_type, description=description,
+    )
+    return JsonResponse({
+        "status": "success",
+        "message": "Your request has been submitted. Our team will get back to you soon.",
+    })
+
+@_superuser_required_local
+def login_support_tickets(request):
+    qs = LoginSupportQuery.objects.select_related('gym', 'user', 'handled_by').order_by('-created_at')
+
+    status_filter = request.GET.get('status', '').strip()
+    problem_filter = request.GET.get('problem_type', '').strip()
+    phone_q = request.GET.get('phone', '').strip()
+    email_q = request.GET.get('email', '').strip()
+
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    if problem_filter:
+        qs = qs.filter(problem_type=problem_filter)
+    if phone_q:
+        qs = qs.filter(phone__icontains=phone_q)
+    if email_q:
+        qs = qs.filter(email__icontains=email_q)
+
+    # Counts reflect all tickets, not just the current filtered page
+    all_tickets = LoginSupportQuery.objects.all()
+
+    paginator = Paginator(qs, 25)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    return render(request, "admin/login_support_tickets.html", {
+        "page_obj": page_obj,
+        "status_choices": LoginSupportQuery.STATUS_CHOICES,
+        "problem_choices": LoginSupportQuery.PROBLEM_CHOICES,
+        "status_filter": status_filter,
+        "problem_filter": problem_filter,
+        "phone_q": phone_q,
+        "email_q": email_q,
+        "open_count": all_tickets.filter(status='open').count(),
+        "in_progress_count": all_tickets.filter(status='in_progress').count(),
+        "resolved_count": all_tickets.filter(status='resolved').count(),
+    })
+
+
+@_superuser_required_local
+@require_POST
+def login_support_ticket_resolve(request, ticket_id):
+    ticket = get_object_or_404(LoginSupportQuery, pk=ticket_id)
+    ticket.mark_resolved(request.user)
+    return JsonResponse({"ok": True, "status": ticket.status})
 
 def _check_internal_key(request):
     provided = request.headers.get("X-Internal-Key", "")

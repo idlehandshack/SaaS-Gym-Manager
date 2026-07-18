@@ -76,16 +76,6 @@
     <div class="glow-blob b2"></div>
 
     <div class="auth-card">
-
-      <div class="auth-mobile-brand">
-        {% if gym and gym.logo %}
-          <img src="{{ gym.logo.url }}" alt="{{ gym.name }}">
-        {% else %}
-          <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM">
-        {% endif %}
-        <span>{% if gym %}{{ gym.name }}{% else %}EnterGYM{% endif %}</span>
-      </div>
-
       <div class="auth-card-head">
         <div class="auth-card-eyebrow">Sign In</div>
         <h2>Login</h2>
@@ -137,8 +127,7 @@
         </div>
 
         <p class="forget-text">
-          For password reset, please contact the
-          <a href="/contact/">administrator</a>.
+          <a href="#" id="openSupportModal">Forgot Password / Need Help?</a>
         </p>
 
         <button type="submit" class="submit-btn" id="signup-btn">Log In</button>
@@ -150,7 +139,84 @@
       </form>
     </div>
   </main>
+  <!-- ══ SUPPORT MODAL ══ -->
+<div class="support-modal-overlay" id="supportModalOverlay">
+  <div class="support-modal">
+    <button type="button" class="support-modal-close" id="closeSupportModal">&times;</button>
+    <h3>Account Help</h3>
+    <p class="support-modal-sub">We'll get you back in, or route this to our team.</p>
 
+    <form id="supportForm">
+      {% csrf_token %}
+      <div id="supportToast" class="support-toast" style="display:none;"></div>
+
+      <div class="form-group">
+        <label for="support-phone">Phone Number</label>
+        <input type="tel" id="support-phone" name="phone" class="text"
+               placeholder="10-digit mobile number" required maxlength="10"
+               pattern="[0-9]{10}" inputmode="numeric">
+      </div>
+
+      <div class="form-group">
+        <label for="support-email">Registered Email</label>
+        <input type="email" id="support-email" name="email" class="text"
+               placeholder="you@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="support-problem">What's the issue?</label>
+        <select id="support-problem" name="problem_type" class="text" required>
+          <option value="forgot_password">Forgot Password</option>
+          <option value="unable_login">Unable to Login</option>
+          <option value="otp_not_received">OTP Not Received</option>
+          <option value="account_locked">Account Locked</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="support-description">Describe the issue</label>
+        <textarea id="support-description" name="description" class="text" rows="3" required></textarea>
+      </div>
+
+      <button type="submit" class="submit-btn" id="supportSubmitBtn">Submit</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .support-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    z-index: 1000; align-items: center; justify-content: center; padding: 16px;
+  }
+  .support-modal-overlay.active { display: flex; }
+  .support-modal {
+    background: #0a0a0c; border: 1px solid #262629; border-radius: 14px;
+    padding: 28px; max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto;
+    position: relative;
+  }
+  .support-modal h3 { color: #fff; margin: 0 0 4px; font-size: 20px; }
+  .support-modal-sub { color: #999; font-size: 13px; margin: 0 0 18px; }
+  .support-modal-close {
+    position: absolute; top: 16px; right: 18px; background: none; border: none;
+    color: #999; font-size: 22px; cursor: pointer; line-height: 1;
+  }
+  .support-modal-close:hover { color: #fff; }
+  .support-modal .form-group { margin-bottom: 14px; }
+  .support-modal label { display: block; color: #ccc; font-size: 13px; margin-bottom: 6px; }
+  .support-modal input.text, .support-modal select.text, .support-modal textarea.text {
+    width: 100%; background: #111113; border: 1px solid #262629; color: #e5e5e5;
+    border-radius: 8px; padding: 10px 12px; font-size: 14px; box-sizing: border-box;
+  }
+  .support-modal input.text:focus, .support-modal select.text:focus, .support-modal textarea.text:focus {
+    outline: none; border-color: #ff4d00;
+  }
+  .support-toast {
+    padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 14px;
+  }
+  .support-toast.success { background: rgba(46,196,102,.12); color: #5fe08a; }
+  .support-toast.error { background: rgba(255,77,0,.12); color: #ff8a4d; }
+</style>
 </div>
 
 <script src="{% static 'js/messages.js' %}"></script>
@@ -162,6 +228,48 @@
     btn.textContent = 'Logging in...';
     btn.style.opacity = '0.6';
     btn.style.cursor = 'not-allowed';
+  });
+</script>
+<script nonce="{{ request.csp_nonce }}">
+  const supportOverlay = document.getElementById('supportModalOverlay');
+  document.getElementById('openSupportModal').addEventListener('click', function(e) {
+    e.preventDefault();
+    supportOverlay.classList.add('active');
+  });
+  document.getElementById('closeSupportModal').addEventListener('click', function() {
+    supportOverlay.classList.remove('active');
+  });
+  supportOverlay.addEventListener('click', function(e) {
+    if (e.target === supportOverlay) supportOverlay.classList.remove('active');
+  });
+
+  document.getElementById('supportForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const toast = document.getElementById('supportToast');
+    const btn = document.getElementById('supportSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    toast.style.display = 'none';
+
+    try {
+      const res = await fetch("{% url 'login_support_submit' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': e.target.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: new FormData(e.target),
+      });
+      const data = await res.json();
+      toast.textContent = data.message || data.error;
+      toast.className = 'support-toast ' + (res.ok ? 'success' : 'error');
+      toast.style.display = 'block';
+      if (res.ok) e.target.reset();
+    } catch (err) {
+      toast.textContent = 'Something went wrong. Please try again.';
+      toast.className = 'support-toast error';
+      toast.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Submit';
+    }
   });
 </script>
 </body>

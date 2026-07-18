@@ -128,4 +128,7 @@ urlpatterns = [
     path("pay-subscription/", gym_payment_page, name="gym_payment_page"),
     path("api/public/live-stats/", api_public_live_stats, name="public_live_stats"),
     path("plans/", plans_page, name="plans_page"),
+    path('support/submit/', views.login_support_submit, name='login_support_submit'),
+    path('super-admin/support-tickets/', views.login_support_tickets, name='login_support_tickets'),
+    path('super-admin/support-tickets/<int:ticket_id>/resolve/', views.login_support_ticket_resolve, name='login_support_ticket_resolve'),
 ]
