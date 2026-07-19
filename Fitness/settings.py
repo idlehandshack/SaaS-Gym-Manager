@@ -271,50 +271,139 @@ JAZZMIN_SETTINGS = {
     "site_logo":    "images/Logo.png",
     "site_icon":    "images/Logo.png",
     "copyright":    "EnterGYM",
+
     "topmenu_links": [
-        {"name": "Support", "url": "https://wa.me/917000032565", "new_window": True},
+        {"name": "Visit Website", "url": "https://entergym.in/"},
+        {"name": "Dashboard", "url": "https://entergym.in/superadmin/dashboard/"},
     ],
     "usermenu_links": [
+        {"name": "Visit Website", "url": "https://entergym.in/", "new_window": True},
         {"name": "Support", "url": "https://wa.me/917000032565", "new_window": True},
     ],
-    "show_sidebar":          True,
-    "navigation_expanded":   True,
+
+    "show_sidebar":        True,
+    "navigation_expanded": False,
+
+    # ── Sidebar order: EnterGYM Platform → Authentication → Demo Requests →
+    #    Notifications → Store → Members → Billing ─────────────────────────
     "order_with_respect_to": [
-        "AuthFit", "AuthFit.enrollment", "AuthFit.attendance",
-        "AuthFit.membershipplan", "AuthFit.trainer",
-        "AuthFit.contact", "AuthFit.gymnotification", "auth",
+        # 1. EnterGYM Platform — Gym model first
+        "Gym",
+        "Gym.gym",
+        "Gym.subscriptionplan",
+        "Gym.platformsubscriptionpayment",
+        "Gym.platformsettings",
+        "Gym.gymgstprofile",
+        "Gym.equipmentbrand",
+        "Gym.service",
+        "Gym.staffprofile",
+        "Gym.staffpermission",
+        "Gym.orphanuserdeletionlog",
+
+        # 2. Authentication
+        "auth",
+        "auth.user",
+        "auth.group",
+
+        # 3. Demo Requests
+        "demoRequest",
+        "demoRequest.demorequest",
+
+        # 4. Notifications
+        "notifications",
+        "notifications.webpushsubscription",
+
+        # 5. Store (Shop)
+        "Shop",
+        "Shop.globalproduct",
+        "Shop.gymproduct",
+        "Shop.gymproductflavor",
+        "Shop.order",
+        "Shop.gyminventorymovement",
+        "Shop.staffdevice",
+        "Shop.globalproductflavor",
+
+        # 6. Members (AuthFit)
+        "AuthFit",
+        "AuthFit.enrollment",
+        "AuthFit.membershipplan",
+        "AuthFit.trainer",
+        "AuthFit.attendence",
+        "AuthFit.gymnotification",
+        "AuthFit.userdevice",
+        "AuthFit.contact",
+        "AuthFit.loginsupportquery",
+
+        # 7. Billing (last)
+        "billing",
+        "billing.invoice",
+        "billing.invoicelineitem",
+        "billing.payment",
+        "billing.invoicecounter",
     ],
+
+    # ── App-level icons (top of each sidebar group) ────────────────────────
     "icons": {
-        "AuthFit":                 "fas fa-dumbbell",
-        "AuthFit.attendence":      "fas fa-clipboard-user",
-        "AuthFit.contact":         "fas fa-address-book",
-        "AuthFit.enrollment":      "fas fa-id-card",
+        "Gym":            "fas fa-building",
+        "auth":            "fas fa-users-cog",
+        "auth.user":       "fas fa-user",
+        "auth.group":      "fas fa-users",
+        "demoRequest":     "fas fa-clipboard-list",
+        "notifications":   "fas fa-bell",
+        "Shop":            "fas fa-store",
+        "AuthFit":         "fas fa-dumbbell",
+        "billing":         "fas fa-file-invoice-dollar",
+
+        # EnterGYM Platform models
+        "Gym.gym":                        "fas fa-building",
+        "Gym.subscriptionplan":            "fas fa-tags",
+        "Gym.platformsubscriptionpayment": "fas fa-hand-holding-usd",
+        "Gym.platformsettings":            "fas fa-sliders-h",
+        "Gym.gymgstprofile":               "fas fa-file-contract",
+        "Gym.equipmentbrand":              "fas fa-industry",
+        "Gym.service":                     "fas fa-concierge-bell",
+        "Gym.staffprofile":                "fas fa-user-shield",
+        "Gym.staffpermission":             "fas fa-key",
+        "Gym.orphanuserdeletionlog":       "fas fa-user-slash",
+
+        # Demo Requests
+        "demoRequest.demorequest": "fas fa-comment-dots",
+
+        # Notifications
+        "notifications.webpushsubscription": "fas fa-broadcast-tower",
+
+        # Store models
+        "Shop.globalproduct":        "fas fa-box-open",
+        "Shop.gymproduct":           "fas fa-boxes",
+        "Shop.gymproductflavor":     "fas fa-vial",
+        "Shop.order":                "fas fa-shopping-cart",
+        "Shop.gyminventorymovement": "fas fa-exchange-alt",
+        "Shop.staffdevice":          "fas fa-mobile-alt",
+        "Shop.globalproductflavor":  "fas fa-flask",
+
+        # Members models
+        "AuthFit.enrollment":       "fas fa-id-card",
+        "AuthFit.membershipplan":   "fas fa-layer-group",
+        "AuthFit.trainer":          "fas fa-user-tie",
+        "AuthFit.attendence":       "fas fa-clipboard-user",
         "AuthFit.gymnotification": "fas fa-bell",
-        "AuthFit.membershipplan":  "fas fa-layer-group",
-        "AuthFit.trainer":         "fas fa-user-tie",
-        "auth":                    "fas fa-users-cog",
-        "auth.user":               "fas fa-user",
-        "auth.group":              "fas fa-users",
+        "AuthFit.userdevice":       "fas fa-tablet-alt",
+        "AuthFit.contact":          "fas fa-address-book",
+        "AuthFit.loginsupportquery":"fas fa-headset",
+
+        # Billing models
+        "billing.invoice":         "fas fa-file-invoice",
+        "billing.invoicelineitem": "fas fa-list-ul",
+        "billing.payment":         "fas fa-money-bill-wave",
+        "billing.invoicecounter":  "fas fa-sort-numeric-up",
     },
+
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+
     "changeform_format":    "horizontal_tabs",
     "related_modal_active": False,
     "custom_css":           "css/admin_custom.css",
-    "custom_links": {
-        "EnterGYM": [
-            {
-                "name": "Visit Website",
-                "url":  "https://entergym.onrender.com/",
-                "icon": "fas fa-globe",
-                "new_window": True,
-            },
-            {
-                "name": "Support",
-                "url":  "https://wa.me/917000032565",
-                "icon": "fas fa-headset",
-                "new_window": True,
-            },
-        ]
-    }
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
