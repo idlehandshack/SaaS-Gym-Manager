@@ -231,3 +231,71 @@ class CompleteProfileForm(forms.ModelForm):
     class Meta:
         model = Enrollment
         fields = ['email', 'gender', 'address', 'reference']
+ 
+class GymExtrasForm(forms.Form):
+    """
+    One form, one page: gym owner picks which catalog Services and
+    Equipment Brands (both maintained by Super Admin) apply to their
+    gym. Add more ModelMultipleChoiceFields here as you introduce
+    future catalog-style features — the view/template below already
+    render any field on this form generically.
+    """
+    services = forms.ModelMultipleChoiceField(
+        queryset=None,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    brands = forms.ModelMultipleChoiceField(
+        queryset=None,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+ 
+    # ── Future sections go here, same pattern, e.g.: ──────────────
+    # amenities = forms.ModelMultipleChoiceField(
+    #     queryset=None, required=False, widget=forms.CheckboxSelectMultiple,
+    # )
+ 
+    def __init__(self, *args, gym=None, **kwargs):
+        self.gym = gym
+        super().__init__(*args, **kwargs)
+ 
+        # Local imports avoid a hard cross-app import at module load time
+        from Gym.models import Service, EquipmentBrand
+ 
+        self.fields['services'].queryset = Service.objects.filter(is_active=True)
+        self.fields['brands'].queryset = EquipmentBrand.objects.filter(is_active=True)
+ 
+        if gym is not None:
+            self.fields['services'].initial = gym.services.values_list('pk', flat=True)
+            self.fields['brands'].initial = gym.equipment_brands.values_list('pk', flat=True)
+ 
+    def save(self):
+        self.gym.services.set(self.cleaned_data['services'])
+        self.gym.equipment_brands.set(self.cleaned_data['brands'])
+        return self.gym
+
+class EquipmentBrandSelectionForm(forms.Form):
+    """
+    Used by Gym Owner / Receptionist to pick which active brands
+    (from the global catalog) their gym uses.
+    """
+    brands = forms.ModelMultipleChoiceField(
+        queryset=None,  # set in __init__, scoped to active brands only
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+ 
+    def __init__(self, *args, gym=None, **kwargs):
+        self.gym = gym
+        super().__init__(*args, **kwargs)
+        # Local import avoids a hard cross-app import at module load time
+        from Gym.models import EquipmentBrand
+        self.fields['brands'].queryset = EquipmentBrand.objects.filter(is_active=True)
+        if gym is not None:
+            self.fields['brands'].initial = gym.equipment_brands.values_list('pk', flat=True)
+ 
+    def save(self):
+        selected = self.cleaned_data['brands']
+        self.gym.equipment_brands.set(selected)
+        return self.gym

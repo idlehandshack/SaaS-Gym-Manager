@@ -3,7 +3,33 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from cloudinary.utils import cloudinary_url
-from .models import Gym, SubscriptionPlan, StaffProfile , GymGSTProfile ,PlatformSubscriptionPayment ,PlatformSettings ,StaffPermission ,OrphanUserDeletionLog
+from .models import Gym, SubscriptionPlan, StaffProfile , GymGSTProfile ,PlatformSubscriptionPayment ,PlatformSettings ,StaffPermission ,OrphanUserDeletionLog ,EquipmentBrand ,Service
+
+
+@admin.register(Service)
+class ServiceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'image_preview', 'sort_order', 'is_active', 'updated_at')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+    ordering = ('sort_order', 'name')
+    list_per_page = 50
+    list_editable = ('sort_order', 'is_active')
+    actions = ['activate_services', 'deactivate_services']
+ 
+    def image_preview(self, obj):
+        from django.utils.html import format_html
+        if obj.image:
+            return format_html('<img src="{}" style="height:40px;border-radius:4px;">', obj.image.url)
+        return "—"
+    image_preview.short_description = "Preview"
+ 
+    @admin.action(description='Mark selected services as active')
+    def activate_services(self, request, queryset):
+        queryset.update(is_active=True)
+ 
+    @admin.action(description='Mark selected services as inactive')
+    def deactivate_services(self, request, queryset):
+        queryset.update(is_active=False)
 
 @admin.register(StaffPermission)
 class StaffPermissionAdmin(admin.ModelAdmin):
@@ -278,3 +304,21 @@ class PlatformSettingsAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+@admin.register(EquipmentBrand)
+class EquipmentBrandAdmin(admin.ModelAdmin):
+    list_display = ('name','is_active', 'updated_at')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+    ordering = ('name',)
+    list_per_page = 50
+    list_editable = ('is_active',)
+    actions = ['activate_brands', 'deactivate_brands']
+
+    @admin.action(description='Mark selected brands as active')
+    def activate_brands(self, request, queryset):
+        queryset.update(is_active=True)
+
+    @admin.action(description='Mark selected brands as inactive')
+    def deactivate_brands(self, request, queryset):
+        queryset.update(is_active=False)

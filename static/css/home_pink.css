@@ -1656,7 +1656,117 @@ body {
     font-size: 24px;
   }
 }
-
+.services-section {
+  background: var(--color-bg-deep);
+  padding: 50px 16px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+ 
+.services-section .features-container {
+  position: relative;
+  z-index: 1;
+  max-width: 960px;
+  margin: auto;
+}
+ 
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 260px));
+  justify-content: center;
+  gap: 20px;
+  margin-top: 32px;
+}
+ 
+.service-card {
+  position: relative;
+  background: var(--color-card-dark);
+  border: 1px solid var(--color-primary-a18);
+  border-radius: 4px;
+  padding: 24px 20px 20px;
+  text-align: center;
+  transition: border-color 0.3s ease, background 0.3s ease, transform 0.25s ease;
+}
+ 
+.service-card:hover {
+  background: var(--color-card-dark-hover);
+  border-color: var(--color-primary-a55);
+  transform: translateY(-4px);
+}
+ 
+/* ── Image: fixed square, cropped neatly, never overflows the card ── */
+.service-card .service-image {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  object-position: center;
+  margin: 0 auto 16px;
+  display: block;
+  border-radius: 8px;
+  border: 1px solid var(--color-primary-a30);
+  background: var(--color-surface-charcoal); /* shows while loading / if image is missing */
+}
+ 
+.service-card h3 {
+  color: var(--color-white-hex);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+ 
+.service-card p {
+  color: var(--color-white-60);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+ 
+/* ── Cyber corners — same accent language as .feature-card ── */
+.service-card .cyber-corner {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--color-primary);
+  border-style: solid;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.service-card .cyber-corner.tl {
+  top: 5px;
+  left: 5px;
+  border-width: 1px 0 0 1px;
+}
+.service-card .cyber-corner.br {
+  bottom: 5px;
+  right: 5px;
+  border-width: 0 1px 1px 0;
+}
+.service-card:hover .cyber-corner {
+  opacity: 1;
+}
+ 
+/* ===== Responsive (matches your existing breakpoints) ===== */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .services-section { padding: 70px 28px; }
+  .services-grid { gap: 24px; margin-top: 40px; }
+  .service-card { padding: 28px 22px 22px; }
+  .service-card .service-image { width: 96px; height: 96px; }
+}
+ 
+@media (min-width: 1024px) {
+  .services-section { padding: 100px 20px; }
+  .services-grid { gap: 28px; margin-top: 44px; }
+  .service-card { padding: 32px 24px; }
+  .service-card .service-image { width: 100px; height: 100px; }
+}
+ 
+@media (max-width: 600px) {
+  .services-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; }
+  .service-card { padding: 18px 14px 16px; }
+  .service-card .service-image { width: 72px; height: 72px; margin-bottom: 12px; }
+  .service-card h3 { font-size: 0.95rem; }
+  .service-card p { font-size: 0.8rem; }
+}
 /* ===== CTA SECTION ===== */
 .cta-section {
   position: relative;

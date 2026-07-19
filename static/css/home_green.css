@@ -3,7 +3,7 @@
   --color-primary: #2e7d32;
   --color-primary-hover: #256428;
   --color-primary-dark: #1b5e20;
-  --color-accent-orange: #2e7d32;              /* kept name for compatibility — see note */
+  --color-accent-orange: #2e7d32;              
   --color-accent-secondary: #239740;
   --color-accent-muted-mobile: rgba(46, 125, 50, 0.811);
   --color-navbar-scrolled: rgba(27, 94, 32, 0.95);
@@ -1790,7 +1790,360 @@ body {
   display: grid;
   gap: 20px;
 }
+/* ============================================================
+     SERVICE CAROUSEL — themed entirely off :root variables
+     ============================================================ */
+  .services-section {
+    background: var(--color-bg-deep);
+    padding: 50px 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+ 
+  .service-carousel {
+    position: relative;
+    max-width: 480px;
+    margin: 40px auto 0;
+  }
+ 
+  /* ── Progress bar ── */
+  .sc-progress-track {
+    width: 100%;
+    height: 3px;
+    background: var(--color-white-08);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .sc-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--color-primary);
+    box-shadow: 0 0 8px var(--color-primary-a55);
+    border-radius: 999px;
+    transition: width linear;
+  }
+ 
+  /* ── Stage: arrows + slide track ── */
+  .sc-stage {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+ 
+  .sc-arrow {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--color-primary-a30);
+    background: var(--color-card-dark);
+    color: var(--color-white-70);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.25s, color 0.25s, background 0.25s, transform 0.15s;
+    z-index: 2;
+  }
+  .sc-arrow:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: var(--color-card-dark-hover);
+  }
+  .sc-arrow:active {
+    transform: scale(0.92);
+  }
+ 
+  .sc-track {
+    position: relative;
+    flex: 1;
+    min-height: 340px;
+  }
+ 
+  /* ── Slide: absolutely stacked, cross-fade + scale ── */
+  .sc-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: scale(0.94) translateY(6px);
+    pointer-events: none;
+    transition: opacity 0.5s cubic-bezier(.4,0,.2,1), transform 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .sc-slide.active {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+  }
+ 
+  .sc-slide-inner {
+  position: relative;
+  background: var(--color-card-dark);
+  border: 1px solid var(--color-primary-a18);
+  border-radius: 10px;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: border-color 0.3s;
+}
+.sc-slide.active .sc-slide-inner {
+  border-color: var(--color-primary-a55);
+}
 
+.sc-slide .cyber-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--color-primary);
+  border-style: solid;
+  opacity: 0;
+  transition: opacity 0.4s;
+  z-index: 3;
+}
+.sc-slide.active .cyber-corner { opacity: 1; }
+.sc-slide .cyber-corner.tl { top: 8px; left: 8px; border-width: 1.5px 0 0 1.5px; }
+.sc-slide .cyber-corner.br { bottom: 8px; right: 8px; border-width: 0 1.5px 1.5px 0; }
+
+/* ── Full-bleed rectangular image filling the whole slide ── */
+.sc-image-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+.sc-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 0;
+  border: none;
+  background: var(--color-surface-charcoal);
+  position: relative;
+  z-index: 1;
+}
+/* Gradient scrim so text stays legible over the photo */
+.sc-image-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,.55) 0%,
+    rgba(0,0,0,.35) 25%,
+    rgba(0,0,0,.5) 50%,
+    rgba(0,0,0,.35) 75%,
+    rgba(0,0,0,.55) 100%
+  );
+  z-index: 2;
+}
+.sc-image-ring { display: none; }
+
+/* ── Text overlaid on top of the image, anchored to the bottom ── */
+.sc-index {
+  position: relative;
+  z-index: 3;
+  font-size: 11px;
+  letter-spacing: 3px;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  padding: 0 26px;
+}
+
+.sc-title {
+  position: relative;
+  z-index: 3;
+  color: var(--color-accent-orange);
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 4px 0 12px;
+  padding: 0 26px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px var(--color-primary-a55), 0 0 24px var(--color-primary-a20);
+}
+.sc-title::after {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 2px;
+  background: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary);
+  margin: 10px auto 0;
+}
+.sc-desc {
+  position: relative;
+  z-index: 3;
+  color: var(--color-white-70);
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: 0.5px;
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 0 26px 26px;
+}
+ 
+  /* ── Dots ── */
+  .sc-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 26px;
+  }
+  .sc-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--color-white-15);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.25s, width 0.25s;
+  }
+  .sc-dot.active {
+    background: var(--color-primary);
+    width: 22px;
+  }
+ 
+  /* ===== Responsive ===== */
+  @media (min-width: 768px) {
+    .service-carousel { max-width: 620px; }
+    .sc-track { min-height: 380px; }
+    .sc-arrow { width: 48px; height: 48px; }
+    .sc-title { font-size: 1.6rem; letter-spacing: 2.5px; }
+    .sc-desc { font-size: 1rem; max-width: 400px; }
+  }
+ 
+  @media (max-width: 480px) {
+    .sc-stage { gap: 4px; }
+    .sc-arrow { width: 36px; height: 36px; }
+    .sc-track { min-height: 300px; }
+    .sc-slide-inner { padding: 26px 16px 22px; }
+    .sc-title { font-size: 1.05rem; letter-spacing: 1.5px; }
+    .sc-desc { font-size: 0.85rem; }
+  }
+
+/* ===== EQUIPMENT BRANDS SECTION — auto-scrolling marquee ===== */
+.brands-section {
+  background: var(--color-black-hex);
+  padding: 70px 0;
+  text-align: center;
+  overflow: hidden;
+}
+
+.brands-mark {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.brands-mark span {
+  display: block;
+  width: 18px;
+  background: var(--color-primary);
+  clip-path: polygon(60% 0%, 100% 0%, 40% 100%, 0% 100%);
+}
+.brands-mark span:nth-child(1) { height: 8px; }
+.brands-mark span:nth-child(2) { height: 8px; }
+.brands-mark span:nth-child(3) { height: 8px; }
+.brands-mark span {
+  display: block;
+  width: 12px;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transform: skewX(55deg);
+}
+
+.brands-heading {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  line-height: 1.35;
+  color: var(--color-white-hex);
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  padding: 0 20px;
+}
+
+.brands-marquee {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+}
+
+.brands-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  gap: 64px;
+  animation: brandsScroll 22s linear infinite;
+  will-change: transform;
+}
+.brands-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes brandsScroll {
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+.brand-logo {
+  width: 260px;
+  height: 130px;
+  object-fit: contain;
+  object-position: center;
+  flex-shrink: 0;
+  opacity: 0.85;
+  transition: opacity 0.3s;
+}
+.brand-logo:hover {
+  opacity: 1;
+}
+
+@media (min-width: 640px) {
+  .brands-heading { font-size: 32px; }
+  .brand-logo { width: 290px; height: 145px; }
+  .brands-track { gap: 80px; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .brands-section { padding: 90px 0; }
+  .brands-heading { font-size: 36px; }
+  .brand-logo { width: 320px; height: 160px; }
+  .brands-track { gap: 90px; animation-duration: 26s; }
+}
+@media (min-width: 1024px) {
+  .brands-section { padding: 110px 0; }
+  .brands-heading { font-size: 42px; }
+  .brand-logo { width: 350px; height: 175px; }
+  .brands-track { gap: 100px; animation-duration: 30s; }
+}
 .pricing-card {
   border: 1px solid var(--color-white-10);
   padding: 20px;

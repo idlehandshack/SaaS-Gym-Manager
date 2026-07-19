@@ -131,4 +131,5 @@ urlpatterns = [
     path('support/submit/', views.login_support_submit, name='login_support_submit'),
     path('super-admin/support-tickets/', views.login_support_tickets, name='login_support_tickets'),
     path('super-admin/support-tickets/<int:ticket_id>/resolve/', views.login_support_ticket_resolve, name='login_support_ticket_resolve'),
+    path('owner/gym-extras/', views.gym_extras, name='gym_extras'),
 ]

@@ -10,12 +10,68 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from cloudinary.models import CloudinaryField
 from django.core.cache import cache
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save, post_delete, m2m_changed
 from django.dispatch import receiver
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Subscription Plans (SaaS tiers defined by the software owner)
 # ──────────────────────────────────────────────────────────────────────────────
+class EquipmentBrand(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    # CHANGED — was: models.ImageField(upload_to='equipment_brands/')
+    logo = CloudinaryField('brand_logo', null=True, blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+ 
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Equipment Brand'
+        verbose_name_plural = 'Equipment Brands'
+ 
+    def __str__(self):
+        return self.name
+ 
+ 
+class Service(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+ 
+    # CHANGED — was: models.ImageField(upload_to='services/')
+    image = CloudinaryField('service_image', null=True, blank=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    sort_order = models.PositiveIntegerField(
+        default=0,
+        help_text="Controls display order everywhere this catalog is listed.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+ 
+    class Meta:
+        ordering = ['sort_order', 'name']
+        verbose_name = 'Service'
+        verbose_name_plural = 'Services'
+ 
+    def __str__(self):
+        return self.name
+    
+
+def clear_gym_services_cache(sender, instance, action, **kwargs):
+    if action in ('post_add', 'post_remove', 'post_clear'):
+        cache.delete(f"gym_services_{instance.pk}")
+ 
+ 
+@receiver([post_save, post_delete], sender=Service)
+def clear_all_service_caches_on_catalog_change(sender, instance, **kwargs):
+    """
+    A catalog-level change (Super Admin edits/deletes/deactivates a
+    service) can affect every gym that selected it, since the image
+    and name are denormalized into each gym's cached homepage payload.
+    """
+    gym_ids = instance.gyms.values_list('pk', flat=True) if instance.pk else []
+    for gym_id in gym_ids:
+        cache.delete(f"gym_services_{gym_id}")
+
 class SubscriptionPlan(models.Model):
     name            = models.CharField(max_length=60, unique=True) 
     price_monthly   = models.DecimalField(max_digits=10, decimal_places=2)
@@ -124,6 +180,16 @@ class Gym(models.Model):
         max_length=120,
         default="Membership Payment",
         help_text="Transaction note (tn) attached to the UPI deep link."
+    )
+    equipment_brands = models.ManyToManyField(
+        EquipmentBrand,
+        blank=True,
+        related_name='gyms',
+    )
+    services = models.ManyToManyField(
+        Service,
+        blank=True,
+        related_name='gyms',
     )
     THEME_CHOICES = [
         ('default', 'Default'),
@@ -458,3 +524,19 @@ class OrphanUserDeletionLog(models.Model):
 
     def __str__(self):
         return f"Deleted user #{self.deleted_user_id} ({self.username}) by {self.deleted_by} at {self.deleted_at}"
+
+def clear_gym_equipment_brands_cache(sender, instance, action, **kwargs):
+    if action in ('post_add', 'post_remove', 'post_clear'):
+        cache.delete(f"gym_equipment_brands_{instance.pk}")
+
+
+@receiver([post_save, post_delete], sender=EquipmentBrand)
+def clear_all_brand_caches_on_catalog_change(sender, instance, **kwargs):
+    gym_ids = instance.gyms.values_list('pk', flat=True) if instance.pk else []
+    for gym_id in gym_ids:
+        cache.delete(f"gym_equipment_brands_{gym_id}")
+
+
+# Wire up the m2m signal now that Gym.equipment_brands exists
+m2m_changed.connect(clear_gym_equipment_brands_cache, sender=Gym.equipment_brands.through)
+m2m_changed.connect(clear_gym_services_cache, sender=Gym.services.through)

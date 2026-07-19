@@ -40,6 +40,8 @@
       property="og:description"
       content="Crush your health and fitness goals with {{gym.gym_name}}. Start a 2-day free trial!"
     />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/all.min.css' %}">
     <meta property="og:url" content="https://{{gym.gym_name}}.com" />
     <meta property="og:type" content="website" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -178,6 +180,7 @@
                   <li><a href="/quick-enrollment/">Quick Enrollment</a></li>
                   <li><a href="/settings/upi-payment/">UPI Settings</a></li>
                   <li><a href="/contact-inquiries/">Support Requests</a></li>
+                  <li><a href="/owner/gym-extras/">Add Services</a></li>
                   {% if gym.enable_store %}
                   <li><a href="/manage/orders/">Order Management</a></li>
                   {% endif %}
@@ -438,6 +441,9 @@
     </div>
 
     <section id="About" class="features-section">
+      <div class="brands-mark">
+        <span></span><span></span><span></span>
+      </div>
       <div class="features-container">
         <p class="small-heading">WHY CHOOSE US?</p>
         <h2 class="main-heading">PUSH YOUR <span>LIMITS</span> FORWARD</h2>
@@ -562,9 +568,70 @@
         </div>
       </div>
     </section>
-
+    {% if gym_services %}
+<section id="Services" class="services-section">
+  <div class="brands-mark">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="features-container">
+    <p class="small-heading">WHAT WE PROVIDE</p>
+    <h2 class="main-heading">SERVICES WE <span>OFFER</span></h2>
+    <div class="cyber-divider"></div>
+ 
+    <div class="service-carousel" id="serviceCarousel" data-count="{{ gym_services|length }}">
+ 
+      <!-- Progress bar (fills over the autoplay duration, resets on slide change) -->
+      <div class="sc-progress-track">
+        <div class="sc-progress-fill" id="scProgressFill"></div>
+      </div>
+ 
+      <div class="sc-stage">
+        <!-- Prev arrow -->
+        <button class="sc-arrow sc-arrow-prev" id="scPrev" aria-label="Previous service">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+ 
+        <!-- Slides -->
+        <div class="sc-track" id="scTrack">
+          {% for service in gym_services %}
+          <div class="sc-slide {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}">
+            <div class="sc-slide-inner">
+              <span class="cyber-corner tl"></span>
+              <span class="cyber-corner br"></span>
+ 
+              <div class="sc-image-wrap">
+                <img src="{{ service.image_url }}" alt="{{ service.name }} at {{ gym.gym_name }}" class="sc-image" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                <div class="sc-image-ring"></div>
+              </div>
+ 
+              <span class="sc-index">{{ forloop.counter }} / {{ gym_services|length }}</span>
+              <h3 class="sc-title">{{ service.name }}</h3>
+              {% if service.description %}
+              <p class="sc-desc">{{ service.description }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+ 
+        <!-- Next arrow -->
+        <button class="sc-arrow sc-arrow-next" id="scNext" aria-label="Next service">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+ 
+      <!-- Dots -->
+      <div class="sc-dots" id="scDots">
+        {% for service in gym_services %}
+        <button class="sc-dot {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" aria-label="Go to {{ service.name }}"></button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
     <section class="offer-section">
-      <div class="offer-container">
+      <div class="offer-container">  
         <h2 class="offer-heading">
           <span class="white">WHAT WE CAN</span>
           <span class="orange"> OFFER</span>
@@ -681,6 +748,9 @@
     </section>
 
     <section class="pricing-section" id="pricing">
+      <div class="brands-mark">
+        <span></span><span></span><span></span>
+      </div>
       <div class="pricing-container">
         <p class="pricing-subtitle">OUR PLANS</p>
         <h2 class="pricing-title">CHOOSE YOUR FITNESS PLAN</h2>
@@ -718,7 +788,37 @@
         </div>
       </div>
     </section>
+    {% if gym_equipment_brands %}
+    <section class="brands-section">
+      <div class="brands-mark">
+        <span></span><span></span><span></span>
+      </div>
+      <h2 class="brands-heading">PREMIUM FITNESS<br>EQUIPMENT PARTNERS</h2>
 
+      <div class="brands-marquee">
+        <div class="brands-track">
+          {% for brand in gym_equipment_brands %}
+          <img
+            src="{{ brand.logo_url }}"
+            alt="{{ brand.name }} equipment at {{ gym.gym_name }}"
+            class="brand-logo"
+            loading="lazy"
+          />
+          {% endfor %}
+          <!-- Duplicate set for seamless loop -->
+          {% for brand in gym_equipment_brands %}
+          <img
+            src="{{ brand.logo_url }}"
+            alt="{{ brand.name }} equipment at {{ gym.gym_name }}"
+            class="brand-logo"
+            loading="lazy"
+            aria-hidden="true"
+          />
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+    {% endif %}
     <footer id="classes" class="footer">
       <div class="footer-top">
         <div class="footer-container footer-top-inner">
@@ -810,6 +910,7 @@
           </a>
         </span>
       </div>
+
     </footer>
     <script src="{% static 'js/home.js' %}" defer></script>
     {% if request.user.is_authenticated %}
@@ -826,6 +927,103 @@
     <script nonce="{{ request.csp_nonce }}">
       window.GYM_CONFIG = JSON.parse('{{ GYM_CONFIG_JSON|escapejs }}');
     </script>
+    <script nonce="{{ request.csp_nonce }}">
+(function () {
+  const root = document.getElementById('serviceCarousel');
+  if (!root) return;
+ 
+  const track       = root.querySelector('#scTrack');
+  const slides       = Array.from(root.querySelectorAll('.sc-slide'));
+  const dots         = Array.from(root.querySelectorAll('.sc-dot'));
+  const prevBtn       = root.querySelector('#scPrev');
+  const nextBtn       = root.querySelector('#scNext');
+  const progressFill = root.querySelector('#scProgressFill');
+ 
+  const total = slides.length;
+  if (total <= 1) {
+    if (prevBtn) prevBtn.style.display = 'none';
+    if (nextBtn) nextBtn.style.display = 'none';
+  }
+ 
+  let current = 0;
+  let autoplayTimer = null;
+  let progressStart = null;
+  const AUTOPLAY_MS = 5000;
+ 
+  function goTo(index, { restart = true } = {}) {
+    index = (index + total) % total;
+    slides[current].classList.remove('active');
+    dots[current] && dots[current].classList.remove('active');
+ 
+    current = index;
+ 
+    slides[current].classList.add('active');
+    dots[current] && dots[current].classList.add('active');
+ 
+    if (restart) startProgress();
+  }
+ 
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+ 
+  function startProgress() {
+    clearTimeout(autoplayTimer);
+    progressFill.style.transition = 'none';
+    progressFill.style.width = '0%';
+    // Force reflow so the transition below actually animates from 0
+    void progressFill.offsetWidth;
+    progressFill.style.transition = `width ${AUTOPLAY_MS}ms linear`;
+    progressFill.style.width = '100%';
+ 
+    autoplayTimer = setTimeout(next, AUTOPLAY_MS);
+  }
+ 
+  function pauseProgress() {
+    clearTimeout(autoplayTimer);
+    const computed = getComputedStyle(progressFill).width;
+    progressFill.style.transition = 'none';
+    progressFill.style.width = computed;
+  }
+ 
+  if (nextBtn) nextBtn.addEventListener('click', () => goTo(current + 1));
+  if (prevBtn) prevBtn.addEventListener('click', () => goTo(current - 1));
+ 
+  dots.forEach((dot) => {
+    dot.addEventListener('click', () => goTo(parseInt(dot.dataset.index, 10)));
+  });
+ 
+  // Pause on hover (desktop) — resumes on mouse leave
+  root.addEventListener('mouseenter', pauseProgress);
+  root.addEventListener('mouseleave', startProgress);
+ 
+  // Keyboard nav when the carousel has focus/hover
+  root.setAttribute('tabindex', '0');
+  root.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') next();
+    if (e.key === 'ArrowLeft') prev();
+  });
+ 
+  // Touch swipe support
+  let touchStartX = null;
+  track.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    pauseProgress();
+  }, { passive: true });
+ 
+  track.addEventListener('touchend', (e) => {
+    if (touchStartX === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(delta) > 40) {
+      delta < 0 ? next() : prev();
+    } else {
+      startProgress();
+    }
+    touchStartX = null;
+  });
+ 
+  if (total > 1) startProgress();
+})();
+</script>
     {% if enrolled %}
     <script src="{% static 'js/geo_attendance.js' %}"></script>
     <script src="{% static 'js/fetch_utils.js' %}" defer></script>

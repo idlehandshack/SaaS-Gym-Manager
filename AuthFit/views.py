@@ -39,7 +39,7 @@ from django.http import HttpResponseRedirect
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth,TruncDay
 from AuthFit.rate_limit import check_login_attempt, reset_attempt, record_failed_attempt ,get_client_ip
-from .forms import UserLogin , CompleteProfileForm , QuickEnrollmentForm
+from .forms import UserLogin , CompleteProfileForm , QuickEnrollmentForm ,GymExtrasForm
 from urllib.parse import quote
 from Shop.notifications import notify_staff_new_enrollment
 from django.contrib.auth.hashers import check_password
@@ -66,6 +66,7 @@ from django.core.mail import send_mail
 from .forms import LoginSupportRequestForm
 from AuthFit.models import LoginSupportQuery
 from AuthFit.support_rate_limit import is_support_request_rate_limited
+from Gym.utils.cloudinary_helpers import cloudinary_thumb
 
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 ALLOWED_EXTENSIONS  = {'.jpg', '.jpeg', '.png', '.webp'}
@@ -485,6 +486,52 @@ def _gym_role_required(*allowed_roles):
         return wrapped
     return decorator
 
+@login_required
+def gym_extras(request):
+    """
+    Single page where Gym Owner/Receptionist pick which catalog
+    Services and Equipment Brands (both Super-Admin-managed) their
+    gym uses. Designed to grow: add a new ModelMultipleChoiceField
+    to GymExtrasForm and a matching card in the template for any
+    future "pick from a global catalog" feature.
+    """
+    if not _gym_staff_required(request):
+        messages.error(request, "You don't have permission to manage this page.")
+        return redirect('home')
+ 
+    if request.method == 'POST':
+        form = GymExtrasForm(request.POST, gym=request.gym)
+        if form.is_valid():
+            form.save()
+            cache.delete(f"gym_services_{request.gym.pk}")
+            cache.delete(f"gym_equipment_brands_{request.gym.pk}")
+            messages.success(request, "Your selections were saved successfully.")
+            return redirect('gym_extras')
+    else:
+        form = GymExtrasForm(gym=request.gym)
+ 
+    # Fetch each catalog ONCE here (not per-checkbox in the template) and
+    # mark which items this gym already has selected, so the template can
+    # render plain checkboxes with images with zero extra queries.
+    selected_service_ids = set(request.gym.services.values_list('pk', flat=True))
+    selected_brand_ids = set(request.gym.equipment_brands.values_list('pk', flat=True))
+ 
+    service_catalog = [
+        {'id': s.id, 'name': s.name, 'image_url': s.image.url if s.image else '',
+         'selected': s.id in selected_service_ids}
+        for s in form.fields['services'].queryset
+    ]
+    brand_catalog = [
+        {'id': b.id, 'name': b.name, 'image_url': b.logo.url if b.logo else '',
+         'selected': b.id in selected_brand_ids}
+        for b in form.fields['brands'].queryset
+    ]
+ 
+    return render(request, 'gym_extras/index.html', {
+        'form': form,
+        'service_catalog': service_catalog,
+        'brand_catalog': brand_catalog,
+    })
 # ──────────────────────────────────────────────────────────────────────────────
 # Internal API views (called by face recognition service / cron jobs)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1000,6 +1047,33 @@ def homePage(request):
             .values("id", "plan", "price", "duration_days")
         )
         cache.set(plans_key, plans, timeout=3600)
+    
+    services_key = f"gym_services_{gym.pk}"
+    gym_services = cache.get(services_key)
+    if gym_services is None:
+        gym_services = [
+            {
+                'name': s.name,
+                'description': s.description,
+                # 240x240 — sized for the carousel's circular image (max
+                # rendered size ~140px, so this covers retina displays)
+                'image_url': cloudinary_thumb(s.image, width=800, height=600, gravity="auto"),
+            }
+            for s in gym.services.filter(is_active=True).order_by('sort_order', 'name')
+        ]
+        cache.set(services_key, gym_services, timeout=3600)
+ 
+    brands_key = f"gym_equipment_brands_{gym.pk}"
+    gym_equipment_brands = cache.get(brands_key)
+    if gym_equipment_brands is None:
+        gym_equipment_brands = [
+            {
+                'name': b.name,
+                'logo_url': cloudinary_thumb(b.logo, width=400, height=200, crop="fit", effect="trim"),
+            }
+            for b in gym.equipment_brands.filter(is_active=True).order_by('name')
+        ]
+        cache.set(brands_key, gym_equipment_brands, timeout=3600)
 
     enrolled    = False
     isStaff     = False
@@ -1024,7 +1098,9 @@ def homePage(request):
         "isStaff":           isStaff,
         "isSuperuser":       isSuperuser,
         "gym_notifications": gym_notifications,
-        "plans":             plans,    
+        "plans":             plans,
+        "gym_services":         gym_services,          
+        "gym_equipment_brands": gym_equipment_brands,    
         "geo_attendance_enabled": geo_attendance_enabled,
     })
 
