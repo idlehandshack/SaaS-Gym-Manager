@@ -220,6 +220,105 @@ def _send_password_reset_email(request, user, gym):
         except Exception:
             logger.exception("Password reset email failed to send — user_id=%s", user.id)
 
+def _build_attendance_entry(rec):
+    """Builds the display dict for one Attendence row. Shared by today + history views."""
+    enrollment = (
+        rec.user.gym_enrollment[0]
+        if getattr(rec.user, "gym_enrollment", None)
+        else None
+    )
+    image_url = None
+    if enrollment and enrollment.face_image:
+        try:
+            public_id = (
+                enrollment.face_image.public_id
+                if hasattr(enrollment.face_image, "public_id")
+                else str(enrollment.face_image)
+            )
+            if public_id:
+                image_url, _ = cloudinary_url(
+                    public_id, width=60, height=60,
+                    crop="fill", gravity="face",
+                    fetch_format="auto", quality="auto", secure=True,
+                )
+        except Exception:
+            logger.exception("Cloudinary URL error for user %s", rec.user.id)
+
+    pending_amount = float(enrollment.pendingAmount) if enrollment else 0
+    is_expired = enrollment.is_expired if enrollment else False
+    days_remaining = enrollment.days_remaining if enrollment else None
+    is_expiring_soon = (
+        not is_expired and days_remaining is not None
+        and days_remaining <= 3
+    )
+    has_pending = pending_amount > 0
+
+    return {
+        "id": rec.id,
+        "time": rec.timestamp.strftime("%I:%M %p"),
+        "name": enrollment.fullname if enrollment else rec.user.username,
+        "unique_id": enrollment.unique_id if enrollment else "—",
+        "image_url": image_url,
+        "pending_amount": pending_amount,
+        "due_date": enrollment.DueDate.strftime("%d %b %Y") if enrollment and enrollment.DueDate else "—",
+        "is_expired": is_expired,
+        "is_expiring_soon": is_expiring_soon,
+        "has_pending": has_pending,
+        "phone": enrollment.phone if enrollment else "—",
+        "address": enrollment.address if enrollment else "—",
+        "plan": enrollment.selectPlan.plan if enrollment and enrollment.selectPlan else "—",
+        "plan_price": float(enrollment.selectPlan.price) if enrollment and enrollment.selectPlan else 0,
+        "trainer": enrollment.trainer.name if enrollment and enrollment.trainer else "No Trainer",
+        "gender": enrollment.get_gender_display() if enrollment else "—",
+        "doj": enrollment.doj.strftime("%d %b %Y") if enrollment and enrollment.doj else "—",
+        "payment_status": enrollment.paymentStatus if enrollment else "—",
+        "days_remaining": days_remaining,
+        "payment_date": enrollment.paymentDate.strftime("%d %b %Y") if enrollment and enrollment.paymentDate else "—",
+    }
+
+
+def _get_previous_days_attendance(gym, today, days=3):
+    """
+    Returns a list of {"date": date, "label": "...", "records": [...]}
+    for the `days` days before `today`, strictly scoped to `gym`.
+    Superuser (gym=None) sees nothing here — this is a per-gym feature.
+    """
+    if gym is None:
+        return []
+
+    start_date = today - timedelta(days=days)
+    end_date = today - timedelta(days=1)
+
+    qs = (
+        Attendence_model.objects
+        .filter(gym=gym, date__range=(start_date, end_date))   # ← gym scoping, mirrors today_attendance
+        .select_related("user")
+        .prefetch_related(
+            Prefetch(
+                "user__enrollment_set",
+                queryset=Enrollment.objects.filter(gym=gym).select_related(
+                    "selectPlan", "trainer",
+                ),
+                to_attr="gym_enrollment",
+            )
+        )
+        .order_by("-date", "timestamp")
+    )
+
+    by_date = {}
+    for rec in qs:
+        by_date.setdefault(rec.date, []).append(_build_attendance_entry(rec))
+
+    result = []
+    for i in range(1, days + 1):
+        d = today - timedelta(days=i)
+        result.append({
+            "date": d,
+            "label": d.strftime("%A, %d %b"),
+            "records": by_date.get(d, []),
+            "count": len(by_date.get(d, [])),
+        })
+    return result
 
 @require_POST
 def login_support_submit(request):
@@ -2175,8 +2274,24 @@ def today_attendance(request):
         if alert_rank is not None:
             alerts.append(entry)
 
+    for rec in qs:
+        entry = _build_attendance_entry(rec)
+        entry["alert_rank"] = (
+            0 if entry["is_expired"] else
+            1 if entry["is_expiring_soon"] else
+            2 if entry["has_pending"] else None
+        )
+        (morning if rec.timestamp.hour < 14 else evening).append(entry)
+        if entry["alert_rank"] is not None:
+            alerts.append(entry)
+
     alerts.sort(key=lambda e: (e["alert_rank"], -e["pending_amount"]))
 
+    # ── NEW: last 3 days, gym-scoped ──
+    previous_days = _get_previous_days_attendance(gym, today, days=3)
+    previous_days_json = json.dumps(
+        [{"label": d["label"], "records": d["records"]} for d in previous_days]
+    )
     context = {
         "sections":     [("Morning", "🌅", morning), ("Evening", "🌆", evening)],
         "alerts":       alerts,
@@ -2184,6 +2299,8 @@ def today_attendance(request):
         "today":        today,
         "total":        len(morning) + len(evening),
         "gym":          gym,**search_ctx,
+        "previous_days": previous_days,
+        "previous_days_json": previous_days_json,
         "extra_params_list": [],   # nothing else to preserve
              **search_ctx,
     }

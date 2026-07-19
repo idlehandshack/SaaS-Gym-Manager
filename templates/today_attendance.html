@@ -572,6 +572,11 @@
         {{ section_icon }} {{ section_name }} <span class="count">({{ records|length }})</span>
       </div>
       {% endfor %}
+      {% if previous_days %}
+      <div class="att-tab" data-tab="attTabPanelHistory">
+        🗓️ Attendance History <span class="count" id="historyTotalBadge">(0)</span>
+      </div>
+      {% endif %}
     </div>
 
     <!-- ── TAB PANELS ── -->
@@ -629,7 +634,25 @@
 
     </div>
     {% endfor %}
+    {% if previous_days %}
+    <div class="att-tab-panel" id="attTabPanelHistory">
 
+      <div class="att-tabs" id="historyDayTabs">
+        {% for day in previous_days %}
+        <div class="att-tab" data-day-index="{{ forloop.counter0 }}">
+          {{ day.label }} <span class="count">({{ day.count }})</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div id="historyCardsContainer">
+        <div class="empty-state">Select a day above</div>
+      </div>
+
+    </div>
+
+    <script type="application/json" id="historyData">{{ previous_days_json|safe }}</script>
+    {% endif %}
   </main>
 
   <!-- ── SLIDE PANEL BACKDROP ── -->
@@ -732,168 +755,232 @@
 
     </div>
   </div>
-  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
-  <script nonce="{{ request.csp_nonce }}">
-  (function () {
-    const panel    = document.getElementById('slidePanel');
-    const backdrop = document.getElementById('panelBackdrop');
-    const closeBtn = document.getElementById('panelClose');
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+<script nonce="{{ request.csp_nonce }}">
+(function () {
+  const panel    = document.getElementById('slidePanel');
+  const backdrop = document.getElementById('panelBackdrop');
+  const closeBtn = document.getElementById('panelClose');
 
-    /* Card click — identical delegation logic to original */
-    document.addEventListener('click', function (e) {
-      const card = e.target.closest('.att-card');
-      if (card) {
-        try { openPanel(JSON.parse(card.dataset.json)); }
-        catch (err) { console.error('Panel parse error:', err); }
+  document.addEventListener('click', function (e) {
+    const card = e.target.closest('.att-card');
+    if (card) {
+      try { openPanel(JSON.parse(card.dataset.json)); }
+      catch (err) { console.error('Panel parse error:', err); }
+    }
+  });
+
+  closeBtn.addEventListener('click', closePanel);
+  backdrop.addEventListener('click', closePanel);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closePanel();
+  });
+
+  function digitsOnly(phone) {
+    return (phone || '').replace(/[^\d+]/g, '');
+  }
+
+  function setAlertBanner(r) {
+    const banner = document.getElementById('pAlertBanner');
+    const title  = document.getElementById('pAlertTitle');
+    const text   = document.getElementById('pAlertText');
+
+    banner.classList.remove('level-red', 'level-yellow', 'level-orange', 'show');
+
+    let level = null, titleText = '', bodyText = '';
+
+    if (r.is_expired) {
+      level = 'level-red';
+      titleText = 'Plan Expired';
+      bodyText  = 'This member\'s plan expired on ' + (r.due_date || '—') + '. Renew before their next visit.';
+    } else if (r.is_expiring_soon) {
+      level = 'level-yellow';
+      const d = r.days_remaining;
+      titleText = 'Plan Expiring Soon';
+      bodyText  = (d === 0 ? 'Expires today' : d === 1 ? 'Expires in 1 day' : ('Expires in ' + d + ' days')) +
+                  ' (' + (r.due_date || '—') + '). Remind them to renew.';
+    } else if (r.has_pending) {
+      level = 'level-orange';
+      titleText = 'Payment Pending';
+      bodyText  = '₹' + r.pending_amount + ' is still due from this member.';
+    }
+
+    if (level) {
+      banner.classList.add(level, 'show');
+      title.textContent = titleText;
+      text.textContent  = bodyText;
+    }
+  }
+
+  function openPanel(r) {
+    const img = document.getElementById('pAvatar');
+    const ph  = document.getElementById('pAvatarPh');
+
+    if (r.image_url) {
+      img.src = r.image_url; img.alt = r.name || '';
+      img.style.display = 'block';
+      ph.style.display  = 'none';
+    } else {
+      img.style.display = 'none';
+      ph.style.display  = 'flex';
+      ph.textContent    = (r.name || '?')[0].toUpperCase();
+    }
+
+    document.getElementById('pUid').textContent       = 'UID · ' + (r.unique_id || '—');
+    document.getElementById('pName').textContent      = r.name    || '—';
+    document.getElementById('pPhone').textContent     = r.phone   || '—';
+    document.getElementById('pGender').textContent    = r.gender  || '—';
+    document.getElementById('pDoj').textContent       = r.doj     || '—';
+    document.getElementById('pAddress').textContent   = r.address || '—';
+    document.getElementById('pPlan').textContent       = r.plan    || '—';
+    document.getElementById('pPlanPrice').textContent = r.plan_price != null ? '₹' + r.plan_price : '—';
+    document.getElementById('pTrainer').textContent   = r.trainer || '—';
+
+    const ps = document.getElementById('pPayStatus');
+    ps.textContent = r.payment_status || '—';
+    ps.className   = 'detail-value ' + (r.payment_status === 'Done' ? 'success' : 'danger');
+
+    const pend = document.getElementById('pPending');
+    pend.textContent = r.pending_amount != null ? '₹' + r.pending_amount : '—';
+    pend.className   = 'detail-value ' + (r.pending_amount > 0 ? 'danger' : 'success');
+
+    const due = document.getElementById('pDue');
+    due.textContent = r.due_date || '—';
+    due.className   = 'detail-value ' + (r.is_expired ? 'danger' : r.is_expiring_soon ? 'warning' : '');
+
+    const days = document.getElementById('pDays');
+    days.textContent = r.is_expired             ? 'EXPIRED'
+                     : r.days_remaining != null  ? r.days_remaining + ' days'
+                     : '—';
+    days.className = 'detail-value ' + (
+      r.is_expired            ? 'danger'  :
+      r.is_expiring_soon      ? 'warning' :
+      r.days_remaining <= 5   ? 'highlight' : 'success'
+    );
+
+    document.getElementById('pPayDate').textContent = r.payment_date || '—';
+
+    const phoneDigits = digitsOnly(r.phone);
+    const callBtn = document.getElementById('pCallBtn');
+    const waBtn   = document.getElementById('pWhatsappBtn');
+
+    if (phoneDigits) {
+        callBtn.href = 'tel:' + phoneDigits;
+        callBtn.style.pointerEvents = '';
+        callBtn.style.opacity = '';
+        const whatsappNumber = phoneDigits.startsWith('91') ? phoneDigits : '91' + phoneDigits;
+        waBtn.href = `https://wa.me/${whatsappNumber}`;
+        waBtn.style.pointerEvents = '';
+        waBtn.style.opacity = '';
+    } else {
+        callBtn.href = '#';
+        callBtn.style.pointerEvents = 'none';
+        callBtn.style.opacity = '.4';
+
+        waBtn.href = '#';
+        waBtn.style.pointerEvents = 'none';
+        waBtn.style.opacity = '.4';
+    }
+
+    setAlertBanner(r);
+
+    panel.classList.add('open');
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePanel() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+})();
+
+/* ── MAIN SECTION TABS (Morning / Evening / Previous Attendance) ── */
+function bindTabGroup(tabSelector) {
+  const tabs = document.querySelectorAll(tabSelector);
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      document.getElementById(tab.dataset.tab)?.classList.remove('active');
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab)?.classList.add('active');
+    });
+  });
+}
+bindTabGroup('#attTabs .att-tab');
+
+/* ── PREVIOUS ATTENDANCE (each day tab shows ONLY that day's records) ── */
+(function () {
+  const dataEl = document.getElementById('historyData');
+  if (!dataEl) return;
+
+  const historyDays = JSON.parse(dataEl.textContent);  // [{label, records}, ...]
+  const dayTabs      = document.querySelectorAll('#historyDayTabs .att-tab');
+  const container    = document.getElementById('historyCardsContainer');
+  const totalBadge   = document.getElementById('historyTotalBadge');
+
+  function cardHtml(r) {
+    const avatar = r.image_url
+      ? `<img class="att-avatar" src="${r.image_url}" alt="${r.name}" loading="lazy" />`
+      : `<div class="att-avatar-placeholder">${(r.name || '?')[0].toUpperCase()}</div>`;
+
+    const cls = r.is_expired ? 'expired' : r.is_expiring_soon ? 'expiring' : '';
+    const safeJson = JSON.stringify(r).replace(/'/g, '&#39;');
+
+    return `
+      <div class="att-card ${cls}" data-json='${safeJson}'>
+        <div class="att-time">
+          <div class="time-val">${r.time}</div>
+          <div class="time-label">Check-In</div>
+        </div>
+        <div class="att-divider"></div>
+        <div class="att-avatar-wrap">${avatar}</div>
+        <div class="att-info">
+          <div class="att-name">${r.name}</div>
+          <div class="att-uid">UID · ${r.unique_id}</div>
+        </div>
+        <div class="att-meta">
+          ${r.pending_amount > 0 ? `<div class="att-pending has-pending">₹${Math.round(r.pending_amount)}</div>` : '<div class="att-pending"></div>'}
+          <div class="att-due ${r.is_expired ? 'expired-tag' : r.is_expiring_soon ? 'expiring-tag' : ''}">
+            ${r.is_expired ? 'EXPIRED' : r.due_date}
+          </div>
+        </div>
+        <i class="bi bi-chevron-right att-chevron"></i>
+      </div>`;
+  }
+
+  function renderDay(dayIndex) {
+    const records = historyDays[dayIndex].records;
+
+    container.innerHTML = records.length
+      ? records.map(cardHtml).join('')
+      : '<div class="empty-state">No Check-Ins</div>';
+
+    if (totalBadge) totalBadge.textContent = `(${records.length})`;
+  }
+
+  dayTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      dayTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderDay(parseInt(tab.dataset.dayIndex, 10));
+    });
+  });
+
+  // "Previous Attendance" tab open hone par default sabse recent din (18th) dikhao
+  const historyMainTab = document.querySelector('.att-tab[data-tab="attTabPanelHistory"]');
+  let historyLoaded = false;
+  if (historyMainTab) {
+    historyMainTab.addEventListener('click', () => {
+      if (!historyLoaded && dayTabs.length) {
+        dayTabs[0].click();
+        historyLoaded = true;
       }
     });
-
-    closeBtn.addEventListener('click', closePanel);
-    backdrop.addEventListener('click', closePanel);
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closePanel();
-    });
-
-    function digitsOnly(phone) {
-      return (phone || '').replace(/[^\d+]/g, '');
-    }
-
-    function setAlertBanner(r) {
-      const banner = document.getElementById('pAlertBanner');
-      const icon   = document.getElementById('pAlertIcon');
-      const title  = document.getElementById('pAlertTitle');
-      const text   = document.getElementById('pAlertText');
-
-      banner.classList.remove('level-red', 'level-yellow', 'level-orange', 'show');
-
-      let level = null, titleText = '', bodyText = '';
-
-      if (r.is_expired) {
-        level = 'level-red';
-        titleText = 'Plan Expired';
-        bodyText  = 'This member\'s plan expired on ' + (r.due_date || '—') + '. Renew before their next visit.';
-      } else if (r.is_expiring_soon) {
-        level = 'level-yellow';
-        const d = r.days_remaining;
-        titleText = 'Plan Expiring Soon';
-        bodyText  = (d === 0 ? 'Expires today' : d === 1 ? 'Expires in 1 day' : ('Expires in ' + d + ' days')) +
-                    ' (' + (r.due_date || '—') + '). Remind them to renew.';
-      } else if (r.has_pending) {
-        level = 'level-orange';
-        titleText = 'Payment Pending';
-        bodyText  = '₹' + r.pending_amount + ' is still due from this member.';
-      }
-
-      if (level) {
-        banner.classList.add(level, 'show');
-        title.textContent = titleText;
-        text.textContent  = bodyText;
-      }
-    }
-
-    function openPanel(r) {
-      const img = document.getElementById('pAvatar');
-      const ph  = document.getElementById('pAvatarPh');
-
-      if (r.image_url) {
-        img.src = r.image_url; img.alt = r.name || '';
-        img.style.display = 'block';
-        ph.style.display  = 'none';
-      } else {
-        img.style.display = 'none';
-        ph.style.display  = 'flex';
-        ph.textContent    = (r.name || '?')[0].toUpperCase();
-      }
-
-      document.getElementById('pUid').textContent      = 'UID · ' + (r.unique_id || '—');
-      document.getElementById('pName').textContent     = r.name    || '—';
-      document.getElementById('pPhone').textContent    = r.phone   || '—';
-      document.getElementById('pGender').textContent   = r.gender  || '—';
-      document.getElementById('pDoj').textContent      = r.doj     || '—';
-      document.getElementById('pAddress').textContent  = r.address || '—';
-      document.getElementById('pPlan').textContent     = r.plan    || '—';
-      document.getElementById('pPlanPrice').textContent = r.plan_price != null ? '₹' + r.plan_price : '—';
-      document.getElementById('pTrainer').textContent  = r.trainer || '—';
-
-      const ps = document.getElementById('pPayStatus');
-      ps.textContent = r.payment_status || '—';
-      ps.className   = 'detail-value ' + (r.payment_status === 'Done' ? 'success' : 'danger');
-
-      const pend = document.getElementById('pPending');
-      pend.textContent = r.pending_amount != null ? '₹' + r.pending_amount : '—';
-      pend.className   = 'detail-value ' + (r.pending_amount > 0 ? 'danger' : 'success');
-
-      const due = document.getElementById('pDue');
-      due.textContent = r.due_date || '—';
-      due.className   = 'detail-value ' + (r.is_expired ? 'danger' : r.is_expiring_soon ? 'warning' : '');
-
-      const days = document.getElementById('pDays');
-      days.textContent = r.is_expired             ? 'EXPIRED'
-                       : r.days_remaining != null  ? r.days_remaining + ' days'
-                       : '—';
-      days.className = 'detail-value ' + (
-        r.is_expired            ? 'danger'  :
-        r.is_expiring_soon      ? 'warning' :
-        r.days_remaining <= 5   ? 'highlight' : 'success'
-      );
-
-      document.getElementById('pPayDate').textContent = r.payment_date || '—';
-
-      /* Quick actions */
-      const phoneDigits = digitsOnly(r.phone);
-      const callBtn = document.getElementById('pCallBtn');
-      const waBtn   = document.getElementById('pWhatsappBtn');
-
-      if (phoneDigits) {
-          callBtn.href = 'tel:' + phoneDigits;
-          callBtn.style.pointerEvents = '';
-          callBtn.style.opacity = '';
-
-          const whatsappNumber = phoneDigits.startsWith('91')
-              ? phoneDigits
-              : '91' + phoneDigits;
-          waBtn.href = `https://wa.me/${whatsappNumber}`;
-          waBtn.style.pointerEvents = '';
-          waBtn.style.opacity = '';
-      } else {
-          callBtn.href = '#';
-          callBtn.style.pointerEvents = 'none';
-          callBtn.style.opacity = '.4';
-
-          waBtn.href = '#';
-          waBtn.style.pointerEvents = 'none';
-          waBtn.style.opacity = '.4';
-      }
-
-      setAlertBanner(r);
-
-      panel.classList.add('open');
-      backdrop.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closePanel() {
-      panel.classList.remove('open');
-      backdrop.classList.remove('open');
-      document.body.style.overflow = '';
-    }
-  })();
-  /* ── SECTION TABS (Morning / Evening / etc.) ── */
-  (function () {
-    const tabs   = document.querySelectorAll('.att-tab');
-    const panels = document.querySelectorAll('.att-tab-panel');
-
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        panels.forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        const target = document.getElementById(tab.dataset.tab);
-        if (target) target.classList.add('active');
-      });
-    });
-  })();
-  </script>
+  }
+})();
+</script>
 
 </body>
 </html>

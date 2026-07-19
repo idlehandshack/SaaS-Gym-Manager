@@ -229,15 +229,25 @@ class TrainerAdmin(GymScopedAdmin):
 class AttendenceAdmin(GymScopedAdmin):
     list_display  = ['user', 'date', 'timestamp']
     list_filter   = ['date']
-    # '^' prefix — usernames are looked up, not free-text searched
     search_fields = ['^user__username']
     ordering      = ['-date', '-timestamp']
     readonly_fields = ['date', 'timestamp']
     date_hierarchy = 'date'
     autocomplete_fields = ['user']
-    # Resolves 'user' FK in list_display in the same query instead of N+1.
     list_select_related = ('user',)
 
+    def get_search_fields(self, request):
+        fields = list(super().get_search_fields(request))
+        if request.user.is_superuser:
+            # Gym-wise search — only useful/visible for superusers who see all gyms
+            fields += ['gym__gym_name', '^gym__gym_code']
+        return fields
+
+    def get_list_filter(self, request):
+        filters = list(super().get_list_filter(request))
+        if request.user.is_superuser and 'gym' not in filters:
+            filters.insert(0, 'gym')
+        return filters
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
