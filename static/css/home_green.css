@@ -1,6 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 :root {
   /* Brand / primary accents */
   --color-primary: #2e7d32;
+  --color-gym-name: #f9f9f9;
   --color-primary-hover: #256428;
   --color-primary-dark: #1b5e20;
   --color-accent-orange: #2e7d32;              
@@ -15,7 +17,7 @@
   --color-primary-a12: rgba(46, 125, 50, 0.12);
   --color-primary-a18: rgba(46, 125, 50, 0.18);
   --color-primary-a20: rgba(46, 125, 50, 0.2);
-  --color-primary-a30: rgba(46, 125, 50, 0.3);
+  --color-primary-a30: rgba(24, 99, 24, 0.3);
   --color-primary-a55: rgba(46, 125, 50, 0.55);
 
   /* Accent (#29b6f6) alpha variants */
@@ -1793,6 +1795,9 @@ body {
 /* ============================================================
      SERVICE CAROUSEL — themed entirely off :root variables
      ============================================================ */
+  .pricing-title .side-letter{
+    color: var(--color-accent-orange);
+  }
   .services-section {
     background: var(--color-bg-deep);
     padding: 50px 16px;
@@ -2076,7 +2081,10 @@ body {
   margin-bottom: 40px;
   padding: 0 20px;
 }
-
+.brands-heading .side-letter{
+  font-size: 22px;
+  color: var(--color-accent-orange);
+}
 .brands-marquee {
   position: relative;
   width: 100%;
@@ -2245,27 +2253,78 @@ body {
   }
 }
 
-/* ===== FOOTER ===== */
+/* ============================================================
+   FOOTER — futuristic redesign, same CSS variables
+   ============================================================ */
 .footer {
+  position: relative;
   background: var(--color-black-hex);
   color: var(--color-white-hex);
   font-family: "Inter", sans-serif;
+  overflow: hidden;
+  isolation: isolate;
 }
+
+/* ambient glow + circuit-line texture behind everything */
+.footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 15% 0%, var(--color-primary) 0%, transparent 32%),
+    radial-gradient(circle at 85% 100%, var(--color-primary) 0%, transparent 28%);
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.footer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--color-white-10) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-white-10) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.5) 30%, transparent 90%);
+  opacity: 0.15;
+  pointer-events: none;
+}
+
 .footer-container {
   max-width: 1200px;
   margin: auto;
   padding: 0 16px;
+  position: relative;
 }
+
+/* ---------- Top strip: contact info ---------- */
+
+/* glowing gradient hairline instead of flat border */
 .footer-top {
-  border-bottom: 1px solid var(--color-white-10);
+  position: relative;
+  border-bottom: 1px solid transparent;
 }
+.footer-top::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-primary) 50%, transparent);
+  opacity: 0.6;
+}
+
 .footer-top-inner {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   gap: 40px;
-  padding: 40px 0;
+  padding: 36px 0;
 }
+
 .footer-contact {
   display: flex;
   align-items: center;
@@ -2275,8 +2334,12 @@ body {
   color: var(--color-white-80);
   font-size: 14px;
   text-align: center;
+  letter-spacing: 0.2px;
 }
+
+/* icon gets a rotating ring + glow instead of a flat circle */
 .footer-icon {
+  position: relative;
   width: 50px;
   height: 50px;
   background: var(--color-primary);
@@ -2284,86 +2347,289 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 0 1px var(--color-white-10), 0 0 24px -6px var(--color-primary);
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+.footer-icon::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1px dashed var(--color-primary);
+  opacity: 0.5;
+  animation: footer-ring-spin 14s linear infinite;
+}
+.footer-contact:hover .footer-icon {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px var(--color-white-10), 0 0 32px -4px var(--color-primary);
 }
 .footer-icon img {
   width: 22px;
   filter: invert(1);
+  z-index: 1;
 }
+
+@keyframes footer-ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Main grid ---------- */
+
 .footer-main {
   display: grid;
   gap: 40px;
-  padding: 60px 0;
+  padding: 64px 0 56px;
+  position: relative;
 }
-.footer-brand h2 {
-  font-size: 32px;
+
+/* ---------- Brand heading: "GOLDEN" ghost outline + static "GYM" ---------- */
+
+.brand-heading-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: clamp(56px, 11vw, 110px);
+  overflow: visible;
+}
+
+.brand-ghost-svg {
+  position: absolute;
+  top: -40%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ghost-text-draw {
+  font-family: "Space Grotesk", "Inter", sans-serif;
   font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: clamp(28px, 5vw, 56px);
 }
-.footer-brand span {
-  color: var(--color-primary);
+.ghost-letter {
+  fill: transparent;
+  stroke: var(--color-primary);
+  stroke-width: 1.6px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: ghost-hand-draw 9s  ease-in-out infinite;
 }
+
+@keyframes ghost-hand-draw {
+  0%   { stroke-dashoffset: 400; }   /* fully hidden */
+  45%  { stroke-dashoffset: 0; }     /* fully drawn — slow, deliberate write */
+  75%  { stroke-dashoffset: 0; }     /* hold visible longer */
+  100% { stroke-dashoffset: -400; }  /* erased */
+}
+
+.footer-brand h2 {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  color: var(--color-gym-name);
+  font-size: clamp(24px, 5vw, 40px);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .footer-brand p {
-  margin: 15px 0;
+  margin: 16px 0 22px;
   color: var(--color-white-70);
-  line-height: 1.6;
+  line-height: 1.7;
+  font-size: 14.5px;
+  max-width: 34ch;
 }
+
+/* ---------- Social icons ---------- */
+
+/* outlined hex-ish chip with sweep-fill hover */
 .footer-social {
   display: flex;
-  gap: 15px;
+  gap: 14px;
 }
-.footer-social img {
-  width: 22px;
-  opacity: 0.7;
-  filter: invert(1);
-  transition: 0.3s;
+.social-icon {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--color-white-10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--color-primary);
+  background: var(--color-white-10);
+  overflow: hidden;
+  transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
-.footer-social img:hover {
-  opacity: 1;
-  transform: scale(1.1);
+.social-icon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-primary);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  z-index: 0;
 }
+.social-icon svg {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  z-index: 1;
+}
+.social-icon:hover {
+  color: var(--color-black-hex);
+  border-color: var(--color-primary);
+  transform: translateY(-4px);
+}
+.social-icon:hover::before {
+  transform: translateY(0%);
+}
+
+/* ---------- Link columns (Useful Links / Support / Opening Hours) ---------- */
+
 .footer-links h3,
 .footer-extra h3 {
-  margin-bottom: 15px;
-  font-size: 18px;
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  margin-bottom: 18px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--color-white-hex);
+  position: relative;
+  display: inline-block;
+  padding-bottom: 10px;
 }
+.footer-links h3::after,
+.footer-extra h3::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 26px;
+  height: 2px;
+  background: var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary);
+}
+
 .footer-links ul,
 .footer-extra ul {
   list-style: none;
 }
 .footer-links li,
 .footer-extra li {
-  margin-bottom: 8px;
+  margin-bottom: 11px;
 }
+
+/* links get an animated left-to-right underline + arrow-style shift */
 .footer-links a {
+  position: relative;
   text-decoration: none;
   color: var(--color-white-70);
-  transition: 0.3s;
+  font-size: 14px;
+  transition: color 0.3s ease, padding-left 0.3s ease;
+  padding-left: 0;
+}
+.footer-links a::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  width: 6px;
+  height: 1px;
+  background: var(--color-primary);
+  opacity: 0;
+  transform: translateY(-50%) scaleX(0);
+  transform-origin: left;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .footer-links a:hover {
   color: var(--color-primary);
-  text-decoration: underline;
+  padding-left: 14px;
+  text-decoration: none;
 }
+.footer-links a:hover::before {
+  opacity: 1;
+  transform: translateY(-50%) scaleX(1);
+}
+
+.footer-links.support h3,
+.footer-extra.hours h3,
+.footer-links.useful h3 {
+  color: var(--color-primary-hover);
+}
+.footer-links.support h3::after,
+.footer-extra.hours h3::after {
+  background: var(--color-primary-hover);
+  box-shadow: 0 0 10px var(--color-primary-hover);
+}
+.footer-extra.hours ul {
+  color: var(--color-white-70);
+  font-size: 14px;
+}
+.footer-extra.hours li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 220px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--color-white-10);
+}
+.footer-extra.hours li:first-child {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom-color: transparent;
+}
+
+/* ---------- Bottom bar ---------- */
+
 .footer-bottom {
+  position: relative;
   border-top: 1px solid var(--color-white-10);
   text-align: center;
-  padding: 15px;
+  padding: 18px 15px;
   font-size: 12px;
+  letter-spacing: 0.3px;
   color: var(--color-white-60);
+  background: var(--color-white-10);
 }
 .footer-bottom a {
   color: var(--color-primary);
   text-decoration: none;
+  font-weight: 500;
+  transition: text-shadow 0.3s ease;
+}
+.footer-bottom a:hover {
+  text-shadow: 0 0 12px color-mix(in srgb, var(--color-primary) 60%, transparent);
 }
 .footer-bottom span {
   color: var(--color-primary);
 }
-.footer-links.support h3 {
-  color: var(--color-primary-hover);
-}
-.footer-extra.hours h3 {
-  color: var(--color-primary-hover);
-}
-.footer-links.useful {
-  color: var(--color-primary-hover);
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 480px) {
+  .brand-heading-wrap {
+    height: clamp(46px, 15vw, 80px);
+  }
+  .ghost-text-draw {
+    letter-spacing: 4px;
+  }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
@@ -2381,6 +2647,11 @@ body {
     grid-column: span 2;
     text-align: center;
   }
+  .footer-brand p {
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
   .footer-links.useful {
     grid-column: 1;
   }
@@ -2390,6 +2661,10 @@ body {
   .footer-extra.hours {
     grid-column: span 2;
     text-align: center;
+  }
+  .footer-extra.hours li {
+    margin-left: auto;
+    margin-right: auto;
   }
   .footer-social {
     justify-content: center;
@@ -2424,17 +2699,56 @@ body {
     grid-column: span 2;
     text-align: center;
   }
+  .footer-brand p {
+    max-width: none;
+  }
   .footer-links.useful {
     grid-column: 1;
-    margin-left: 15px;
+    text-align: center;
   }
   .footer-links.support {
     grid-column: 2;
-    margin-left: 60px;
+    text-align: center;
+  }
+  .footer-links.useful h3,
+  .footer-links.support h3 {
+    padding-bottom: 10px;
+  }
+  .footer-links.useful h3::after,
+  .footer-links.support h3::after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .footer-links.useful li,
+  .footer-links.support li {
+    display: flex;
+    justify-content: center;
+  }
+  .footer-links a:hover {
+    padding-left: 0;
+  }
+  .footer-links a::before {
+    display: none;
   }
   .footer-extra.hours {
     grid-column: span 2;
     text-align: center;
+  }
+  .footer-extra.hours h3 {
+    display: block;
+    width: 100%;
+  }
+  .footer-extra.hours h3::after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .footer-extra.hours ul {
+    display: inline-block;
+    width: auto;
+    text-align: left;
+  }
+  .footer-extra.hours li {
+    margin: 0 auto;
   }
   .footer-social {
     justify-content: center;

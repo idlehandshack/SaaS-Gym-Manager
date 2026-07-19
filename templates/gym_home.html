@@ -753,7 +753,7 @@
       </div>
       <div class="pricing-container">
         <p class="pricing-subtitle">OUR PLANS</p>
-        <h2 class="pricing-title">CHOOSE YOUR FITNESS PLAN</h2>
+        <h2 class="pricing-title">CHOOSE YOUR <span class = "side-letter">FITNESS PLAN</span></h2>
 
         <div class="pricing-grid">
           {% for plan in plans %}
@@ -793,7 +793,7 @@
       <div class="brands-mark">
         <span></span><span></span><span></span>
       </div>
-      <h2 class="brands-heading">PREMIUM FITNESS<br>EQUIPMENT PARTNERS</h2>
+      <h2 class="brands-heading">PREMIUM FITNESS<br><span class="side-letter">EQUIPMENT PARTNERS</span></h2>
 
       <div class="brands-marquee">
         <div class="brands-track">
@@ -823,16 +823,18 @@
       <div class="footer-top">
         <div class="footer-container footer-top-inner">
           <div class="footer-contact">
-            <div class="footer-icon">
-              <img
-                src="{% static 'images/footer/placeholder.png' %}"
-                alt="{{gym.gym_name}} location Bhilai Chhattisgarh"
-              />
+              <div class="footer-icon">
+                <img
+                  src="{% static 'images/footer/placeholder.png' %}"
+                  alt="{{gym.gym_name}} location Bhilai Chhattisgarh"
+                />
+              </div>
+              {% if gym %}
+              <a href="https://www.google.com/maps/search/?api=1&query={{ gym.latitude }},{{ gym.longitude }}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+                <p>{{ gym.address }}<br />{% if gym.city %}{{ gym.city }}{% endif %}</p>
+              </a>
+              {% endif %}
             </div>
-            {% if gym %}
-            <p>{{ gym.address }}<br />{% if gym.city %}{{ gym.city }}{% endif %}</p>
-            {%endif%}
-          </div>
           <div class="footer-contact">
             <div class="footer-icon">
               <img
@@ -846,19 +848,28 @@
           </div>
         </div>
       </div>
-
       <div class="footer-container footer-main">
         <div class="footer-brand">
           {% if gym %}
-          <h2><span>{{ gym.gym_name }}</span></h2>
-          {%endif%}
+          <div class="brand-heading-wrap">
+            <svg class="brand-ghost-svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+              <text id="ghostText" class="ghost-text-draw" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">{{ gym.gym_name|cut:" GYM" }}</text>
+            </svg>
+            <h2>GYM</h2>
+          </div>
+          {% endif %}
           <p>
             Transform your body and mind with professional training, modern
             equipment and expert fitness coaching.
           </p>
           <div class="footer-social">
-            <img src="{% static 'images/footer/instagram.png' %}" alt="{{gym.gym_name}} Instagram" />
-            <img src="{% static 'images/footer/email.png' %}" alt="{{gym.gym_name}} Email" />
+            {% if social_links.instagram %}
+              <a href="{{ social_links.instagram }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="{{ gym.gym_name }} Instagram">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="currentColor" d="M7.75 2C4.57 2 2 4.57 2 7.75v8.5C2 19.43 4.57 22 7.75 22h8.5C19.43 22 22 19.43 22 16.25v-8.5C22 4.57 19.43 2 16.25 2h-8.5zm9.43 2.3a1.3 1.3 0 110 2.6 1.3 1.3 0 010-2.6zM12 6.1A5.9 5.9 0 1112 17.9 5.9 5.9 0 0112 6.1zm0 2A3.9 3.9 0 1012 16a3.9 3.9 0 000-7.8z"/>
+                </svg>
+              </a>
+            {% endif %}
           </div>
         </div>
 
@@ -928,106 +939,107 @@
       window.GYM_CONFIG = JSON.parse('{{ GYM_CONFIG_JSON|escapejs }}');
     </script>
     <script nonce="{{ request.csp_nonce }}">
-(function () {
-  const root = document.getElementById('serviceCarousel');
-  if (!root) return;
- 
-  const track       = root.querySelector('#scTrack');
-  const slides       = Array.from(root.querySelectorAll('.sc-slide'));
-  const dots         = Array.from(root.querySelectorAll('.sc-dot'));
-  const prevBtn       = root.querySelector('#scPrev');
-  const nextBtn       = root.querySelector('#scNext');
-  const progressFill = root.querySelector('#scProgressFill');
- 
-  const total = slides.length;
-  if (total <= 1) {
-    if (prevBtn) prevBtn.style.display = 'none';
-    if (nextBtn) nextBtn.style.display = 'none';
-  }
- 
-  let current = 0;
-  let autoplayTimer = null;
-  let progressStart = null;
-  const AUTOPLAY_MS = 5000;
- 
-  function goTo(index, { restart = true } = {}) {
-    index = (index + total) % total;
-    slides[current].classList.remove('active');
-    dots[current] && dots[current].classList.remove('active');
- 
-    current = index;
- 
-    slides[current].classList.add('active');
-    dots[current] && dots[current].classList.add('active');
- 
-    if (restart) startProgress();
-  }
- 
-  function next() { goTo(current + 1); }
-  function prev() { goTo(current - 1); }
- 
-  function startProgress() {
-    clearTimeout(autoplayTimer);
-    progressFill.style.transition = 'none';
-    progressFill.style.width = '0%';
-    // Force reflow so the transition below actually animates from 0
-    void progressFill.offsetWidth;
-    progressFill.style.transition = `width ${AUTOPLAY_MS}ms linear`;
-    progressFill.style.width = '100%';
- 
-    autoplayTimer = setTimeout(next, AUTOPLAY_MS);
-  }
- 
-  function pauseProgress() {
-    clearTimeout(autoplayTimer);
-    const computed = getComputedStyle(progressFill).width;
-    progressFill.style.transition = 'none';
-    progressFill.style.width = computed;
-  }
- 
-  if (nextBtn) nextBtn.addEventListener('click', () => goTo(current + 1));
-  if (prevBtn) prevBtn.addEventListener('click', () => goTo(current - 1));
- 
-  dots.forEach((dot) => {
-    dot.addEventListener('click', () => goTo(parseInt(dot.dataset.index, 10)));
-  });
- 
-  // Pause on hover (desktop) — resumes on mouse leave
-  root.addEventListener('mouseenter', pauseProgress);
-  root.addEventListener('mouseleave', startProgress);
- 
-  // Keyboard nav when the carousel has focus/hover
-  root.setAttribute('tabindex', '0');
-  root.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight') next();
-    if (e.key === 'ArrowLeft') prev();
-  });
- 
-  // Touch swipe support
-  let touchStartX = null;
-  track.addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX;
-    pauseProgress();
-  }, { passive: true });
- 
-  track.addEventListener('touchend', (e) => {
-    if (touchStartX === null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(delta) > 40) {
-      delta < 0 ? next() : prev();
-    } else {
-      startProgress();
-    }
-    touchStartX = null;
-  });
- 
-  if (total > 1) startProgress();
-})();
-</script>
+      (function () {
+        const root = document.getElementById('serviceCarousel');
+        if (!root) return;
+      
+        const track       = root.querySelector('#scTrack');
+        const slides       = Array.from(root.querySelectorAll('.sc-slide'));
+        const dots         = Array.from(root.querySelectorAll('.sc-dot'));
+        const prevBtn       = root.querySelector('#scPrev');
+        const nextBtn       = root.querySelector('#scNext');
+        const progressFill = root.querySelector('#scProgressFill');
+      
+        const total = slides.length;
+        if (total <= 1) {
+          if (prevBtn) prevBtn.style.display = 'none';
+          if (nextBtn) nextBtn.style.display = 'none';
+        }
+      
+        let current = 0;
+        let autoplayTimer = null;
+        let progressStart = null;
+        const AUTOPLAY_MS = 5000;
+      
+        function goTo(index, { restart = true } = {}) {
+          index = (index + total) % total;
+          slides[current].classList.remove('active');
+          dots[current] && dots[current].classList.remove('active');
+      
+          current = index;
+      
+          slides[current].classList.add('active');
+          dots[current] && dots[current].classList.add('active');
+      
+          if (restart) startProgress();
+        }
+      
+        function next() { goTo(current + 1); }
+        function prev() { goTo(current - 1); }
+      
+        function startProgress() {
+          clearTimeout(autoplayTimer);
+          progressFill.style.transition = 'none';
+          progressFill.style.width = '0%';
+          // Force reflow so the transition below actually animates from 0
+          void progressFill.offsetWidth;
+          progressFill.style.transition = `width ${AUTOPLAY_MS}ms linear`;
+          progressFill.style.width = '100%';
+      
+          autoplayTimer = setTimeout(next, AUTOPLAY_MS);
+        }
+      
+        function pauseProgress() {
+          clearTimeout(autoplayTimer);
+          const computed = getComputedStyle(progressFill).width;
+          progressFill.style.transition = 'none';
+          progressFill.style.width = computed;
+        }
+      
+        if (nextBtn) nextBtn.addEventListener('click', () => goTo(current + 1));
+        if (prevBtn) prevBtn.addEventListener('click', () => goTo(current - 1));
+      
+        dots.forEach((dot) => {
+          dot.addEventListener('click', () => goTo(parseInt(dot.dataset.index, 10)));
+        });
+      
+        // Pause on hover (desktop) — resumes on mouse leave
+        root.addEventListener('mouseenter', pauseProgress);
+        root.addEventListener('mouseleave', startProgress);
+      
+        // Keyboard nav when the carousel has focus/hover
+        root.setAttribute('tabindex', '0');
+        root.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight') next();
+          if (e.key === 'ArrowLeft') prev();
+        });
+      
+        // Touch swipe support
+        let touchStartX = null;
+        track.addEventListener('touchstart', (e) => {
+          touchStartX = e.touches[0].clientX;
+          pauseProgress();
+        }, { passive: true });
+      
+        track.addEventListener('touchend', (e) => {
+          if (touchStartX === null) return;
+          const delta = e.changedTouches[0].clientX - touchStartX;
+          if (Math.abs(delta) > 40) {
+            delta < 0 ? next() : prev();
+          } else {
+            startProgress();
+          }
+          touchStartX = null;
+        });
+      
+        if (total > 1) startProgress();
+      })();
+      </script>
     {% if enrolled %}
     <script src="{% static 'js/geo_attendance.js' %}"></script>
     <script src="{% static 'js/fetch_utils.js' %}" defer></script>
     {% endif %}
-    <script src="{% static 'js/RefreshTrigger.js' %}"></script>
+    <script src="{% static 'js/RefreshTrigger.js' %}" defer></script>
+    <script src="{% static 'js/ghost_text_draw.js' %}" defer></script>
   </body>
 </html>

@@ -109,7 +109,7 @@ class GymAdmin(admin.ModelAdmin):
                     'theme_color',
                     'theme', 
                     'contact_email', 'contact_phone',
-                    'whatsapp_number', 'address', 'city', 'website',
+                    'whatsapp_number', 'address', 'city',
                     'app_download_url'),
             'classes': ('collapse',),
         }),

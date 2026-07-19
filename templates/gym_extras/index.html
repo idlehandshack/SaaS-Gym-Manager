@@ -216,7 +216,39 @@
       padding: clamp(24px, 4vw, 36px) clamp(20px, 4vw, 32px);
       margin-bottom: clamp(20px, 3vw, 28px);
     }
-
+    .social-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .social-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .social-field label {
+      font-family: var(--font-b);
+      font-size: 12.5px;
+      font-weight: 500;
+      color: rgba(255,255,255,.75);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .social-field label i { color: var(--orange); }
+    .social-field input {
+      background: var(--bg);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      font-size: 13px;
+      outline: none;
+      transition: border-color var(--t);
+    }
+    .social-field input::placeholder { color: var(--text-lo); }
+    .social-field input:focus { border-color: var(--orange-bdr); }
     .extras-section-title {
       font-family: var(--font-d);
       font-size: .8rem;
@@ -440,7 +472,30 @@
         <p class="extras-empty">No brands in the catalog yet — check back soon.</p>
         {% endif %}
       </div>
-
+      <div class="extras-section">
+        <div class="extras-section-title">
+          <i class="bi bi-share"></i> Social Media
+        </div>
+        <div class="contact-sub" style="text-align:left;max-width:100%;margin-bottom:18px;">
+          Enter just your username or handle — we'll build the full link automatically.
+        </div>
+        <div class="social-grid">
+          <div class="social-field">
+            <label for="id_instagram_username"><i class="bi bi-instagram"></i> Instagram</label>
+            <input type="text" id="id_instagram_username" name="instagram_username"
+                   placeholder="entergym" value="{{ form.instagram_username.value|default:'' }}">
+          </div>
+        </div>
+        {% if form.instagram_username.errors or form.facebook_username.errors or form.youtube_username.errors or form.x_username.errors or form.linkedin_username.errors %}
+          <p class="extras-empty" style="color:var(--red);margin-top:12px;">
+            {{ form.instagram_username.errors|first }}
+            {{ form.facebook_username.errors|first }}
+            {{ form.youtube_username.errors|first }}
+            {{ form.x_username.errors|first }}
+            {{ form.linkedin_username.errors|first }}
+          </p>
+        {% endif %}
+      </div>
       <!-- =================== FUTURE EXTRAS =================== -->
       <div class="extras-section extras-placeholder">
         <div class="extras-section-title">

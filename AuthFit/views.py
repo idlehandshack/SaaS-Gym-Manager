@@ -488,34 +488,23 @@ def _gym_role_required(*allowed_roles):
 
 @login_required
 def gym_extras(request):
-    """
-    Single page where Gym Owner/Receptionist pick which catalog
-    Services and Equipment Brands (both Super-Admin-managed) their
-    gym uses. Designed to grow: add a new ModelMultipleChoiceField
-    to GymExtrasForm and a matching card in the template for any
-    future "pick from a global catalog" feature.
-    """
     if not _gym_staff_required(request):
         messages.error(request, "You don't have permission to manage this page.")
         return redirect('home')
- 
+
     if request.method == 'POST':
         form = GymExtrasForm(request.POST, gym=request.gym)
         if form.is_valid():
             form.save()
             cache.delete(f"gym_services_{request.gym.pk}")
             cache.delete(f"gym_equipment_brands_{request.gym.pk}")
+            cache.delete(f"gym_social_links_{request.gym.pk}")  # new
             messages.success(request, "Your selections were saved successfully.")
             return redirect('gym_extras')
     else:
         form = GymExtrasForm(gym=request.gym)
- 
-    # Fetch each catalog ONCE here (not per-checkbox in the template) and
-    # mark which items this gym already has selected, so the template can
-    # render plain checkboxes with images with zero extra queries.
     selected_service_ids = set(request.gym.services.values_list('pk', flat=True))
     selected_brand_ids = set(request.gym.equipment_brands.values_list('pk', flat=True))
- 
     service_catalog = [
         {'id': s.id, 'name': s.name, 'image_url': s.image.url if s.image else '',
          'selected': s.id in selected_service_ids}
@@ -526,7 +515,6 @@ def gym_extras(request):
          'selected': b.id in selected_brand_ids}
         for b in form.fields['brands'].queryset
     ]
- 
     return render(request, 'gym_extras/index.html', {
         'form': form,
         'service_catalog': service_catalog,
@@ -1074,6 +1062,11 @@ def homePage(request):
             for b in gym.equipment_brands.filter(is_active=True).order_by('name')
         ]
         cache.set(brands_key, gym_equipment_brands, timeout=3600)
+    social_key   = f"gym_social_links_{gym.pk}"
+    social_links = cache.get(social_key)
+    if social_links is None:
+        social_links = gym.social_links  # model property, no extra query
+        cache.set(social_key, social_links, timeout=3600)
 
     enrolled    = False
     isStaff     = False
@@ -1102,6 +1095,7 @@ def homePage(request):
         "gym_services":         gym_services,          
         "gym_equipment_brands": gym_equipment_brands,    
         "geo_attendance_enabled": geo_attendance_enabled,
+        "social_links":         social_links,
     })
 
 
@@ -1711,8 +1705,6 @@ def attendance_page(request):
     geo_enabled = bool(gym and gym.enable_geo_attendance)
     today = timezone.localdate()
     user  = request.user
-
-    # FIX: both queries scoped to gym
     already_mark = Attendence_model.objects.filter(
         user=user, date=today, gym=gym
     ).exists()

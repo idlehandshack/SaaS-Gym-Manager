@@ -62,7 +62,7 @@ class GymCreateForm(forms.ModelForm):
             "logo", "favicon", "splash_logo",
             "theme_color", "receipt_footer",
             "contact_email", "contact_phone", "whatsapp_number",
-            "address", "city", "website", "app_download_url",
+            "address", "city", "app_download_url",
             "upi_enabled", "upi_id", "upi_display_name", "upi_payment_note",
             "latitude", "longitude", "radius_meters", "map",
         ]
@@ -81,8 +81,7 @@ class GymCreateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         optional_fields = [
-            "subscription_start", "subscription_end", "city", "address",
-            "website", "app_name", "app_short_name", "whatsapp_number",
+            "subscription_start", "subscription_end", "city", "address", "app_name", "app_short_name", "whatsapp_number",
             "app_download_url", "latitude", "longitude", "radius_meters", "map",
             "logo", "favicon", "splash_logo", "receipt_footer",
             "contact_email", "contact_phone",

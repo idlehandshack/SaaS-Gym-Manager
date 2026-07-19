@@ -135,7 +135,6 @@ class Gym(models.Model):
     receipt_footer  = models.TextField(blank=True)
     address         = models.TextField(blank=True)
     city            = models.CharField(max_length=60, blank=True)
-    website         = models.URLField(blank=True)
     app_download_url = models.URLField(blank=True,help_text="APK download link or Play Store URL for this gym's app.")
 
     # ── Geo-fence (per gym) ───────────────────────────────────────────────
@@ -169,7 +168,6 @@ class Gym(models.Model):
         blank=True,
         help_text="e.g. yourgym@oksbi"
     )
-
     upi_display_name = models.CharField(
         max_length=120,
         blank=True,
@@ -191,6 +189,7 @@ class Gym(models.Model):
         blank=True,
         related_name='gyms',
     )
+    instagram_username = models.CharField(max_length=100, blank=True, default='')
     THEME_CHOICES = [
         ('default', 'Default'),
         ('blue',    'Blue'),
@@ -251,7 +250,15 @@ class Gym(models.Model):
 
     def __str__(self):
         return f"{self.gym_name} ({self.gym_code})"
-    
+    @property
+    def instagram_url(self):
+        return f"https://instagram.com/{self.instagram_username}" if self.instagram_username else ''
+    @property
+    def social_links(self):
+        links = {
+            'instagram': self.instagram_url,
+        }
+        return {k: v for k, v in links.items() if v}
     class Meta:
         ordering  = ['gym_name']
         indexes   = [models.Index(fields=['gym_code'])]

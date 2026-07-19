@@ -6,6 +6,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from AuthFit.models import Enrollment, MembershipPlan, Trainer ,LoginSupportQuery
+from Gym.models import EquipmentBrand,Service
 from django.db import transaction
 from django.utils import timezone
 
@@ -233,13 +234,6 @@ class CompleteProfileForm(forms.ModelForm):
         fields = ['email', 'gender', 'address', 'reference']
  
 class GymExtrasForm(forms.Form):
-    """
-    One form, one page: gym owner picks which catalog Services and
-    Equipment Brands (both maintained by Super Admin) apply to their
-    gym. Add more ModelMultipleChoiceFields here as you introduce
-    future catalog-style features — the view/template below already
-    render any field on this form generically.
-    """
     services = forms.ModelMultipleChoiceField(
         queryset=None,
         required=False,
@@ -250,30 +244,47 @@ class GymExtrasForm(forms.Form):
         required=False,
         widget=forms.CheckboxSelectMultiple,
     )
- 
-    # ── Future sections go here, same pattern, e.g.: ──────────────
-    # amenities = forms.ModelMultipleChoiceField(
-    #     queryset=None, required=False, widget=forms.CheckboxSelectMultiple,
-    # )
- 
+    instagram_username = forms.CharField(required=False, max_length=100)
+    _HANDLE_RE = re.compile(r'^[A-Za-z0-9._-]+$')
+
     def __init__(self, *args, gym=None, **kwargs):
         self.gym = gym
-        super().__init__(*args, **kwargs)
- 
-        # Local imports avoid a hard cross-app import at module load time
-        from Gym.models import Service, EquipmentBrand
- 
+        initial = kwargs.pop('initial', {}) or {}
+        super().__init__(*args, initial=initial, **kwargs)
+
+        # These two lines are almost certainly what my version dropped:
         self.fields['services'].queryset = Service.objects.filter(is_active=True)
         self.fields['brands'].queryset = EquipmentBrand.objects.filter(is_active=True)
- 
-        if gym is not None:
-            self.fields['services'].initial = gym.services.values_list('pk', flat=True)
-            self.fields['brands'].initial = gym.equipment_brands.values_list('pk', flat=True)
+
+        if gym is not None and not args:
+            self.initial.setdefault('instagram_username', gym.instagram_username)
+            self.initial.setdefault('services', gym.services.values_list('pk', flat=True))
+            self.initial.setdefault('brands', gym.equipment_brands.values_list('pk', flat=True))
+
+    # ── Per-field cleaning: trim, strip leading @, validate charset ──────
+    def _clean_handle(self, field_name, strip_at=True):
+        value = (self.cleaned_data.get(field_name) or '').strip()
+        if not value:
+            return ''
+        if strip_at and value.startswith('@'):
+            value = value[1:]
+        if not self._HANDLE_RE.match(value):
+            raise forms.ValidationError(
+                "Only letters, numbers, dots, underscores, and hyphens are allowed."
+            )
+        return value
+
+    def clean_instagram_username(self):
+        return self._clean_handle('instagram_username')
  
     def save(self):
-        self.gym.services.set(self.cleaned_data['services'])
-        self.gym.equipment_brands.set(self.cleaned_data['brands'])
-        return self.gym
+        gym = self.gym
+        gym.services.set(self.cleaned_data['services'])
+        gym.equipment_brands.set(self.cleaned_data['brands'])
+        gym.instagram_username = self.cleaned_data['instagram_username']
+        gym.save(update_fields=[
+            'instagram_username'
+        ])
 
 class EquipmentBrandSelectionForm(forms.Form):
     """
