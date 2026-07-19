@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 :root {
   /* Brand / primary accents */
   --color-primary: #1976d2;
@@ -2380,58 +2381,62 @@ body {
   padding: 64px 0 56px;
   position: relative;
 }
-
 /* ---------- Brand heading: "GOLDEN" ghost outline + static "GYM" ---------- */
-
 .brand-heading-wrap {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: clamp(56px, 11vw, 110px);
-  overflow: visible;
+  width: clamp(90px, calc(var(--ghost-units, 438) * 0.32px), 260px);
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .brand-heading-wrap {
+    width: clamp(130px, calc(var(--ghost-units, 438) * 0.42px), 380px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .brand-heading-wrap {
+    width: clamp(150px, calc(var(--ghost-units, 438) * 0.5px), 460px);
+  }
 }
 
 .brand-ghost-svg {
-  position: absolute;
-  top: -40%;
-  left: 0;
+  display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
+  aspect-ratio: var(--ghost-units, 438) / 120;
   overflow: visible;
   pointer-events: none;
 }
 
-.ghost-text-draw {
-  font-family: "Space Grotesk", "Inter", sans-serif;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-size: clamp(28px, 5vw, 56px);
-}
-.ghost-letter {
-  fill: transparent;
+.ghost-letter-path {
+  fill: none;
   stroke: var(--color-primary);
-  stroke-width: 1.6px;
+  stroke-width: 4.5px;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 400;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 400 400;
   stroke-dashoffset: 400;
-  animation: ghost-hand-draw 9s  ease-in-out infinite;
+  filter: drop-shadow(0 0 6px var(--color-primary-a55));
+  animation: ghost-hand-draw-path 9s linear infinite;
 }
 
-@keyframes ghost-hand-draw {
-  0%   { stroke-dashoffset: 400; }   /* fully hidden */
-  45%  { stroke-dashoffset: 0; }     /* fully drawn — slow, deliberate write */
-  75%  { stroke-dashoffset: 0; }     /* hold visible longer */
-  100% { stroke-dashoffset: -400; }  /* erased */
+@keyframes ghost-hand-draw-path {
+  0%   { stroke-dashoffset: 400; }
+  45%  { stroke-dashoffset: 0; }
+  75%  { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -400; }
 }
 
 .footer-brand h2 {
   position: relative;
   z-index: 1;
-  margin: 0;
+  margin-top:0;
   font-family: "Space Grotesk", "Inter", sans-serif;
   color: var(--color-gym-name);
   font-size: clamp(24px, 5vw, 40px);
@@ -2440,6 +2445,8 @@ body {
   text-transform: uppercase;
   text-align: center;
   white-space: nowrap;
+  transform: skewX(-8deg);
+  display: inline-block;
 }
 
 .footer-brand p {
@@ -2624,9 +2631,6 @@ body {
 @media (max-width: 480px) {
   .brand-heading-wrap {
     height: clamp(46px, 15vw, 80px);
-  }
-  .ghost-text-draw {
-    letter-spacing: 1px;
   }
 }
 

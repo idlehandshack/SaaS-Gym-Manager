@@ -851,12 +851,19 @@
       <div class="footer-container footer-main">
         <div class="footer-brand">
           {% if gym %}
-          <div class="brand-heading-wrap">
-            <svg class="brand-ghost-svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
-              <text id="ghostText" class="ghost-text-draw" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">{{ gym.gym_name|cut:" GYM" }}</text>
+          {% load ghost_text %}
+          {% with brand_name=gym.gym_name|cut:" GYM" %}
+          {% ghost_letter_width brand_name as ghost_w %}
+          <div class="brand-heading-wrap" style="--ghost-units: {{ ghost_w }};">
+            <svg class="brand-ghost-svg"
+                viewBox="-30 -10 {{ ghost_w|add:30 }} 130"
+                preserveAspectRatio="xMidYMid meet" role="img"
+                aria-label="{{ brand_name }}">
+              {% ghost_letter_paths brand_name %}
             </svg>
             <h2>GYM</h2>
           </div>
+          {% endwith %}
           {% endif %}
           <p>
             Transform your body and mind with professional training, modern
@@ -1040,6 +1047,5 @@
     <script src="{% static 'js/fetch_utils.js' %}" defer></script>
     {% endif %}
     <script src="{% static 'js/RefreshTrigger.js' %}" defer></script>
-    <script src="{% static 'js/ghost_text_draw.js' %}" defer></script>
   </body>
 </html>
