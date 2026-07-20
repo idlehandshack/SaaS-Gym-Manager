@@ -8,7 +8,7 @@ from Gym.views import (
     add_staff_profile, gym_detail_json, add_gym_page, search_owner_by_phone,
     subscriptions_page, add_subscription_plan, edit_subscription_plan,
     delete_subscription_plan, change_gym_plan, platform_insights_page,
-    api_system_health,api_dashboard, api_notifications,record_platform_payment,enable_subscription_payment , disable_subscription_payment ,confirm_subscription_payment,gym_payment_page,api_public_live_stats,plans_page,orphan_users_page, orphan_user_delete, orphan_user_bulk_delete,
+    api_system_health,api_dashboard, api_notifications,record_platform_payment,enable_subscription_payment , disable_subscription_payment ,confirm_subscription_payment,gym_payment_page,api_public_live_stats,plans_page,orphan_users_page, orphan_user_delete, orphan_user_bulk_delete,gym_qr_settings, gym_qr_regenerate, gym_qr_download, send_renewal_reminder
 )
 from AuthFit.views_expiry_reminder import (
     SendExpiryReminderView,
@@ -107,7 +107,11 @@ urlpatterns = [
     path('api/attendance-status/', attendance_status),
     path('sw.js', serve_sw, name='sw'),
     path('manifest.json', views.manifest, name='manifest'),
-
+    path('owner/attendance/qr/', gym_qr_settings, name='gym_qr_settings'),
+    path('owner/attendance/qr/regenerate/', gym_qr_regenerate, name='gym_qr_regenerate'),
+    path('owner/attendance/qr/download/', gym_qr_download, name='gym_qr_download'),
+    path('owner/attendance/attempts/<int:attempt_id>/remind/', send_renewal_reminder, name='send_renewal_reminder'),
+    
     # ── Admin tools ────────────────────────────────────────────
     path('admin-tools/transferred-members/', views.transferred_members, name='transferred_members'),
     path('admin-tools/transferred-members/<int:transfer_id>/mark-inactive/', views.transfer_mark_inactive, name='transfer_mark_inactive'),

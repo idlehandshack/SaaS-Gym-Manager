@@ -15,7 +15,7 @@ from django.contrib.auth.models import User
 import json as json_lib
 from .forms import UPISettingsForm, GymCreateForm, StaffProfileCreateForm, GymGSTProfileForm
 from .models import Gym, SubscriptionPlan, StaffProfile ,PlatformSettings ,PlatformSubscriptionPayment
-from AuthFit.models import Enrollment
+from AuthFit.models import Enrollment ,GymQRCode, AttendanceAttempt
 from .services import platform_insights as pi
 import calendar
 from urllib.parse import quote
@@ -26,7 +26,96 @@ from .models import OrphanUserDeletionLog
 from .services import orphan_users as ou
 import json as json_lib
 from django.core.paginator import Paginator
+from AuthFit.views import _gym_staff_required
+import qrcode, io ,os
+from django.http import HttpResponse
+from AuthFit.notifications import notify_member_renewal_reminder
+from django.conf import settings
+from qrcode.constants import ERROR_CORRECT_H
+from PIL import Image
+QR_TEMPLATE_PATH = os.path.join(settings.BASE_DIR, "static", "images", "Attendance template.png")
+ 
+# Region inside the template where the white QR panel sits (measured from the template)
+QR_BOX = {"left": 365, "top": 400, "right": 1424, "bottom": 1499}
+QR_BOX_PADDING = 40 
 
+def _qr_payload(qr_obj):
+    return f"ENTERGYM-QR:{qr_obj.token}"
+
+@_gym_staff_required
+@require_POST
+def gym_qr_regenerate(request):
+    gym = getattr(request, 'gym', None)
+    qr_obj, _ = GymQRCode.objects.get_or_create(gym=gym)
+    qr_obj.regenerate()
+    messages.success(request, "QR regenerated — the old QR is now invalid. Reprint and redisplay it at reception.")
+    return redirect('gym_qr_settings')
+
+def _build_qr_poster(payload: str, template_path: str = QR_TEMPLATE_PATH) -> bytes:
+    """Render the QR code and paste it onto the branded template. Returns PNG bytes."""
+    qr = qrcode.QRCode(error_correction=ERROR_CORRECT_H, box_size=20, border=2)
+    qr.add_data(payload)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="#080808", back_color="#ffffff").convert("RGB")
+ 
+    template = Image.open(template_path).convert("RGB")
+ 
+    box_w = QR_BOX["right"] - QR_BOX["left"]
+    box_h = QR_BOX["bottom"] - QR_BOX["top"]
+    target_w = box_w - (QR_BOX_PADDING * 2)
+    target_h = box_h - (QR_BOX_PADDING * 2)
+ 
+    qr_img = qr_img.resize((target_w, target_h), Image.NEAREST)
+    paste_x = QR_BOX["left"] + QR_BOX_PADDING
+    paste_y = QR_BOX["top"] + QR_BOX_PADDING
+    template.paste(qr_img, (paste_x, paste_y))
+ 
+    buf = io.BytesIO()
+    template.save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
+
+def gym_qr_download(request):
+    gym = getattr(request, 'gym', None)
+    qr_obj, _ = GymQRCode.objects.get_or_create(gym=gym)
+    payload = _qr_payload(qr_obj)
+ 
+    png_bytes = _build_qr_poster(payload)
+ 
+    filename = f"{(gym.gym_name if gym else 'entergym')}-attendance-qr.png".replace(" ", "_")
+    response = HttpResponse(png_bytes, content_type="image/png")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+@_gym_staff_required
+@require_POST
+def send_renewal_reminder(request, attempt_id):
+    gym = getattr(request, 'gym', None)
+    attempt = get_object_or_404(AttendanceAttempt, id=attempt_id, gym=gym, reason='expired_plan')
+    enrollment = attempt.enrollment
+
+    if not enrollment:
+        return JsonResponse({'status': 'error', 'message': 'No enrollment on this attempt'}, status=400)
+
+    sent = notify_member_renewal_reminder(enrollment)
+
+    attempt.resolved = True
+    attempt.save(update_fields=['resolved'])
+
+    return JsonResponse({'status': 'sent' if sent else 'no_device', 'delivered': sent})
+
+import json
+
+@_gym_staff_required
+def gym_qr_settings(request):
+    gym = getattr(request, 'gym', None)
+    qr_obj, _ = GymQRCode.objects.get_or_create(gym=gym)
+    payload = _qr_payload(qr_obj)
+    return render(request, "gym_qr_settings.html", {
+        "gym": gym,
+        "qr_payload": payload,
+        "qr_payload_json": json.dumps(payload),
+        "regenerated_at": qr_obj.regenerated_at,
+    })
 
 @permission_required("can_manage_upi")
 def upi_payment_settings(request):

@@ -29,7 +29,7 @@ class SecurityHeadersMiddleware:
 
         response["Permissions-Policy"] = (
             "geolocation=(self), "
-            "camera=(), "
+            "camera=(self), "
             "microphone=(), "
             "payment=()"
         )

@@ -8,7 +8,7 @@ from django.core.cache import cache
 from datetime import timedelta
 from Gym.models import Gym
 from Gym.mixins import GymManager
-
+import secrets
 # Create your models here.
 
 class Contact(models.Model):
@@ -549,3 +549,59 @@ class LoginSupportQuery(models.Model):
         self.resolved_at = timezone.now()
         self.handled_by = staff_user
         self.save(update_fields=['status', 'resolved_at', 'handled_by'])
+
+class GymQRCode(models.Model):
+    """One permanent QR per gym. Regenerating invalidates the old one."""
+    gym = models.OneToOneField(Gym, on_delete=models.CASCADE, related_name='qr_code')
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    regenerated_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = self._generate_token()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def _generate_token():
+        return secrets.token_urlsafe(24)
+
+    def regenerate(self):
+        self.token = self._generate_token()
+        self.regenerated_at = timezone.now()
+        self.save(update_fields=['token', 'regenerated_at'])
+
+    def __str__(self):
+        return f"QR[{self.gym.gym_name}]"
+
+
+class AttendanceAttempt(models.Model):
+    """Failed QR scans — expired plan / not enrolled / invalid QR."""
+    REASON_CHOICES = [
+        ('expired_plan', 'Expired Plan'),
+        ('not_enrolled', 'Not Enrolled'),
+        ('invalid_qr', 'Invalid QR'),
+    ]
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, db_index=True, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.SET_NULL, null=True, blank=True)
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES)
+    attempted_at = models.DateTimeField(auto_now_add=True)
+    resolved = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-attempted_at']
+        indexes = [models.Index(fields=['gym', 'attempted_at'])]
+
+    def __str__(self):
+        return f"{self.user} - {self.reason} @ {self.gym}"
+
+
+# ── Auto-create QR when a Gym is created (multi_tenant requirement) ──
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Gym)
+def create_gym_qr_code(sender, instance, created, **kwargs):
+    if created:
+        GymQRCode.objects.get_or_create(gym=instance)

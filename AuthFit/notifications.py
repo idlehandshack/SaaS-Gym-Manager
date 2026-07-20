@@ -295,7 +295,44 @@ def notify_member_plan_changed(enrollment, new_plan,*,new_due_date=None,pending_
         )
     return ok
 
+def notify_member_renewal_reminder(enrollment) -> bool:
+    """
+    Member-facing 'please renew, you scanned the QR while expired' push.
+    Triggered manually by gym staff via the one-click 'Send Renewal
+    Reminder' button on an AttendanceAttempt (reason='expired_plan').
 
+    Reuses the same two member channels as notify_member_plan_changed
+    and the expiry-reminder job — one implementation of "push to a
+    member", not a third copy.
+    """
+    if not enrollment.user_id:
+        return False
+
+    gym_code = getattr(enrollment.gym, 'gym_code', str(enrollment.gym_id))
+    member_name = enrollment.fullname or enrollment.user.get_full_name() or enrollment.user.username
+
+    title = "Membership Renewal Reminder"
+    body = (
+        f"Hi {member_name}, your membership has expired. Please renew your "
+        f"membership to continue marking attendance and accessing gym services."
+    )
+
+    ch1_ok = _send_member_fcm(
+        enrollment, title, body, gym_code,
+        notif_type="renewal_reminder",
+    )
+    ch2_ok = _send_member_web_push(
+        enrollment, title, body, gym_code,
+        url="/renew-membership/",
+    )
+
+    ok = ch1_ok or ch2_ok
+    if not ok:
+        logger.warning(
+            "notify_member_renewal_reminder: all member channels failed enrollment=%s",
+            enrollment.id,
+        )
+    return ok
 # ── Member channel implementations (shared by the expiry batch job and ───────
 # ── single-event callers like notify_member_plan_changed above) ──────────────
 # UNCHANGED from the existing implementation — reused as-is.

@@ -52,7 +52,7 @@ from billing.services.change_membership_plan import (
         change_membership_plan, PlanChangeError)
 from AuthFit.signals import _version_cache_key , _VERSION_CACHE_TTL ,update_enrollment_embeddings
 from Gym.branding import get_gym_branding
-from AuthFit.attendance import mark_attendance as mark_device_attendance
+from AuthFit.attendance import mark_attendance as mark_device_attendance ,mark_qr_attendance
 from AuthFit.geo_logic import mark_geo_attendance
 from reviews.models import Review
 logger = logging.getLogger(__name__)
@@ -768,8 +768,28 @@ def mark_attendance_api(request):
             'rate_limited': 429, 'error': 400,
         }
         return JsonResponse(result, status=status_map.get(result['status'], 400))
+    
+    # ── Path 3: static QR code attendance (mobile app scan) ─────────
+    
+    if 'qr_code' in body:
+        if not request.user.is_authenticated:
+            return JsonResponse({'status': 'error', 'error': 'Login required'}, status=401)
 
-    return JsonResponse({'status': 'error', 'error': 'Missing unique_id or lat/lng'}, status=400)
+        qr_token = body.get('qr_code')
+        if not qr_token:
+            return JsonResponse({'status': 'error', 'error': 'Missing qr_code'}, status=400)
+
+        result = mark_qr_attendance(request.user, qr_token)
+
+        status_map = {
+            'success': 200, 'exists': 200,
+            'expired_plan': 403, 'not_enrolled': 403, 'invalid_qr': 404,
+            'error': 400,
+        }
+        return JsonResponse(result, status=status_map.get(result['status'], 400))
+
+    return JsonResponse({'status': 'error', 'error': 'Missing unique_id, lat/lng, or qr_code'}, status=400)
+    
 
 
 @csrf_exempt
@@ -1109,7 +1129,6 @@ def stats_api(request):
 
 def contact(request):
     gym = getattr(request, 'gym', None)
-    # FIX: Contact.gym is non-nullable — block on bare domain (gym=None)
     if not gym:
         messages.error(request, "Contact form is unavailable on this domain.")
         return redirect('/')
@@ -2224,15 +2243,12 @@ def create_payment_view(request):
         'grand_total': str(invoice.grand_total),
     })
 
-@_gym_staff_required
 def today_attendance(request):
     gym   = getattr(request, 'gym', None)
     today = timezone.localdate()
     search_ctx = get_search_context(request)
     search_by, search = search_ctx["search_by"], search_ctx["search"]
 
-    # Only cache the unfiltered view — searches are cheap DB-level queries
-    # and shouldn't pollute/invalidate the shared "today" cache entry.
     cache_key = f"today_attendance_{gym.pk if gym else 'super'}_{today}"
     if not search:
         cached = cache.get(cache_key)
@@ -2257,10 +2273,6 @@ def today_attendance(request):
     if gym:
         qs = qs.filter(gym=gym)
 
-    # Gym → search (DB-level, on the related enrollment) → ordering.
-    # apply_related_search folds the gym constraint into the same filter()
-    # call as the search lookup, so it can't cross-match a different gym's
-    # enrollment for the same user.
     qs = apply_related_search(
         qs, search_by, search,
         relation_prefix="user__enrollment", gym=gym,
@@ -2271,7 +2283,6 @@ def today_attendance(request):
     alerts = []
     EXPIRING_SOON_THRESHOLD = 3
 
-    # The loop now only iterates over already-filtered rows.
     for rec in qs:
         enrollment = (
                         rec.user.gym_enrollment[0]
@@ -2342,20 +2353,10 @@ def today_attendance(request):
         if alert_rank is not None:
             alerts.append(entry)
 
-    for rec in qs:
-        entry = _build_attendance_entry(rec)
-        entry["alert_rank"] = (
-            0 if entry["is_expired"] else
-            1 if entry["is_expiring_soon"] else
-            2 if entry["has_pending"] else None
-        )
-        (morning if rec.timestamp.hour < 14 else evening).append(entry)
-        if entry["alert_rank"] is not None:
-            alerts.append(entry)
+    # ── SECOND LOOP REMOVED — it was duplicating every entry ──
 
     alerts.sort(key=lambda e: (e["alert_rank"], -e["pending_amount"]))
 
-    # ── NEW: last 3 days, gym-scoped ──
     previous_days = _get_previous_days_attendance(gym, today, days=3)
     previous_days_json = json.dumps(
         [{"label": d["label"], "records": d["records"]} for d in previous_days]
@@ -2366,11 +2367,11 @@ def today_attendance(request):
         "alerts_count": len(alerts),
         "today":        today,
         "total":        len(morning) + len(evening),
-        "gym":          gym,**search_ctx,
+        "gym":          gym,
         "previous_days": previous_days,
         "previous_days_json": previous_days_json,
-        "extra_params_list": [],   # nothing else to preserve
-             **search_ctx,
+        "extra_params_list": [],
+        **search_ctx,
     }
     if not search:
         cache.set(cache_key, context, timeout=120)

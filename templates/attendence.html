@@ -434,6 +434,12 @@
     </div>
 
     <!-- MARK ATTENDANCE BUTTON -->
+     <div class="mark-section">
+        <button type="button" id="btn-scan-qr" class="btn-mark">
+          <span class="btn-text">📷 SCAN QR CODE</span>
+        </button>
+        <div id="qr-reader" style="display:none; margin-top:12px;"></div>
+      </div>
     {% if geo_enabled %}
     <div class="mark-section">
       <form method="POST" id="attendance-form">
@@ -654,6 +660,54 @@
       setTimeout(function () { bar.style.width = target; }, 300);
     });
 
+  })();
+  </script>
+  <script src="{% static 'vendor/bootstrap/html5-qrcode.min.js' %}" defer></script>
+  <script nonce="{{ request.csp_nonce }}">
+  (function () {
+    const btn = document.getElementById('btn-scan-qr');
+    const readerDiv = document.getElementById('qr-reader');
+    let scanner = null;
+
+    btn.addEventListener('click', function () {
+      readerDiv.style.display = 'block';
+      scanner = new Html5Qrcode('qr-reader');
+      scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: 220 },
+        onScanSuccess,
+        () => {}
+      );
+    });
+
+    function onScanSuccess(decodedText) {
+      scanner.stop().then(() => { readerDiv.style.display = 'none'; });
+      fetch('/api/mark-attendance/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({ qr_code: decodedText.replace('ENTERGYM-QR:', '') }),
+      })
+        .then(r => r.json())
+        .then(showResultPopup)
+        .catch(() => alert('Network error — try again.'));
+    }
+
+    function showResultPopup(data) {
+      const popups = {
+        success:       { title: 'Attendance Marked', message: 'Welcome back! Your attendance has been marked successfully.' },
+        exists:        { title: 'Attendance Already Marked', message: 'Your attendance for today has already been recorded.' },
+        expired_plan:  { title: 'Membership Expired', message: data.message, buttons: ['Renew Now', 'Close'] },
+        not_enrolled:  { title: 'Enrollment Required', message: data.message },
+        invalid_qr:    { title: 'Invalid QR', message: data.message },
+      };
+      const p = popups[data.status] || { title: 'Error', message: data.message || 'Something went wrong.' };
+      alert(p.title + '\n\n' + p.message); // swap for your existing modal component
+    }
+
+    function getCookie(name) {
+      const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+      return v ? v.pop() : '';
+    }
   })();
   </script>
   <script nonce="{{ request.csp_nonce }}">
