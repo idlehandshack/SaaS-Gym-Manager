@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.http import HttpResponseForbidden
 from cloudinary.utils import cloudinary_url
-
+from django.utils import timezone
 from .models import (
     Contact, Trainer, MembershipPlan, Attendence,
     GymNotification, Enrollment, UserDevice ,LoginSupportQuery
@@ -298,50 +298,88 @@ class AttendenceAdmin(GymScopedAdmin):
 
 @admin.register(Enrollment)
 class EnrollmentAdmin(GymScopedAdmin):
-    list_display  = [
-        'unique_id', 'fullname', 'phone', 'selectPlan',
-        'paymentStatus', 'DueDate', 'is_expired',
+    list_display = [
+        "face_preview", "unique_id", "fullname", "phone", "selectPlan",
+        "paymentStatus", "expiry_status", "is_expired",
     ]
-    list_filter   = ['paymentStatus', 'gender']
-    search_fields = ['=unique_id', 'fullname', '=phone']
-    readonly_fields = ['unique_id', 'doj', 'created_at']
-    ordering      = ['-created_at']
-    date_hierarchy = 'DueDate'
-    list_select_related = ('selectPlan', 'trainer')
-    autocomplete_fields = ['user']
-
-    @admin.display(boolean=True, description='Expired')
-    def is_expired(self, obj):
-        return obj.is_expired
+    list_display_links = ["unique_id", "fullname"]
+    list_filter = ["paymentStatus", "gender"]
+    search_fields = ["=unique_id", "fullname", "=phone"]
+    readonly_fields = ["unique_id", "doj", "created_at", "face_preview"]
+    ordering = ["-created_at"]
+    date_hierarchy = "DueDate"
+    autocomplete_fields = ["user"]
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        qs = qs.select_related('selectPlan')
-        if request.user.is_superuser:
-            qs = qs.select_related('gym')
-        return qs
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("gym", "selectPlan", "trainer")
+        )
 
     def get_list_display(self, request):
         cols = list(self.list_display)
-        if request.user.is_superuser and 'gym' not in cols:
-            cols.insert(0, 'gym')
+        if request.user.is_superuser and "gym" not in cols:
+            cols.insert(0, "gym")
         return cols
 
+    def get_list_filter(self, request):
+        filters = list(self.list_filter)
+        if request.user.is_superuser:
+            filters.insert(0, "gym")
+        return filters
+
+    def get_search_fields(self, request):
+        fields = list(super().get_search_fields(request))
+        if request.user.is_superuser:
+            fields.extend(["gym__gym_name", "^gym__gym_code"])
+        return fields
+
+    @admin.display(description="Membership Status")
+    def expiry_status(self, obj):
+        if obj.is_expired:
+            return format_html('<span style="color:#dc2626;font-weight:700;">Expired</span>')
+
+        if not obj.DueDate:
+            return "-"
+
+        days = (obj.DueDate - timezone.localdate()).days
+
+        if days <= 3:
+            color = "#ea580c"
+        elif days <= 7:
+            color = "#d97706"
+        else:
+            color = "#16a34a"
+
+        return format_html(
+            '<span style="color:{};font-weight:700;">{} day{}</span>',
+            color,
+            days,
+            "" if days == 1 else "s",
+        )
+
+    @admin.display(boolean=True, description="Expired")
+    def is_expired(self, obj):
+        return obj.is_expired
+
+    @admin.display(description="Photo")
     def face_preview(self, obj):
         if not obj.face_image:
-            return "No image"
+            return "No Image"
         try:
             url, _ = cloudinary_url(
                 obj.face_image.public_id,
-                width=50, height=50,
-                crop="fill", gravity="face",
+                width=60,
+                height=60,
+                crop="fill",
+                gravity="face",
                 secure=True,
             )
             return format_html(
-                '<img src="{}" width="50" height="50"'
-                ' style="border-radius:50%;object-fit:cover;" />',
-                url
+                '<img src="{}" width="60" height="60" '
+                'style="border-radius:50%;object-fit:cover;border:2px solid #ddd;">',
+                url,
             )
         except Exception:
             return "—"
-    face_preview.short_description = "Photo"
