@@ -5,27 +5,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Attendance — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
-    {% if favicon_url %}
+  {% if favicon_url %}
     <link rel="icon" href="{{ favicon_url }}">
     <link rel="shortcut icon" href="{{ favicon_url }}">
   {% else %}
     <link rel="icon" href="{% static 'images/favicon.ico' %}">
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
-  {% endif %}
+  {% endif %}  
   <!-- ── FONTS (preload pattern from base.html, non-blocking) ── -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
-    rel="stylesheet">
+    rel="stylesheet"
+  />
   <link
     href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap"
+    rel="stylesheet"
   />
   <noscript>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" />
+    <link rel="stylesheet" href="{% static 'css/loc_modal.css' %}" />
   </noscript>
-  <link rel="stylesheet" href="{% static 'css/loc_modal.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/loc_modal.css' %}"/>
   <style>
     /* ── RESET & TOKENS ── */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -434,12 +437,23 @@
     </div>
 
     <!-- MARK ATTENDANCE BUTTON -->
-     <div class="mark-section">
-        <button type="button" id="btn-scan-qr" class="btn-mark">
-          <span class="btn-text">📷 SCAN QR CODE</span>
-        </button>
-        <div id="qr-reader" style="display:none; margin-top:12px;"></div>
-      </div>
+    <div class="mark-section">
+      <button
+        type="button"
+        id="btn-scan-qr"
+        {% if already_mark %}disabled{% endif %}
+        class="btn-mark {% if already_mark %}marked{% endif %}"
+      >
+        <span class="btn-text" id="qr-btn-label">
+          {% if already_mark %}
+            <span class="check-icon">✓</span> ATTENDANCE LOGGED
+          {% else %}
+            📷 SCAN QR CODE
+          {% endif %}
+        </span>
+      </button>
+      <div id="qr-reader" style="display:none; margin-top:12px;"></div>
+    </div>
     {% if geo_enabled %}
     <div class="mark-section">
       <form method="POST" id="attendance-form">
@@ -663,9 +677,10 @@
   })();
   </script>
   <script src="{% static 'vendor/bootstrap/html5-qrcode.min.js' %}" defer></script>
-  <script nonce="{{ request.csp_nonce }}">
+<script nonce="{{ request.csp_nonce }}">
   (function () {
     const btn = document.getElementById('btn-scan-qr');
+    const btnLabel = document.getElementById('qr-btn-label');
     const readerDiv = document.getElementById('qr-reader');
     let scanner = null;
 
@@ -692,6 +707,12 @@
         .catch(() => alert('Network error — try again.'));
     }
 
+    function markButtonAsLogged() {
+      btn.disabled = true;
+      btn.classList.add('marked');
+      btnLabel.innerHTML = '<span class="check-icon">✓</span> ATTENDANCE LOGGED';
+    }
+
     function showResultPopup(data) {
       const popups = {
         success:       { title: 'Attendance Marked', message: 'Welcome back! Your attendance has been marked successfully.' },
@@ -702,6 +723,9 @@
       };
       const p = popups[data.status] || { title: 'Error', message: data.message || 'Something went wrong.' };
       alert(p.title + '\n\n' + p.message); // swap for your existing modal component
+      if (data.status === 'success' || data.status === 'exists') {
+        markButtonAsLogged();
+      }
     }
 
     function getCookie(name) {
@@ -709,15 +733,16 @@
       return v ? v.pop() : '';
     }
   })();
-  </script>
-  <script nonce="{{ request.csp_nonce }}">
-    {% if geo_enabled and not already_mark %}
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      const banner = document.getElementById('auto-mark-banner');
-      if (banner) banner.style.display = 'block';
-    }
-    {% endif %}
-  </script>
+</script>
+<script nonce="{{ request.csp_nonce }}">
+  {% if geo_enabled and not already_mark %}
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    const banner = document.getElementById('auto-mark-banner');
+    if (banner) banner.style.display = 'block';
+  }
+  {% endif %}
+</script>
+  <!-- ── GYM CONFIG + GEO + PUSH (from base.html) ── -->
   <script nonce="{{ request.csp_nonce }}">
     window.GYM_CONFIG = JSON.parse("{{ GYM_CONFIG_JSON|escapejs }}");
   </script>
@@ -733,8 +758,6 @@
       <script src="{% static 'js/push_subscribe.js' %}" defer></script>
     {% endif %}
   {% endif %}
-
-  <!-- ── MESSAGES AUTO-DISMISS (from base.html pattern) ── -->
   <script src="{% static 'js/messages.js' %}"></script>
 
 </body>

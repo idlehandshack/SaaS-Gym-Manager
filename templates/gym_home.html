@@ -199,10 +199,8 @@
               {% if not enrolled %}
               <li><a href="#Price">Free Trial</a></li>
               <li><a href="/enrollment/">Join Now</a></li>
-              {% else %}
-                {% if geo_attendance_enabled %}
+              {% else %}     
                 <li><a href="/attendence/">Attendance</a></li>
-                {% endif %}
               {% endif %}
               <li><a href="#About">About</a></li>
               <li><a href="/contact/">Contact</a></li>
@@ -223,10 +221,7 @@
               <a href="/profile/" class="btn">My Profile</a>
 
               {% if enrolled %}
-                {% if geo_attendance_enabled %}
                 <a href="/attendence/" class="btn mobile-only">Attendance</a>
-                {% else %}
-                {% endif %}
               {% else %}
               <a href="/enrollment/" class="btn mobile-only">Join Now</a>
               {% endif %}
