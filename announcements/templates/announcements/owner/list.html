@@ -1,0 +1,339 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% block title %}Announcements{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Only the bits dashboard.css doesn't already define — priority /
+     status badges and small icon-only action buttons. Everything else
+     (db-card, db-page-header, db-page-title, etc.) comes straight from
+     dashboard.css so this page matches the rest of the SaaS admin 1:1. */
+
+  .db-badge-pill{
+    font-size:.68rem; font-weight:700; padding:3px 9px; border-radius:var(--radius-pill);
+    text-transform:uppercase; letter-spacing:.02em; display:inline-block; line-height:1.4;
+  }
+  .db-badge-primary{ background:var(--orange-dim); color:var(--orange); border:1px solid var(--orange-bdr); }
+  .db-badge-success{ background:var(--green-dim);  color:var(--green);  border:1px solid var(--green-bdr); }
+  .db-badge-danger { background:var(--red-dim);    color:var(--red);    border:1px solid var(--red-bdr); }
+  .db-badge-warning{ background:var(--yellow-dim); color:var(--yellow); border:1px solid var(--yellow-bdr); }
+  .db-badge-neutral{ background:var(--surface-3);  color:var(--text-mid); border:1px solid var(--border); }
+
+  .db-input{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text-hi);
+    border-radius:var(--radius-sm); font-size:.87rem;
+  }
+  .db-input::placeholder{ color:var(--text-lo); }
+  .db-input:focus{
+    background:var(--surface-3); border-color:var(--orange-bdr); color:var(--text-hi);
+    outline:none; box-shadow:0 0 0 .2rem var(--orange-dim);
+  }
+  select.db-input option{ background:var(--surface-2); color:var(--text-hi); }
+
+  .db-btn{
+    border-radius:var(--radius-sm); font-size:.85rem; font-weight:500; padding:.5rem .9rem;
+    border:1px solid var(--border); background:var(--surface-2); color:var(--text-hi);
+    transition:border-color var(--t) var(--ease), color var(--t) var(--ease), background var(--t) var(--ease);
+  }
+  .db-btn:hover{ border-color:var(--orange-bdr); color:var(--orange); }
+  .db-btn-primary{ background:var(--orange); border-color:var(--orange); color:#fff; }
+  .db-btn-primary:hover{ background:var(--primary-hover); border-color:var(--primary-hover); color:#fff; }
+
+  .db-btn-icon{
+    width:32px; height:32px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface-2); color:var(--text-mid);
+    transition:border-color var(--t) var(--ease), color var(--t) var(--ease);
+  }
+  .db-btn-icon:hover{ border-color:var(--orange-bdr); color:var(--orange); }
+  .db-btn-icon-danger:hover{ border-color:var(--red-bdr); color:var(--red); }
+  .db-btn-icon-warning:hover{ border-color:var(--yellow-bdr); color:var(--yellow); }
+
+  .db-table{
+    color:var(--text-hi); margin-bottom:0;
+    /* Bootstrap's .table sets its own bg/color CSS vars (defaults to
+       white bg) which override plain `color:` rules on tr/td. Reset them. */
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-hi);
+    --bs-table-striped-bg: var(--surface-2);
+    --bs-table-striped-color: var(--text-hi);
+    --bs-table-hover-bg: var(--surface-2);
+    --bs-table-hover-color: var(--text-hi);
+    background-color: transparent;
+  }
+  .db-table thead th{
+    color:var(--text-mid); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; font-weight:600;
+    border-bottom:1px solid var(--border); background:transparent; padding:.75rem 1rem;
+  }
+  .db-table td{ border-bottom:1px solid var(--border); padding:.7rem 1rem; vertical-align:middle; font-size:.87rem; }
+  .db-table tbody tr:last-child td{ border-bottom:none; }
+  .db-table tbody tr:hover{ background:var(--surface-2); }
+
+  .db-pagination .page-link{
+    background:var(--surface-2); border-color:var(--border); color:var(--text-hi); font-size:.85rem;
+  }
+  .db-pagination .page-item.disabled .page-link{ background:var(--surface); color:var(--text-lo); }
+  .db-pagination .page-link:hover{ border-color:var(--orange-bdr); color:var(--orange); }
+
+  .db-empty-icon{ font-size:2.6rem; color:var(--text-lo); }
+
+  /* dashboard.css sets .db-card{height:100%} for equal-height grid cards
+     (stat cards inside a row). These cards stand alone, so height:100%
+     stretches them to fill .db-content's full viewport height. Override. */
+  .db-content > .db-card{ height:auto; }
+  /* ── Mobile card view (replaces table below 768px) ─────────────────── */
+.db-mobile-list{ display:none; }
+@media (max-width: 767.98px){
+  .db-table-wrap{ display:none; }
+  .db-mobile-list{ display:block; }
+}
+
+.db-m-card{
+  background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:.9rem 1rem; margin-bottom:.75rem;
+}
+.db-m-card:last-child{ margin-bottom:0; }
+.db-m-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:.5rem; margin-bottom:.6rem; }
+.db-m-title{ font-size:.92rem; font-weight:600; color:var(--text-hi); line-height:1.35; }
+.db-m-title i.bi-pin-angle-fill{ color:var(--yellow); margin-right:4px; }
+.db-m-badges{ display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:.65rem; }
+.db-m-row{
+  display:flex; justify-content:space-between; align-items:flex-start; gap:.5rem;
+  font-size:.8rem; color:var(--text-mid); padding:.4rem 0; border-top:1px solid var(--border);
+}
+.db-m-row:first-of-type{ border-top:none; }
+.db-m-row span:last-child{ color:var(--text-hi); text-align:right; }
+.db-m-channels i{ margin-left:6px; }
+.db-m-actions{ display:flex; gap:.4rem; margin-top:.7rem; padding-top:.65rem; border-top:1px solid var(--border); }
+.db-m-actions form{ display:contents; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-page-header flex-wrap gap-2">
+  <div>
+    <h1 class="db-page-title"><i class="bi bi-megaphone-fill me-2" style="color:var(--orange);"></i>Announcements</h1>
+    <p class="db-page-sub">Manage popups, notices and banners for your members.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'announcement_analytics' %}" class="btn db-btn">
+      <i class="bi bi-graph-up"></i> Analytics
+    </a>
+    <a href="{% url 'announcement_archive' %}" class="btn db-btn">
+      <i class="bi bi-archive"></i> Archive
+    </a>
+    <a href="{% url 'announcement_create' %}" class="btn db-btn db-btn-primary">
+      <i class="bi bi-plus-lg"></i> New Announcement
+    </a>
+  </div>
+</div>
+
+<div class="db-card mb-4">
+  <form method="get" class="row g-2 m-0">
+    <div class="col-md-3">
+      <input type="text" name="q" value="{{ filters.q }}" class="form-control db-input" placeholder="Search title or content...">
+    </div>
+    <div class="col-md-3">
+      <select name="category" class="form-select db-input">
+        <option value="">All Categories</option>
+        {% for value, label in categories %}
+        <option value="{{ value }}" {% if filters.category == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="priority" class="form-select db-input">
+        <option value="">All Priorities</option>
+        {% for value, label in priorities %}
+        <option value="{{ value }}" {% if filters.priority == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="status" class="form-select db-input">
+        <option value="">Active + Expired</option>
+        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+        <option value="expired" {% if filters.status == 'expired' %}selected{% endif %}>Expired</option>
+        <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn db-btn w-100" type="submit"><i class="bi bi-filter"></i> Filter</button>
+    </div>
+  </form>
+</div>
+
+{% if page_obj.object_list %}
+<div class="db-table-wrap db-card p-0">
+  <div class="table-responsive">
+    <table class="table db-table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Priority</th>
+          <th>Channels</th>
+          <th>Publish / Expiry</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in page_obj %}
+        <tr>
+          <td>
+            {% if a.pin_home %}<i class="bi bi-pin-angle-fill me-1" style="color:var(--yellow);" title="Pinned"></i>{% endif %}
+            <strong>{{ a.title }}</strong>
+            {% if a.image %}<i class="bi bi-image ms-1" style="color:var(--text-mid);" title="Has image"></i>{% endif %}
+          </td>
+          <td><span class="db-badge-pill db-badge-neutral">{{ a.get_announcement_type_display }}</span></td>
+          <td>
+            {% if a.priority == 'high' %}<span class="db-badge-pill db-badge-danger">High</span>
+            {% elif a.priority == 'medium' %}<span class="db-badge-pill db-badge-warning">Medium</span>
+            {% else %}<span class="db-badge-pill db-badge-neutral">Low</span>{% endif %}
+          </td>
+          <td class="small" style="color:var(--text-mid);">
+            {% if a.show_popup %}<i class="bi bi-window-stack" title="Popup"></i>{% endif %}
+            {% if a.show_banner %}<i class="bi bi-list-columns-reverse" title="Banner"></i>{% endif %}
+            {% if a.send_push %}<i class="bi bi-bell" title="Push"></i>{% endif %}
+            {% if a.show_mobile %}<i class="bi bi-phone" title="Mobile"></i>{% endif %}
+          </td>
+          <td class="small">
+            {{ a.publish_at|date:"d M Y, H:i" }}
+            {% if a.expires_at %}<br><span style="color:var(--text-mid);">until {{ a.expires_at|date:"d M Y, H:i" }}</span>{% endif %}
+          </td>
+          <td>
+            {% if a.is_live %}<span class="db-badge-pill db-badge-success">Live</span>
+            {% elif a.is_expired %}<span class="db-badge-pill db-badge-neutral">Expired</span>
+            {% elif not a.is_active %}<span class="db-badge-pill db-badge-neutral">Inactive</span>
+            {% else %}<span class="db-badge-pill db-badge-primary">Scheduled</span>{% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'announcement_edit' a.pk %}" class="btn btn-sm db-btn-icon" title="Edit"><i class="bi bi-pencil"></i></a>
+
+            <form method="post" action="{% url 'announcement_toggle_active' a.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button class="btn btn-sm db-btn-icon" title="Toggle active">
+                <i class="bi bi-toggle2-{% if a.is_active %}on{% else %}off{% endif %}"></i>
+              </button>
+            </form>
+
+            {% if a.send_push and a.is_live %}
+            <form method="post" action="{% url 'announcement_send_push_now' a.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button class="btn btn-sm db-btn-icon db-btn-icon-warning" title="Send push now"><i class="bi bi-send"></i></button>
+            </form>
+            {% endif %}
+
+            <form method="post" action="{% url 'announcement_delete' a.pk %}" class="d-inline js-confirm-delete">
+              {% csrf_token %}
+              <button class="btn btn-sm db-btn-icon db-btn-icon-danger" title="Delete"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="db-mobile-list">
+  {% for a in page_obj %}
+  <div class="db-m-card">
+    <div class="db-m-top">
+      <div class="db-m-title">
+        {% if a.pin_home %}<i class="bi bi-pin-angle-fill"></i>{% endif %}
+        {{ a.title }}
+        {% if a.image %}<i class="bi bi-image ms-1" style="color:var(--text-mid);"></i>{% endif %}
+      </div>
+      {% if a.is_live %}<span class="db-badge-pill db-badge-success">Live</span>
+      {% elif a.is_expired %}<span class="db-badge-pill db-badge-neutral">Expired</span>
+      {% elif not a.is_active %}<span class="db-badge-pill db-badge-neutral">Inactive</span>
+      {% else %}<span class="db-badge-pill db-badge-primary">Scheduled</span>{% endif %}
+    </div>
+
+    <div class="db-m-badges">
+      <span class="db-badge-pill db-badge-neutral">{{ a.get_announcement_type_display }}</span>
+      {% if a.priority == 'high' %}<span class="db-badge-pill db-badge-danger">High</span>
+      {% elif a.priority == 'medium' %}<span class="db-badge-pill db-badge-warning">Medium</span>
+      {% else %}<span class="db-badge-pill db-badge-neutral">Low</span>{% endif %}
+    </div>
+
+    <div class="db-m-row">
+      <span>Channels</span>
+      <span class="db-m-channels">
+        {% if a.show_popup %}<i class="bi bi-window-stack" title="Popup"></i>{% endif %}
+        {% if a.show_banner %}<i class="bi bi-list-columns-reverse" title="Banner"></i>{% endif %}
+        {% if a.send_push %}<i class="bi bi-bell" title="Push"></i>{% endif %}
+        {% if a.show_mobile %}<i class="bi bi-phone" title="Mobile"></i>{% endif %}
+      </span>
+    </div>
+    <div class="db-m-row">
+      <span>Publish</span>
+      <span>{{ a.publish_at|date:"d M Y, H:i" }}</span>
+    </div>
+    {% if a.expires_at %}
+    <div class="db-m-row">
+      <span>Expires</span>
+      <span>{{ a.expires_at|date:"d M Y, H:i" }}</span>
+    </div>
+    {% endif %}
+
+    <div class="db-m-actions">
+      <a href="{% url 'announcement_edit' a.pk %}" class="btn btn-sm db-btn-icon" title="Edit"><i class="bi bi-pencil"></i></a>
+      <form method="post" action="{% url 'announcement_toggle_active' a.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-sm db-btn-icon" title="Toggle active">
+          <i class="bi bi-toggle2-{% if a.is_active %}on{% else %}off{% endif %}"></i>
+        </button>
+      </form>
+      {% if a.send_push and a.is_live %}
+      <form method="post" action="{% url 'announcement_send_push_now' a.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-sm db-btn-icon db-btn-icon-warning" title="Send push now"><i class="bi bi-send"></i></button>
+      </form>
+      {% endif %}
+      <form method="post" action="{% url 'announcement_delete' a.pk %}" class="js-confirm-delete">
+        {% csrf_token %}
+        <button class="btn btn-sm db-btn-icon db-btn-icon-danger" title="Delete"><i class="bi bi-trash"></i></button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+  <ul class="pagination db-pagination">
+    {% if page_obj.has_previous %}
+    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="db-card text-center py-5">
+  <i class="bi bi-megaphone db-empty-icon"></i>
+  <h5 class="mt-3" style="color:var(--text-hi);">No announcements yet</h5>
+  <p style="color:var(--text-mid);">Create your first announcement to reach your members.</p>
+  <a href="{% url 'announcement_create' %}" class="btn db-btn db-btn-primary"><i class="bi bi-plus-lg"></i> New Announcement</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+  // CSP-safe confirm-before-delete (no inline onsubmit)
+  document.querySelectorAll('.js-confirm-delete').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      if (!confirm('Delete this announcement?')) {
+        e.preventDefault();
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

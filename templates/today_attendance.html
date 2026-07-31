@@ -1,519 +1,734 @@
-<!doctype html>
+{% extends "dashboard/base.html" %}
 {% load static custom_filters %}
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Today's Attendance — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
-    {% if favicon_url %}
-    <link rel="icon" href="{{ favicon_url }}">
-    <link rel="shortcut icon" href="{{ favicon_url }}">
-  {% else %}
-    <link rel="icon" href="{% static 'images/favicon.ico' %}">
-    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
-  {% endif %}
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+{% block title %}Today's Attendance{% endblock %}
 
-  <style>
-    /* ── TOKENS ── */
-    :root {
-      --bg:          #080808;
-      --surface:     #111111;
-      --surface-2:   #181818;
-      --surface-3:   #1e1e1e;
-      --border:      rgba(255,255,255,.06);
-      --border-2:    rgba(255,255,255,.11);
-      --orange:      #ff5a00;
-      --orange-dim:  rgba(255,90,0,.10);
-      --orange-bdr:  rgba(255,90,0,.28);
-      --green:       #5de87c;
-      --green-dim:   rgba(93,232,124,.10);
-      --green-bdr:   rgba(93,232,124,.28);
-      --red:         #ef5350;
-      --red-dim:     rgba(239,83,80,.10);
-      --red-bdr:     rgba(239,83,80,.28);
-      --yellow:      #f4c542;
-      --yellow-dim:  rgba(244,197,66,.10);
-      --yellow-bdr:  rgba(244,197,66,.28);
-      --text-hi:     #f5f5f5;
-      --text-mid:    #888;
-      --text-lo:     #444;
-      --font-d:      "Barlow Condensed", sans-serif;
-      --font-b:      "Barlow", sans-serif;
-      --ease:        cubic-bezier(.4,0,.2,1);
-      --t:           .22s;
-      --radius-lg:   18px;
-      --radius-md:   12px;
-      --radius-sm:   8px;
-      --radius-pill: 40px;
-      --nav-h:       60px;
-    }
+{% block extra_css %}
+<style>
+  /* ══════════════════════════════════════════
+     Today's Attendance — scoped page styles.
+     Reuses dashboard.css tokens (--orange, --surface, etc.)
+     already defined globally by base.html.
+     ══════════════════════════════════════════ */
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+  .att-page {
+    max-width: 860px; margin: 0 auto;
+    padding: 0 0 clamp(40px,6vw,60px);
+  }
 
-    body {
-      background: var(--bg);
-      color: var(--text-hi);
-      font-family: var(--font-b);
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-      min-height: 100vh;
-    }
+  /* ── SECTION LABEL ── */
+  .att-section-label {
+    display: flex; align-items: center; gap: 10px;
+    margin: clamp(20px,4vw,32px) 0 clamp(10px,2vw,14px);
+  }
+  .att-section-label span {
+    font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--text-lo); white-space: nowrap;
+  }
+  .att-section-label::after {
+    content: ""; flex: 1; height: 1px; background: var(--border);
+  }
+  .att-section-label.attention span { color: var(--orange); }
 
-    /* ── STICKY NAV ── */
-    .store-nav {
-      position: sticky; top: 0; z-index: 200;
-      height: var(--nav-h);
-      background: rgba(8,8,8,.94);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center;
-    }
-    .nav-inner {
-      width: 100%; padding: 0 clamp(16px,4vw,40px);
-      display: flex; align-items: center;
-      justify-content: space-between; gap: 12px;
-    }
-    .nav-brand {
-      font-family: var(--font-d); font-weight: 900;
-      font-size: clamp(1.1rem,3vw,1.5rem);
-      text-transform: uppercase; text-decoration: none;
-      color: var(--text-hi); letter-spacing: -.01em;
-      white-space: nowrap; display: flex; align-items: center; gap: 8px;
-      transition: color var(--t);
-    }
-    .nav-brand .acc { color: var(--orange); }
-    .back-icon {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(255,255,255,.06); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: .75rem; flex-shrink: 0;
-      transition: background var(--t);
-    }
-    .nav-brand:hover .back-icon { background: var(--orange-dim); }
-    .nav-brand:hover { color: var(--text-hi); }
-    .nav-badge {
-      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
-      background: var(--orange-dim); color: var(--orange);
-      border: 1px solid var(--orange-bdr);
-      padding: 5px 14px; border-radius: var(--radius-pill);
-      white-space: nowrap;
-    }
+  /* ── PAGE-HEADER ACTION ROW (Scan Register button) ── */
+  .att-header-actions {
+    display: flex; align-items: stretch; gap: 8px;
+    margin: -4px 0 4px;
+  }
+  .att-header-actions > * {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    text-align: center; gap: 6px;
+  }
+  .scan-image-preview-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .scan-image-preview-actions .att-panel-action-btn {
+    flex: 1 1 calc(50% - 4px);  /* two per row by default */
+    min-width: 100px;
+  }
 
-    /* ── PAGE HEADER ── */
-    .page-header {
-      position: relative;
-      padding: clamp(40px,7vw,72px) 0 clamp(28px,5vw,48px);
-      text-align: center; overflow: hidden;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: clamp(24px,4vw,40px);
+  @media (max-width: 400px) {
+    .scan-image-preview-actions .att-panel-action-btn {
+      flex: 1 1 100%;   /* stack to one per row on very narrow phones */
+      font-size: .7rem;
+      padding: 10px 8px;
     }
-    .page-header::before {
-      content: ""; position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
-      z-index: 0;
-    }
-    .header-inner {
-      position: relative; z-index: 1;
-      padding: 0 clamp(16px,4vw,40px);
-    }
-    .header-eyebrow {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
-      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--orange); margin-bottom: 10px;
-      padding: 5px 14px;
-      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
-      background: var(--orange-dim);
-    }
-    .page-header h1 {
-      font-family: var(--font-d); font-weight: 900;
-      font-size: clamp(2rem,7vw,3.8rem); line-height: .92;
-      letter-spacing: -.01em; text-transform: uppercase;
-      margin-bottom: 8px; color: var(--text-hi);
-    }
-    .page-header h1 .accent { color: var(--orange); }
-    .date-line {
-      font-family: var(--font-d);
-      font-size: clamp(.85rem,2.2vw,.98rem);
-      font-weight: 700; letter-spacing: .08em; color: var(--green);
-    }
+  }
+  .att-scan-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-d); font-size: .78rem; font-weight: 800;
+    letter-spacing: .06em; text-transform: uppercase;
+    padding: 10px 18px; border-radius: var(--radius-pill);
+    background: var(--orange); color: #111; border: 1px solid var(--orange);
+    cursor: pointer; transition: opacity var(--t);
+  }
+  .att-scan-btn:hover { opacity: .9; }
+  .att-scan-btn i { font-size: .95rem; }
 
-    /* ── MAIN CONTENT ── */
-    .att-page {
-      max-width: 860px; margin: 0 auto;
-      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
-    }
+  @media (max-width: 380px) {
+    .att-header-actions { font-size: .9em; }
+    .att-scan-btn, .att-header-actions .att-panel-action-btn { font-size: .7rem; padding: 9px 10px; }
+  }
 
-    /* ── SECTION LABEL ── */
-    .section-label {
-      display: flex; align-items: center; gap: 10px;
-      margin: clamp(20px,4vw,32px) 0 clamp(10px,2vw,14px);
-    }
-    .section-label span {
-      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
-      letter-spacing: .2em; text-transform: uppercase;
-      color: var(--text-lo); white-space: nowrap;
-    }
-    .section-label::after {
-      content: ""; flex: 1; height: 1px; background: var(--border);
-    }
-    .section-label.attention span { color: var(--orange); }
+  /* ── SECTION TABS (Morning / Evening) ── */
+  .att-tabs {
+    display: flex; gap: .6rem;
+    margin: clamp(20px,4vw,32px) 0 clamp(14px,3vw,20px);
+    flex-wrap: wrap;
+  }
+  .att-tab {
+    font-family: var(--font-d); font-size: .75rem; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    padding: 8px 20px; border-radius: var(--radius-pill);
+    background: var(--surface); border: 1px solid var(--border-2);
+    color: var(--text-mid); cursor: pointer; user-select: none;
+    transition: background var(--t), border-color var(--t), color var(--t);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .att-tab:hover { border-color: rgba(255,255,255,.25); color: var(--text-hi); }
+  .att-tab.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+  .att-tab .count { font-size: .68rem; opacity: .85; }
+  .att-tab-panel { display: none; }
+  .att-tab-panel.active { display: block; animation: attFadeUp .3s var(--ease) both; }
 
-    /* ── SECTION TABS (Morning / Evening) ── */
-    .att-tabs {
-      display: flex; gap: .6rem;
-      margin: clamp(20px,4vw,32px) 0 clamp(14px,3vw,20px);
+  /* ── ALERTS BANNER (wrapper around the attention section) ── */
+  .att-alerts-wrap {
+    border: 1px solid var(--orange-bdr);
+    background: linear-gradient(180deg, var(--orange-dim), transparent 60%);
+    border-radius: var(--radius-lg);
+    padding: clamp(14px,3vw,20px);
+    margin-bottom: clamp(8px,2vw,12px);
+  }
+  .att-alerts-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 4px;
+  }
+  .att-alerts-title {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-d); font-weight: 800;
+    font-size: clamp(1rem,3vw,1.2rem); text-transform: uppercase;
+    letter-spacing: .01em; color: var(--text-hi);
+  }
+  .att-alerts-title i { color: var(--orange); }
+  .att-alerts-count-badge {
+    font-family: var(--font-d); font-size: .72rem; font-weight: 800;
+    background: var(--orange); color: #111;
+    padding: 3px 10px; border-radius: var(--radius-pill);
+  }
+  .att-alerts-sub {
+    font-family: var(--font-b); font-size: .78rem; color: var(--text-mid);
+    margin-bottom: 12px;
+  }
+
+  /* ── ATT CARD ── */
+  .att-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: clamp(10px,2.5vw,14px) clamp(12px,3vw,18px);
+    display: flex; align-items: center; gap: clamp(10px,2.5vw,16px);
+    margin-bottom: 8px; cursor: pointer;
+    transition: border-color var(--t), background var(--t);
+    width: 100%;
+    animation: attFadeUp .35s var(--ease) both;
+  }
+  .att-card:hover  { border-color: var(--orange-bdr); background: var(--surface-2); }
+  .att-card.expired { border-left: 3px solid var(--red); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+  .att-card.expiring { border-left: 3px solid var(--yellow); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+  .att-card.in-alerts { background: var(--surface-2); }
+
+  /* time block */
+  .att-time { min-width: clamp(54px,14vw,72px); text-align: center; flex-shrink: 0; }
+  .att-time .time-val {
+    color: var(--orange); font-family: var(--font-d);
+    font-size: clamp(12px,3vw,15px); font-weight: 800; letter-spacing: .5px;
+  }
+  .att-time .time-label {
+    color: var(--text-lo); font-family: var(--font-d);
+    font-size: clamp(8px,2vw,9px); letter-spacing: .2em;
+    font-weight: 700; text-transform: uppercase; margin-top: 2px;
+  }
+
+  .att-divider { width: 1px; height: 36px; background: var(--border-2); flex-shrink: 0; }
+
+  /* avatar */
+  .att-avatar-wrap { position: relative; flex-shrink: 0; }
+  .att-avatar {
+    width: clamp(34px,9vw,42px); height: clamp(34px,9vw,42px);
+    border-radius: 50%; object-fit: cover;
+    border: 1px solid var(--border-2); flex-shrink: 0;
+    background: var(--surface-2); display: block;
+  }
+  .att-avatar-placeholder {
+    width: clamp(34px,9vw,42px); height: clamp(34px,9vw,42px);
+    border-radius: 50%; border: 1px solid var(--border-2);
+    background: var(--surface-3); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-lo); font-family: var(--font-d);
+    font-size: clamp(13px,3.5vw,17px); font-weight: 900;
+  }
+  .att-alert-dot {
+    position: absolute; bottom: -2px; right: -2px;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--surface);
+  }
+  .att-alert-dot.dot-red    { background: var(--red); }
+  .att-alert-dot.dot-yellow { background: var(--yellow); }
+  .att-alert-dot.dot-orange { background: var(--orange); }
+
+  /* info */
+  .att-info { flex: 1; min-width: 0; }
+  .att-name {
+    color: var(--text-hi); font-family: var(--font-d);
+    font-size: clamp(13px,3.5vw,16px); font-weight: 800;
+    letter-spacing: .02em; text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .att-uid {
+    color: var(--text-lo); font-family: var(--font-d);
+    font-size: clamp(9px,2.5vw,11px); letter-spacing: .18em;
+    font-weight: 700; margin-top: 2px;
+  }
+  .att-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .att-tag {
+    font-family: var(--font-d); font-size: clamp(7.5px,1.8vw,9px);
+    font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: var(--radius-pill);
+    white-space: nowrap; line-height: 1.5;
+  }
+  .att-tag.tag-expired  { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red-bdr); }
+  .att-tag.tag-expiring { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow-bdr); }
+  .att-tag.tag-pending  { background: var(--orange-dim); color: var(--orange); border: 1px solid var(--orange-bdr); }
+
+  /* meta */
+  .att-meta { text-align: right; flex-shrink: 0; min-width: clamp(60px,16vw,80px); }
+  .att-pending {
+    font-family: var(--font-d);
+    font-size: clamp(12px,3vw,15px); font-weight: 900; color: var(--text-lo);
+  }
+  .att-pending.has-pending { color: var(--orange); }
+  .att-due {
+    font-family: var(--font-d);
+    font-size: clamp(8px,2vw,10px); color: var(--text-lo);
+    letter-spacing: .1em; margin-top: 3px;
+    font-weight: 700; text-transform: uppercase;
+  }
+  .att-due.expired-tag { color: var(--red); }
+  .att-due.expiring-tag { color: var(--yellow); }
+
+  .att-chevron {
+    color: var(--text-lo); font-size: .85rem; flex-shrink: 0;
+    transition: color var(--t), transform var(--t);
+  }
+  .att-card:hover .att-chevron { color: var(--orange); transform: translateX(2px); }
+
+  .att-empty-state {
+    font-family: var(--font-d); color: var(--text-lo); font-size: .8rem;
+    letter-spacing: .18em; text-align: center; padding: 24px 0;
+    font-weight: 700; text-transform: uppercase;
+  }
+  .att-empty-state.good { color: var(--green); }
+
+  /* ── Progressive search reveal (scoped to this page only —
+     partials/search_form.html itself is untouched, other pages that
+     include it keep their normal always-visible behavior) ── */
+  .att-page .search-bar .search-input.search-hidden,
+  .att-page .search-bar .search-btn-group.search-hidden {
+    display: none;
+  }
+
+  /* ── SLIDE PANEL (shared shell — member detail + register scan) ── */
+  .att-panel-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.72); z-index: 1200;
+  }
+  .att-panel-backdrop.open { display: block; }
+
+  .att-slide-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(420px, 100vw);
+    background: var(--surface);
+    border-left: 1px solid var(--border-2);
+    z-index: 1201; overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform .3s var(--ease);
+    display: flex; flex-direction: column;
+  }
+  .att-slide-panel.open { transform: translateX(0); }
+  .att-slide-panel.wide { width: min(640px, 100vw); }
+
+  .att-panel-head {
+    padding: clamp(20px,4vw,28px) clamp(16px,4vw,24px) 0;
+    flex-shrink: 0;
+  }
+  .att-panel-close {
+    width: 32px; height: 32px;
+    background: var(--surface-2); border: 1px solid var(--border-2);
+    color: var(--text-mid); border-radius: var(--radius-sm);
+    font-size: .9rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: color var(--t), border-color var(--t);
+    margin-bottom: clamp(16px,3vw,24px);
+  }
+  .att-panel-close:hover { color: var(--text-hi); border-color: rgba(255,255,255,.22); }
+
+  .att-panel-avatar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .att-panel-avatar {
+    width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+    border: 2px solid var(--orange-bdr); background: var(--surface-2); flex-shrink: 0;
+  }
+  .att-panel-avatar-ph {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 2px solid var(--border-2); background: var(--surface-3);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-lo); font-family: var(--font-d);
+    font-size: 22px; font-weight: 900; flex-shrink: 0;
+  }
+  .att-panel-uid {
+    font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--orange); margin-bottom: 4px;
+  }
+  .att-panel-name {
+    font-family: var(--font-d); font-weight: 900;
+    font-size: clamp(1.3rem,4vw,1.7rem);
+    text-transform: uppercase; letter-spacing: .01em;
+    color: var(--text-hi); word-break: break-word;
+  }
+  .att-panel-accent {
+    width: 32px; height: 3px; background: var(--orange);
+    border-radius: 2px; margin: 12px 0 clamp(16px,3vw,24px);
+  }
+
+  /* alert banner inside panel */
+  .att-panel-alert-banner {
+    display: none;
+    align-items: flex-start; gap: 10px;
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin-bottom: clamp(16px,3vw,22px);
+    font-family: var(--font-b); font-size: .82rem; font-weight: 600;
+    line-height: 1.4;
+  }
+  .att-panel-alert-banner.show { display: flex; }
+  .att-panel-alert-banner.level-red    { background: var(--red-dim);    border: 1px solid var(--red-bdr);    color: #ffb4b2; }
+  .att-panel-alert-banner.level-yellow { background: var(--yellow-dim); border: 1px solid var(--yellow-bdr); color: #ffe3a1; }
+  .att-panel-alert-banner.level-orange { background: var(--orange-dim); border: 1px solid var(--orange-bdr); color: #ffc199; }
+  .att-panel-alert-banner i { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
+  .att-panel-alert-banner strong { display: block; font-family: var(--font-d); letter-spacing: .04em; text-transform: uppercase; font-size: .78rem; margin-bottom: 2px; }
+
+  .att-panel-body {
+    padding: 0 clamp(16px,4vw,24px) clamp(24px,4vw,36px); flex: 1;
+  }
+  .att-panel-section-title {
+    font-family: var(--font-d); font-size: .68rem; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase;
+    color: var(--text-lo); margin-bottom: 12px;
+  }
+  .att-detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: clamp(10px,2.5vw,14px); margin-bottom: 18px;
+  }
+  .att-detail-item.full { grid-column: 1 / -1; }
+  .att-detail-label {
+    font-family: var(--font-d); color: var(--text-lo);
+    font-size: .68rem; font-weight: 700; letter-spacing: .18em;
+    text-transform: uppercase; margin-bottom: 3px;
+  }
+  .att-detail-value {
+    color: var(--text-hi); font-family: var(--font-b);
+    font-size: clamp(11px,2.5vw,13px); font-weight: 600; word-break: break-word;
+  }
+  .att-detail-value.highlight { color: var(--orange); }
+  .att-detail-value.success   { color: var(--green); }
+  .att-detail-value.danger    { color: var(--red); }
+  .att-detail-value.warning   { color: var(--yellow); }
+  .att-panel-divider { height: 1px; background: var(--border); margin: clamp(14px,3vw,20px) 0; }
+
+  /* quick action buttons in panel */
+  .att-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: clamp(16px,3vw,22px); }
+  .att-panel-action-btn {
+    flex: 1; min-width: 120px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: var(--font-d); font-size: .74rem; font-weight: 800;
+    letter-spacing: .06em; text-transform: uppercase;
+    padding: 9px 10px; border-radius: var(--radius-sm);
+    text-decoration: none; cursor: pointer; border: 1px solid var(--border-2);
+    background: var(--surface-2); color: var(--text-hi);
+    transition: border-color var(--t), background var(--t);
+  }
+  .att-panel-action-btn:hover { border-color: var(--orange-bdr); background: var(--orange-dim); color: var(--orange); }
+  .att-panel-action-btn.primary { background: var(--orange); color: #111; border-color: var(--orange); }
+  .att-panel-action-btn.primary:hover { opacity: .9; background: var(--orange); color: #111; }
+  .att-panel-action-btn:disabled,
+  .att-panel-action-btn[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes attFadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ══════════════════════════════════════════
+     SCAN REGISTER PANEL — upload state + editable preview table
+     ══════════════════════════════════════════ */
+  .scan-upload-zone {
+    border: 1.5px dashed var(--border-2); border-radius: var(--radius-lg);
+    padding: clamp(28px,6vw,44px) 20px; text-align: center;
+    background: var(--surface-2); cursor: pointer;
+    transition: border-color var(--t), background var(--t);
+  }
+  .scan-upload-zone:hover, .scan-upload-zone.dragover {
+    border-color: var(--orange); background: var(--orange-dim);
+  }
+  .scan-upload-zone i { font-size: 2rem; color: var(--orange); margin-bottom: 10px; display: block; }
+  .scan-upload-zone .zone-title {
+    font-family: var(--font-d); font-weight: 800; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--text-hi); font-size: .9rem; margin-bottom: 4px;
+  }
+  .scan-upload-zone .zone-sub { font-family: var(--font-b); color: var(--text-lo); font-size: .78rem; }
+  #scanFileInput { display: none; }
+
+  .scan-loading { text-align: center; padding: clamp(30px,6vw,50px) 10px; }
+  .scan-spinner {
+    width: 36px; height: 36px; margin: 0 auto 16px;
+    border: 3px solid var(--border-2); border-top-color: var(--orange);
+    border-radius: 50%; animation: scanSpin .8s linear infinite;
+  }
+  @keyframes scanSpin { to { transform: rotate(360deg); } }
+  .scan-loading .loading-text {
+    font-family: var(--font-d); font-size: .78rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--text-mid); font-weight: 700;
+  }
+
+  .scan-summary-bar {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: clamp(14px,3vw,18px);
+  }
+  .scan-stat {
+    flex: 1; min-width: 90px;
+    background: var(--surface-2); border: 1px solid var(--border-2);
+    border-radius: var(--radius-md); padding: 10px 12px; text-align: center;
+  }
+  .scan-stat .n { font-family: var(--font-d); font-size: 1.15rem; font-weight: 900; color: var(--text-hi); }
+  .scan-stat .l { font-family: var(--font-d); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-lo); margin-top: 2px; }
+  .scan-stat.errors .n { color: var(--red); }
+  .scan-stat.errors.zero .n { color: var(--green); }
+
+  .scan-row-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+
+  .scan-row {
+    border: 1px solid var(--border-2); border-radius: var(--radius-md);
+    background: var(--surface-2); padding: 10px 12px;
+  }
+  .scan-row.has-error { border-color: var(--red-bdr); background: var(--red-dim); }
+  .scan-row.matched-ok { border-color: var(--border-2); }
+
+  .scan-row-top { display: flex; align-items: center; gap: 8px; }
+  .scan-row-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; }
+  .scan-row-icon.ok { color: var(--green); }
+  .scan-row-icon.warn { color: var(--yellow); }
+  .scan-row-icon.err { color: var(--red); }
+
+  .scan-field {
+    background: var(--surface); border: 1px solid var(--border-2);
+    border-radius: var(--radius-sm); color: var(--text-hi);
+    font-family: var(--font-b); font-size: .8rem; padding: 6px 9px;
+    outline: none; min-width: 0;
+  }
+  .scan-field:focus { border-color: var(--orange); }
+  .scan-field.uid { width: 78px; flex-shrink: 0; }
+  .scan-field.name-display { flex: 1; background: transparent; border: none; color: var(--text-hi); font-weight: 700; padding: 6px 2px; }
+
+  .scan-row-badge {
+    font-family: var(--font-d); font-size: .6rem; font-weight: 800;
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: var(--radius-pill);
+    background: var(--surface-3); color: var(--text-lo); flex-shrink: 0;
+  }
+  .scan-row-badge.manual { background: var(--orange-dim); color: var(--orange); }
+
+  .scan-row-delete {
+    background: none; border: none; color: var(--text-lo);
+    font-size: .95rem; cursor: pointer; flex-shrink: 0; padding: 4px;
+    transition: color var(--t);
+  }
+  .scan-row-delete:hover { color: var(--red); }
+
+  .scan-row-search-wrap { position: relative; flex: 1; min-width: 0; }
+  .scan-member-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--surface); border: 1px solid var(--border-2);
+    border-radius: var(--radius-sm); max-height: 180px; overflow-y: auto;
+    z-index: 20; display: none;
+  }
+  .scan-member-dropdown.open { display: block; }
+  .scan-member-option {
+    padding: 8px 10px; cursor: pointer; font-family: var(--font-b);
+    font-size: .8rem; color: var(--text-hi); border-bottom: 1px solid var(--border);
+  }
+  .scan-member-option:last-child { border-bottom: none; }
+  .scan-member-option:hover { background: var(--surface-2); color: var(--orange); }
+  .scan-member-option .uid-sub { color: var(--text-lo); font-size: .7rem; margin-left: 6px; }
+
+  .scan-row-errors {
+    margin-top: 6px; padding-left: 28px;
+    font-family: var(--font-b); font-size: .72rem; color: #ffb4b2;
+  }
+  .scan-row-errors div { margin-bottom: 2px; }
+
+  .scan-add-manual-btn {
+    width: 100%; padding: 12px; border-radius: var(--radius-md);
+    border: 1.5px dashed var(--border-2); background: transparent;
+    color: var(--text-mid); font-family: var(--font-d); font-size: .78rem;
+    font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    cursor: pointer; transition: border-color var(--t), color var(--t);
+    margin-bottom: 18px;
+  }
+  .scan-add-manual-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+  .scan-panel-footer {
+    position: sticky; bottom: 0; background: var(--surface);
+    border-top: 1px solid var(--border); padding: 14px clamp(16px,4vw,24px);
+    display: flex; gap: 8px; margin: 0 calc(-1 * clamp(16px,4vw,24px)) calc(-1 * clamp(24px,4vw,36px));
+  }
+  .scan-panel-footer .att-panel-action-btn { flex: 1; }
+
+  .scan-error-banner {
+    background: var(--red-dim); border: 1px solid var(--red-bdr);
+    color: #ffb4b2; border-radius: var(--radius-md); padding: 12px 14px;
+    font-family: var(--font-b); font-size: .82rem; margin-bottom: 16px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .scan-error-banner i { flex-shrink: 0; margin-top: 1px; }
+
+  .scan-warn-banner {
+    background: var(--yellow-dim); border: 1px solid var(--yellow-bdr);
+    color: #ffe3a1; border-radius: var(--radius-md); padding: 10px 14px;
+    font-family: var(--font-b); font-size: .78rem; margin-bottom: 10px;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .scan-warn-banner i { flex-shrink: 0; margin-top: 1px; color: var(--yellow); }
+
+  .scan-result-banner {
+    background: var(--green-dim, rgba(60,200,120,.1)); border: 1px solid var(--green-bdr, rgba(60,200,120,.3));
+    color: var(--green); border-radius: var(--radius-md); padding: 12px 14px;
+    font-family: var(--font-b); font-size: .82rem; margin-bottom: 16px;
+  }
+
+  /* ── Import summary grid (post-save) ── */
+  .scan-import-summary {
+    display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr));
+    gap: 8px; margin-bottom: 16px;
+  }
+  .scan-import-summary .isum-item {
+    background: var(--surface-2); border: 1px solid var(--border-2);
+    border-radius: var(--radius-md); padding: 10px 12px; text-align: center;
+  }
+  .scan-import-summary .isum-n { font-family: var(--font-d); font-size: 1.1rem; font-weight: 900; color: var(--text-hi); }
+  .scan-import-summary .isum-l { font-family: var(--font-d); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-lo); margin-top: 2px; }
+  .scan-import-summary .isum-item.good .isum-n { color: var(--green); }
+  .scan-import-summary .isum-item.warn .isum-n { color: var(--yellow); }
+
+  /* ── Image preview-before-upload state ── */
+  .scan-image-preview-wrap { text-align: center; }
+  .scan-image-preview-wrap img {
+    max-width: 100%; max-height: 320px; border-radius: var(--radius-md);
+    border: 1px solid var(--border-2); margin-bottom: 16px; object-fit: contain;
+  }
+  .scan-image-preview-actions { display: flex; gap: 8px; }
+  .scan-image-preview-actions .att-panel-action-btn { flex: 1; }
+
+  /* ── Confidence badge ── */
+  .scan-confidence {
+    font-family: var(--font-d); font-size: .58rem; font-weight: 800;
+    letter-spacing: .06em; padding: 2px 7px; border-radius: var(--radius-pill);
+    flex-shrink: 0; white-space: nowrap;
+  }
+  .scan-confidence.high { background: var(--green-dim, rgba(60,200,120,.12)); color: var(--green); }
+  .scan-confidence.medium { background: var(--yellow-dim); color: var(--yellow); }
+  .scan-confidence.low { background: var(--red-dim); color: var(--red); }
+
+  /* ── Accessibility: visible focus rings everywhere in this panel ── */
+  .att-slide-panel button:focus-visible,
+  .att-slide-panel input:focus-visible,
+  .att-slide-panel [tabindex]:focus-visible,
+  .scan-upload-zone:focus-visible {
+    outline: 2px solid var(--orange); outline-offset: 2px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 440px) {
+    .att-slide-panel { border-left: none; }
+
+    /* Row 1: status icon · Unique ID · confidence · source badge · delete
+       Row 2: member name / search (full width)
+       Explicit order on every child — relying on source order alone is
+       what caused the search box to overlap the badges before. */
+    .scan-row-top {
       flex-wrap: wrap;
+      row-gap: 8px;
+      column-gap: 6px;
     }
-    .att-tab {
-      font-family: var(--font-d); font-size: .75rem; font-weight: 700;
-      letter-spacing: .1em; text-transform: uppercase;
-      padding: 8px 20px; border-radius: var(--radius-pill);
-      background: var(--surface); border: 1px solid var(--border-2);
-      color: var(--text-mid); cursor: pointer; user-select: none;
-      transition: background var(--t), border-color var(--t), color var(--t);
-      display: flex; align-items: center; gap: 6px;
-    }
-    .att-tab:hover { border-color: rgba(255,255,255,.25); color: var(--text-hi); }
-    .att-tab.active { background: var(--orange); border-color: var(--orange); color: #fff; }
-    .att-tab .count { font-size: .68rem; opacity: .85; }
-    .att-tab-panel { display: none; }
-    .att-tab-panel.active { display: block; animation: fadeUp .3s var(--ease) both; }
+    .scan-row-icon   { order: 1; }
+    .scan-field.uid  { order: 2; flex: 0 0 64px; }
+    .scan-confidence { order: 3; }
+    .scan-row-badge  { order: 4; }
+    .scan-row-delete { order: 5; margin-left: auto; }
 
-    /* ── ALERTS BANNER (wrapper around the attention section) ── */
-    .alerts-wrap {
-      border: 1px solid var(--orange-bdr);
-      background: linear-gradient(180deg, var(--orange-dim), transparent 60%);
-      border-radius: var(--radius-lg);
-      padding: clamp(14px,3vw,20px);
-      margin-bottom: clamp(8px,2vw,12px);
-    }
-    .alerts-head {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; margin-bottom: 4px;
-    }
-    .alerts-title {
-      display: flex; align-items: center; gap: 8px;
-      font-family: var(--font-d); font-weight: 800;
-      font-size: clamp(1rem,3vw,1.2rem); text-transform: uppercase;
-      letter-spacing: .01em; color: var(--text-hi);
-    }
-    .alerts-title i { color: var(--orange); }
-    .alerts-count-badge {
-      font-family: var(--font-d); font-size: .72rem; font-weight: 800;
-      background: var(--orange); color: #111;
-      padding: 3px 10px; border-radius: var(--radius-pill);
-    }
-    .alerts-sub {
-      font-family: var(--font-b); font-size: .78rem; color: var(--text-mid);
-      margin-bottom: 12px;
-    }
-
-    /* ── ATT CARD ── */
-    .att-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: clamp(10px,2.5vw,14px) clamp(12px,3vw,18px);
-      display: flex; align-items: center; gap: clamp(10px,2.5vw,16px);
-      margin-bottom: 8px; cursor: pointer;
-      transition: border-color var(--t), background var(--t);
+    .scan-field.name-display,
+    .scan-row-search-wrap {
+      order: 6;
+      flex: 1 1 100%;
       width: 100%;
-      animation: fadeUp .35s var(--ease) both;
     }
-    .att-card:hover  { border-color: var(--orange-bdr); background: var(--surface-2); }
-    .att-card.expired { border-left: 3px solid var(--red); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
-    .att-card.expiring { border-left: 3px solid var(--yellow); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
-    .att-card.in-alerts { background: var(--surface-2); }
+    .scan-member-dropdown { left: 0; right: 0; }
+  }
+  @media (max-width: 360px) {
+    .att-time { min-width: 48px; }
+    .att-meta { min-width: 52px; }
+    .att-detail-grid { gap: 10px; }
+  }
+  @supports (padding: env(safe-area-inset-left)) {
+    .att-slide-panel {
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+</style>
+{% endblock %}
 
-    /* time block */
-    .att-time { min-width: clamp(54px,14vw,72px); text-align: center; flex-shrink: 0; }
-    .att-time .time-val {
-      color: var(--orange); font-family: var(--font-d);
-      font-size: clamp(12px,3vw,15px); font-weight: 800; letter-spacing: .5px;
-    }
-    .att-time .time-label {
-      color: var(--text-lo); font-family: var(--font-d);
-      font-size: clamp(8px,2vw,9px); letter-spacing: .2em;
-      font-weight: 700; text-transform: uppercase; margin-top: 2px;
-    }
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">Today's Attendance</h1>
+    <p class="db-page-sub">{{ today|date:"l, d F Y" }} · <span style="color:var(--orange);">{{ total }} Total Check-Ins</span></p>
+  </div>
+</div>
 
-    .att-divider { width: 1px; height: 36px; background: var(--border-2); flex-shrink: 0; }
+<div class="att-page">
+  {% include "partials/search_form.html" %}
 
-    /* avatar */
-    .att-avatar-wrap { position: relative; flex-shrink: 0; }
-    .att-avatar {
-      width: clamp(34px,9vw,42px); height: clamp(34px,9vw,42px);
-      border-radius: 50%; object-fit: cover;
-      border: 1px solid var(--border-2); flex-shrink: 0;
-      background: var(--surface-2); display: block;
-    }
-    .att-avatar-placeholder {
-      width: clamp(34px,9vw,42px); height: clamp(34px,9vw,42px);
-      border-radius: 50%; border: 1px solid var(--border-2);
-      background: var(--surface-3); flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--text-lo); font-family: var(--font-d);
-      font-size: clamp(13px,3.5vw,17px); font-weight: 900;
-    }
-    .att-alert-dot {
-      position: absolute; bottom: -2px; right: -2px;
-      width: 12px; height: 12px; border-radius: 50%;
-      border: 2px solid var(--surface);
-    }
-    .att-alert-dot.dot-red    { background: var(--red); }
-    .att-alert-dot.dot-yellow { background: var(--yellow); }
-    .att-alert-dot.dot-orange { background: var(--orange); }
+  {% if request.is_super_admin or request.staff_role == 'gym_owner' or request.staff_role == 'receptionist' %}
+  <div class="att-header-actions">
+    <a href="{% url 'register_scan_history_page' %}" class="att-panel-action-btn" style="flex:0 0 auto;">
+      <i class="bi bi-clock-history"></i> Import History
+    </a>
+    {% if ai_credits_zero %}
+    <button type="button" class="att-scan-btn" disabled aria-disabled="true"
+            title="No AI credits remaining" style="opacity:.5;cursor:not-allowed;">
+      <i class="bi bi-camera-fill"></i> Scan Attendance Register
+    </button>
+    {% else %}
+    <button type="button" class="att-scan-btn" id="btnOpenScanPanel" aria-haspopup="dialog">
+      <i class="bi bi-camera-fill"></i> Scan Attendance Register
+    </button>
+    {% endif %}
+  </div>
 
-    /* info */
-    .att-info { flex: 1; min-width: 0; }
-    .att-name {
-      color: var(--text-hi); font-family: var(--font-d);
-      font-size: clamp(13px,3.5vw,16px); font-weight: 800;
-      letter-spacing: .02em; text-transform: uppercase;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .att-uid {
-      color: var(--text-lo); font-family: var(--font-d);
-      font-size: clamp(9px,2.5vw,11px); letter-spacing: .18em;
-      font-weight: 700; margin-top: 2px;
-    }
-    .att-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
-    .att-tag {
-      font-family: var(--font-d); font-size: clamp(7.5px,1.8vw,9px);
-      font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
-      padding: 2px 7px; border-radius: var(--radius-pill);
-      white-space: nowrap; line-height: 1.5;
-    }
-    .att-tag.tag-expired  { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red-bdr); }
-    .att-tag.tag-expiring { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow-bdr); }
-    .att-tag.tag-pending  { background: var(--orange-dim); color: var(--orange); border: 1px solid var(--orange-bdr); }
+  {% if ai_credits_zero %}
+  <div class="scan-warn-banner" role="alert" style="border-color:var(--red-bdr);background:var(--red-dim);color:#ffb4b2;">
+    <i class="bi bi-exclamation-octagon-fill"></i>
+    <span>You don't have any AI credits remaining. Please contact the administrator.</span>
+  </div>
+  {% elif ai_credits_low %}
+  <div class="scan-warn-banner" role="alert">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <span>Only {{ ai_credits_balance }} AI credit{{ ai_credits_balance|pluralize }} remaining.</span>
+  </div>
+  {% endif %}
+  {% endif %}
 
-    /* meta */
-    .att-meta { text-align: right; flex-shrink: 0; min-width: clamp(60px,16vw,80px); }
-    .att-pending {
-      font-family: var(--font-d);
-      font-size: clamp(12px,3vw,15px); font-weight: 900; color: var(--text-lo);
-    }
-    .att-pending.has-pending { color: var(--orange); }
-    .att-due {
-      font-family: var(--font-d);
-      font-size: clamp(8px,2vw,10px); color: var(--text-lo);
-      letter-spacing: .1em; margin-top: 3px;
-      font-weight: 700; text-transform: uppercase;
-    }
-    .att-due.expired-tag { color: var(--red); }
-    .att-due.expiring-tag { color: var(--yellow); }
-
-    .att-chevron {
-      color: var(--text-lo); font-size: .85rem; flex-shrink: 0;
-      transition: color var(--t), transform var(--t);
-    }
-    .att-card:hover .att-chevron { color: var(--orange); transform: translateX(2px); }
-
-    .empty-state {
-      font-family: var(--font-d); color: var(--text-lo); font-size: .8rem;
-      letter-spacing: .18em; text-align: center; padding: 24px 0;
-      font-weight: 700; text-transform: uppercase;
-    }
-    .empty-state.good { color: var(--green); }
-
-    /* ── SLIDE PANEL ── */
-    .panel-backdrop {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,.72); z-index: 900;
-    }
-    .panel-backdrop.open { display: block; }
-
-    .slide-panel {
-      position: fixed; top: 0; right: 0; bottom: 0;
-      width: min(420px, 100vw);
-      background: var(--surface);
-      border-left: 1px solid var(--border-2);
-      z-index: 901; overflow-y: auto;
-      transform: translateX(100%);
-      transition: transform .3s var(--ease);
-      display: flex; flex-direction: column;
-    }
-    .slide-panel.open { transform: translateX(0); }
-
-    .panel-head {
-      padding: clamp(20px,4vw,28px) clamp(16px,4vw,24px) 0;
-      flex-shrink: 0;
-    }
-    .panel-close {
-      width: 32px; height: 32px;
-      background: var(--surface-2); border: 1px solid var(--border-2);
-      color: var(--text-mid); border-radius: var(--radius-sm);
-      font-size: .9rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: color var(--t), border-color var(--t);
-      margin-bottom: clamp(16px,3vw,24px);
-    }
-    .panel-close:hover { color: var(--text-hi); border-color: rgba(255,255,255,.22); }
-
-    .panel-avatar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
-    .panel-avatar {
-      width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
-      border: 2px solid var(--orange-bdr); background: var(--surface-2); flex-shrink: 0;
-    }
-    .panel-avatar-ph {
-      width: 64px; height: 64px; border-radius: 50%;
-      border: 2px solid var(--border-2); background: var(--surface-3);
-      display: flex; align-items: center; justify-content: center;
-      color: var(--text-lo); font-family: var(--font-d);
-      font-size: 22px; font-weight: 900; flex-shrink: 0;
-    }
-    .panel-uid {
-      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
-      letter-spacing: .2em; text-transform: uppercase;
-      color: var(--orange); margin-bottom: 4px;
-    }
-    .panel-name {
-      font-family: var(--font-d); font-weight: 900;
-      font-size: clamp(1.3rem,4vw,1.7rem);
-      text-transform: uppercase; letter-spacing: .01em;
-      color: var(--text-hi); word-break: break-word;
-    }
-    .panel-accent {
-      width: 32px; height: 3px; background: var(--orange);
-      border-radius: 2px; margin: 12px 0 clamp(16px,3vw,24px);
-    }
-
-    /* alert banner inside panel */
-    .panel-alert-banner {
-      display: none;
-      align-items: flex-start; gap: 10px;
-      border-radius: var(--radius-md);
-      padding: 12px 14px;
-      margin-bottom: clamp(16px,3vw,22px);
-      font-family: var(--font-b); font-size: .82rem; font-weight: 600;
-      line-height: 1.4;
-    }
-    .panel-alert-banner.show { display: flex; }
-    .panel-alert-banner.level-red    { background: var(--red-dim);    border: 1px solid var(--red-bdr);    color: #ffb4b2; }
-    .panel-alert-banner.level-yellow { background: var(--yellow-dim); border: 1px solid var(--yellow-bdr); color: #ffe3a1; }
-    .panel-alert-banner.level-orange { background: var(--orange-dim); border: 1px solid var(--orange-bdr); color: #ffc199; }
-    .panel-alert-banner i { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
-    .panel-alert-banner strong { display: block; font-family: var(--font-d); letter-spacing: .04em; text-transform: uppercase; font-size: .78rem; margin-bottom: 2px; }
-
-    .panel-body {
-      padding: 0 clamp(16px,4vw,24px) clamp(24px,4vw,36px); flex: 1;
-    }
-    .panel-section-title {
-      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
-      letter-spacing: .22em; text-transform: uppercase;
-      color: var(--text-lo); margin-bottom: 12px;
-    }
-    .detail-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: clamp(10px,2.5vw,14px); margin-bottom: 18px;
-    }
-    .detail-item.full { grid-column: 1 / -1; }
-    .detail-label {
-      font-family: var(--font-d); color: var(--text-lo);
-      font-size: .68rem; font-weight: 700; letter-spacing: .18em;
-      text-transform: uppercase; margin-bottom: 3px;
-    }
-    .detail-value {
-      color: var(--text-hi); font-family: var(--font-b);
-      font-size: clamp(11px,2.5vw,13px); font-weight: 600; word-break: break-word;
-    }
-    .detail-value.highlight { color: var(--orange); }
-    .detail-value.success   { color: var(--green); }
-    .detail-value.danger    { color: var(--red); }
-    .detail-value.warning   { color: var(--yellow); }
-    .panel-divider { height: 1px; background: var(--border); margin: clamp(14px,3vw,20px) 0; }
-
-    /* quick action buttons in panel */
-    .panel-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: clamp(16px,3vw,22px); }
-    .panel-action-btn {
-      flex: 1; min-width: 120px;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      font-family: var(--font-d); font-size: .74rem; font-weight: 800;
-      letter-spacing: .06em; text-transform: uppercase;
-      padding: 9px 10px; border-radius: var(--radius-sm);
-      text-decoration: none; cursor: pointer; border: 1px solid var(--border-2);
-      background: var(--surface-2); color: var(--text-hi);
-      transition: border-color var(--t), background var(--t);
-    }
-    .panel-action-btn:hover { border-color: var(--orange-bdr); background: var(--orange-dim); color: var(--orange); }
-    .panel-action-btn.primary { background: var(--orange); color: #111; border-color: var(--orange); }
-    .panel-action-btn.primary:hover { opacity: .9; background: var(--orange); color: #111; }
-
-    /* ── ANIMATIONS ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 440px) {
-      .slide-panel { border-left: none; }
-    }
-    @media (max-width: 360px) {
-      .att-time { min-width: 48px; }
-      .att-meta { min-width: 52px; }
-      .detail-grid { gap: 10px; }
-    }
-    @supports (padding: env(safe-area-inset-left)) {
-      .nav-inner {
-        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
-        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
-      }
-      .slide-panel {
-        padding-right: env(safe-area-inset-right);
-        padding-bottom: env(safe-area-inset-bottom);
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- ── STICKY NAV ── -->
-  <nav class="store-nav">
-    <div class="nav-inner">
-      <a class="nav-brand" href="/">
-        <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
-        {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
-        <span class="acc">Attendance</span>
-      </a>
-      <div class="nav-badge">{{ total }} Total</div>
+  <!-- ── NEEDS ATTENTION (expired / expiring soon / pending payment) ── -->
+  {% if alerts %}
+  <div class="att-alerts-wrap">
+    <div class="att-alerts-head">
+      <div class="att-alerts-title"><i class="bi bi-exclamation-triangle-fill"></i> Needs Attention</div>
+      <div class="att-alerts-count-badge">{{ alerts_count }}</div>
     </div>
-  </nav>
+    <div class="att-alerts-sub">Members who checked in today with an expired plan, a plan expiring soon, or a pending payment.</div>
 
-  <!-- ── PAGE HEADER ── -->
-  <header class="page-header">
-    <div class="header-inner">
-      <div class="header-eyebrow">
-        <i class="bi bi-calendar-check"></i> Daily Log
+    {% for r in alerts %}
+    <div class="att-card in-alerts {% if r.is_expired %}expired{% elif r.is_expiring_soon %}expiring{% endif %}" data-json="{{ r|data_json }}">
+
+      <div class="att-avatar-wrap">
+        {% if r.image_url %}
+          <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy" />
+        {% else %}
+          <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
+        {% endif %}
+        {% if r.is_expired %}
+          <span class="att-alert-dot dot-red"></span>
+        {% elif r.is_expiring_soon %}
+          <span class="att-alert-dot dot-yellow"></span>
+        {% elif r.has_pending %}
+          <span class="att-alert-dot dot-orange"></span>
+        {% endif %}
       </div>
-      <h1>Today's <span class="accent">Attendance</span></h1>
-      <div class="date-line">{{ today|date:"l, d F Y" }}</div>
+
+      <div class="att-info">
+        <div class="att-name">{{ r.name }}</div>
+        <div class="att-uid">UID · {{ r.unique_id }}</div>
+        <div class="att-tags">
+          {% if r.is_expired %}
+            <span class="att-tag tag-expired"><i class="bi bi-x-circle"></i> Expired</span>
+          {% elif r.is_expiring_soon %}
+            <span class="att-tag tag-expiring"><i class="bi bi-hourglass-split"></i>
+              {% if r.days_remaining == 0 %}Expires Today{% elif r.days_remaining == 1 %}1 Day Left{% else %}{{ r.days_remaining }} Days Left{% endif %}
+            </span>
+          {% endif %}
+          {% if r.has_pending %}
+            <span class="att-tag tag-pending"><i class="bi bi-cash-coin"></i> Pending</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="att-meta">
+        {% if r.pending_amount > 0 %}
+          <div class="att-pending has-pending">₹{{ r.pending_amount|floatformat:0 }}</div>
+        {% else %}
+          <div class="att-pending"></div>
+        {% endif %}
+        <div class="att-due {% if r.is_expired %}expired-tag{% elif r.is_expiring_soon %}expiring-tag{% endif %}">
+          {% if r.is_expired %}EXPIRED{% else %}{{ r.due_date }}{% endif %}
+        </div>
+      </div>
+
+      <i class="bi bi-chevron-right att-chevron"></i>
+
     </div>
-  </header>
+    {% endfor %}
+  </div>
+  {% endif %}
 
-  <!-- ── ATTENDANCE LIST ── -->
-  <main class="att-page">
-    {% include "partials/search_form.html" %}
-    <!-- ── NEEDS ATTENTION (expired / expiring soon / pending payment) ── -->
-    {% if alerts %}
-    <div class="alerts-wrap">
-      <div class="alerts-head">
-        <div class="alerts-title"><i class="bi bi-exclamation-triangle-fill"></i> Needs Attention</div>
-        <div class="alerts-count-badge">{{ alerts_count }}</div>
-      </div>
-      <div class="alerts-sub">Members who checked in today with an expired plan, a plan expiring soon, or a pending payment.</div>
+  <!-- ── SECTION TABS (Morning / Evening / etc.) ── -->
+  <div class="att-tabs" id="attTabs">
+    {% for section_name, section_icon, records in sections %}
+    <div class="att-tab {% if section_name == default_section %}active{% endif %}" data-tab="attTabPanel{{ forloop.counter }}">
+      {{ section_icon }} {{ section_name }} <span class="count">({{ records|length }})</span>
+    </div>
+    {% endfor %}
+    {% if previous_days %}
+    <div class="att-tab" data-tab="attTabPanelHistory">
+      🗓️ Attendance History <span class="count" id="historyTotalBadge">(0)</span>
+    </div>
+    {% endif %}
+  </div>
 
-      {% for r in alerts %}
-      <div class="att-card in-alerts {% if r.is_expired %}expired{% elif r.is_expiring_soon %}expiring{% endif %}" data-json="{{ r|data_json }}">
+  <!-- ── TAB PANELS ── -->
+  {% for section_name, section_icon, records in sections %}
+  <div class="att-tab-panel {% if section_name == default_section %}active{% endif %}" id="attTabPanel{{ forloop.counter }}">
+
+    {% if records %}
+      {% for r in records %}
+      <div class="att-card {% if r.is_expired %}expired{% elif r.is_expiring_soon %}expiring{% endif %}" data-json="{{ r|data_json }}">
+
+        <div class="att-time">
+          <div class="time-val">{{ r.time }}</div>
+          <div class="time-label">Check-In</div>
+        </div>
+        <div class="att-divider"></div>
 
         <div class="att-avatar-wrap">
           {% if r.image_url %}
@@ -533,18 +748,6 @@
         <div class="att-info">
           <div class="att-name">{{ r.name }}</div>
           <div class="att-uid">UID · {{ r.unique_id }}</div>
-          <div class="att-tags">
-            {% if r.is_expired %}
-              <span class="att-tag tag-expired"><i class="bi bi-x-circle"></i> Expired</span>
-            {% elif r.is_expiring_soon %}
-              <span class="att-tag tag-expiring"><i class="bi bi-hourglass-split"></i>
-                {% if r.days_remaining == 0 %}Expires Today{% elif r.days_remaining == 1 %}1 Day Left{% else %}{{ r.days_remaining }} Days Left{% endif %}
-              </span>
-            {% endif %}
-            {% if r.has_pending %}
-              <span class="att-tag tag-pending"><i class="bi bi-cash-coin"></i> Pending</span>
-            {% endif %}
-          </div>
         </div>
 
         <div class="att-meta">
@@ -562,205 +765,229 @@
 
       </div>
       {% endfor %}
-    </div>
+    {% else %}
+      <div class="att-empty-state">No {{ section_name|upper }} Check-Ins</div>
     {% endif %}
 
-    <!-- ── SECTION TABS (Morning / Evening / etc.) ── -->
-    <div class="att-tabs" id="attTabs">
-      {% for section_name, section_icon, records in sections %}
-      <div class="att-tab {% if forloop.first %}active{% endif %}" data-tab="attTabPanel{{ forloop.counter }}">
-        {{ section_icon }} {{ section_name }} <span class="count">({{ records|length }})</span>
+  </div>
+  {% endfor %}
+  {% if previous_days %}
+  <div class="att-tab-panel" id="attTabPanelHistory">
+
+    <div class="att-tabs" id="historyDayTabs">
+      {% for day in previous_days %}
+      <div class="att-tab" data-day-index="{{ forloop.counter0 }}">
+        {{ day.label }} <span class="count">({{ day.count }})</span>
       </div>
       {% endfor %}
-      {% if previous_days %}
-      <div class="att-tab" data-tab="attTabPanelHistory">
-        🗓️ Attendance History <span class="count" id="historyTotalBadge">(0)</span>
-      </div>
-      {% endif %}
     </div>
 
-    <!-- ── TAB PANELS ── -->
-    {% for section_name, section_icon, records in sections %}
-    <div class="att-tab-panel {% if forloop.first %}active{% endif %}" id="attTabPanel{{ forloop.counter }}">
-
-      {% if records %}
-        {% for r in records %}
-        <div class="att-card {% if r.is_expired %}expired{% elif r.is_expiring_soon %}expiring{% endif %}" data-json="{{ r|data_json }}">
-
-          <div class="att-time">
-            <div class="time-val">{{ r.time }}</div>
-            <div class="time-label">Check-In</div>
-          </div>
-          <div class="att-divider"></div>
-
-          <div class="att-avatar-wrap">
-            {% if r.image_url %}
-              <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy" />
-            {% else %}
-              <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
-            {% endif %}
-            {% if r.is_expired %}
-              <span class="att-alert-dot dot-red"></span>
-            {% elif r.is_expiring_soon %}
-              <span class="att-alert-dot dot-yellow"></span>
-            {% elif r.has_pending %}
-              <span class="att-alert-dot dot-orange"></span>
-            {% endif %}
-          </div>
-
-          <div class="att-info">
-            <div class="att-name">{{ r.name }}</div>
-            <div class="att-uid">UID · {{ r.unique_id }}</div>
-          </div>
-
-          <div class="att-meta">
-            {% if r.pending_amount > 0 %}
-              <div class="att-pending has-pending">₹{{ r.pending_amount|floatformat:0 }}</div>
-            {% else %}
-              <div class="att-pending"></div>
-            {% endif %}
-            <div class="att-due {% if r.is_expired %}expired-tag{% elif r.is_expiring_soon %}expiring-tag{% endif %}">
-              {% if r.is_expired %}EXPIRED{% else %}{{ r.due_date }}{% endif %}
-            </div>
-          </div>
-
-          <i class="bi bi-chevron-right att-chevron"></i>
-
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="empty-state">No {{ section_name|upper }} Check-Ins</div>
-      {% endif %}
-
-    </div>
-    {% endfor %}
-    {% if previous_days %}
-    <div class="att-tab-panel" id="attTabPanelHistory">
-
-      <div class="att-tabs" id="historyDayTabs">
-        {% for day in previous_days %}
-        <div class="att-tab" data-day-index="{{ forloop.counter0 }}">
-          {{ day.label }} <span class="count">({{ day.count }})</span>
-        </div>
-        {% endfor %}
-      </div>
-
-      <div id="historyCardsContainer">
-        <div class="empty-state">Select a day above</div>
-      </div>
-
+    <div id="historyCardsContainer">
+      <div class="att-empty-state">Select a day above</div>
     </div>
 
-    <script type="application/json" id="historyData">{{ previous_days_json|safe }}</script>
-    {% endif %}
-  </main>
-
-  <!-- ── SLIDE PANEL BACKDROP ── -->
-  <div class="panel-backdrop" id="panelBackdrop"></div>
-
-  <!-- ── SLIDE PANEL ── -->
-  <div class="slide-panel" id="slidePanel" aria-modal="true" role="dialog" aria-label="Member detail">
-    <div class="panel-head">
-      <button class="panel-close" id="panelClose" aria-label="Close">
-        <i class="bi bi-x"></i>
-      </button>
-      <div class="panel-avatar-row">
-        <img class="panel-avatar" id="pAvatar" src="" alt="" style="display:none" />
-        <div class="panel-avatar-ph" id="pAvatarPh"></div>
-        <div>
-          <div class="panel-uid"  id="pUid"></div>
-          <div class="panel-name" id="pName"></div>
-        </div>
-      </div>
-      <div class="panel-accent"></div>
-    </div>
-
-    <div class="panel-body">
-
-      <!-- Alert banner: shown only when the member has an active issue -->
-      <div class="panel-alert-banner" id="pAlertBanner">
-        <i class="bi bi-exclamation-triangle-fill" id="pAlertIcon"></i>
-        <div>
-          <strong id="pAlertTitle"></strong>
-          <span id="pAlertText"></span>
-        </div>
-      </div>
-
-      <div class="panel-actions">
-        <a class="panel-action-btn primary" id="pCallBtn" href="#">
-          <i class="bi bi-telephone-fill"></i> Call
-        </a>
-        <a class="panel-action-btn" id="pWhatsappBtn" href="#" target="_blank" rel="noopener">
-          <i class="bi bi-whatsapp"></i> WhatsApp
-        </a>
-      </div>
-
-      <div class="panel-section-title">Personal</div>
-      <div class="detail-grid">
-        <div class="detail-item">
-          <div class="detail-label">Phone</div>
-          <div class="detail-value" id="pPhone"></div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Gender</div>
-          <div class="detail-value" id="pGender"></div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Joined</div>
-          <div class="detail-value" id="pDoj"></div>
-        </div>
-        <div class="detail-item full">
-          <div class="detail-label">Address</div>
-          <div class="detail-value" id="pAddress"></div>
-        </div>
-      </div>
-
-      <div class="panel-divider"></div>
-
-      <div class="panel-section-title">Membership</div>
-      <div class="detail-grid">
-        <div class="detail-item">
-          <div class="detail-label">Plan</div>
-          <div class="detail-value highlight" id="pPlan"></div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Plan Price</div>
-          <div class="detail-value" id="pPlanPrice"></div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Trainer</div>
-          <div class="detail-value" id="pTrainer"></div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Payment</div>
-          <div class="detail-value" id="pPayStatus"></div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Pending</div>
-          <div class="detail-value" id="pPending"></div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Expires</div>
-          <div class="detail-value" id="pDue"></div>
-        </div>
-        <div class="detail-item full">
-          <div class="detail-label">Days Remaining</div>
-          <div class="detail-value" id="pDays"></div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Payment Date</div>
-          <div class="detail-value" id="pPayDate"></div>
-        </div>
-      </div>
-
-    </div>
   </div>
-<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+
+  <script type="application/json" id="historyData">{{ previous_days_json|safe }}</script>
+  {% endif %}
+</div>
+
+<!-- ── SLIDE PANEL BACKDROP (shared by member detail + scan register) ── -->
+<div class="att-panel-backdrop" id="attPanelBackdrop"></div>
+
+<!-- ── SLIDE PANEL: MEMBER DETAIL ── -->
+<div class="att-slide-panel" id="attSlidePanel" aria-modal="true" role="dialog" aria-label="Member detail">
+  <div class="att-panel-head">
+    <button class="att-panel-close" id="attPanelClose" aria-label="Close">
+      <i class="bi bi-x"></i>
+    </button>
+    <div class="att-panel-avatar-row">
+      <img class="att-panel-avatar" id="pAvatar" src="" alt="" style="display:none" />
+      <div class="att-panel-avatar-ph" id="pAvatarPh"></div>
+      <div>
+        <div class="att-panel-uid"  id="pUid"></div>
+        <div class="att-panel-name" id="pName"></div>
+      </div>
+    </div>
+    <div class="att-panel-accent"></div>
+  </div>
+
+  <div class="att-panel-body">
+
+    <!-- Alert banner: shown only when the member has an active issue -->
+    <div class="att-panel-alert-banner" id="pAlertBanner">
+      <i class="bi bi-exclamation-triangle-fill" id="pAlertIcon"></i>
+      <div>
+        <strong id="pAlertTitle"></strong>
+        <span id="pAlertText"></span>
+      </div>
+    </div>
+
+    <div class="att-panel-actions">
+      <a class="att-panel-action-btn primary" id="pCallBtn" href="#">
+        <i class="bi bi-telephone-fill"></i> Call
+      </a>
+      <a class="att-panel-action-btn" id="pWhatsappBtn" href="#" target="_blank" rel="noopener">
+        <i class="bi bi-whatsapp"></i> WhatsApp
+      </a>
+    </div>
+
+    <div class="att-panel-section-title">Personal</div>
+    <div class="att-detail-grid">
+      <div class="att-detail-item">
+        <div class="att-detail-label">Phone</div>
+        <div class="att-detail-value" id="pPhone"></div>
+      </div>
+      <div class="att-detail-item">
+        <div class="att-detail-label">Gender</div>
+        <div class="att-detail-value" id="pGender"></div>
+      </div>
+      <div class="att-detail-item">
+        <div class="att-detail-label">Joined</div>
+        <div class="att-detail-value" id="pDoj"></div>
+      </div>
+      <div class="att-detail-item full">
+        <div class="att-detail-label">Address</div>
+        <div class="att-detail-value" id="pAddress"></div>
+      </div>
+    </div>
+
+    <div class="att-panel-divider"></div>
+
+    <div class="att-panel-section-title">Membership</div>
+    <div class="att-detail-grid">
+      <div class="att-detail-item">
+        <div class="att-detail-label">Plan</div>
+        <div class="att-detail-value highlight" id="pPlan"></div>
+      </div>
+      <div class="att-detail-item">
+        <div class="att-detail-label">Plan Price</div>
+        <div class="att-detail-value" id="pPlanPrice"></div>
+      </div>
+      <div class="att-detail-item">
+        <div class="att-detail-label">Trainer</div>
+        <div class="att-detail-value" id="pTrainer"></div>
+      </div>
+      <div class="att-detail-item">
+        <div class="att-detail-label">Payment</div>
+        <div class="att-detail-value" id="pPayStatus"></div>
+      </div>
+      <div class="att-detail-item">
+        <div class="att-detail-label">Pending</div>
+        <div class="att-detail-value" id="pPending"></div>
+      </div>
+      <div class="att-detail-item">
+        <div class="att-detail-label">Expires</div>
+        <div class="att-detail-value" id="pDue"></div>
+      </div>
+      <div class="att-detail-item full">
+        <div class="att-detail-label">Days Remaining</div>
+        <div class="att-detail-value" id="pDays"></div>
+      </div>
+      <div class="att-detail-item">
+        <div class="att-detail-label">Payment Date</div>
+        <div class="att-detail-value" id="pPayDate"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── SLIDE PANEL: SCAN ATTENDANCE REGISTER ── -->
+<div class="att-slide-panel wide" id="scanSlidePanel" aria-modal="true" role="dialog" aria-label="Scan attendance register">
+  <div class="att-panel-head">
+    <button class="att-panel-close" id="scanPanelClose" aria-label="Close">
+      <i class="bi bi-x"></i>
+    </button>
+    <div class="att-panel-name" style="font-size:1.3rem;">Scan Attendance Register</div>
+    <div class="att-alerts-sub" style="margin-top:6px;">Take one photo of today's register page. AI reads Unique IDs — you confirm before anything is saved.</div>
+    <div class="att-panel-accent"></div>
+  </div>
+
+  <div class="att-panel-body">
+
+    <!-- Always-visible error slot — independent of which state (upload /
+         image-preview / loading / row-preview) is currently shown, so a
+         failed upload that resets back to STATE 1 still displays why. -->
+    <div id="scanErrorBannerWrap" aria-live="assertive"></div>
+
+    <!-- STATE 1: upload -->
+    <div id="scanStateUpload">
+      <div class="scan-upload-zone" id="scanUploadZone" role="button" tabindex="0"
+           aria-label="Upload or drag a photo of the attendance register">
+        <i class="bi bi-camera-fill" aria-hidden="true"></i>
+        <div class="zone-title">Tap to Upload or Drag a Photo</div>
+        <div class="zone-sub">JPEG, PNG or WEBP · max 10MB</div>
+      </div>
+      <input type="file" id="scanFileInput" accept="image/jpeg,image/png,image/webp" capture="environment"
+             aria-label="Choose register photo" />
+    </div>
+
+    <!-- STATE 1b: confirm the selected photo before uploading -->
+    <div id="scanStateImagePreview" style="display:none;">
+      <div class="scan-image-preview-wrap">
+        <img id="scanPreviewImg" src="" alt="Selected register photo preview" />
+        <div id="scanQualityWarnWrap"></div>
+        <div class="scan-image-preview-actions">
+          <button type="button" class="att-panel-action-btn" id="btnRotatePhoto">
+            <i class="bi bi-arrow-clockwise"></i> Rotate  
+          </button>
+          <button type="button" class="att-panel-action-btn" id="btnRetakePhoto">
+            <i class="bi bi-arrow-counterclockwise"></i> Retake
+          </button>
+          <button type="button" class="att-panel-action-btn primary" id="btnConfirmUpload">
+            <i class="bi bi-cloud-upload"></i> Upload &amp; Scan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATE 2: loading -->
+    <div id="scanStateLoading" style="display:none;">
+      <div class="scan-loading" role="status" aria-live="polite">
+        <div class="scan-spinner" aria-hidden="true"></div>
+        <div class="loading-text">Reading the register…</div>
+      </div>
+    </div>
+
+    <!-- STATE 3: editable preview -->
+    <div id="scanStatePreview" style="display:none;">
+
+      <div id="scanQualityWarnWrap2"></div>
+      <div id="scanResultBannerWrap" aria-live="polite"></div>
+
+      <div class="scan-summary-bar">
+        <div class="scan-stat"><div class="n" id="scanStatAi">0</div><div class="l">AI Detected</div></div>
+        <div class="scan-stat"><div class="n" id="scanStatManual">0</div><div class="l">Manual</div></div>
+        <div class="scan-stat errors" id="scanStatErrorsWrap"><div class="n" id="scanStatErrors">0</div><div class="l">Errors</div></div>
+      </div>
+
+      <div class="scan-row-list" id="scanRowList" role="list" aria-label="Detected attendance rows"></div>
+
+      <button type="button" class="scan-add-manual-btn" id="btnAddManualRow">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Add Attendance
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="scan-panel-footer" id="scanFooterPreview" style="display:none;">
+    <button type="button" class="att-panel-action-btn" id="btnScanAgain">
+      <i class="bi bi-arrow-counterclockwise"></i> Scan Again
+    </button>
+    <button type="button" class="att-panel-action-btn primary" id="btnSaveAttendance">
+      <i class="bi bi-check2-circle"></i> Save Attendance
+    </button>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
 <script nonce="{{ request.csp_nonce }}">
 (function () {
-  const panel    = document.getElementById('slidePanel');
-  const backdrop = document.getElementById('panelBackdrop');
-  const closeBtn = document.getElementById('panelClose');
+  const panel    = document.getElementById('attSlidePanel');
+  const backdrop = document.getElementById('attPanelBackdrop');
+  const closeBtn = document.getElementById('attPanelClose');
 
   document.addEventListener('click', function (e) {
     const card = e.target.closest('.att-card');
@@ -811,7 +1038,6 @@
       text.textContent  = bodyText;
     }
   }
-
   function openPanel(r) {
     const img = document.getElementById('pAvatar');
     const ph  = document.getElementById('pAvatarPh');
@@ -838,21 +1064,21 @@
 
     const ps = document.getElementById('pPayStatus');
     ps.textContent = r.payment_status || '—';
-    ps.className   = 'detail-value ' + (r.payment_status === 'Done' ? 'success' : 'danger');
+    ps.className   = 'att-detail-value ' + (r.payment_status === 'Done' ? 'success' : 'danger');
 
     const pend = document.getElementById('pPending');
     pend.textContent = r.pending_amount != null ? '₹' + r.pending_amount : '—';
-    pend.className   = 'detail-value ' + (r.pending_amount > 0 ? 'danger' : 'success');
+    pend.className   = 'att-detail-value ' + (r.pending_amount > 0 ? 'danger' : 'success');
 
     const due = document.getElementById('pDue');
     due.textContent = r.due_date || '—';
-    due.className   = 'detail-value ' + (r.is_expired ? 'danger' : r.is_expiring_soon ? 'warning' : '');
+    due.className   = 'att-detail-value ' + (r.is_expired ? 'danger' : r.is_expiring_soon ? 'warning' : '');
 
     const days = document.getElementById('pDays');
     days.textContent = r.is_expired             ? 'EXPIRED'
                      : r.days_remaining != null  ? r.days_remaining + ' days'
                      : '—';
-    days.className = 'detail-value ' + (
+    days.className = 'att-detail-value ' + (
       r.is_expired            ? 'danger'  :
       r.is_expiring_soon      ? 'warning' :
       r.days_remaining <= 5   ? 'highlight' : 'success'
@@ -901,8 +1127,13 @@ function bindTabGroup(tabSelector) {
   const tabs = document.querySelectorAll(tabSelector);
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      document.getElementById(tab.dataset.tab)?.classList.remove('active');
+      // Clear 'active' from every tab AND every panel in this group first —
+      // not just the one being clicked — so a previously-opened panel
+      // (e.g. Attendance History) can't stay visible after switching away.
+      tabs.forEach(t => {
+        t.classList.remove('active');
+        document.getElementById(t.dataset.tab)?.classList.remove('active');
+      });
       tab.classList.add('active');
       document.getElementById(tab.dataset.tab)?.classList.add('active');
     });
@@ -955,7 +1186,7 @@ bindTabGroup('#attTabs .att-tab');
 
     container.innerHTML = records.length
       ? records.map(cardHtml).join('')
-      : '<div class="empty-state">No Check-Ins</div>';
+      : '<div class="att-empty-state">No Check-Ins</div>';
 
     if (totalBadge) totalBadge.textContent = `(${records.length})`;
   }
@@ -968,7 +1199,6 @@ bindTabGroup('#attTabs .att-tab');
     });
   });
 
-  // "Previous Attendance" tab open hone par default sabse recent din (18th) dikhao
   const historyMainTab = document.querySelector('.att-tab[data-tab="attTabPanelHistory"]');
   let historyLoaded = false;
   if (historyMainTab) {
@@ -980,7 +1210,746 @@ bindTabGroup('#attTabs .att-tab');
     });
   }
 })();
-</script>
 
-</body>
-</html>
+/* ══════════════════════════════════════════════════════════════
+   SCAN ATTENDANCE REGISTER
+   Photo → AI Vision → Editable Preview → Validation → existing
+   attendance service (mark_attendance, via /register-scan/save/).
+   No parallel attendance-writing logic lives in this file.
+
+   NOTE: "time" has been removed from this flow end-to-end — rows
+   only carry unique_id (+ match info + confidence). Attendance is
+   stamped "now" server-side. This cuts what the AI has to read per
+   row, which speeds up the scan.
+   ══════════════════════════════════════════════════════════════ */
+(function () {
+  const openBtn = document.getElementById('btnOpenScanPanel');
+  if (!openBtn) return;  // panel/button not rendered for this role
+
+  const panel     = document.getElementById('scanSlidePanel');
+  const backdrop  = document.getElementById('attPanelBackdrop');
+  const closeBtn  = document.getElementById('scanPanelClose');
+
+  const stateUpload      = document.getElementById('scanStateUpload');
+  const stateImgPreview  = document.getElementById('scanStateImagePreview');
+  const stateLoading     = document.getElementById('scanStateLoading');
+  const statePreview     = document.getElementById('scanStatePreview');
+  const footerPreview    = document.getElementById('scanFooterPreview');
+
+  const uploadZone = document.getElementById('scanUploadZone');
+  const fileInput  = document.getElementById('scanFileInput');
+
+  const previewImg      = document.getElementById('scanPreviewImg');
+  const qualityWarnWrap  = document.getElementById('scanQualityWarnWrap');
+  const qualityWarnWrap2 = document.getElementById('scanQualityWarnWrap2');
+  const btnRetake  = document.getElementById('btnRetakePhoto');
+  const btnConfirm = document.getElementById('btnConfirmUpload');
+
+  const rowList         = document.getElementById('scanRowList');
+  const statAi           = document.getElementById('scanStatAi');
+  const statManual        = document.getElementById('scanStatManual');
+  const statErrors        = document.getElementById('scanStatErrors');
+  const statErrorsWrap    = document.getElementById('scanStatErrorsWrap');
+  const errorBannerWrap    = document.getElementById('scanErrorBannerWrap');
+  const resultBannerWrap   = document.getElementById('scanResultBannerWrap');
+
+  const btnAddManual = document.getElementById('btnAddManualRow');
+  const btnScanAgain = document.getElementById('btnScanAgain');
+  const btnSave       = document.getElementById('btnSaveAttendance');
+
+  let rows = [];             // in-memory row state — the single source of truth
+  let rowIdCounter = 0;
+  let currentErrors = {};    // {client_id: [msgs]}
+  let currentImportId = null; // set after /upload/, sent back on /save/ to finalize the same audit row
+  let selectedFile = null;
+  let processedBlob = null;
+  let searchDebounceTimer = null;
+
+  function getCookie(name) {
+    return document.cookie.split(';').map(c => c.trim())
+      .find(c => c.startsWith(name + '='))?.split('=')[1] ?? '';
+  }
+  function csrfHeaders(extra) {
+    return Object.assign({ 'X-CSRFToken': getCookie('csrftoken') }, extra || {});
+  }
+
+  function openScanPanel() {
+    resetPanel();
+    panel.classList.add('open');
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    uploadZone.focus();  // a11y: land focus inside the panel on open
+  }
+  function closeScanPanel() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+    openBtn.focus();  // a11y: return focus to the trigger on close
+  }
+  function resetPanel() {
+    rows = []; rowIdCounter = 0; currentErrors = {}; currentImportId = null; selectedFile = null;processedBlob = null;rotationDegrees = 0;
+    stateUpload.style.display = 'block';
+    stateImgPreview.style.display = 'none';
+    stateLoading.style.display = 'none';
+    statePreview.style.display = 'none';
+    footerPreview.style.display = 'none';
+    errorBannerWrap.innerHTML = '';
+    resultBannerWrap.innerHTML = '';
+    qualityWarnWrap.innerHTML = '';
+    qualityWarnWrap2.innerHTML = '';
+    fileInput.value = '';
+
+  }
+
+  openBtn.addEventListener('click', openScanPanel);
+  closeBtn.addEventListener('click', closeScanPanel);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && panel.classList.contains('open')) closeScanPanel();
+  });
+
+  // ── Upload zone: click + keyboard + drag/drop ───────────────
+  uploadZone.addEventListener('click', () => fileInput.click());
+  uploadZone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+  });
+  uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) showImagePreview(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files[0]) showImagePreview(fileInput.files[0]);
+  });
+
+  btnRetake.addEventListener('click', () => {
+    selectedFile = null;
+    processedBlob = null;
+    rotationDegrees = 0;
+    fileInput.value = '';
+    stateImgPreview.style.display = 'none';
+    stateUpload.style.display = 'block';
+    uploadZone.focus();
+  });
+
+  btnConfirm.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    stateImgPreview.style.display = 'none';
+    stateLoading.style.display = 'block';
+
+    try {
+      await uploadImage(processedBlob || selectedFile);
+    } catch (err) {
+      console.error('Upload failed', err);
+      showErrorBanner('Network error while uploading. Please try again.');
+      stateLoading.style.display = 'none';
+      stateUpload.style.display = 'block';
+    }
+  });
+
+  // ── STATE 1b: confirm the photo before it's ever uploaded ───
+  const btnRotate = document.getElementById('btnRotatePhoto');
+  let rotationDegrees = 0;  // user-controlled, 0/90/180/270
+
+  btnRotate.addEventListener('click', async () => {
+    rotationDegrees = (rotationDegrees + 90) % 360;
+    await refreshPreview();
+  });
+
+  async function refreshPreview() {
+    previewImg.alt = 'Processing photo…';
+    try {
+      processedBlob = await preprocessImage(selectedFile, rotationDegrees);
+      previewImg.src = URL.createObjectURL(processedBlob);
+      previewImg.alt = 'Selected register photo preview (preprocessed)';
+    } catch (err) {
+      console.error('Preprocess failed', err);
+      processedBlob = null;
+      previewImg.src = URL.createObjectURL(selectedFile);
+    }
+  }
+
+  async function showImagePreview(file) {
+    selectedFile = file;
+    rotationDegrees = 0;
+    qualityWarnWrap.innerHTML = '';
+    stateUpload.style.display = 'none';
+    stateImgPreview.style.display = 'block';
+    await refreshPreview();
+    btnConfirm.focus();
+  }
+
+  // ── Client-side preprocessing: EXIF-safe rotate, resize, compress,
+  //    grayscale + contrast + sharpen ──
+  // Runs entirely in-browser before the photo ever leaves the device —
+  // improves OCR accuracy on handwritten digits and shrinks the upload for
+  // slow gym-floor wifi. No amount of preprocessing fixes a genuinely
+  // ambiguous stroke (a badly-formed 5 can still read as 9 to a human too),
+  // but grayscale + real edge sharpening measurably cuts down misreads
+  // versus the flat photo the camera hands us.
+  async function preprocessImage(file, extraRotationDeg = 0) {
+    const MAX_DIMENSION = 1800;
+    const JPEG_QUALITY = 0.9;
+
+    let bitmap;
+    try {
+      bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch (_) {
+      bitmap = await createImageBitmap(file);
+    }
+
+    const autoLandscapeRotate = bitmap.width > bitmap.height ? 90 : 0;
+    const totalRotation = (autoLandscapeRotate + extraRotationDeg) % 360;
+
+    const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const srcW = Math.round(bitmap.width * scale);
+    const srcH = Math.round(bitmap.height * scale);
+
+    // canvas swaps dimensions for 90/270, stays the same for 0/180
+    const swapped = totalRotation === 90 || totalRotation === 270;
+    const canvasW = swapped ? srcH : srcW;
+    const canvasH = swapped ? srcW : srcH;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasW; canvas.height = canvasH;
+    const ctx = canvas.getContext('2d');
+
+    try {
+      ctx.filter = 'grayscale(1) contrast(1.35) brightness(1.06)';
+    } catch (_) {}
+
+    ctx.save();
+    switch (totalRotation) {
+      case 90:
+        ctx.translate(canvasW, 0);
+        ctx.rotate(Math.PI / 2);
+        break;
+      case 180:
+        ctx.translate(canvasW, canvasH);
+        ctx.rotate(Math.PI);
+        break;
+      case 270:
+        ctx.translate(0, canvasH);
+        ctx.rotate(-Math.PI / 2);
+        break;
+    }
+    ctx.drawImage(bitmap, 0, 0, srcW, srcH);
+    ctx.restore();
+
+    try {
+      sharpenCanvas(ctx, canvasW, canvasH);
+    } catch (_) {}
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob); else reject(new Error('toBlob failed'));
+      }, 'image/jpeg', JPEG_QUALITY);
+    });
+  }
+
+  // 3x3 unsharp-mask convolution, applied in place on the canvas context.
+  // Kernel: [0,-1,0, -1,5,-1, 0,-1,0] — standard sharpen, strong enough to
+  // matter on phone-camera photos without introducing visible ringing.
+  function sharpenCanvas(ctx, w, h) {
+    const src = ctx.getImageData(0, 0, w, h);
+    const srcData = src.data;
+    const out = ctx.createImageData(w, h);
+    const outData = out.data;
+    const kernel = [0, -1, 0, -1, 5, -1, 0, -1, 0];
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        for (let c = 0; c < 3; c++) {  // R, G, B — skip alpha
+          let sum = 0;
+          let k = 0;
+          for (let ky = -1; ky <= 1; ky++) {
+            for (let kx = -1; kx <= 1; kx++) {
+              const sx = Math.min(w - 1, Math.max(0, x + kx));
+              const sy = Math.min(h - 1, Math.max(0, y + ky));
+              sum += srcData[(sy * w + sx) * 4 + c] * kernel[k++];
+            }
+          }
+          outData[(y * w + x) * 4 + c] = Math.min(255, Math.max(0, sum));
+        }
+        outData[(y * w + x) * 4 + 3] = srcData[(y * w + x) * 4 + 3];  // alpha unchanged
+      }
+    }
+    ctx.putImageData(out, 0, 0);
+  }
+
+  async function uploadImage(blob) {
+    const formData = new FormData();
+    formData.append('image', blob, 'register.jpg');
+
+    const res = await fetch('/owner/attendance/register-scan/upload/', {
+      method: 'POST',
+      headers: csrfHeaders(),
+      credentials: 'include',
+      body: formData,
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      showErrorBanner(data.error || 'Could not read the register. Please retake the photo.');
+      stateLoading.style.display = 'none';
+      stateUpload.style.display = 'block';
+      return;
+    }
+
+    currentImportId = data.import_id || null;
+
+    rows = data.rows.map(r => ({
+      client_id: r.client_id || ('ai-' + (rowIdCounter++)),
+      source: 'ai',
+      unique_id: r.unique_id,
+      member_name: r.member_name || '',
+      matched: !!r.matched,
+      confidence: r.confidence != null ? r.confidence : null,
+      confidence_tier: r.confidence_tier || null,
+      needs_review: !!r.needs_review,
+    }));
+    rowIdCounter = rows.length;
+
+    renderQualityWarnings(data.quality_warnings || [], qualityWarnWrap2);
+
+    renderPreview();
+    revalidate();
+
+    stateLoading.style.display = 'none';
+    statePreview.style.display = 'block';
+    footerPreview.style.display = 'flex';
+  }
+
+  function renderQualityWarnings(warnings, target) {
+    target.innerHTML = '';
+    warnings.forEach(msg => {
+      const div = document.createElement('div');
+      div.className = 'scan-warn-banner';
+      div.setAttribute('role', 'alert');
+      div.innerHTML = '<i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i><span></span>';
+      div.querySelector('span').textContent = msg;
+      target.appendChild(div);
+    });
+  }
+
+  function showErrorBanner(msg) {
+    errorBannerWrap.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'scan-error-banner';
+    div.setAttribute('role', 'alert');
+    div.innerHTML = '<i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i><span></span>';
+    div.querySelector('span').textContent = msg;
+    errorBannerWrap.appendChild(div);
+  }
+  function showResultSummary(summary) {
+    resultBannerWrap.innerHTML = '';
+    const wrap = document.createElement('div');
+
+    const title = document.createElement('div');
+    title.className = 'scan-result-banner';
+    title.textContent = 'Import Complete';
+    wrap.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'scan-import-summary';
+    const items = [
+      ['Saved', summary.saved, 'good'],
+      ['Already Present', summary.already_present, ''],
+      ['Needs Review', summary.needs_review, summary.needs_review ? 'warn' : 'good'],
+      ['Manual Entries', summary.manual_entries, ''],
+      ['AI Entries', summary.ai_entries, ''],
+    ];
+    items.forEach(([label, n, cls]) => {
+      const item = document.createElement('div');
+      item.className = 'isum-item' + (cls ? ' ' + cls : '');
+      item.innerHTML = `<div class="isum-n">${n}</div><div class="isum-l">${label}</div>`;
+      grid.appendChild(item);
+    });
+    wrap.appendChild(grid);
+    resultBannerWrap.appendChild(wrap);
+  }
+
+  // ── Add manual row ───────────────────────────────────────────
+  btnAddManual.addEventListener('click', () => {
+    rows.push({
+      client_id: 'manual-' + (rowIdCounter++),
+      source: 'manual',
+      unique_id: '',
+      member_name: '',
+      matched: false,
+      confidence: null,
+      confidence_tier: null,
+      needs_review: false,
+    });
+    statePreview.style.display = 'block';
+    footerPreview.style.display = 'flex';
+    renderPreview();
+    // focus the newly added row's ID field for fast keyboard entry
+    const last = rowList.querySelector('.scan-row:last-child .scan-field.uid');
+    if (last) last.focus();
+  });
+
+  // ── Scan again ────────────────────────────────────────────────
+  btnScanAgain.addEventListener('click', () => {
+    resetPanel();
+  });
+
+  // ── Render the editable row list (full rebuild — used only on
+  //    structural changes: upload, add, delete) ───────────────
+  function renderPreview() {
+    rowList.innerHTML = '';
+
+    rows.forEach(row => {
+      const errs = currentErrors[row.client_id] || [];
+      const el = buildRowElement(row, errs);
+      rowList.appendChild(el);
+    });
+
+    updateSummaryStats();
+  }
+
+  function updateSummaryStats() {
+    statAi.textContent = String(rows.filter(r => r.source === 'ai').length);
+    statManual.textContent = String(rows.filter(r => r.source === 'manual').length);
+    const errCount = Object.keys(currentErrors).filter(cid => rows.some(r => r.client_id === cid)).length;
+    statErrors.textContent = String(errCount);
+    statErrorsWrap.classList.toggle('zero', errCount === 0);
+  }
+
+  // ── Incremental patch — updates ONLY the icon + error text of rows
+  //    that already exist in the DOM, without rebuilding the list.
+  //    Used after live validation so typing/searching in a 100-row
+  //    import stays responsive instead of re-rendering everything. ──
+  function patchRowStatuses() {
+    rows.forEach(row => {
+      const el = rowList.querySelector(`.scan-row[data-client-id="${cssEscape(row.client_id)}"]`);
+      if (!el) return;
+      const errs = currentErrors[row.client_id] || [];
+
+      el.classList.toggle('has-error', errs.length > 0);
+      el.classList.toggle('matched-ok', errs.length === 0 && row.matched);
+
+      const icon = el.querySelector('.scan-row-icon');
+      if (icon) icon.textContent = statusEmoji(row, errs);
+
+      let errWrap = el.querySelector('.scan-row-errors');
+      if (errs.length) {
+        if (!errWrap) {
+          errWrap = document.createElement('div');
+          errWrap.className = 'scan-row-errors';
+          el.appendChild(errWrap);
+        }
+        errWrap.innerHTML = '';
+        errs.forEach(msg => {
+          const d = document.createElement('div');
+          d.textContent = '⚠ ' + msg;
+          errWrap.appendChild(d);
+        });
+      } else if (errWrap) {
+        errWrap.remove();
+      }
+    });
+    updateSummaryStats();
+  }
+
+  function cssEscape(s) {
+    return window.CSS && CSS.escape ? CSS.escape(s) : s.replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+  }
+
+  function statusEmoji(row, errs) {
+    if (errs.length) return '🔴';
+    if (row.needs_review || row.confidence_tier === 'low') return '🟡';
+    if (row.matched) return '🟢';
+    return '🟡';
+  }
+
+  function buildRowElement(row, errs) {
+    const wrap = document.createElement('div');
+    wrap.className = 'scan-row' + (errs.length ? ' has-error' : row.matched ? ' matched-ok' : '');
+    wrap.dataset.clientId = row.client_id;
+    wrap.setAttribute('role', 'listitem');
+
+    const top = document.createElement('div');
+    top.className = 'scan-row-top';
+
+    // status icon
+    const icon = document.createElement('span');
+    icon.className = 'scan-row-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = statusEmoji(row, errs);
+    top.appendChild(icon);
+
+    // unique id field
+    const uidInput = document.createElement('input');
+    uidInput.type = 'text';
+    uidInput.className = 'scan-field uid';
+    uidInput.id = 'scan-uid-' + row.client_id;
+    uidInput.name = 'scan-uid-' + row.client_id;
+    uidInput.placeholder = 'ID';
+    uidInput.setAttribute('aria-label', 'Unique ID');
+    uidInput.autocomplete = 'off';
+    uidInput.value = row.unique_id;
+    uidInput.addEventListener('input', () => {
+      row.unique_id = uidInput.value.trim();
+      row.matched = false; row.member_name = ''; row.confidence = null; row.confidence_tier = null;
+      debounceRevalidate();
+      lookupByUid(row);
+    });
+    top.appendChild(uidInput);
+
+    // member name / search
+    if (row.matched) {
+      const nameDisplay = document.createElement('input');
+      nameDisplay.type = 'text';
+      nameDisplay.className = 'scan-field name-display';
+      nameDisplay.id = 'scan-name-' + row.client_id;
+      nameDisplay.name = 'scan-name-' + row.client_id;
+      nameDisplay.setAttribute('aria-label', 'Matched member name');
+      nameDisplay.autocomplete = 'off';
+      nameDisplay.value = row.member_name;
+      nameDisplay.readOnly = true;
+      top.appendChild(nameDisplay);
+    } else {
+      const searchWrap = document.createElement('div');
+      searchWrap.className = 'scan-row-search-wrap';
+
+      const searchInput = document.createElement('input');
+      searchInput.type = 'text';
+      searchInput.className = 'scan-field name-display';
+      searchInput.id = 'scan-search-' + row.client_id;
+      searchInput.name = 'scan-search-' + row.client_id;
+      searchInput.placeholder = 'Search member by name, ID or phone…';
+      searchInput.setAttribute('aria-label', 'Search for the correct member');
+      searchInput.autocomplete = 'off';
+      searchInput.value = row.member_name;
+
+      const dropdown = document.createElement('div');
+      dropdown.className = 'scan-member-dropdown';
+      dropdown.setAttribute('role', 'listbox');
+
+      searchInput.addEventListener('input', () => {
+        const q = searchInput.value.trim();
+        clearTimeout(searchDebounceTimer);
+        if (q.length < 1) { dropdown.classList.remove('open'); dropdown.innerHTML = ''; return; }
+        searchDebounceTimer = setTimeout(() => searchMembers(q, dropdown, row), 250);
+      });
+      searchInput.addEventListener('blur', () => {
+        setTimeout(() => dropdown.classList.remove('open'), 150);
+      });
+
+      searchWrap.appendChild(searchInput);
+      searchWrap.appendChild(dropdown);
+      top.appendChild(searchWrap);
+    }
+
+    // confidence badge (AI rows only)
+    if (row.source === 'ai' && row.confidence != null) {
+      const conf = document.createElement('span');
+      const tier = row.confidence_tier || 'low';
+      conf.className = 'scan-confidence ' + tier;
+      conf.textContent = Math.round(row.confidence * 100) + '%';
+      conf.title = 'AI confidence: ' + Math.round(row.confidence * 100) + '%';
+      top.appendChild(conf);
+    }
+
+    // source badge
+    const badge = document.createElement('span');
+    badge.className = 'scan-row-badge' + (row.source === 'manual' ? ' manual' : '');
+    badge.textContent = row.source === 'manual' ? '✍ Manual' : '🤖 AI';
+    top.appendChild(badge);
+
+    // delete
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'scan-row-delete';
+    delBtn.setAttribute('aria-label', 'Remove this row');
+    delBtn.innerHTML = '<i class="bi bi-trash3" aria-hidden="true"></i>';
+    delBtn.addEventListener('click', () => {
+      rows = rows.filter(r => r.client_id !== row.client_id);
+      delete currentErrors[row.client_id];
+      renderPreview();
+    });
+    top.appendChild(delBtn);
+
+    wrap.appendChild(top);
+
+    if (errs.length) {
+      const errWrap = document.createElement('div');
+      errWrap.className = 'scan-row-errors';
+      errs.forEach(msg => {
+        const d = document.createElement('div');
+        d.textContent = '⚠ ' + msg;
+        errWrap.appendChild(d);
+      });
+      wrap.appendChild(errWrap);
+    }
+
+    return wrap;
+  }
+
+  async function lookupByUid(row) {
+    // If the typed ID exactly matches a member, auto-fill without requiring
+    // the dropdown — mirrors how the AI-matched rows behave.
+    if (!row.unique_id) return;
+    try {
+      const res = await fetch('/owner/attendance/register-scan/search-members/?q=' + encodeURIComponent(row.unique_id), {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const exact = data.results.find(m => m.unique_id === row.unique_id);
+        if (exact) {
+          row.matched = true;
+          row.member_name = exact.name;
+          row.unique_id = exact.unique_id;
+          renderPreview();
+          debounceRevalidate();
+        }
+      }
+    } catch (_) { /* silent — manual entry still works without this */ }
+  }
+
+  async function searchMembers(query, dropdown, row) {
+    try {
+      const res = await fetch('/owner/attendance/register-scan/search-members/?q=' + encodeURIComponent(query), {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      dropdown.innerHTML = '';
+      if (!data.ok || !data.results.length) {
+        dropdown.classList.remove('open');
+        return;
+      }
+      data.results.forEach((m, i) => {
+        const opt = document.createElement('div');
+        opt.className = 'scan-member-option';
+        opt.setAttribute('role', 'option');
+        opt.setAttribute('tabindex', '-1');
+        opt.innerHTML = `${m.name} <span class="uid-sub">#${m.unique_id} · ${m.phone}</span>`;
+        opt.addEventListener('mousedown', () => {
+          row.unique_id = m.unique_id;
+          row.member_name = m.name;
+          row.matched = true;
+          renderPreview();
+          debounceRevalidate();
+        });
+        dropdown.appendChild(opt);
+      });
+      dropdown.classList.add('open');
+    } catch (_) { /* silent */ }
+  }
+
+  // ── Live validation (debounced) — patches rows in place, no rebuild ──
+  let revalidateTimer = null;
+  function debounceRevalidate() {
+    clearTimeout(revalidateTimer);
+    revalidateTimer = setTimeout(revalidate, 400);
+  }
+
+  async function revalidate() {
+    if (!rows.length) { currentErrors = {}; updateSummaryStats(); return; }
+    try {
+      const res = await fetch('/owner/attendance/register-scan/validate/', {
+        method: 'POST',
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'include',
+        body: JSON.stringify({ rows: rows.map(serializeRow) }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        currentErrors = data.errors || {};
+        patchRowStatuses();  // ← incremental, not renderPreview()
+      }
+    } catch (_) { /* network hiccup — save-time validation is authoritative anyway */ }
+  }
+
+  function serializeRow(r) {
+    return { client_id: r.client_id, unique_id: r.unique_id, source: r.source };
+  }
+
+  // ── Save ──────────────────────────────────────────────────────
+  btnSave.addEventListener('click', async () => {
+    if (!rows.length) return;
+    btnSave.disabled = true;
+    btnSave.setAttribute('aria-disabled', 'true');
+    const originalHtml = btnSave.innerHTML;
+    btnSave.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i> Saving…';
+
+    try {
+      const res = await fetch('/owner/attendance/register-scan/save/', {
+        method: 'POST',
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'include',
+        body: JSON.stringify({ rows: rows.map(serializeRow), import_id: currentImportId }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        showErrorBanner(data.error || 'Could not save attendance. Please try again.');
+        return;
+      }
+
+      currentErrors = data.errors || {};
+      showResultSummary(data.summary || {
+        saved: data.saved_count, already_present: data.exists_count,
+        needs_review: data.failed_count, manual_entries: 0, ai_entries: 0,
+      });
+
+      // Keep ONLY rows that still need correction — saved / already-present
+      // rows are removed so the owner never has to scroll past them again.
+      rows = rows.filter(r => currentErrors[r.client_id]);
+      renderPreview();
+
+      if (rows.length === 0) {
+        setTimeout(() => {
+          closeScanPanel();
+          window.location.reload();
+        }, 1400);
+      }
+
+    } catch (err) {
+      console.error('Register scan save failed', err);
+      showErrorBanner('Network error while saving. Please try again.');
+    } finally {
+      btnSave.disabled = false;
+      btnSave.removeAttribute('aria-disabled');
+      btnSave.innerHTML = originalHtml;
+    }
+  });
+})();
+
+/* ── Progressive search reveal (this page only) ─────────────────
+   Search input + Search/Reset stay hidden until the Name dropdown
+   is used, or there's already an active search term on load. */
+(function () {
+  const form = document.querySelector('.att-page form.search-bar');
+  if (!form) return;
+
+  const select   = form.querySelector('.search-select');
+  const input    = form.querySelector('.search-input');
+  const btnGroup = form.querySelector('.search-btn-group');
+  if (!select || !input || !btnGroup) return;
+
+  function reveal() {
+    input.classList.remove('search-hidden');
+    btnGroup.classList.remove('search-hidden');
+  }
+
+  if (input.value.trim().length > 0) {
+    reveal();  // an active search is already applied — don't hide it away
+  } else {
+    input.classList.add('search-hidden');
+    btnGroup.classList.add('search-hidden');
+    select.addEventListener('focus', reveal);
+    select.addEventListener('click', reveal);
+    select.addEventListener('change', reveal);
+    select.addEventListener('keydown', reveal);
+  }
+})();
+</script>
+<script nonce="{{ request.csp_nonce }}">
+  window.DUM_PAGE_ID   = "attendance_history";
+  window.DUM_PAGE_MODE = "auto";
+</script>
+{% endblock %}

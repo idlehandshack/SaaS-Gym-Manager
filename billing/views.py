@@ -12,12 +12,15 @@ Minimal views wired into billing/urls.py.
 """
 import json
 from datetime import date, datetime
-
+from django.contrib.auth.decorators import login_required
+from AuthFit.permissions import permission_required
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
+import logging
 
+logger = logging.getLogger(__name__)
 from billing.models import Invoice, Payment
 from billing.services.gst_report import generate_gstr1_style_report
 from billing.services.invoice_generator import create_invoice_for_payment
@@ -185,4 +188,45 @@ def create_payment_view(request):
         'invoice_number': invoice.invoice_number,
         'pdf_url': invoice.pdf_url or '',
         'grand_total': str(invoice.grand_total),
+    })
+
+@login_required
+@permission_required("can_refund_payment")
+@require_POST
+def issue_refund_view(request, invoice_pk):
+    """
+    POST /billing/invoice/<invoice_pk>/refund/
+    Body (form-encoded): amount, reason, method (optional, defaults to 'original')
+    """
+    from billing.models import Invoice, Refund
+    from billing.services.refund_service import issue_refund, RefundError
+
+    gym = _gym_from_request(request)
+    if gym is None:
+        return JsonResponse({'ok': False, 'error': 'Gym not found'}, status=404)
+
+    invoice = get_object_or_404(Invoice, pk=invoice_pk, gym=gym)
+
+    amount = request.POST.get('amount', '').strip()
+    reason = request.POST.get('reason', '').strip()
+    method = request.POST.get('method', Refund.Method.ORIGINAL)
+
+    if not amount:
+        return JsonResponse({'ok': False, 'error': 'Refund amount is required.'}, status=400)
+
+    try:
+        refund = issue_refund(invoice, amount, reason, request.user, method=method, request=request)
+    except RefundError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+    except Exception:
+        logger.exception("issue_refund_view failed for invoice_pk=%s", invoice_pk)
+        return JsonResponse({'ok': False, 'error': 'Something went wrong. No changes were saved.'}, status=500)
+
+    invoice.refresh_from_db()
+    return JsonResponse({
+        'ok': True,
+        'refund_id': refund.id,
+        'amount': str(refund.amount),
+        'invoice_status': invoice.get_status_display(),
+        'refundable_amount': str(invoice.refundable_amount),
     })

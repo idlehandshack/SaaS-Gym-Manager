@@ -1,6 +1,6 @@
 # AuthFit/middleware.py
 import secrets
-
+from django.conf import settings
 
 class SecurityHeadersMiddleware:
     """
@@ -49,7 +49,10 @@ class SecurityHeadersMiddleware:
                 "https://www.gstatic.com "
                 "https://www.googleapis.com"
             )
-
+        if settings.DEBUG:
+            ws_connect_src = "ws://localhost:8000 ws://*.localhost:8000"
+        else:
+            ws_connect_src = "wss://entergym.in wss://*.entergym.in"
         # ── Content Security Policy ───────────────────────────────────────
         #
         # script-src:

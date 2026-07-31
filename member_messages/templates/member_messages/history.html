@@ -1,0 +1,266 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Message History — {{ member.fullname }}{% endblock %}
+
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <a href="{% url 'member_detail' member.id %}" class="db-back-link">
+      <i class="bi bi-arrow-left"></i> Back to {{ member.fullname }}
+    </a>
+    <h1 class="db-page-title" style="margin-top:.4rem;">Message History</h1>
+    <p class="db-page-sub">All messages sent to {{ member.fullname }}</p>
+  </div>
+</div>
+
+<div class="db-card db-card-wide">
+  <div class="db-card-header msg-history-toolbar">
+    <form method="GET" class="msg-search-form">
+      <div class="db-search msg-search">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" value="{{ search }}" placeholder="Search by title...">
+      </div>
+      <button type="submit" class="db-btn db-btn-primary">
+        <i class="bi bi-search"></i> Search
+      </button>
+    </form>
+  </div>
+
+  <div class="table-responsive">
+    <table class="msg-history-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Title</th>
+          <th>Priority</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in page_obj %}
+        <tr>
+          <td class="msg-date">{{ m.created_at|date:"d M Y, h:i A" }}</td>
+          <td class="msg-title">{{ m.title }}</td>
+          <td>
+            <span class="status-badge priority-{{ m.priority }}">
+              {{ m.get_priority_display }}
+            </span>
+          </td>
+          <td>
+            <span class="status-badge status-{{ m.is_read|yesno:'active,pending' }}">
+              <i class="bi {{ m.is_read|yesno:'bi-check-circle-fill,bi-clock-fill' }}"></i>
+              {{ m.status_display }}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="msg-history-empty">
+            <i class="bi bi-envelope-slash"></i>
+            <p>No messages sent to this member yet.</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="msg-pagination">
+    {% if page_obj.has_previous %}
+      <a href="?q={{ search }}&page={{ page_obj.previous_page_number }}" class="db-btn">
+        <i class="bi bi-chevron-left"></i> Prev
+      </a>
+    {% else %}
+      <span class="db-btn db-btn-disabled"><i class="bi bi-chevron-left"></i> Prev</span>
+    {% endif %}
+
+    <span class="msg-page-info">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+      <a href="?q={{ search }}&page={{ page_obj.next_page_number }}" class="db-btn">
+        Next <i class="bi bi-chevron-right"></i>
+      </a>
+    {% else %}
+      <span class="db-btn db-btn-disabled">Next <i class="bi bi-chevron-right"></i></span>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ── Back link ─────────────────────────────────────── */
+  .db-back-link{
+    display:inline-flex; align-items:center; gap:.4rem;
+    color:var(--text-mid); font-size:.82rem; font-weight:500;
+    text-decoration:none;
+    transition:color var(--t) var(--ease);
+  }
+  .db-back-link:hover{color:var(--orange);}
+
+  .db-card-wide{ width:100%; }
+
+  /* ── Toolbar ───────────────────────────────────────── */
+  .msg-history-toolbar{ margin-bottom:1rem; }
+  .msg-search-form{
+    display:flex; gap:.6rem; max-width:460px;
+  }
+  /* Search box */
+  .msg-search{
+      position: relative;
+      flex: 1;
+      max-width: none;
+  }
+
+  .msg-search i{
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-lo);
+      font-size: .9rem;
+      pointer-events: none;
+      z-index: 2;
+  }
+
+  .msg-search input{
+      width: 100%;
+      height: 42px;
+      padding: 0 .9rem 0 2.7rem;   /* Space for icon */
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      color: var(--text-hi);
+      outline: none;
+      box-sizing: border-box;
+  }
+
+  .msg-search input::placeholder{
+      color: var(--text-lo);
+  }
+  .msg-search.db-search{
+      position: relative;
+  }
+
+  .msg-search.db-search input{
+      padding-left: 2.7rem !important;
+  }
+
+  .msg-search.db-search i{
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+  }
+  .db-btn{
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.5rem .95rem;
+    border-radius:var(--radius-sm);
+    border:1px solid var(--border-2);
+    background:var(--surface-2);
+    color:var(--text-hi);
+    font-size:.83rem; font-weight:500;
+    text-decoration:none;
+    transition:border-color var(--t) var(--ease), color var(--t) var(--ease), background var(--t) var(--ease);
+    cursor:pointer;
+  }
+  .db-btn:hover{ border-color:var(--orange-bdr); color:var(--orange); }
+  .db-btn-primary{
+    background:var(--orange); border-color:var(--orange); color:#fff;
+  }
+  .db-btn-primary:hover{
+    background:var(--orange); color:#fff; opacity:.9;
+  }
+  .db-btn-disabled{
+    opacity:.35; pointer-events:none;
+  }
+  /* ── Table ─────────────────────────────────────────── */
+  .table-responsive{ overflow-x:auto; }
+  .msg-history-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.85rem;
+  }
+  .msg-history-table thead th{
+    text-align:left;
+    padding:.7rem .9rem;
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--text-lo);
+    border-bottom:1px solid var(--border-2);
+    white-space:nowrap;
+  }
+  .msg-history-table tbody td{
+    padding:.75rem .9rem;
+    border-bottom:1px solid var(--border);
+    color:var(--text-hi);
+    vertical-align:middle;
+  }
+  .msg-history-table tbody tr{
+    transition:background var(--t) var(--ease);
+  }
+  .msg-history-table tbody tr:hover{
+    background:var(--surface-2);
+  }
+  .msg-history-table tbody tr:last-child td{ border-bottom:none; }
+
+  .msg-date{ color:var(--text-mid); white-space:nowrap; }
+  .msg-title{ font-weight:500; }
+
+  .msg-history-empty{
+    text-align:center;
+    padding:2.5rem 1rem;
+    color:var(--text-mid);
+  }
+  .msg-history-empty i{
+    font-size:1.6rem;
+    color:var(--text-lo);
+    display:block;
+    margin-bottom:.5rem;
+  }
+  .msg-history-empty p{ margin:0; font-size:.85rem; }
+
+  /* ── Status / priority badges ─────────────────────── */
+  .status-badge{
+    display:inline-flex; align-items:center; gap:.3rem;
+    padding:.28rem .65rem;
+    border-radius:var(--radius-pill);
+    font-size:.72rem;
+    font-weight:600;
+    background:var(--surface-3);
+    border:1px solid var(--border-2);
+    color:var(--text-mid);
+    white-space:nowrap;
+  }
+  .status-active{ background:var(--green-dim); border-color:var(--green-bdr); color:var(--green); }
+  .status-pending{ background:var(--yellow-dim); border-color:var(--yellow-bdr); color:var(--yellow); }
+
+  .priority-high{ background:var(--red-dim); border-color:var(--red-bdr); color:var(--red); }
+  .priority-medium{ background:var(--yellow-dim); border-color:var(--yellow-bdr); color:var(--yellow); }
+  .priority-low{ background:var(--green-dim); border-color:var(--green-bdr); color:var(--green); }
+
+  /* ── Pagination ────────────────────────────────────── */
+  .msg-pagination{
+    display:flex; align-items:center; gap:.75rem;
+    margin-top:1.25rem;
+    padding-top:1rem;
+    border-top:1px solid var(--border);
+  }
+  .msg-page-info{
+    color:var(--text-mid);
+    font-size:.8rem;
+    margin-left:auto;
+    margin-right:auto;
+  }
+
+  @media (max-width: 575.98px){
+    .msg-search-form{ flex-direction:column; }
+    .msg-pagination{ flex-wrap:wrap; }
+    .msg-page-info{ order:3; width:100%; text-align:center; margin:.5rem 0 0; }
+  }
+</style>
+{% endblock %}

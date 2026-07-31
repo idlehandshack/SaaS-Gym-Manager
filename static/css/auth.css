@@ -528,9 +528,7 @@ small.error {
    FOOTER TEXT / LINKS
    ════════════════════════════════════════════════════════════ */
 
-.forget-text,
-.bottom-text,
-.login-text {
+.forget-text{
   text-align: center;
   font-size: .85rem;
   color: var(--text-mid);
@@ -538,8 +536,24 @@ small.error {
   line-height: 1.6;
 }
 
+/* Top bar variant: "Already have an account?" */
+.login-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  font-size: .82rem;
+  color: var(--text-mid);
+  line-height: 1.5;
+  margin: 0 0 20px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-pill);
+  background: rgba(255,255,255,.03);
+}
+
 .forget-text a,
-.bottom-text a,
 .login-text a {
   color: var(--orange-soft);
   font-weight: 700;
@@ -547,13 +561,11 @@ small.error {
   transition: color var(--t);
 }
 .forget-text a:hover,
-.bottom-text a:hover,
 .login-text a:hover {
   color: var(--orange);
   text-decoration: underline;
 }
 .forget-text a:focus-visible,
-.bottom-text a:focus-visible,
 .login-text a:focus-visible {
   outline: 2px solid var(--orange);
   outline-offset: 2px;

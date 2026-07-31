@@ -1,8 +1,9 @@
 # Gym/forms.py
 from django import forms
+import re
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from .models import Gym, SubscriptionPlan, StaffProfile, GymGSTProfile
+from .models import Gym, SubscriptionPlan, StaffProfile, GymGSTProfile,GymWhatsAppSettings
 from .models import StaffPermission, PERMISSION_DEFINITIONS
 
 class StaffPermissionForm(forms.ModelForm):
@@ -151,17 +152,163 @@ class StaffProfileCreateForm(forms.Form):
             role=self.cleaned_data["role"],
             active=self.cleaned_data.get("active", True),
         )
-
-
 class GymGSTProfileForm(forms.ModelForm):
     class Meta:
         model = GymGSTProfile
         exclude = ["gym"]
-        widgets = {"signature_image": forms.URLInput()}
-
+        widgets = {
+            "legal_business_name": forms.TextInput(attrs={
+                "placeholder": "As per GST certificate"
+            }),
+            "gstin": forms.TextInput(attrs={
+                "placeholder": "22AAAAA0000A1Z5",
+                "maxlength": 15,
+                "style": "text-transform:uppercase",
+            }),
+            "address_line1": forms.TextInput(attrs={
+                "placeholder": "Building, street"
+            }),
+            "address_line2": forms.TextInput(attrs={
+                "placeholder": "Area, landmark (optional)"
+            }),
+            "city": forms.TextInput(),
+            "state": forms.TextInput(),
+            "state_code": forms.TextInput(attrs={
+                "placeholder": "22",
+                "maxlength": 2,
+            }),
+            "pincode": forms.TextInput(attrs={
+                "placeholder": "490001",
+                "maxlength": 6,
+            }),
+            "invoice_series_prefix": forms.TextInput(attrs={
+                "placeholder": "INV"
+            }),
+            "default_sac_membership": forms.TextInput(attrs={
+                "placeholder": "999652"
+            }),
+            "signature_image": forms.URLInput(attrs={
+                "placeholder": "https://res.cloudinary.com/..."
+            }),
+        }
+ 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for f in ["address_line2", "gstin", "signature_image"]:
             self.fields[f].required = False
+ 
+    def clean_gstin(self):
+        gstin = self.cleaned_data.get("gstin", "").strip().upper()
+        if self.cleaned_data.get("is_gst_registered"):
+            if len(gstin) != 15:
+                raise forms.ValidationError("GSTIN must be exactly 15 characters.")
+            pattern = r'^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}Z[A-Z\d]{1}$'
+            if not re.match(pattern, gstin):
+                raise forms.ValidationError("Invalid GSTIN format.")
+        return gstin
+ 
+    def clean_state_code(self):
+        code = self.cleaned_data.get("state_code", "").strip()
+        if code and (not code.isdigit() or len(code) != 2):
+            raise forms.ValidationError("State code must be 2 digits, e.g. '22'.")
+        return code
+ 
+    def clean_pincode(self):
+        pin = self.cleaned_data.get("pincode", "").strip()
+        if not pin.isdigit() or len(pin) != 6:
+            raise forms.ValidationError("Pincode must be 6 digits.")
+        return pin
+ 
+    def clean(self):
+        cleaned_data = super().clean()
+        is_registered = cleaned_data.get("is_gst_registered")
+        gstin = cleaned_data.get("gstin")
+        if is_registered and not gstin:
+            self.add_error("gstin", "GSTIN is required when GST registered is enabled.")
+        return cleaned_data
 
+class WhatsAppSettingsForm(forms.ModelForm):
+    """
+    Setup-wizard form for a gym's own WhatsApp Cloud API connection.
+    Matches UPISettingsForm/GymGSTProfileForm's shape: plain ModelForm +
+    Meta + clean() adding field errors — no custom widgets library beyond
+    what those two already use.
+
+    Secret field (permanent_access_token) is rendered as PasswordInput
+    with render_value=False — Django will NOT pre-fill it with the
+    decrypted value on GET, even though GymWhatsAppSettings.permanent_access_token
+    would return the plaintext (EncryptedTextField decrypts transparently
+    on read). Never put a live secret back in the HTML response. Leaving
+    it blank on an edit means "keep the currently saved value" —
+    enforced in save() below, not in clean(), since clean() only
+    validates, it doesn't know the DB's current value without an extra
+    query.
+
+    Webhook credentials (verify token, app secret) are NOT part of this
+    form — they are platform-level (settings.WHATSAPP_VERIFY_TOKEN /
+    settings.WHATSAPP_APP_SECRET), configured once by the EnterGYM
+    administrator via environment variables, not per-gym.
+
+    `enabled` is intentionally NOT a field here — it's flipped by the
+    dedicated Connect/Disconnect actions (whatsapp_views.py), only after
+    verify_connection() has actually succeeded, never by directly editing
+    this form's checkbox.
+    """
+
+    permanent_access_token = forms.CharField(
+        required=False, widget=forms.PasswordInput(render_value=False),
+        help_text="Leave blank to keep the currently saved token.",
+    )
+
+    class Meta:
+        model = GymWhatsAppSettings
+        fields = [
+            'business_name', 'phone_number', 'phone_number_id',
+            'business_account_id', 'permanent_access_token',
+            'reminder_days_before', 'reminder_time',
+            'send_post_expiry_reminder', 'timezone',
+        ]
+        widgets = {
+            'business_name': forms.TextInput(attrs={"placeholder": "Your Gym's Business Name"}),
+            'phone_number': forms.TextInput(attrs={"placeholder": "+919876543210"}),
+            'phone_number_id': forms.TextInput(attrs={"placeholder": "Meta Phone Number ID"}),
+            'business_account_id': forms.TextInput(attrs={"placeholder": "Meta Business Account ID"}),
+            'reminder_days_before': forms.RadioSelect(),
+            'reminder_time': forms.RadioSelect(),
+            'send_post_expiry_reminder': forms.CheckboxInput(),
+            'timezone': forms.Select(),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+
+        phone_number = (cleaned.get('phone_number') or '').strip()
+        if phone_number and not phone_number.startswith('+'):
+            self.add_error(
+                'phone_number',
+                "Phone number must be in E.164 format, e.g. +919876543210."
+            )
+
+        phone_number_id = (cleaned.get('phone_number_id') or '').strip()
+        if phone_number_id and not phone_number_id.isdigit():
+            self.add_error('phone_number_id', "Phone Number ID must contain only digits.")
+
+        business_account_id = (cleaned.get('business_account_id') or '').strip()
+        if business_account_id and not business_account_id.isdigit():
+            self.add_error('business_account_id', "Business Account ID must contain only digits.")
+
+        return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.instance.pk:
+            # Editing an existing row — leaving the token blank keeps its
+            # currently saved (encrypted) value rather than being
+            # overwritten with an empty string.
+            existing = GymWhatsAppSettings.objects.get(pk=self.instance.pk)
+            if not self.cleaned_data.get('permanent_access_token'):
+                instance.permanent_access_token = existing.permanent_access_token
+        if commit:
+            instance.save()
+        return instance
 

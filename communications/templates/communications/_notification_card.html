@@ -1,0 +1,36 @@
+{% comment %}
+communications/_notification_card.html
+
+Server-rendered notification card fragment (used by communication_center's
+Django template — the one no-JS surface). All classes are prefixed
+`comm-` so nothing here can collide with announcements' own
+`.announcement-*` classes. communications.js builds the equivalent markup
+client-side (see COMM.buildCardHTML) for the popup/banner/API-driven
+surfaces — the two are kept in visual sync by hand, not by sharing a
+template engine across languages.
+{% endcomment %}
+<div class="comm-card comm-priority-{{ communication.priority }}" data-comm-id="{{ communication.id }}">
+  {% if communication.image_url %}
+  <div class="comm-card-image">
+    <img src="{{ communication.image_url }}" alt="" loading="lazy">
+  </div>
+  {% endif %}
+  <div class="comm-card-body">
+    <span class="comm-card-type">{{ communication.get_type_display }}</span>
+    <h4 class="comm-card-title">{{ communication.title }}</h4>
+    <div class="comm-card-desc">{{ communication.description|safe }}</div>
+  </div>
+  <div class="comm-card-actions">
+    {% if communication.deep_link_kind == 'url' %}
+    <a href="{{ communication.deep_link_value }}" target="_blank" rel="noopener noreferrer"
+       class="comm-btn comm-btn-primary" data-comm-action="click" data-comm-id="{{ communication.id }}">View</a>
+    {% elif communication.deep_link_kind == 'screen' %}
+    <button type="button" class="comm-btn comm-btn-primary" data-comm-action="click" data-comm-id="{{ communication.id }}">View</button>
+    {% endif %}
+    {% if communication.require_read %}
+    <button type="button" class="comm-btn comm-btn-secondary" data-comm-action="read" data-comm-id="{{ communication.id }}">Mark as Read</button>
+    {% else %}
+    <button type="button" class="comm-btn comm-btn-secondary" data-comm-action="dismiss" data-comm-id="{{ communication.id }}">Dismiss</button>
+    {% endif %}
+  </div>
+</div>

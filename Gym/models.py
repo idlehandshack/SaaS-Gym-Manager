@@ -12,7 +12,16 @@ from cloudinary.models import CloudinaryField
 from django.core.cache import cache
 from django.db.models.signals import post_save, post_delete, m2m_changed
 from django.dispatch import receiver
+from Gym.fields import EncryptedTextField
+from Gym.mixins import GymManager
+from django.core.validators import RegexValidator
+from datetime import time as _time
 
+
+E164_PHONE_VALIDATOR = RegexValidator(
+    regex=r'^\+[1-9]\d{7,14}$',
+    message="Phone number must be in E.164 format, e.g. +919876543210 or +14155552671.",
+)
 # ──────────────────────────────────────────────────────────────────────────────
 # Subscription Plans (SaaS tiers defined by the software owner)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -197,12 +206,23 @@ class Gym(models.Model):
         ('pink',    'Pink'),
         ('green',   'Green'),
         ('red',     'Red'),
+        ('custom',  'Custom'),
     ]
     theme = models.CharField(
         max_length=20,
         choices=THEME_CHOICES,
         default='default',
         help_text="Predefined UI color palette for this gym's dashboard/site."
+    )
+    MODE_CHOICES = [
+        ('dark',  'Dark'),
+        ('light', 'Light'),
+    ]
+    dashboard_mode = models.CharField(
+        max_length=10,
+        choices=MODE_CHOICES,
+        default='dark',
+        help_text="Dark or light background for the dashboard UI."
     )
     show_subscription_payment = models.BooleanField(
         default=False,
@@ -221,7 +241,7 @@ class Gym(models.Model):
                    "timezone.localdate() — not UTC date — so gyms see the limit reset at "
                    "their local midnight from the server's perspective.",
     )
-    
+    hidden_stat_cards = models.JSONField(default=list, blank=True)
     # ── Helpers ───────────────────────────────────────────────────────────
     @property
     def is_subscription_active(self):
@@ -437,10 +457,31 @@ PERMISSION_DEFINITIONS = [
 
     ("can_send_expiry_notifications",  "Send Expiry Reminder",       "Notifications"),
     ("can_manage_notifications",       "Push Notifications",         "Notifications"),
-
+    ("can_send_whatsapp",              "Send WhatsApp Messages",     "Notifications"),
     ("can_manage_store",               "Store (General)",            "Store"),
     ("can_manage_products",            "Products",                   "Store"),
     ("can_manage_orders",              "Orders",                     "Store"),
+]
+
+REMINDER_DAYS_BEFORE_CHOICES = [
+    (1, '1 Day Before'),
+    (3, '3 Days Before'),
+    (5, '5 Days Before'),
+    (7, '7 Days Before'),
+]
+
+REMINDER_TIME_CHOICES = [
+    (_time(9, 0), 'Morning (09:00)'),
+    (_time(14, 0), 'Afternoon (14:00)'),
+    (_time(18, 0), 'Evening (18:00)'),
+]
+
+TIMEZONE_CHOICES = [
+    ('Asia/Kolkata', 'Asia/Kolkata (IST)'),
+    ('Asia/Dubai', 'Asia/Dubai (GST)'),
+    ('Europe/London', 'Europe/London (GMT/BST)'),
+    ('America/New_York', 'America/New_York (ET)'),
+    ('Australia/Sydney', 'Australia/Sydney (AET)'),
 ]
 
 # Permissions granted to Trainers by default (attendance-only).
@@ -547,3 +588,477 @@ def clear_all_brand_caches_on_catalog_change(sender, instance, **kwargs):
 # Wire up the m2m signal now that Gym.equipment_brands exists
 m2m_changed.connect(clear_gym_equipment_brands_cache, sender=Gym.equipment_brands.through)
 m2m_changed.connect(clear_gym_services_cache, sender=Gym.services.through)
+
+class GymWhatsAppSettings(models.Model):
+    STATUS_CHOICES = [
+        ('not_configured', 'Not Configured'),
+        ('pending',        'Pending Verification'),
+        ('connected',      'Connected'),
+        ('disconnected',   'Disconnected'),
+        ('error',          'Error'),
+    ]
+ 
+    gym = models.OneToOneField(
+        Gym, on_delete=models.CASCADE, related_name='whatsapp_settings'
+    )
+    enabled = models.BooleanField(
+        default=False,
+        help_text="Master switch. When False, no WhatsApp message is ever sent "
+                   "for this gym, regardless of individual notification triggers.",
+    )
+ 
+    # ── Meta Business identity (all gym-owned, never shared) ────────────
+    business_name = models.CharField(max_length=120, blank=True)
+    phone_number = models.CharField(
+        max_length=20, blank=True,
+        validators=[E164_PHONE_VALIDATOR],
+        help_text="Gym's WhatsApp Business number in E.164 format, e.g. +919876543210",
+    )
+    phone_number_id = models.CharField(max_length=64, blank=True)
+    business_account_id = models.CharField(max_length=64, blank=True)
+ 
+    # ── Secrets — encrypted at rest via Gym.fields.EncryptedTextField ────
+    permanent_access_token = EncryptedTextField(blank=True, default='')
+    webhook_verify_token = EncryptedTextField(
+        blank=True, default='',
+        help_text="DEPRECATED — no longer used. Webhook verification now "
+                   "uses the platform-wide settings.WHATSAPP_VERIFY_TOKEN. "
+                   "Retained on this model only to avoid a destructive "
+                   "migration on existing rows; never read or written by "
+                   "current code.",
+    )
+    webhook_secret = EncryptedTextField(
+        blank=True, default='',
+        help_text="DEPRECATED — no longer used. Webhook signature "
+                   "validation now uses the platform-wide "
+                   "settings.WHATSAPP_APP_SECRET. Retained on this model "
+                   "only to avoid a destructive migration on existing "
+                   "rows; never read or written by current code.",
+    )
+ 
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_configured')
+    verified_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+    reminder_days_before = models.PositiveSmallIntegerField(
+        default=3, choices=REMINDER_DAYS_BEFORE_CHOICES,
+        help_text="How many days before membership expiry the WhatsApp reminder "
+                   "should be sent. Only ONE reminder is sent at this exact "
+                   "offset — not on every day counting down to it.",
+    )
+    reminder_time = models.TimeField(
+        default=_time(9, 0), choices=REMINDER_TIME_CHOICES,
+        help_text="Time of day (in this gym's configured timezone) when the "
+                   "WhatsApp expiry reminder should be sent. Requires the "
+                   "expiry-reminder cron to run at least as often as the "
+                   "configured time slots (recommended: 09:00, 14:00, 18:00).",
+    )
+    send_post_expiry_reminder = models.BooleanField(
+        default=True,
+        help_text="Whether to send exactly one WhatsApp reminder the day after "
+                   "membership expires (days_left == -1 only — not repeated on "
+                   "subsequent overdue days).",
+    )
+    timezone = models.CharField(
+        max_length=50, default='Asia/Kolkata', choices=TIMEZONE_CHOICES,
+        help_text="IANA timezone used to evaluate reminder_time for this gym.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+ 
+    class Meta:
+        verbose_name = "Gym WhatsApp Settings"
+        verbose_name_plural = "Gym WhatsApp Settings"
+ 
+    def __str__(self):
+        return f"WhatsApp[{self.gym.gym_name}] — {self.get_status_display()}"
+ 
+    def clean(self):
+        """
+        Mirrors Gym.clean()'s upi_enabled validation pattern: turning the
+        master switch on requires the connection to actually be usable.
+        Deliberately does NOT validate credentials against Meta's API here
+        (that's verify_connection() in the service layer, which needs a
+        live network call) — this is just "did the owner fill the form in".
+        """
+        super().clean()
+        if self.enabled:
+            from django.core.exceptions import ValidationError
+            errors = {}
+            if not self.phone_number_id.strip():
+                errors['phone_number_id'] = "Phone Number ID is required to enable WhatsApp."
+            if not self.business_account_id.strip():
+                errors['business_account_id'] = "Business Account ID is required to enable WhatsApp."
+            if not self.permanent_access_token.strip():
+                errors['permanent_access_token'] = "Access Token is required to enable WhatsApp."
+            if errors:
+                raise ValidationError(errors)
+ 
+    # ── State-transition helpers ─────────────────────────────────────────
+    # Centralizes every status write here. The service layer must never
+    # set .status / .last_error / .verified_at directly — always through
+    # one of these three methods.
+ 
+    def mark_connected(self):
+        """
+        Called after ANY successful Meta API call — not just an explicit
+        Verify click. This makes status self-healing: if a gym was
+        previously 'error' from a transient Meta outage, the next
+        successful send flips it back to 'connected' automatically.
+        """
+        from django.utils import timezone
+        update_fields = []
+        if self.status != 'connected':
+            self.status = 'connected'
+            update_fields.append('status')
+        if self.last_error:
+            self.last_error = ''
+            update_fields.append('last_error')
+        self.verified_at = timezone.now()
+        update_fields.append('verified_at')
+        if update_fields:
+            update_fields.append('updated_at')
+            self.save(update_fields=update_fields)
+ 
+    def mark_error(self, error_message: str):
+        """
+        Called after a failed Meta API call. Does NOT touch `enabled` —
+        status is health/UI state only, `enabled` remains the owner's
+        explicit master switch. A gym in status='error' with enabled=True
+        will still be attempted on the next send; success there calls
+        mark_connected() again.
+        """
+        self.status = 'error'
+        self.last_error = error_message[:2000]  # bounded — UI field, not a log archive
+        self.save(update_fields=['status', 'last_error', 'updated_at'])
+ 
+    def mark_disconnected(self):
+        """
+        Explicit owner action (the 'Disconnect' button), distinct from
+        mark_error: a deliberate opt-out, not a health signal. Also flips
+        `enabled` off.
+        """
+        self.status = 'disconnected'
+        self.enabled = False
+        self.last_error = ''
+        self.save(update_fields=['status', 'enabled', 'last_error', 'updated_at'])
+ 
+    @property
+    def is_operational(self):
+        """
+        Only `enabled` gates sending. `status` is health/UI information,
+        surfaced in the dashboard, but does not itself block a send
+        attempt — a transient Meta 5xx that set status='error' must not
+        permanently lock the gym out; the next send attempt is allowed to
+        try again and self-heal via mark_connected(). Credential
+        completeness is enforced separately by the service layer's
+        _get_operational_settings, not by this property.
+        """
+        return self.enabled
+    
+    @staticmethod
+    def verify_webhook_signature(raw_body: bytes, signature_header: str) -> bool:
+        import hashlib
+        import hmac
+        from django.conf import settings
+
+        if not signature_header or not signature_header.startswith('sha256='):
+            return False
+        provided_digest = signature_header.split('=', 1)[1]
+        expected_digest = hmac.new(
+            key=settings.WHATSAPP_APP_SECRET.encode('utf-8'),
+            msg=raw_body,
+            digestmod=hashlib.sha256,
+        ).hexdigest()
+        return hmac.compare_digest(provided_digest, expected_digest)
+ 
+ 
+@receiver([post_save, post_delete], sender=GymWhatsAppSettings)
+def clear_gym_whatsapp_settings_cache(sender, instance, **kwargs):
+    """Mirrors clear_gym_logo_cache — dashboard connection-status badge
+    and any future gym-config cache must never show stale data."""
+    cache.delete(f"gym_whatsapp_settings_{instance.gym_id}")
+ 
+ 
+# ──────────────────────────────────────────────────────────────────────────────
+# WhatsApp Cloud API — per-message audit/delivery log
+#
+# One row per outbound WhatsApp message attempt. Gym-scoped like every
+# other business model (Enrollment, Trainer, etc.) — uses GymManager so
+# `WhatsAppMessageLog.objects` behaves consistently with the rest of the
+# codebase's gym-scoped querysets.
+# ──────────────────────────────────────────────────────────────────────────────
+class WhatsAppMessageLog(models.Model):
+    MESSAGE_TYPE_CHOICES = [
+        ('text',                'Text'),
+        ('template',            'Template'),
+        ('image',               'Image'),
+        ('document',            'Document'),
+        ('location',            'Location'),
+        ('interactive_buttons', 'Interactive Buttons'),
+    ]
+    STATUS_CHOICES = [
+        ('queued',    'Queued'),
+        ('sent',      'Sent'),
+        ('failed',    'Failed'),
+        ('delivered', 'Delivered'),  # populated later via webhook, if/when implemented
+        ('read',      'Read'),       # populated later via webhook, if/when implemented
+    ]
+ 
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, db_index=True, related_name='whatsapp_message_logs')
+    objects = GymManager()
+ 
+    # Nullable + SET_NULL: a member record can be deleted (soft or hard)
+    # long after a message about them was sent — the log is a permanent
+    # audit trail and must survive that, matching EnrollmentDeletionLog's
+    # philosophy of "the log outlives the thing it's about."
+    member = models.ForeignKey(
+        'AuthFit.Enrollment', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='whatsapp_message_logs',
+    )
+    phone = models.CharField(
+        max_length=20,
+        validators=[E164_PHONE_VALIDATOR],
+        help_text="Destination WhatsApp number at send time, E.164 format — stored "
+                   "independently of `member` so the log stays readable even if "
+                   "member is later nulled out.",
+    )
+ 
+    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPE_CHOICES)
+    template_name = models.CharField(max_length=100, blank=True)
+ 
+    # Idempotency key. Blank for ad-hoc/test sends that have no natural
+    # business key; populated for every business notification trigger
+    # (expiry reminder, payment confirmation, etc). Uniqueness enforced
+    # PER GYM and only when non-blank — see the partial UniqueConstraint
+    # in Meta.constraints below.
+    deduplication_key = models.CharField(
+        max_length=255, blank=True, default='', db_index=True,
+        help_text="Deterministic key identifying the business event this message "
+                   "represents, e.g. 'expiry_reminder:{enrollment_id}:{due_date}'. "
+                   "Used to guarantee at-most-one successful send per event.",
+    )
+ 
+    message_id = models.CharField(
+        max_length=128, blank=True, db_index=True,
+        help_text="Meta's `messages[0].id` from a successful send — used to correlate "
+                   "with delivery/read webhook events later.",
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='queued', db_index=True)
+ 
+    # HTTP status code stored as its own field rather than buried inside `response`.
+    status_code = models.PositiveSmallIntegerField(null=True, blank=True)
+ 
+    # Trimmed dict — message_id, Meta's `error` object if present, and
+    # nothing else. Enforced by the service layer's _trim_response()
+    # helper, not by this field itself (JSONField can't self-validate shape).
+    response = models.JSONField(default=dict, blank=True)
+    error = models.TextField(blank=True)
+ 
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+ 
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['gym', 'created_at']),
+            models.Index(fields=['gym', 'status']),
+            models.Index(fields=['gym', 'message_type']),
+            models.Index(fields=['gym', 'deduplication_key']),
+        ]
+        constraints = [
+            # Partial unique constraint: only enforced when a dedup key is
+            # actually set. Two blank-key rows (ad-hoc sends/tests) must
+            # NOT be treated as duplicates of each other.
+            models.UniqueConstraint(
+                fields=['gym', 'deduplication_key'],
+                condition=~models.Q(deduplication_key=''),
+                name='unique_whatsapp_dedup_key_per_gym',
+            )
+        ]
+        verbose_name = "WhatsApp Message Log"
+        verbose_name_plural = "WhatsApp Message Logs"
+ 
+    def __str__(self):
+        return f"{self.gym.gym_code} → {self.phone} [{self.message_type}] {self.status}"
+
+class PushNotificationLog(models.Model):
+    """
+    Audit log for FCM + Web Push sends — the push-channel equivalent of
+    WhatsAppMessageLog. Written to from AuthFit/notifications.py's
+    _send_member_fcm / _send_member_web_push, and from
+    member_messages/services.py's _send_message_fcm / _send_message_web_push.
+
+    Kept as a SEPARATE table from WhatsAppMessageLog rather than unifying
+    them — the two channels have different natural fields (WhatsApp has
+    template_name/message_id from Meta; push has title/body directly)
+    and different callers/failure modes. A single member-detail helper
+    (get_member_notification_log in member_service.py) merges both for
+    display, so this doesn't cost anything at the UI layer.
+    """
+    CHANNEL_CHOICES = [
+        ('fcm', 'FCM (Mobile App)'),
+        ('web_push', 'Web Push (Browser/PWA)'),
+    ]
+    NOTIF_TYPE_CHOICES = [
+        ('plan_expiry',        'Plan Expiry Reminder'),
+        ('plan_changed',       'Plan Changed'),
+        ('renewal_reminder',   'Renewal Reminder'),
+        ('member_message',     'Staff Message'),
+    ]
+
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, db_index=True, related_name='push_notification_logs')
+    objects = GymManager()
+
+    # Same SET_NULL philosophy as WhatsAppMessageLog.member — the log
+    # outlives the enrollment it was about.
+    member = models.ForeignKey(
+        'AuthFit.Enrollment', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='push_notification_logs',
+    )
+
+    channel = models.CharField(max_length=20, choices=CHANNEL_CHOICES)
+    notif_type = models.CharField(max_length=30, choices=NOTIF_TYPE_CHOICES, blank=True)
+
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+
+    success = models.BooleanField(db_index=True)
+    error = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['gym', 'created_at']),
+            models.Index(fields=['gym', 'success']),
+        ]
+        verbose_name = "Push Notification Log"
+        verbose_name_plural = "Push Notification Logs"
+
+    def __str__(self):
+        return f"{self.gym.gym_code} → member={self.member_id} [{self.channel}] {'OK' if self.success else 'FAIL'}"
+
+class AuditLog(models.Model):
+    """
+    Append-only audit trail for financial and administrative actions.
+    Written by AuthFit.audit.log_action() — never constructed directly
+    elsewhere, so every call site logs the same shape of data.
+    """
+    ACTION_CHOICES = [
+        ('invoice_created',       'Invoice Created'),
+        ('invoice_voided',        'Invoice Voided'),
+        ('payment_received',      'Payment Received'),
+        ('refund_issued',         'Refund Issued'),
+        ('expense_added',         'Expense Added'),
+        ('expense_edited',        'Expense Edited'),
+        ('expense_deleted',       'Expense Deleted'),
+        ('membership_renewed',    'Membership Renewed'),
+        ('plan_changed',          'Plan Changed'),
+        ('enrollment_deleted',    'Enrollment Deleted'),
+    ]
+
+    gym    = models.ForeignKey(Gym, on_delete=models.CASCADE, db_index=True, related_name='audit_logs')
+    staff_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+
+    action = models.CharField(max_length=30, choices=ACTION_CHOICES, db_index=True)
+
+    # Generic reference to whatever object this action concerns (Invoice,
+    # Refund, Expense, Enrollment, ...) — stored as a plain string ID +
+    # label rather than a GenericForeignKey, since the log must survive
+    # even if the referenced row is later hard-deleted.
+    object_type = models.CharField(max_length=50, blank=True)
+    object_id   = models.CharField(max_length=50, blank=True)
+    object_label = models.CharField(max_length=255, blank=True,
+        help_text="Human-readable snapshot, e.g. invoice number or member name — "
+                   "survives even if the referenced row is later deleted.")
+
+    old_values = models.JSONField(default=dict, blank=True)
+    new_values = models.JSONField(default=dict, blank=True)
+
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['gym', 'created_at']),
+            models.Index(fields=['gym', 'action']),
+            models.Index(fields=['object_type', 'object_id']),
+        ]
+        verbose_name = 'Audit Log'
+        verbose_name_plural = 'Audit Logs'
+
+    def delete(self, *args, **kwargs):
+        raise PermissionError("AuditLog rows are a permanent audit trail and cannot be deleted.")
+
+    def __str__(self):
+        return f"{self.gym.gym_code} — {self.get_action_display()} — {self.object_label} ({self.created_at:%d %b %Y %H:%M})"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# AI Credit Wallet — Register Scan (and future AI features)
+# ──────────────────────────────────────────────────────────────────────────────
+class GymAICredit(models.Model):
+    """
+    Per-gym AI credit wallet. One row per gym, auto-created with 10 free
+    credits the moment the gym is created (see create_gym_ai_credit_wallet
+    below). All balance mutations MUST go through Gym.ai_credit_service —
+    never edit `balance` / `total_used` directly, or the ledger in
+    AICreditTransaction will drift out of sync.
+    """
+    gym = models.OneToOneField(Gym, on_delete=models.CASCADE, related_name='ai_credit')
+    balance = models.PositiveIntegerField(default=10)
+    total_used = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Gym AI Credit Wallet'
+        verbose_name_plural = 'Gym AI Credit Wallets'
+
+    def __str__(self):
+        return f"{self.gym.gym_name} — {self.balance} credits"
+
+
+class AICreditTransaction(models.Model):
+    """
+    Append-only ledger of every AI credit change — free grant, Register Scan
+    deduction, or Super Admin manual adjustment. Never edited or deleted,
+    mirroring the AuditLog / EnrollmentDeletionLog pattern already used
+    elsewhere in this codebase.
+    """
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, db_index=True, related_name='ai_credit_transactions')
+    credits = models.IntegerField(help_text="Positive for a credit added, negative for a deduction.")
+    balance_after = models.PositiveIntegerField()
+    reason = models.CharField(max_length=255)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['gym', 'created_at'])]
+        verbose_name = 'AI Credit Transaction'
+        verbose_name_plural = 'AI Credit Transactions'
+
+    def delete(self, *args, **kwargs):
+        raise PermissionError("AICreditTransaction rows are a permanent audit trail and cannot be deleted.")
+
+    def __str__(self):
+        sign = '+' if self.credits >= 0 else ''
+        return f"{self.gym.gym_code}: {sign}{self.credits} ({self.reason})"
+
+
+@receiver(post_save, sender=Gym)
+def create_gym_ai_credit_wallet(sender, instance, created, **kwargs):
+    """New gyms automatically receive 10 free AI credits, logged as a
+    normal AICreditTransaction so the ledger is complete from day one."""
+    if not created:
+        return
+    wallet, wallet_created = GymAICredit.objects.get_or_create(gym=instance)
+    if wallet_created:
+        AICreditTransaction.objects.create(
+            gym=instance,
+            credits=wallet.balance,
+            balance_after=wallet.balance,
+            reason="+10 Free Credits",
+            created_by=None,
+        )

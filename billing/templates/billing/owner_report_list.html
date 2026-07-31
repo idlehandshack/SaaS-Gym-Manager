@@ -1,228 +1,167 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Monthly Reports — {{ gym.gym_name }}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg:          #080808;
-      --surface:     #111111;
-      --surface-2:   #1a1a1a;
-      --border:      #222222;
-      --border-2:    #2e2e2e;
-      --accent:      #ff4d00;
-      --accent-dim:  rgba(255, 77, 0, 0.12);
-      --green:       #22c55e;
-      --green-dim:   rgba(34, 197, 94, 0.12);
-      --yellow:      #facc15;
-      --yellow-dim:  rgba(250, 204, 21, 0.10);
-      --text-1:      #f5f5f5;
-      --text-2:      #a3a3a3;
-      --text-3:      #555555;
-      --radius:      10px;
-      --radius-lg:   14px;
-    }
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% block title %}Monthly Reports{% endblock %}
+{% block content %}
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      background: var(--bg);
-      color: var(--text-1);
-      font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      min-height: 100vh;
-    }
-
-    .page { max-width: 1000px; margin: 0 auto; padding: 28px 16px 60px; }
-
-    /* ── Breadcrumb ── */
-    .breadcrumb {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; list-style: none;
-      margin-bottom: 22px;
-    }
-    .breadcrumb a { color: var(--text-2); text-decoration: none; }
-    .breadcrumb a:hover { color: var(--accent); }
-    .breadcrumb-sep   { color: var(--text-3); }
-    .breadcrumb-active { color: var(--text-3); }
-
-    /* ── Title row ── */
-    .title-row {
-      display: flex; align-items: flex-start;
-      justify-content: space-between; flex-wrap: wrap;
-      gap: 14px; margin-bottom: 24px;
-    }
-    .page-title { font-size: 18px; font-weight: 700; color: var(--text-1); margin-bottom: 3px; }
-    .page-sub   { font-size: 12px; color: var(--text-3); }
-
-    .btn-generate {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--accent-dim);
-      border: 1px solid var(--accent);
-      border-radius: var(--radius);
-      padding: 8px 16px;
-      font-size: 12px; font-weight: 600; color: var(--accent);
-      text-decoration: none; white-space: nowrap;
-      transition: background .15s, color .15s;
-      flex-shrink: 0;
-    }
-    .btn-generate:hover { background: var(--accent); color: #fff; }
-
-    /* ── Flash messages ── */
-    .flash-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-    .flash {
-      padding: 11px 16px; border-radius: var(--radius);
-      font-size: 13px; border: 1px solid;
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    }
-    .flash.success { background: var(--green-dim);  border-color: rgba(34,197,94,.25); color: var(--green); }
-    .flash.warning { background: var(--yellow-dim); border-color: rgba(250,204,21,.25); color: var(--yellow); }
-    .flash.error   { background: rgba(239,68,68,.1); border-color: rgba(239,68,68,.25); color: #ef4444; }
-    .flash.info    { background: var(--accent-dim); border-color: rgba(255,77,0,.25);  color: var(--accent); }
-    .flash-close {
-      background: none; border: none; cursor: pointer;
-      color: inherit; opacity: .5; font-size: 16px; line-height: 1;
-      padding: 0 2px;
-    }
-    .flash-close:hover { opacity: 1; }
-
-    /* ── Report grid ── */
-    .report-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-    @media (min-width: 560px) { .report-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (min-width: 800px) { .report-grid { grid-template-columns: repeat(3, 1fr); } }
-
-    .report-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 16px;
-      display: flex; align-items: center; gap: 14px;
-      transition: border-color .2s;
-    }
-    .report-card:hover { border-color: var(--border-2); }
-
-    .report-icon { font-size: 28px; flex-shrink: 0; line-height: 1; }
-
-    .report-info { flex: 1; min-width: 0; }
-    .report-month { font-size: 14px; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
-    .report-meta  { font-size: 11px; color: var(--text-3); }
-    .report-meta .dot { margin: 0 4px; }
-
-    .report-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-
-    .btn-excel {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: var(--green-dim);
-      border: 1px solid rgba(34,197,94,.3);
-      border-radius: 7px;
-      padding: 6px 12px;
-      font-size: 11px; font-weight: 600; color: var(--green);
-      text-decoration: none; white-space: nowrap;
-      transition: background .15s, color .15s;
-    }
-    .btn-excel:hover { background: var(--green); color: #000; }
-
-    .btn-regen {
-      display: inline-flex; align-items: center; justify-content: center;
-      background: var(--surface-2);
-      border: 1px solid var(--border-2);
-      border-radius: 7px;
-      padding: 6px 12px;
-      font-size: 13px; color: var(--text-3);
-      text-decoration: none;
-      transition: border-color .15s, color .15s;
-      title: "Re-generate this report";
-    }
-    .btn-regen:hover { border-color: var(--accent); color: var(--accent); }
-
-    /* ── Empty state ── */
-    .empty-state {
-      text-align: center;
-      padding: 64px 20px;
-      color: var(--text-3);
-    }
-    .empty-icon { font-size: 42px; margin-bottom: 14px; }
-    .empty-title { font-size: 15px; color: var(--text-2); margin-bottom: 8px; }
-    .empty-body  { font-size: 13px; line-height: 1.7; }
-  </style>
-</head>
-<body>
-<div class="page">
-
-  <!-- Breadcrumb -->
-  <ol class="breadcrumb">
-    <li><a href="{% url 'owner:dashboard' %}">Dashboard</a></li>
-    <li class="breadcrumb-sep">›</li>
-    <li class="breadcrumb-active">Monthly Reports</li>
-  </ol>
-
-  <!-- Title row -->
-  <div class="title-row">
-    <div>
-      <div class="page-title">Monthly Revenue Reports</div>
-      <div class="page-sub">Monthly revenue reports are automatically generated on the 1st of every month and archived in Cloudflare.</div>
-    </div>
-    {% comment %} <a href="{% url 'owner:report_generate' %}?year={{ today.year }}&month={{ today.month }}"
-       class="btn-generate">
-      ⚡ Generate {{ today|date:"F Y" }}
-    </a> {% endcomment %}
+<div class="topbar-actions">
+  <a class="btn-new" href="{% url 'owner:dashboard' %}">
+    <i class="bi bi-arrow-left"></i>
+    <span>Back to Billing Dashboard</span>
+  </a>
+</div>
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">Monthly Revenue Reports</h1>
+    <p class="db-page-sub">
+      {{ gym.gym_name }} <span class="date-color">• Auto-generated on the 1st of every month and archived in Cloudflare</span>
+    </p>
   </div>
+  {% comment %}
+  <a href="{% url 'owner:report_generate' %}?year={{ today.year }}&month={{ today.month }}" class="btn btn-outline-primary">
+    <i class="bi bi-lightning-charge-fill"></i> Generate {{ today|date:"F Y" }}
+  </a>
+  {% endcomment %}
+</div>
 
-  <!-- Flash messages -->
-  {% if messages %}
-  <div class="flash-list">
-    {% for msg in messages %}
-    <div class="flash {{ msg.tags }}">
-      <span>{{ msg }}</span>
-      <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
-    </div>
-    {% endfor %}
+<div class="db-card">
+  <div class="db-card-header">
+    <h2 class="db-card-title">Archived Reports</h2>
   </div>
-  {% endif %}
 
   {% if reports %}
-  <!-- Report cards -->
-  <div class="report-grid">
+  <div class="row g-3 p-3">
     {% for report in reports %}
-    <div class="report-card">
-      <span class="report-icon">📊</span>
-      <div class="report-info">
-        <div class="report-month">{{ report.month_label }}</div>
-        <div class="report-meta">
-          {{ report.size_kb }} KB
-          <span class="dot">·</span>
-          {{ report.last_modified|date:"d M Y" }}
+    <div class="col-12 col-sm-6 col-lg-4">
+      <div class="db-report-card">
+        <i class="bi bi-bar-chart-fill db-report-icon"></i>
+        <div class="db-report-info">
+          <div class="db-report-month">{{ report.month_label }}</div>
+          <div class="db-report-meta">
+            {{ report.size_kb }} KB
+            <span class="dot">·</span>
+            {{ report.last_modified|date:"d M Y" }}
+          </div>
         </div>
-      </div>
-      <div class="report-actions">
-        <a href="{{ report.url }}" target="_blank" class="btn-excel">⬇ Excel</a>
-        <a href="{% url 'owner:report_generate' %}?year={{ report.year }}&month={{ report.month }}&force=1"
-           class="btn-regen" title="Re-generate this report">↺</a>
+        <div class="db-report-actions">
+          <a href="{{ report.url }}" target="_blank" class="db-btn-excel">
+            <i class="bi bi-download"></i> Excel
+          </a>
+          <a href="{% url 'owner:report_generate' %}?year={{ report.year }}&month={{ report.month }}&force=1"
+             class="db-btn-regen" title="Re-generate this report">
+            <i class="bi bi-arrow-clockwise"></i>
+          </a>
+        </div>
       </div>
     </div>
     {% endfor %}
   </div>
 
   {% else %}
-  <!-- Empty state -->
-  <div class="empty-state">
-    <div class="empty-icon">📂</div>
-    <div class="empty-title">No monthly reports are available yet.<br>
-        The first report will be generated automatically on the 1st day of the next month.</div>
-    <div class="empty-body">
+  <div class="text-center text-muted py-5">
+    <i class="bi bi-folder2-open" style="font-size: 2.4rem;"></i>
+    <p class="mt-3 mb-1" style="color:#ccc; font-size: 15px;">
+      No monthly reports are available yet.<br>
+      The first report will be generated automatically on the 1st day of the next month.
+    </p>
+    <p class="mb-0 small">
       Reports are auto-generated on the 1st of each month.<br>
       You can also generate this month's report manually using the button above.
-    </div>
+    </p>
   </div>
   {% endif %}
-
 </div>
-</body>
-</html>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .db-report-card {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 100%;
+    transition: border-color .2s;
+  }
+  .db-report-card:hover { border-color: rgba(255,90,0,.35); }
+  .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .btn-new {
+        display: inline-flex; align-items: center; gap: 7px;
+        font-family: var(--font-d); font-size: 0.76rem; font-weight: 700;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        color: #fff; text-decoration: none;
+        padding: 9px 18px; background: var(--orange); border-radius: var(--pill);
+        transition: background var(--t), transform var(--t), box-shadow var(--t);
+        white-space: nowrap; border: none; cursor: pointer; flex-shrink: 0;
+      }
+    .btn-new:hover { background: #e65200; color: #fff; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,90,0,0.35); }
+  .db-report-icon {
+    font-size: 22px;
+    color: #ff5a00;
+    background: rgba(255, 90, 0, .1);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .db-report-info { flex: 1; min-width: 0; }
+  .db-report-month { font-size: 14px; font-weight: 600; color: #f5f5f5; margin-bottom: 4px; }
+  .db-report-meta { font-size: 11px; color: #666; }
+  .db-report-meta .dot { margin: 0 4px; }
+
+  .db-report-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .db-btn-excel {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(93, 232, 124, .1);
+    border: 1px solid rgba(93, 232, 124, .3);
+    border-radius: 7px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #5de87c;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  .db-btn-excel:hover { background: #5de87c; color: #06210f; }
+
+  .db-btn-regen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 7px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #888;
+    text-decoration: none;
+    transition: border-color .15s, color .15s;
+  }
+  .db-btn-regen:hover { border-color: #ff5a00; color: #ff5a00; }
+  @media (max-width: 640px) {
+        .btn-new span { display: none; }
+        .btn-new { padding: 9px 14px; }
+      }
+  @media (max-width: 900px) {
+    .topbar-actions { flex: 1 1 100%; order: 2; justify-content: flex-end; }
+  }
+
+</style>
+{% endblock %}

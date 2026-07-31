@@ -1,0 +1,26 @@
+{# dashboard/includes/_stat_card.html #}
+{% if not hidden_cards or key not in hidden_cards %}
+<div class="col-lg-3 col-md-4 col-6">
+  {% if link %}
+    <a href="{{ link }}" class="db-stat-card db-stat-card-link">
+  {% elif card_id %}
+    <div class="db-stat-card db-stat-card-clickable" id="{{ card_id }}" role="button" tabindex="0" aria-haspopup="dialog">
+  {% else %}
+    <div class="db-stat-card">
+  {% endif %}
+
+    <div class="db-stat-icon db-stat-icon-{{ color }}{% if pulse %} db-stat-icon-pulse{% endif %}">
+      <i class="bi {{ icon }}"></i>
+    </div>
+    <div class="db-stat-text">
+      <div class="db-stat-value" data-countup="{{ value }}">{{ value }}</div>
+      <div class="db-stat-label">{{ label }}</div>
+    </div>
+
+  {% if link %}
+    </a>
+  {% else %}
+    </div>
+  {% endif %}
+</div>
+{% endif %}

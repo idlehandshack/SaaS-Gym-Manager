@@ -1,0 +1,427 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>{% block title %}EnterGYM — Platform Control{% endblock %}</title>
+<link rel="icon" href="{% static 'images/favicon.ico' %}">
+<link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset & Base ─────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0c;color:#e2e2e6;min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+img{display:block;max-width:100%}
+
+:root{
+  --bg-base:#0a0a0c;
+  --bg-surface:#111115;
+  --bg-elevated:#18181e;
+  --bg-card:#1c1c24;
+  --border:#2a2a38;
+  --border-subtle:#1f1f2b;
+  --orange:#5B5FFF;
+  --orange-dim:#ff7a0018;
+  --orange-glow:0 0 24px #ff7a0030;
+  --green:#22c55e;
+  --green-dim:#22c55e18;
+  --red:#ef4444;
+  --red-dim:#ef444418;
+  --yellow:#f59e0b;
+  --yellow-dim:#f59e0b18;
+  --blue:#3b82f6;
+  --blue-dim:#3b82f618;
+  --purple:#a855f7;
+  --text-primary:#f0f0f4;
+  --text-secondary:#8b8b9e;
+  --text-muted:#4a4a5e;
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:14px;
+  --radius-xl:18px;
+  --transition:all .18s cubic-bezier(.4,0,.2,1);
+}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#111115}
+::-webkit-scrollbar-thumb{background:#2a2a38;border-radius:2px}
+
+.layout{display:flex;min-height:100vh}
+
+.sidebar{
+  width:220px;min-width:220px;
+  background:var(--bg-surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;
+  overflow-y:auto;z-index:100;
+  transition:var(--transition);
+}
+.sidebar-logo{
+  padding:20px 20px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.sidebar-logo svg{flex-shrink:0}
+.logo-name{font-size:.85rem;font-weight:700;letter-spacing:.04em;color:var(--text-primary)}
+.logo-badge{font-size:.6rem;background:var(--orange);color:#000;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.05em;margin-left:auto}
+
+.nav-section{padding:16px 12px 8px}
+.nav-label{font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:0 8px 8px}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:var(--radius-sm);
+  font-size:.82rem;font-weight:500;color:var(--text-secondary);
+  cursor:pointer;transition:var(--transition);
+  border:1px solid transparent;
+}
+.nav-item:hover{background:var(--bg-elevated);color:var(--text-primary)}
+.nav-item.active{background:var(--orange-dim);color:var(--orange);border-color:#ff7a0025}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+
+.sidebar-footer{
+  margin-top:auto;padding:16px;border-top:1px solid var(--border);
+  font-size:.75rem;color:var(--text-muted);
+}
+.sidebar-user{display:flex;align-items:center;gap:8px}
+.user-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--orange-dim);border:1px solid var(--orange);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;font-weight:700;color:var(--orange);flex-shrink:0
+}
+
+.main{flex:1;overflow-x:hidden;min-width:0}
+.topbar{
+  background:var(--bg-surface);border-bottom:1px solid var(--border);
+  padding:0 28px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:90;
+}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.hamburger{display:none;flex-direction:column;gap:4px;padding:6px;cursor:pointer}
+.hamburger span{display:block;width:18px;height:2px;background:var(--text-secondary);border-radius:2px;transition:var(--transition)}
+.breadcrumb{font-size:.8rem;color:var(--text-muted)}
+.breadcrumb b{color:var(--text-primary)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-time{font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted)}
+
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
+
+.content{padding:28px;max-width:1600px}
+
+.section-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;gap:16px;flex-wrap:wrap}
+.section-title{font-size:1rem;font-weight:600;color:var(--text-primary)}
+.section-sub{font-size:.75rem;color:var(--text-muted);margin-top:2px}
+.section-action{font-size:.75rem;color:var(--orange);cursor:pointer;transition:var(--transition)}
+.section-action:hover{opacity:.75}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.kpi-card{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:18px 20px;position:relative;overflow:hidden;transition:var(--transition);
+}
+.kpi-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 100% 0%,var(--kpi-accent,#ff7a0008) 0%,transparent 65%);
+  pointer-events:none;
+}
+.kpi-card:hover{border-color:#3a3a4a;transform:translateY(-1px)}
+.kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.kpi-icon{width:34px;height:34px;border-radius:var(--radius-sm);background:var(--kpi-bg,var(--orange-dim));display:flex;align-items:center;justify-content:center}
+.kpi-icon svg{width:16px;height:16px;color:var(--kpi-color,var(--orange))}
+.kpi-trend{display:flex;align-items:center;gap:4px;font-size:.7rem;font-weight:600;padding:3px 7px;border-radius:20px}
+.kpi-trend.up{background:var(--green-dim);color:var(--green)}
+.kpi-trend.down{background:var(--red-dim);color:var(--red)}
+.kpi-trend.neutral{background:var(--bg-elevated);color:var(--text-muted)}
+.kpi-value{font-size:1.9rem;font-weight:700;color:var(--text-primary);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.kpi-label{font-size:.73rem;color:var(--text-muted)}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.card-title{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+.card-body{padding:20px}
+
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.data-table{width:100%;border-collapse:collapse;font-size:.78rem;white-space:nowrap}
+.data-table thead{background:var(--bg-elevated)}
+.data-table th{
+  padding:10px 14px;text-align:left;font-size:.67rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--text-muted);border-bottom:1px solid var(--border);
+}
+.data-table td{padding:11px 14px;border-bottom:1px solid var(--border-subtle);color:var(--text-secondary);vertical-align:middle}
+.data-table tbody tr{transition:var(--transition)}
+.data-table tbody tr:hover{background:var(--bg-elevated)}
+.data-table tbody tr:last-child td{border-bottom:none}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:.67rem;font-weight:600;letter-spacing:.03em}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.badge.active{background:var(--green-dim);color:var(--green)}
+.badge.inactive{background:var(--red-dim);color:var(--red)}
+.badge.expiring{background:var(--yellow-dim);color:var(--yellow)}
+.badge.expired{background:var(--red-dim);color:var(--red)}
+.badge.neutral{background:var(--bg-elevated);color:var(--text-muted)}
+.badge.info{background:var(--blue-dim);color:var(--blue)}
+
+.action-btns{display:flex;gap:6px;flex-wrap:wrap}
+.btn-icon{
+  width:28px;height:28px;border-radius:var(--radius-sm);background:var(--bg-elevated);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;transition:var(--transition);color:var(--text-secondary);
+}
+.btn-icon:hover{background:var(--bg-surface);border-color:#3a3a4a;color:var(--text-primary)}
+.btn-icon svg{width:13px;height:13px}
+.btn-icon.danger:hover{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+.btn-icon.success:hover{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+.btn-icon.warn:hover{background:var(--yellow-dim);border-color:var(--yellow);color:var(--yellow)}
+
+.table-controls{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.search-input{
+  flex:1;max-width:260px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:7px 12px;font:inherit;font-size:.78rem;color:var(--text-primary);outline:none;transition:var(--transition);
+}
+.search-input::placeholder{color:var(--text-muted)}
+.search-input:focus{border-color:#3a3a4a;background:var(--bg-card)}
+.filter-select{
+  background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;
+  font:inherit;font-size:.75rem;color:var(--text-secondary);outline:none;cursor:pointer;
+}
+.filter-select:focus{border-color:#3a3a4a}
+.table-count{font-size:.72rem;color:var(--text-muted);margin-left:auto}
+
+.pagination{display:flex;align-items:center;gap:8px;padding:14px 20px;justify-content:flex-end}
+.pagination a,.pagination span{
+  font-size:.75rem;color:var(--text-secondary);padding:6px 11px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);background:var(--bg-elevated);
+}
+.pagination a:hover{color:var(--text-primary);border-color:#3a3a4a}
+.pagination .current{color:var(--orange);border-color:#ff7a0025;background:var(--orange-dim)}
+
+.divider{height:1px;background:var(--border);margin:28px 0}
+.empty-state{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:.8rem}
+
+.text-green{color:var(--green)}
+.text-red{color:var(--red)}
+.text-yellow{color:var(--yellow)}
+.text-orange{color:var(--orange)}
+.text-blue{color:var(--blue)}
+.text-muted{color:var(--text-muted)}
+
+.btn-sm{
+  padding:7px 14px;border-radius:var(--radius-sm);font-size:.75rem;font-weight:600;
+  border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);
+  transition:var(--transition);cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+}
+.btn-sm:hover{color:var(--text-primary);border-color:#3a3a4a}
+.btn-sm.primary{background:var(--orange);border-color:var(--orange);color:#000}
+.btn-sm.primary:hover{background:#4a4ee8;border-color:#4a4ee8;color:#fff}
+.btn-sm.danger{border-color:var(--red);color:var(--red)}
+.btn-sm.danger:hover{background:var(--red-dim)}
+.btn-sm.success{border-color:var(--green);color:var(--green)}
+.btn-sm.success:hover{background:var(--green-dim)}
+
+/* ── Django messages ─────────────────────────────────── */
+.django-messages{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.django-message{
+  padding:11px 16px;border-radius:var(--radius-md);font-size:.8rem;border:1px solid var(--border);
+  background:var(--bg-elevated);color:var(--text-secondary);
+}
+.django-message.success{border-color:rgba(34,197,94,.3);background:var(--green-dim);color:var(--green)}
+.django-message.error{border-color:rgba(239,68,68,.3);background:var(--red-dim);color:var(--red)}
+.django-message.warning{border-color:rgba(245,158,11,.3);background:var(--yellow-dim);color:var(--yellow)}
+
+/* ── Forms (used by communications' create/edit screen) ─ */
+.form-section{margin-bottom:28px}
+.form-section-title{font-size:.78rem;font-weight:600;color:var(--text-primary);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.form-group{margin-bottom:18px}
+.form-row{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.form-label{display:block;font-size:.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.form-control,.form-select{
+  width:100%;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:9px 12px;font:inherit;font-size:.85rem;color:var(--text-primary);outline:none;transition:var(--transition);
+}
+.form-control::placeholder{color:var(--text-muted)}
+.form-control:focus,.form-select:focus{border-color:var(--orange);background:var(--bg-card)}
+textarea.form-control{resize:vertical;min-height:120px;font-family:inherit}
+select[multiple].form-select{min-height:150px}
+.form-check{display:flex;align-items:center;gap:8px;padding:7px 0}
+.form-check input[type=checkbox]{width:16px;height:16px;accent-color:var(--orange);cursor:pointer}
+.form-check label{font-size:.8rem;color:var(--text-secondary);cursor:pointer}
+.form-help{font-size:.68rem;color:var(--text-muted);margin-top:4px;line-height:1.4}
+.form-errors{color:var(--red);font-size:.72rem;margin-top:4px}
+.form-actions{display:flex;gap:10px;padding-top:20px;border-top:1px solid var(--border);margin-top:8px;flex-wrap:wrap}
+.scope-field[hidden]{display:none}
+
+@media (max-width:960px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+}
+@media (max-width:768px){
+  .sidebar{position:fixed;left:-220px;top:0;bottom:0;z-index:200;transition:left .25s cubic-bezier(.4,0,.2,1)}
+  .sidebar.mobile-open{left:0}
+  .sidebar-overlay{position:fixed;inset:0;background:#00000060;z-index:190;display:none}
+  .sidebar-overlay.open{display:block}
+  .hamburger{display:flex}
+  .topbar{padding:0 16px}
+  .content{padding:16px}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:480px){
+  .kpi-grid{grid-template-columns:1fr}
+}
+{% block extra_css %}{% endblock %}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ── Sidebar ───────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM Logo" class="brand-logo" width="40" height="40"/>
+    <span class="logo-name">EnterGYM</span>
+    <span class="logo-badge">SAAS</span>
+  </div>
+
+  <div class="nav-section">
+    <p class="nav-label">Platform</p>
+    <a class="nav-item" href="{% url 'all_gyms' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      All Gyms
+    </a>
+    <a class="nav-item" href="{% url 'subscriptions_page' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Subscriptions
+    </a>
+    <a class="nav-item" href="{% url 'platform_insights' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Insights
+    </a>
+    <a class="nav-item" href="{% url 'login_support_tickets' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Support Tickets
+    </a>
+    <a class="nav-item" href="{% url 'admin_catalog_home' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Supplements Product
+    </a>
+    <a class="nav-item" href="{% url 'orphan_users_page' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M14 4l6 6"/><path d="M10 8l6 6"/><path d="M9 9L4 20"/><path d="M3 20h10"/>
+          <path d="M18 3v2"/><path d="M17 4h2"/><path d="M20 8v2"/><path d="M19 9h2"/>
+      </svg>
+      User Cleanup
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <p class="nav-label">Communications</p>
+    <a class="nav-item {% if active_nav == 'communications_dashboard' %}active{% endif %}" href="{% url 'communication_dashboard' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a class="nav-item {% if active_nav == 'communications' %}active{% endif %}" href="{% url 'communication_list' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>
+      Communications
+    </a>
+    <a class="nav-item {% if active_nav == 'communications_campaigns' %}active{% endif %}" href="{% url 'campaign_list' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.24 12.24a6 6 0 00-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+      Campaigns
+    </a>
+    <a class="nav-item {% if active_nav == 'communications_sponsors' %}active{% endif %}" href="{% url 'sponsor_list' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.4 2.3 7.2L12 16.4 5.7 20.8 8 13.6l-6-4.4h7.6z"/></svg>
+      Sponsors
+    </a>
+    <a class="nav-item {% if active_nav == 'communications_delivery_logs' %}active{% endif %}" href="{% url 'communication_delivery_logs' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="11" y2="11"/></svg>
+      Delivery Logs
+    </a>
+    <a class="nav-item {% if active_nav == 'communications_analytics' %}active{% endif %}" href="{% url 'communication_analytics' %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Analytics
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <p class="nav-label">System</p>
+    <a class="nav-item" href="/admin/">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Django Admin
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar">SA</div>
+      <div>
+        <div style="font-size:.73rem;color:var(--text-primary);font-weight:500">{{ request.user.username }}</div>
+        <div style="font-size:.65rem;margin-top:1px;color:var(--green)">● Super Admin</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ── Main ──────────────────────────────────────────────── -->
+<main class="main">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+      <div class="breadcrumb">EnterGYM <span style="color:var(--border)">·</span> <b>{% block breadcrumb %}Platform Dashboard{% endblock %}</b></div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot"></div>
+      <span class="topbar-time" id="liveTime">--:--:--</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    {% if messages %}
+    <div class="django-messages">
+      {% for message in messages %}
+      <div class="django-message {{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+  </div>
+</main>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+(function(){
+  var timeEl=document.getElementById('liveTime');
+  function tick(){
+    var n=new Date();
+    timeEl.textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(function(x){return String(x).padStart(2,'0');}).join(':');
+  }
+  tick();setInterval(tick,1000);
+
+  var sidebar=document.getElementById('sidebar');
+  var sidebarOverlay=document.getElementById('sidebarOverlay');
+  var hamburger=document.getElementById('hamburger');
+  function toggleSidebar(){sidebar.classList.toggle('mobile-open');sidebarOverlay.classList.toggle('open');}
+  hamburger.addEventListener('click', toggleSidebar);
+  sidebarOverlay.addEventListener('click', toggleSidebar);
+})();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

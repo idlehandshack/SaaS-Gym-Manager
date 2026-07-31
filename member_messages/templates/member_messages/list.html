@@ -1,0 +1,338 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Member Messages{% endblock %}
+
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">Member Messages</h1>
+    <p class="db-page-sub">Private one-to-one messages sent to individual members.</p>
+  </div>
+</div>
+
+<!-- ── Stats row ─────────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-send-fill" label="Messages Sent" value=stats.messages_sent color="primary" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-envelope-open-fill" label="Messages Read" value=stats.messages_read color="success" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-envelope-exclamation-fill" label="Unread Messages" value=stats.unread_messages color="warning" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-calendar-day-fill" label="Today's Messages" value=stats.todays_messages color="info" %}
+</div>
+
+<!-- ── Search ────────────────────────────────────────────────────── -->
+<div class="msg-history-toolbar">
+  <form method="GET" class="msg-search-form">
+    <div class="db-search msg-search">
+      <i class="bi bi-search"></i>
+      <input type="text" name="q" value="{{ search }}" placeholder="Search by title or member...">
+    </div>
+    <button type="submit" class="db-btn db-btn-primary">
+      <i class="bi bi-search"></i> Search
+    </button>
+  </form>
+</div>
+
+<!-- ── Row list ──────────────────────────────────────────────────── -->
+<div class="msg-row-list">
+  {% for m in page_obj %}
+  <div class="msg-row" data-history-url="{% if m.enrollment %}{% url 'member_message_history' m.enrollment.id %}{% endif %}"
+       id="msg-row-{{ m.id }}">
+
+    <div class="msg-row-avatar">
+      {% if m.enrollment.face_image %}
+        <img src="{{ m.enrollment.face_image.url }}" alt="{{ m.enrollment.fullname|default:m.member.username }}">
+      {% else %}
+        <div class="msg-row-avatar-placeholder">
+          {{ m.enrollment.fullname|default:m.member.username|slice:":1"|upper }}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="msg-row-col msg-row-name">
+      <span class="msg-row-fullname">{{ m.enrollment.fullname|default:m.member.username }}</span>
+      {% if m.enrollment %}<span class="msg-row-sub">{{ m.enrollment.unique_id }}</span>{% endif %}
+    </div>
+
+    {% if m.enrollment %}
+    <div class="msg-row-col msg-row-hide-sm">{{ m.enrollment.phone }}</div>
+    {% else %}
+    <div class="msg-row-col msg-row-hide-sm msg-row-muted">—</div>
+    {% endif %}
+
+    <div class="msg-row-col msg-row-title-col">
+      <span class="msg-row-title">{{ m.title }}</span>
+      <span class="msg-row-sub">{{ m.created_at|date:"d M Y, h:i A" }}</span>
+    </div>
+
+    <div class="msg-row-col msg-row-hide-sm">
+      <span class="badge-pill priority-{{ m.priority }}">{{ m.get_priority_display }}</span>
+    </div>
+
+    <div class="msg-row-col">
+      {% if m.unread_count %}
+        <span class="badge-pill status-pending">
+          <i class="bi bi-clock-fill"></i> {{ m.unread_count }} unread
+        </span>
+      {% else %}
+        <span class="badge-pill status-active">
+          <i class="bi bi-check-circle-fill"></i> All read
+        </span>
+      {% endif %}
+      <span class="msg-row-sub" style="margin-top:2px;">{{ m.total_count }} message{{ m.total_count|pluralize }}</span>
+    </div>
+
+    {% if can_delete %}
+    <div class="msg-row-menu">
+      <button type="button" class="msg-menu-btn" data-id="{{ m.id }}" aria-label="More options">
+        <i class="bi bi-three-dots-vertical"></i>
+      </button>
+      <div class="msg-menu-dropdown" data-id="{{ m.id }}">
+        <button type="button" class="msg-menu-item msg-delete-btn" data-id="{{ m.id }}">
+          <i class="bi bi-trash3"></i> Delete
+        </button>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="msg-history-empty">
+    <i class="bi bi-envelope-slash"></i>
+    <p>No messages sent yet.</p>
+  </div>
+  {% endfor %}
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="msg-pagination">
+  {% if page_obj.has_previous %}
+    <a href="?q={{ search }}&page={{ page_obj.previous_page_number }}" class="db-btn">
+      <i class="bi bi-chevron-left"></i> Prev
+    </a>
+  {% else %}
+    <span class="db-btn db-btn-disabled"><i class="bi bi-chevron-left"></i> Prev</span>
+  {% endif %}
+
+  <span class="msg-page-info">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </span>
+
+  {% if page_obj.has_next %}
+    <a href="?q={{ search }}&page={{ page_obj.next_page_number }}" class="db-btn">
+      Next <i class="bi bi-chevron-right"></i>
+    </a>
+  {% else %}
+    <span class="db-btn db-btn-disabled">Next <i class="bi bi-chevron-right"></i></span>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ── Toolbar ───────────────────────────────────────── */
+  .msg-history-toolbar{ margin-bottom:1rem; }
+  .msg-search-form{ display:flex; gap:.6rem; max-width:460px; }
+  .msg-search{ flex:1; max-width:none; }
+  .msg-search input{ width:100%; }
+
+  .db-btn{
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.5rem .95rem;
+    border-radius:var(--radius-sm);
+    border:1px solid var(--border-2);
+    background:var(--surface-2);
+    color:var(--text-hi);
+    font-size:.83rem; font-weight:500;
+    text-decoration:none;
+    transition:border-color var(--t) var(--ease), color var(--t) var(--ease), background var(--t) var(--ease);
+    cursor:pointer;
+  }
+  .db-btn:hover{ border-color:var(--orange-bdr); color:var(--orange); }
+  .db-btn-primary{ background:var(--orange); border-color:var(--orange); color:#fff; }
+  .db-btn-primary:hover{ background:var(--orange); color:#fff; opacity:.9; }
+  .db-btn-disabled{ opacity:.35; pointer-events:none; }
+
+  /* ── Row list ──────────────────────────────────────── */
+  .msg-row-list{ display:flex; flex-direction:column; gap:.6rem; }
+
+  .msg-row{
+    display:flex;
+    align-items:center;
+    gap:1rem;
+    background:var(--surface);
+    border:1px solid var(--border-2);
+    border-radius:var(--radius-md);
+    padding:.7rem 1rem;
+    cursor:pointer;
+    transition:border-color var(--t) var(--ease), background var(--t) var(--ease);
+  }
+  .msg-row:hover{ border-color:var(--orange-bdr); background:var(--surface-2); }
+
+  .msg-row-avatar{
+    width:42px; height:42px; border-radius:50%;
+    overflow:hidden; flex-shrink:0;
+    background:var(--surface-3);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .msg-row-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .msg-row-avatar-placeholder{
+    width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-d); font-weight:700; font-size:1.05rem;
+    color:var(--orange);
+  }
+
+  .msg-row-col{
+    flex:1;
+    min-width:0;
+    color:var(--text-hi);
+    font-size:.85rem;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .msg-row-muted{ color:var(--text-lo); }
+
+  .msg-row-name{ flex:1.3; }
+  .msg-row-fullname{ font-weight:700; color:var(--text-hi); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .msg-row-sub{ font-size:.72rem; color:var(--text-mid); }
+
+  .msg-row-title-col{ flex:1.6; }
+  .msg-row-title{ font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .msg-row-hide-sm{}
+
+  /* ── Badges ────────────────────────────────────────── */
+  .badge-pill{
+    display:inline-flex; align-items:center; gap:.3rem;
+    padding:.28rem .65rem;
+    border-radius:var(--radius-pill);
+    font-size:.72rem;
+    font-weight:600;
+    background:var(--surface-3);
+    border:1px solid var(--border-2);
+    color:var(--text-mid);
+    white-space:nowrap;
+    width:fit-content;
+  }
+  .status-active{ background:var(--green-dim); border-color:var(--green-bdr); color:var(--green); }
+  .status-pending{ background:var(--yellow-dim); border-color:var(--yellow-bdr); color:var(--yellow); }
+
+  .priority-normal{ background:var(--surface-3); border-color:var(--border-2); color:var(--text-mid); }
+  .priority-important{ background:var(--orange-dim); border-color:var(--orange-bdr); color:var(--orange); }
+  .priority-urgent{ background:var(--red-dim); border-color:var(--red-bdr); color:var(--red); }
+
+  /* ── Row menu (⋮) ──────────────────────────────────── */
+  .msg-row-menu{ position:relative; flex-shrink:0; }
+  .msg-menu-btn{
+    width:32px; height:32px;
+    display:flex; align-items:center; justify-content:center;
+    background:transparent; border:1px solid transparent; border-radius:var(--radius-sm);
+    color:var(--text-mid); cursor:pointer;
+    transition:background var(--t) var(--ease), color var(--t) var(--ease);
+  }
+  .msg-menu-btn:hover{ background:var(--surface-3); color:var(--text-hi); }
+
+  .msg-menu-dropdown{
+    display:none;
+    position:absolute;
+    right:0; top:calc(100% + 4px);
+    background:var(--surface-2);
+    border:1px solid var(--border-2);
+    border-radius:var(--radius-sm);
+    min-width:140px;
+    z-index:20;
+    box-shadow:0 8px 24px rgba(0,0,0,.35);
+    overflow:hidden;
+  }
+  .msg-menu-dropdown.open{ display:block; }
+
+  .msg-menu-item{
+    display:flex; align-items:center; gap:.5rem;
+    width:100%; padding:.6rem .85rem;
+    background:none; border:none; text-align:left;
+    font-size:.8rem; color:var(--text-hi); cursor:pointer;
+  }
+  .msg-menu-item:hover{ background:var(--surface-3); }
+  .msg-delete-btn{ color:var(--red); }
+  .msg-delete-btn:hover{ background:var(--red-dim); }
+
+  /* ── Empty / pagination ───────────────────────────── */
+  .msg-history-empty{
+    text-align:center; padding:2.5rem 1rem; color:var(--text-mid);
+    background:var(--surface); border:1px solid var(--border-2); border-radius:var(--radius-md);
+  }
+  .msg-history-empty i{ font-size:1.6rem; color:var(--text-lo); display:block; margin-bottom:.5rem; }
+  .msg-history-empty p{ margin:0; font-size:.85rem; }
+
+  .msg-pagination{
+    display:flex; align-items:center; gap:.75rem;
+    margin-top:1.25rem; padding-top:1rem;
+    border-top:1px solid var(--border);
+  }
+  .msg-page-info{ color:var(--text-mid); font-size:.8rem; margin-left:auto; margin-right:auto; }
+
+  @media (max-width: 767.98px){
+    .msg-row-hide-sm{ display:none; }
+  }
+  @media (max-width: 575.98px){
+    .msg-search-form{ flex-direction:column; }
+    .msg-pagination{ flex-wrap:wrap; }
+    .msg-page-info{ order:3; width:100%; text-align:center; margin:.5rem 0 0; }
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+
+  // ── Row click → history page (ignore clicks on the ⋮ menu) ──────────
+  document.querySelectorAll('.msg-row').forEach(function (row) {
+    row.addEventListener('click', function (e) {
+      if (e.target.closest('.msg-row-menu')) return;
+      const url = row.dataset.historyUrl;
+      if (url) window.location.href = url;
+    });
+  });
+
+  // ── ⋮ menu toggle ─────────────────────────────────────────────────
+  document.querySelectorAll('.msg-menu-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const dropdown = document.querySelector(`.msg-menu-dropdown[data-id="${btn.dataset.id}"]`);
+      document.querySelectorAll('.msg-menu-dropdown.open').forEach(function (d) {
+        if (d !== dropdown) d.classList.remove('open');
+      });
+      dropdown.classList.toggle('open');
+    });
+  });
+  document.addEventListener('click', function () {
+    document.querySelectorAll('.msg-menu-dropdown.open').forEach(function (d) {
+      d.classList.remove('open');
+    });
+  });
+
+  // ── Delete ────────────────────────────────────────────────────────
+  document.querySelectorAll('.msg-delete-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (!confirm('Delete this message permanently from records?')) return;
+      fetch(`/member-messages/${btn.dataset.id}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById(`msg-row-${btn.dataset.id}`).remove();
+        } else {
+          alert(data.error || 'Could not delete this message.');
+        }
+      })
+      .catch(() => alert('Something went wrong. Please try again.'));
+    });
+  });
+});
+</script>
+{% endblock %}

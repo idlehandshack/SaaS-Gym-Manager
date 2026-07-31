@@ -1,0 +1,183 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% block title %}Attendance Imports{% endblock %}
+
+{% block extra_css %}
+<style>
+  .db-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    padding: 7px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: transparent;
+    color: #999;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .db-back-btn:hover {
+    border-color: var(--orange);
+    color: var(--text-hi);
+    background: var(--orange-dim, rgba(255,90,0,.06));
+  }
+  .hist-pill.saved { background: var(--green-dim,rgba(60,200,120,.12)); color: var(--green); }
+  .hist-pill.review { background: var(--red-dim); color: var(--red); }
+  .hist-pill.credit-used { background: var(--orange-dim); color: var(--orange); }
+  .hist-pill.credit-not-used { background: var(--surface-3); color: var(--text-lo); }
+  .hist-empty { text-align: center; padding: 60px 20px; color: var(--text-lo); font-family: var(--font-d); letter-spacing: .1em; text-transform: uppercase; font-size: .8rem; }
+  .hist-page { max-width: 900px; margin: 0 auto; padding: 0 0 clamp(40px,6vw,60px); }
+  .hist-list { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+  .hist-row {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 14px 18px;
+    display: flex; align-items: center; gap: 16px; cursor: pointer;
+    transition: border-color var(--t);
+  }
+  .hist-row:hover { border-color: var(--orange-bdr); }
+  .hist-thumb { width: 48px; height: 48px; border-radius: var(--radius-sm); object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
+  .hist-thumb-ph { width: 48px; height: 48px; border-radius: var(--radius-sm); background: var(--surface-3); display: flex; align-items: center; justify-content: center; color: var(--text-lo); flex-shrink: 0; }
+  .hist-main { flex: 1; min-width: 0; }
+  .hist-date { font-family: var(--font-d); font-weight: 800; color: var(--text-hi); font-size: .85rem; }
+  .hist-sub { font-family: var(--font-b); font-size: .76rem; color: var(--text-mid); margin-top: 2px; }
+  .hist-stats { display: flex; gap: 10px; flex-shrink: 0; }
+  .hist-pill { font-family: var(--font-d); font-size: .68rem; font-weight: 800; padding: 3px 10px; border-radius: var(--radius-pill); }
+  .hist-pill.saved { background: var(--green-dim,rgba(60,200,120,.12)); color: var(--green); }
+  .hist-pill.review { background: var(--red-dim); color: var(--red); }
+  .hist-empty { text-align: center; padding: 60px 20px; color: var(--text-lo); font-family: var(--font-d); letter-spacing: .1em; text-transform: uppercase; font-size: .8rem; }
+
+  .hist-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 1200; }
+  .hist-backdrop.open { display: block; }
+  .hist-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100vw);
+    background: var(--surface); border-left: 1px solid var(--border-2);
+    z-index: 1201; overflow-y: auto; transform: translateX(100%);
+    transition: transform .3s var(--ease); padding: 24px;
+  }
+  .hist-panel.open { transform: translateX(0); }
+  .hist-panel-close { width: 32px; height: 32px; background: var(--surface-2); border: 1px solid var(--border-2); color: var(--text-mid); border-radius: var(--radius-sm); cursor: pointer; margin-bottom: 18px; }
+  .hist-panel img { max-width: 100%; border-radius: var(--radius-md); margin-bottom: 16px; }
+  .hist-json { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 10px; font-family: var(--font-mono, monospace); font-size: .72rem; color: var(--text-mid); white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow-y: auto; }
+  .hist-panel h4 { font-family: var(--font-d); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-lo); margin: 16px 0 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <a href="{% url 'today_attendance' %}" class="db-back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+      Back to Attendance Sheet
+    </a>
+    <h1 class="db-page-title">Attendance Imports</h1>
+    <p class="db-page-sub">History of every "Scan Attendance Register" import for {{ gym.gym_name }}</p>
+  </div>
+</div>
+
+<div class="hist-page">
+  <div class="hist-list" id="histList" aria-live="polite">
+    <div class="hist-empty">Loading…</div>
+  </div>
+</div>
+
+<div class="hist-backdrop" id="histBackdrop"></div>
+<div class="hist-panel" id="histPanel" role="dialog" aria-modal="true" aria-label="Import detail">
+  <button type="button" class="hist-panel-close" id="histPanelClose" aria-label="Close">✕</button>
+  <div id="histPanelBody">Loading…</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+(function () {
+  const list = document.getElementById('histList');
+  const panel = document.getElementById('histPanel');
+  const backdrop = document.getElementById('histBackdrop');
+  const panelBody = document.getElementById('histPanelBody');
+  document.getElementById('histPanelClose').addEventListener('click', closePanel);
+  backdrop.addEventListener('click', closePanel);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+
+  function closePanel() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('open');
+  }
+
+  fetch('{% url "register_scan_history_list" %}', { credentials: 'include' })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok || !data.imports.length) {
+        list.innerHTML = '<div class="hist-empty">No imports yet</div>';
+        return;
+      }
+      list.innerHTML = '';
+      data.imports.forEach(imp => {
+        const row = document.createElement('div');
+        row.className = 'hist-row';
+        row.setAttribute('role', 'button');
+        row.setAttribute('tabindex', '0');
+        row.innerHTML = `
+          ${imp.image_url ? `<img class="hist-thumb" src="${imp.image_url}" alt="Register photo" />` : `<div class="hist-thumb-ph"><i class="bi bi-image"></i></div>`}
+          <div class="hist-main">
+            <div class="hist-date">${imp.created_at}</div>
+            <div class="hist-sub">by ${imp.imported_by} · ${imp.detected_count} AI + ${imp.manual_count} manual</div>
+          </div>
+          <div class="hist-stats">
+            <span class="hist-pill saved">${imp.saved_count} saved</span>
+            ${imp.needs_review_count ? `<span class="hist-pill review">${imp.needs_review_count} review</span>` : ''}
+            <span class="hist-pill ${imp.credit_used ? 'credit-used' : 'credit-not-used'}">
+              ${imp.credit_used ? '<i class="bi bi-stars"></i> Credit Used' : 'No Credit Used'}
+            </span>
+          </div>`;
+        const open = () => openDetail(imp.id);
+        row.addEventListener('click', open);
+        row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        list.appendChild(row);
+      });
+    })
+    .catch(() => { list.innerHTML = '<div class="hist-empty">Could not load import history</div>'; });
+
+  function openDetail(id) {
+    panelBody.innerHTML = 'Loading…';
+    panel.classList.add('open');
+    backdrop.classList.add('open');
+
+    fetch(`/owner/attendance/register-scan/history/${id}/`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) { panelBody.textContent = 'Could not load this import.'; return; }
+        panelBody.innerHTML = `
+          ${d.image_url ? `<img src="${d.image_url}" alt="Register photo" />` : ''}
+          <div class="hist-sub">Imported by ${d.imported_by} on ${d.created_at}${d.ip_address ? ' · ' + d.ip_address : ''}${d.duration_ms ? ' · ' + d.duration_ms + 'ms' : ''}</div>
+          <div class="hist-sub" style="margin-top:6px;">
+            <span class="hist-pill ${d.credit_used ? 'credit-used' : 'credit-not-used'}">
+              ${d.credit_used ? '<i class="bi bi-stars"></i> Credit Used: Yes' : 'Credit Used: No'}
+            </span>
+          </div>
+          <h4>Summary</h4>
+          <div class="hist-sub">
+            Saved ${d.summary.saved_count} · Already Present ${d.summary.already_present_count} ·
+            Needs Review ${d.summary.needs_review_count} · Manual ${d.summary.manual_count} ·
+            AI ${d.summary.detected_count} · Edited by staff ${d.summary.rows_edited}
+          </div>
+          <h4>Raw AI Response</h4>
+          <div class="hist-json">${escapeHtml(JSON.stringify(d.raw_ai_response, null, 2))}</div>
+          <h4>Edited / Submitted</h4>
+          <div class="hist-json">${escapeHtml(JSON.stringify(d.edited_response, null, 2))}</div>
+        `;
+      })
+      .catch(() => { panelBody.textContent = 'Could not load this import.'; });
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  }
+})();
+</script>
+{% endblock %}

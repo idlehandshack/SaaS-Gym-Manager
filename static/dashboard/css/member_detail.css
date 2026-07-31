@@ -1,0 +1,184 @@
+/* dashboard/css/member_detail.css
+   Member Detail page — additive styles only.
+   Reuses variables defined in dashboard.css (:root) and follows the
+   same conventions as members.css. Does not redefine or override any
+   existing dashboard.css / members.css rule. */
+
+/* ── Back link ────────────────────────────────────────────────── */
+.db-back-link{
+  color:var(--text-mid); font-size:.85rem; text-decoration:none;
+  display:inline-flex; align-items:center; gap:.35rem;
+}
+.db-back-link:hover{ color:var(--orange); }
+
+/* ── Header ───────────────────────────────────────────────────── */
+.member-detail-header{
+  display:flex; align-items:center; gap:1.25rem;
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:1.25rem 1.5rem; margin-bottom:1.5rem;
+}
+.member-detail-photo{ flex-shrink:0; }
+.member-detail-photo img{
+  width:72px; height:72px; border-radius:50%; object-fit:cover; display:block;
+  border:1px solid var(--border);
+}
+.member-detail-photo-placeholder{
+  width:72px; height:72px; border-radius:50%; background:var(--orange-dim); color:var(--orange);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1.6rem;
+  border:1px solid var(--orange-bdr);
+}
+.member-detail-header-info{ flex:1; min-width:0; }
+.member-detail-header-info h1{
+  font-family:var(--font-d); font-size:1.35rem; color:var(--text-hi); margin:0 0 .4rem;
+}
+.member-detail-header-meta{
+  display:flex; flex-wrap:wrap; align-items:center; gap:.9rem;
+  font-size:.85rem; color:var(--text-mid);
+}
+.member-detail-header-meta span{ display:inline-flex; align-items:center; }
+.member-detail-quick-actions{ display:flex; gap:.6rem; flex-shrink:0; }
+
+/* ── Status badge (shares palette with list page's status badges) ── */
+.status-badge{
+  display:inline-block; padding:.25rem .6rem; border-radius:var(--radius-pill);
+  font-size:.72rem; font-weight:600; border:1px solid transparent;
+}
+.status-active{ background:var(--green-dim); color:var(--green); border-color:var(--green-bdr); }
+.status-pending{ background:var(--yellow-dim); color:var(--yellow); border-color:var(--yellow-bdr); }
+.status-expired{ background:var(--red-dim); color:var(--red); border-color:var(--red-bdr); }
+
+/* ── Grid of section cards ───────────────────────────────────────── */
+.member-detail-grid{
+  display:grid; gap:1.25rem;
+  grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));
+}
+.member-detail-card{
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:1.25rem 1.5rem;
+}
+.member-detail-card-wide{ grid-column:1 / -1; }
+.member-detail-card h2{
+  font-family:var(--font-d); font-size:1rem; color:var(--text-hi);
+  margin:0 0 1rem; padding-bottom:.75rem; border-bottom:1px solid var(--border);
+}
+
+/* ── Definition-list fields (Personal Info / Membership / Attendance) ── */
+.member-detail-fields{
+  display:grid; grid-template-columns:auto 1fr; gap:.6rem 1rem; margin:0;
+}
+.member-detail-fields dt{
+  font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo);
+  align-self:center;
+}
+.member-detail-fields dd{
+  margin:0; font-size:.87rem; color:var(--text-hi); text-align:right;
+}
+
+/* ── Color emphasis for important data ───────────────────────────
+   Applied selectively (phone/email/plan/attendance %) rather than to
+   every field, so the emphasis actually stands out. */
+.member-detail-fields dd.field-highlight,
+.stat-card strong.field-highlight{ color:var(--orange); font-weight:600; }
+.member-detail-fields dd.field-warning,
+.stat-card strong.field-warning{ color:var(--yellow); font-weight:600; }
+.member-detail-fields dd.value-good,
+.stat-card strong.value-good{ color:var(--green); font-weight:600; }
+.member-detail-fields dd.value-bad,
+.stat-card strong.value-bad{ color:var(--red); font-weight:600; }
+.member-detail-fields dd.value-warning,
+.stat-card strong.value-warning{ color:var(--yellow); }
+
+.member-detail-empty{
+  font-size:.85rem; color:var(--text-mid); margin:0;
+}
+
+/* ── Financial summary stat cards ─────────────────────────────── */
+.member-detail-stat-cards{
+  display:grid; gap:.85rem;
+  grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));
+}
+.stat-card{
+  background:var(--surface-3); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:.75rem .9rem;
+  display:flex; flex-direction:column; gap:.3rem;
+}
+.stat-card span{
+  font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo);
+}
+.stat-card strong{ font-size:1.05rem; color:var(--text-hi); }
+
+/* ── Invoice table ────────────────────────────────────────────── */
+.member-detail-table{
+  width:100%; border-collapse:collapse; font-size:.85rem; color:var(--text-hi);
+}
+.member-detail-table thead th{
+  text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--text-mid); border-bottom:1px solid var(--border); padding:.6rem .5rem;
+}
+.member-detail-table tbody td{
+  padding:.6rem .5rem; border-bottom:1px solid var(--border);
+}
+.member-detail-table tbody tr:last-child td{ border-bottom:none; }
+.db-btn-outline-sm {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 6px;
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  background: transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background .15s, color .15s;
+}
+.db-btn-outline-sm:hover { background: var(--orange); color: #fff; }
+/* ── Activity timeline ────────────────────────────────────────── */
+.member-detail-timeline{ list-style:none; margin:0; padding:0; }
+.timeline-item{
+  display:grid; grid-template-columns:110px 150px 1fr; gap:1rem; align-items:baseline;
+  padding:.6rem 0; border-bottom:1px solid var(--border); font-size:.85rem;
+}
+.timeline-item:last-child{ border-bottom:none; }
+.timeline-date{ color:var(--text-lo); font-size:.78rem; white-space:nowrap; }
+.timeline-label{ font-weight:600; color:var(--text-hi); }
+.timeline-detail{ color:var(--text-mid); }
+
+.timeline-joined .timeline-label{ color:var(--green); }
+.timeline-plan_change .timeline-label{ color:var(--orange); }
+.timeline-payment .timeline-label{ color:var(--green); }
+.timeline-invoice .timeline-label{ color:var(--text-hi); }
+@media (max-width: 767.98px){
+  .member-detail-header{
+    flex-direction:column; align-items:center; text-align:center;
+  }
+  .member-detail-header-info{ width:100%; }
+  .member-detail-header-meta{ justify-content:center; }
+  .member-detail-quick-actions{ width:100%; justify-content:center; margin-top:.25rem; }
+  .member-detail-fields{ grid-template-columns:1fr; }
+  .member-detail-fields dd{ text-align:left; }
+  .timeline-item{ grid-template-columns:1fr; gap:.2rem; }
+}
+.att-panel-backdrop{
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.72); z-index:1300;
+}
+.att-panel-backdrop.open{ display:block; }
+/* ── Table horizontal scroll wrapper (prevents column clipping on mobile) ── */
+.member-detail-table-scroll{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  margin:0 -1.5rem;      /* bleed to card edges so scroll feels natural */
+  padding:0 1.5rem;
+}
+.member-detail-table-scroll .member-detail-table{
+  min-width:480px;
+}
+@media (max-width: 767.98px){
+  .member-detail-table-scroll{
+    margin:0 -1rem;
+    padding:0 1rem;
+  }
+}

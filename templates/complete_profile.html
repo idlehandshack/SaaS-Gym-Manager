@@ -443,22 +443,6 @@
             value="{{ enrollment.email|default_if_none:'' }}"
             required
           />
-
-          <!-- Gender dropdown -->
-          <div class="dropdown-wrap">
-            <button type="button" class="dropdown-btn" id="genderBtn">
-              <span id="selectedGender" class="{% if not enrollment.gender %}placeholder{% endif %}">
-                {% if enrollment.gender == 'M' %}Male{% elif enrollment.gender == 'F' %}Female{% else %}Select Gender{% endif %}
-              </span>
-              <span class="arrow">▼</span>
-            </button>
-            <div class="dropdown-menu" id="genderDropdown">
-              <div class="dropdown-item" data-value="M">Male</div>
-              <div class="dropdown-item" data-value="F">Female</div>
-            </div>
-            <input type="hidden" name="gender" id="genderInput" value="{{ enrollment.gender|default_if_none:'' }}" />
-          </div>
-
           <input
             class="field col-full"
             type="text"
@@ -466,7 +450,6 @@
             placeholder="Referred By (Optional)"
             value="{{ enrollment.reference|default_if_none:'' }}"
           />
-
           <textarea
             class="field col-full"
             name="address"
@@ -505,35 +488,7 @@
 
   <!-- ══ SCRIPTS ══ -->
   <script nonce="{{ request.csp_nonce }}">
-    /* ── Gender dropdown ── */
-    function closeAll() {
-      document.getElementById("genderDropdown")?.classList.remove("open");
-      document.getElementById("genderBtn")?.classList.remove("open");
-    }
-    document.addEventListener("click", function (e) {
-      if (!e.target.closest(".dropdown-wrap")) closeAll();
-    });
-
     document.addEventListener("DOMContentLoaded", function () {
-      const genderBtn = document.getElementById("genderBtn");
-      genderBtn.addEventListener("click", function () {
-        const menu = document.getElementById("genderDropdown");
-        const isOpen = menu.classList.contains("open");
-        closeAll();
-        if (!isOpen) { menu.classList.add("open"); genderBtn.classList.add("open"); }
-      });
-
-      document.querySelectorAll("#genderDropdown .dropdown-item").forEach(function (item) {
-        item.addEventListener("click", function () {
-          const val = item.dataset.value;
-          const label = document.getElementById("selectedGender");
-          label.textContent = val === "M" ? "Male" : "Female";
-          label.classList.remove("placeholder");
-          document.getElementById("genderInput").value = val;
-          closeAll();
-        });
-      });
-
       /* ── Photo picker + client-side preview ── */
       const pickBtn    = document.getElementById("photoPickBtn");
       const fileInput  = document.getElementById("faceImageInput");

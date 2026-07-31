@@ -121,6 +121,16 @@ def create_invoice_for_payment(payment: Payment) -> Invoice:
         sgst_amount  = sgst,
         igst_amount  = igst,
     )
+    from AuthFit.audit import log_action
+    log_action(
+        gym=gym,
+        action='invoice_created',
+        staff_user=None,  # system-generated at payment time — no staff_user param on this function currently
+        object_type='Invoice',
+        object_id=invoice.pk,
+        object_label=invoice.invoice_number,
+        new_values={'grand_total': str(grand_total), 'payment_id': payment.pk},
+    )
 
     return invoice
 

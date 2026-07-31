@@ -1,0 +1,88 @@
+{% comment %}
+Reusable filter row. Also lives inside the parent <form> in list.html.
+...(existing comment unchanged)...
+{% endcomment %}
+<div class="db-card db-members-filters" id="membersFiltersPanel" hidden>
+  <div class="db-members-filters-grid">
+
+    <div class="db-filter-field">
+      <label for="filterStatus">Status</label>
+      <select name="filter" id="filterStatus" class="db-members-select">
+        {% for key, label in filter_choices %}
+          <option value="{{ key }}" {% if key == current_filter %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="db-filter-field">
+      <label for="filterPlan">Plan</label>
+      <select name="plan" id="filterPlan" class="db-members-select">
+        <option value="">All Plans</option>
+        {% for p in plans %}
+          <option value="{{ p.id }}" {% if current_plan == p.id|stringformat:"s" %}selected{% endif %}>{{ p.plan }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="db-filter-field">
+      <label for="filterTrainer">Trainer</label>
+      <select name="trainer" id="filterTrainer" class="db-members-select">
+        <option value="">All Trainers</option>
+        {% for t in trainers %}
+          <option value="{{ t.id }}" {% if current_trainer == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="db-filter-field">
+      <label for="filterGender">Gender</label>
+      <select name="gender" id="filterGender" class="db-members-select">
+        <option value="">All</option>
+        {% for key, label in gender_choices %}
+          <option value="{{ key }}" {% if key == current_gender %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="db-filter-field">
+      <label for="filterMembershipStatus">Membership Status</label>
+      <select name="membership_status" id="filterMembershipStatus" class="db-members-select">
+        <option value="">All</option>
+        {% for key, label in membership_status_choices %}
+          <option value="{{ key }}" {% if key == current_membership_status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="db-filter-field">
+      <label for="filterPaymentStatus">Payment Status</label>
+      <select name="payment_status" id="filterPaymentStatus" class="db-members-select">
+        <option value="">All</option>
+        {% for key, label in payment_status_choices %}
+          <option value="{{ key }}" {% if key == current_payment_status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="db-filter-field">
+      <label for="filterSort">Sort By</label>
+      <select name="sort" id="filterSort" class="db-members-select">
+        {% for key, label in sort_choices %}
+          <option value="{{ key }}" {% if key == current_sort %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+  </div>
+
+  <div class="db-members-filters-actions">
+    <button type="submit" class="db-btn-primary" id="applyFiltersBtn">
+      <i class="bi bi-check2"></i> Apply Filters
+    </button>
+    {% if current_filter != "all" or current_plan or current_trainer or current_gender or current_payment_status or current_membership_status or current_search %}
+      <a href="{% url 'member_list' %}" class="db-clear-filters-link">
+        <i class="bi bi-x-circle"></i> Clear all filters
+      </a>
+    {% endif %}
+  </div>
+</div>

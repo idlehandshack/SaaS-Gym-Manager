@@ -1,0 +1,94 @@
+:root {
+  --lac-bg: var(--surface);
+  --lac-border: var(--border-2);
+  --lac-text: var(--text-hi);
+  --lac-muted: var(--text-lo);
+}
+
+#lacContainer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  pointer-events: none;
+}
+
+.lac-toast {
+  pointer-events: auto;
+  background: var(--lac-bg);
+  border: 1px solid var(--lac-border);
+  border-radius: 12px;
+  box-shadow: var(--db-shadow, 0 8px 24px rgba(0,0,0,0.35));
+  color: var(--lac-text);
+  overflow: hidden;
+  transform: translateX(120%);
+  opacity: 0;
+  transition: transform .3s ease, opacity .3s ease;
+  cursor: pointer;
+}
+.lac-toast.lac-in   { transform: translateX(0); opacity: 1; }
+.lac-toast.lac-out  { opacity: 0; transform: translateX(30px); }
+
+.lac-toast-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 0 12px;
+}
+.lac-toast-header i { color: #2ecc71; }
+.lac-toast-title { font-weight: 600; font-size: 13px; flex: 1; color: var(--lac-text); }
+.lac-toast-close { background: none; border: none; color: var(--lac-muted); cursor: pointer; font-size: 16px; line-height: 1; }
+
+.lac-toast-body {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.lac-toast-photo {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+.lac-toast-info { flex: 1; min-width: 0; }
+.lac-toast-name { font-weight: 600; font-size: 14px; color: var(--lac-text); }
+.lac-toast-meta { font-size: 12px; color: var(--lac-muted); }
+.lac-toast-badges { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.lac-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+.lac-badge-success { background: rgba(46,204,113,.18); color: #2ecc71; }
+.lac-badge-primary { background: rgba(59,130,246,.18); color: #3b82f6; }
+.lac-badge-warning { background: rgba(245,158,11,.18); color: #f59e0b; }
+.lac-badge-danger  { background: rgba(239,68,68,.18); color: #ef4444; }
+.lac-badge-secondary { background: var(--surface-2); color: var(--lac-muted); }
+
+.lac-toast-footer {
+  border-top: 1px solid var(--lac-border);
+  padding: 8px 12px;
+  font-size: 12.5px;
+  color: var(--orange);
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  #lacContainer { right: 10px; bottom: 10px; width: calc(100vw - 20px); }
+}
+
+/* ── Simple toast variant (used by showSimpleToast in members.js) ── */
+.lac-toast-header i.bi-exclamation-circle-fill { color: #ef4444; }
+
+.lac-toast-simple-body {
+  font-size: 13px;
+  color: var(--lac-text);
+  line-height: 1.5;
+}

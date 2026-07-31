@@ -1,14 +1,15 @@
 # AuthFit/attendance.py
-
-from django.utils import timezone
-from AuthFit.models import Enrollment, Attendence ,GymQRCode, AttendanceAttempt
+from AuthFit.models import Enrollment, Attendence, GymQRCode, AttendanceAttempt
 import logging
 logger = logging.getLogger(__name__)
 from django.core.cache import cache
+from django.utils import timezone
 
 def mark_attendance(unique_id, gym_id=None):
     try:
-        qs = Enrollment.objects.select_related('user').filter(unique_id=unique_id)
+        qs = Enrollment.objects.select_related('user').filter(
+            unique_id=unique_id, is_deleted=False
+        )
         if gym_id:
             qs = qs.filter(gym_id=gym_id)
 
@@ -17,9 +18,10 @@ def mark_attendance(unique_id, gym_id=None):
         today      = timezone.localdate()
 
         attendance, created = Attendence.objects.get_or_create(
-            user=user,
+            gym=enrollment.gym,
+            enrollment=enrollment,
             date=today,
-            gym=enrollment.gym,      # ← required field, scoped correctly
+            defaults={'user': user},
         )
 
         if created:
@@ -27,6 +29,10 @@ def mark_attendance(unique_id, gym_id=None):
                 "Attendance marked: user_id=%s unique_id=%s gym_id=%s date=%s",
                 user.id, unique_id, enrollment.gym_id, today,
             )
+            from AuthFit.views import _invalidate_attendance_cache
+            _invalidate_attendance_cache(enrollment.gym_id)
+            from notifications.attendance_broadcast import broadcast_attendance_marked
+            broadcast_attendance_marked(enrollment, attendance, method='face')
             return {"status": "success", "message": "Attendance marked successfully"}
         else:
             return {"status": "exists", "message": "Attendance already marked today"}
@@ -51,13 +57,8 @@ def mark_attendance(unique_id, gym_id=None):
             unique_id, gym_id,
         )
         return {"status": "error", "message": "An internal error occurred"}
-    
+
 def mark_qr_attendance(user, qr_token):
-    """
-    Validation order per spec: QR exists → belongs to a gym → user enrolled
-    → membership active → not already marked today → create attendance.
-    (Auth check happens in the view, same as the geo path.)
-    """
     today = timezone.localdate()
 
     try:
@@ -68,7 +69,9 @@ def mark_qr_attendance(user, qr_token):
 
     gym = qr.gym
 
-    enrollment = Enrollment.objects.filter(user=user, gym=gym).select_related('selectPlan').first()
+    enrollment = Enrollment.objects.filter(
+        user=user, gym=gym, is_deleted=False
+    ).select_related('selectPlan').first()
     if not enrollment:
         AttendanceAttempt.objects.create(gym=gym, user=user, reason='not_enrolled')
         return {'status': 'not_enrolled', 'message': 'You are not enrolled in this gym.'}
@@ -80,11 +83,50 @@ def mark_qr_attendance(user, qr_token):
             'message': 'Your membership plan has expired. Please renew your plan to continue marking attendance.',
         }
 
-    attendance, created = Attendence.objects.get_or_create(user=user, date=today, gym=gym)
+    attendance, created = Attendence.objects.get_or_create(
+        gym=gym, enrollment=enrollment, date=today, defaults={'user': user},
+    )
 
     if created:
         cache.delete(f"today_attendance_{gym.pk}_{today}")
+        from AuthFit.views import _invalidate_attendance_cache
+        _invalidate_attendance_cache(gym.pk)
         logger.info("QR attendance marked: user_id=%s gym_id=%s date=%s", user.id, gym.id, today)
+        from notifications.attendance_broadcast import broadcast_attendance_marked
+        broadcast_attendance_marked(enrollment, attendance, method='qr')
         return {'status': 'success', 'message': 'Attendance marked successfully.'}
 
     return {'status': 'exists', 'message': 'Attendance already marked today.'}
+
+def mark_staff_attendance(enrollment, marked_by=None, broadcast=True):
+    """
+    `broadcast` controls only the Live Attendance websocket toast — the
+    Attendence row is created identically either way. Register Scan
+    imports pass broadcast=False.
+
+    Time is no longer accepted from callers — attendance is always
+    stamped with the record's own default (now). This removes the
+    per-row time parsing that used to happen upstream in Register Scan.
+    """
+    today = timezone.localdate()
+    gym = enrollment.gym
+    user = enrollment.user
+    attendance, created = Attendence.objects.get_or_create(
+        gym=gym, enrollment=enrollment, date=today, defaults={'user': user},
+    )
+
+    if created:
+        cache.delete(f"today_attendance_{gym.pk}_{today}_Morning")
+        cache.delete(f"today_attendance_{gym.pk}_{today}_Evening")
+        from AuthFit.views import _invalidate_attendance_cache
+        _invalidate_attendance_cache(gym.pk)
+        logger.info(
+            "Staff-marked attendance: enrollment_id=%s user_id=%s gym_id=%s date=%s marked_by=%s broadcast=%s",
+            enrollment.id, getattr(user, 'id', None), gym.id, today, getattr(marked_by, 'id', None), broadcast,
+        )
+        if broadcast:
+            from notifications.attendance_broadcast import broadcast_attendance_marked
+            broadcast_attendance_marked(enrollment, attendance, method='staff')
+        return {'status': 'success', 'message': f'Attendance marked for {enrollment.fullname}.'}
+
+    return {'status': 'exists', 'message': f'{enrollment.fullname} is already marked present today.'}

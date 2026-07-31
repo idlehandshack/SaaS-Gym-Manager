@@ -1,0 +1,123 @@
+{% load static %}
+{% with current_url=request.resolver_match.url_name %}
+<aside class="db-sidebar" id="dbSidebar">
+  <div class="db-sidebar-brand">
+    {% if gym.logo %}
+      <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }}" class="db-brand-logo">
+    {% else %}
+      <div class="db-brand-fallback"><i class="bi bi-lightning-charge-fill"></i></div>
+    {% endif %}
+    <span class="db-brand-name">{{ gym.gym_name|default:"EnterGYM" }}</span>
+    <button class="db-sidebar-close d-lg-none" id="dbSidebarClose"><i class="bi bi-x-lg"></i></button>
+  </div>
+
+  <nav class="db-nav">
+    <div class="db-nav-group">
+      <a href="{% url 'dashboard_home' %}" class="db-nav-link {% if current_url == 'dashboard_home' %}active{% endif %}">
+        <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+      </a>
+    </div>
+
+    <div class="db-nav-group">
+      <div class="db-nav-label">Members</div>
+      <a href="{% url 'quick_enrollment' %}" class="db-nav-link {% if current_url == 'quick_enrollment' %}active{% endif %}">
+        <i class="bi bi-people-fill"></i><span>Enrollment</span>
+      </a>
+      <a href="{% url 'membership_plans' %}" class="db-nav-link {% if current_url == 'membership_plans' %}active{% endif %}">
+        <i class="bi bi-card-list"></i><span>Memberships Plan</span>
+      </a>
+      <a href="{% url 'freeze_membership' %}" class="db-nav-link {% if current_url == 'freeze_membership' %}active{% endif %}">
+        <i class="bi bi-snow"></i><span>Membership Management</span>
+      </a>
+      <a href="{% url 'transferred_members' %}" class="db-nav-link {% if current_url == 'transferred_members' %}active{% endif %}">
+        <i class="bi bi-arrow-left-right"></i><span>Member Transfers</span>
+      </a>
+      <a href="{% url 'member_message_list' %}" class="db-nav-link {% if current_url == 'member_message_list' %}active{% endif %}">
+       <i class="bi bi-chat-dots"></i><span>Member Messages</span>
+      </a>
+    </div>
+
+    <div class="db-nav-group">
+      <div class="db-nav-label">Attendance</div>
+      <a href="{% url 'today_attendance' %}" class="db-nav-link {% if current_url == 'today_attendance' %}active{% endif %}">
+        <i class="bi bi-calendar-check-fill"></i><span>Attendance</span>
+      </a>
+      <a href="{% url 'attendance_analytics' %}" class="db-nav-link {% if current_url == 'attendance_analytics' %}active{% endif %}">
+        <i class="bi bi-bar-chart-fill"></i><span>Attendance Analytics</span>
+      </a>
+    </div>
+
+    <div class="db-nav-group">
+      <div class="db-nav-label">Billing</div>
+      <a href="{% url 'owner:dashboard' %}" class="db-nav-link {% if current_url == 'dashboard' and request.resolver_match.namespace == 'owner' %}active{% endif %}">
+        <i class="bi bi-bar-chart-line"></i><span>Billing Dashboard</span>
+      </a>
+      <a href="{% url 'payment_management' %}" class="db-nav-link {% if current_url == 'payment_management' %}active{% endif %}">
+        <i class="bi bi-cash-coin"></i><span>Payments</span>
+      </a>
+      <a href="{% url 'whatsapp_pending' %}" class="db-nav-link {% if current_url == 'whatsapp_pending' %}active{% endif %}">
+        <i class="bi bi-whatsapp"></i><span>Reminders</span>
+      </a>
+      <a href="{% url 'revenue' %}" class="db-nav-link {% if current_url == 'revenue' %}active{% endif %}">
+        <i class="bi bi-graph-up-arrow"></i><span>Revenue</span>
+      </a>
+      <a href="{% url 'owner:invoice_list' %}" class="db-nav-link {% if current_url == 'invoice_list' and request.resolver_match.namespace == 'owner' %}active{% endif %}">
+        <i class="bi bi-receipt"></i><span>Invoice</span>
+      </a>
+      <a href="{% url 'expenses:dashboard' %}" class="db-nav-link {% if current_url == 'dashboard' and request.resolver_match.namespace == 'expenses' %}active{% endif %}">
+        <i class="bi bi-receipt-cutoff"></i><span>Expenses</span>
+      </a>
+    </div>
+
+    <div class="db-nav-group">
+      <div class="db-nav-label">Team</div>
+      {% if gym.enable_trainers %}
+      <a href="{% url 'trainers' %}" class="db-nav-link {% if current_url == 'trainers' %}active{% endif %}">
+        <i class="bi bi-person-badge-fill"></i><span>Trainers</span>
+      </a>
+      {% endif %}
+      <a href="{% url 'contact_inquiries' %}" class="db-nav-link {% if current_url == 'contact_inquiries' %}active{% endif %}">
+        <i class="bi bi-inbox-fill"></i><span>Leads</span>
+      </a>
+      <a href="{% url 'expiry-reminders-page' %}" class="db-nav-link {% if current_url == 'expiry-reminders-page' %}active{% endif %}">
+        <i class="bi bi-file-earmark-text-fill"></i><span>Send Notifications</span>
+      </a>
+    </div>
+    <div class="db-nav-group">
+    <div class="db-nav-label">Announcements</div>
+      <a href="{% url 'announcement_analytics' %}"
+        class="db-nav-link {% if current_url == 'announcement_analytics' %}active{% endif %}">
+          <i class="bi bi-bar-chart-line-fill"></i>
+          <span>Announcement Analytics</span>
+      </a>
+      <a href="{% url 'announcement_list' %}"
+        class="db-nav-link {% if current_url == 'announcement_list' %}active{% endif %}">
+          <i class="bi bi-megaphone-fill"></i>
+          <span>Create Announcement</span>
+      </a>
+      <a href="{% url 'announcement_archive' %}"
+        class="db-nav-link {% if current_url == 'announcement_archive' %}active{% endif %}">
+          <i class="bi bi-archive-fill"></i>
+          <span>Archive</span>
+      </a>
+    </div>
+    <div class="db-nav-group">
+      <div class="db-nav-label">STORE MANAGEMENT</div>
+      <a href="{% url 'product_dashboard' %}" class="db-nav-link {% if current_url == 'product_dashboard' %}active{% endif %}">
+        <i class="bi bi-bag-check-fill"></i><span>Order Management</span>
+      </a>
+    </div>
+
+    <div class="db-nav-group">
+      <div class="db-nav-label">Account</div>
+      <a href="{% url 'gym_extras' %}" class="db-nav-link {% if current_url == 'gym_extras' %}active{% endif %}">
+        <i class="bi bi-gear-fill"></i><span>Settings</span>
+      </a>
+      <a href="{% url 'logout' %}" class="db-nav-link db-nav-logout">
+        <i class="bi bi-box-arrow-right"></i><span>Logout</span>
+      </a>
+    </div>
+  </nav>
+</aside>
+<div class="db-sidebar-backdrop" id="dbSidebarBackdrop"></div>
+{% endwith %}

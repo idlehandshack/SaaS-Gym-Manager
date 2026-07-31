@@ -1,0 +1,579 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}{{ member.fullname }} — Member Detail{% endblock %}
+
+{% block extra_css %}
+<script nonce="{{ request.csp_nonce }}">window.DUM_PAGE_ID = "member_detail";</script>
+<link rel="stylesheet" href="{% static 'dashboard/css/members.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/member_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <a href="{% url 'member_list' %}" class="db-back-link">&larr; Back to Members</a>
+  </div>
+</div>
+
+<!-- ── Header ─────────────────────────────────────────────────────── -->
+<div class="member-detail-header">
+  <div class="member-detail-photo">
+    {% if member.face_image %}
+      <img src="{{ member.face_image.url }}" alt="{{ member.fullname }}">
+    {% else %}
+      <div class="member-detail-photo-placeholder">{{ member.fullname|slice:":1" }}</div>
+    {% endif %}
+  </div>
+  <div class="member-detail-header-info">
+    <h1>{{ member.fullname }}</h1>
+    <div class="member-detail-header-meta">
+      <span>ID: {{ member.unique_id }}</span>
+      <span>{{ member.selectPlan.plan|default:"No Plan" }}</span>
+      <span class="status-badge status-{{ member.computed_status }}">{{ member.computed_status|title }}</span>
+    </div>
+  </div>
+  <div class="member-detail-quick-actions">
+    <button type="button" class="db-btn db-btn-primary" id="detailEditBtn">Edit</button>
+    {% if member.computed_status == "pending" %}
+      <button type="button" class="db-btn db-btn-primary" id="detailCollectBtn">Collect Payment</button>
+    {% elif member.computed_status == "expired" or member.days_remaining <= 7 %}
+      <button type="button" class="db-btn db-btn-primary" id="detailRenewBtn">Renew</button>
+    {% endif %}
+    <button type="button" class="db-btn db-btn-primary" id="sendMessageBtn">Send Message</button>
+    {% include "member_messages/_send_modal.html" with member=member %}
+  </div>
+</div>
+
+<div class="member-detail-grid">
+
+  <!-- ── Personal Information ────────────────────────────────────── -->
+  <section class="member-detail-card">
+    <h2>Personal Information</h2>
+    <dl class="member-detail-fields">
+      <dt>Name</dt><dd>{{ member.fullname }}</dd>
+      <dt>Gender</dt><dd>{{ member.get_gender_display|default:"—" }}</dd>
+      <dt>Phone</dt><dd class="field-highlight">{{ member.phone }}</dd>
+      <dt>Email</dt><dd class="field-highlight">{{ member.email|default:"—" }}</dd>
+      <dt>Address</dt><dd>{{ member.address|default:"—" }}</dd>
+      <dt>Reference</dt><dd>{{ member.reference|default:"—" }}</dd>
+    </dl>
+  </section>
+
+  <!-- ── Membership ──────────────────────────────────────────────── -->
+  <section class="member-detail-card">
+    <h2>Membership</h2>
+    <dl class="member-detail-fields">
+      <dt>Current Plan</dt><dd class="field-highlight">{{ member.selectPlan.plan|default:"—" }}</dd>
+      <dt>Trainer</dt><dd>{{ member.trainer.name|default:"No Trainer" }}</dd>
+      <dt>Joining Date</dt><dd>{{ member.doj|date:"d M Y" }}</dd>
+      <dt>Expiry Date</dt><dd class="field-highlight">{{ member.DueDate|date:"d M Y"|default:"—" }}</dd>
+      <dt>Membership Status</dt><dd><span class="status-badge status-{{ member.computed_status }}">{{ member.computed_status|title }}</span></dd>
+      <dt>Renewal Count</dt><dd>{{ member.plan_change_logs.all|length }}</dd>
+    </dl>
+  </section>
+
+  <!-- ── Financial Summary ───────────────────────────────────────── -->
+  <section class="member-detail-card">
+    <h2>Financial Summary</h2>
+    <div class="member-detail-stat-cards">
+      <div class="stat-card"><span>Lifetime Revenue</span><strong class="value-good">₹{{ financial_summary.lifetime_revenue }}</strong></div>
+      <div class="stat-card"><span>Outstanding</span><strong class="value-bad">₹{{ financial_summary.outstanding_amount }}</strong></div>
+      <div class="stat-card"><span>Total Paid</span><strong class="value-good">₹{{ financial_summary.total_paid }}</strong></div>
+      <div class="stat-card">
+        <span>Last Payment</span>
+        <strong>
+          {% if financial_summary.last_payment %}₹{{ financial_summary.last_payment.paid_amount }}{% else %}—{% endif %}
+        </strong>
+      </div>
+      <div class="stat-card"><span>Next Due</span><strong class="field-highlight">{{ financial_summary.next_due|date:"d M Y"|default:"—" }}</strong></div>
+    </div>
+  </section>
+
+  <!-- ── Attendance ───────────────────────────────────────────────── -->
+  <section class="member-detail-card">
+    <h2>Attendance</h2>
+    <dl class="member-detail-fields">
+      <dt>Today's Status</dt>
+      <dd>
+        {% if attendance_summary.today_marked %}
+          <span class="value-good">Present</span>
+        {% else %}
+          <span class="value-bad">Not Marked</span>
+        {% endif %}
+      </dd>
+      <dt>Last Attendance</dt><dd>{{ attendance_summary.last_attendance|date:"d M Y"|default:"—" }}</dd>
+      <dt>Attendance %</dt><dd class="field-highlight">{{ attendance_summary.attendance_pct|default:"—" }}{% if attendance_summary.attendance_pct %}%{% endif %}</dd>
+      <dt>Present Days</dt><dd class="value-good">{{ attendance_summary.present_days }}</dd>
+      <dt>Absent Days</dt><dd class="value-bad">{{ attendance_summary.absent_days }}</dd>
+    </dl>
+  </section>
+  <!-- ── Notification Activity ───────────────────────────────────── -->
+  <section class="member-detail-card member-detail-card-wide">
+    <h2>Notification Activity</h2>
+    <p style="font-size:.72rem; color:var(--text-lo); margin:0 0 12px;">
+      WhatsApp reminders sent to this member. Push notifications aren't
+      logged to history yet — only WhatsApp sends are tracked here.
+    </p>
+    {% if whatsapp_log %}
+    <div class="member-detail-table-scroll">
+      <table class="member-detail-table">
+        <thead>
+          <tr><th>Date</th><th>Type</th><th>Status</th><th>Message</th></tr>
+        </thead>
+        <tbody>
+          {% for log in whatsapp_log %}
+          <tr>
+            <td>{{ log.created_at|date:"d M Y, h:i A" }}</td>
+            <td>
+              {% if log.template_name == "membership_expiry_before" %}
+                Expiring Soon
+              {% elif log.template_name == "membership_expiry_after" %}
+                Expired Reminder
+              {% else %}
+                {{ log.template_name|default:log.message_type|title }}
+              {% endif %}
+            </td>
+            <td>
+              {% if log.status == "sent" %}
+                <span class="status-badge status-active">Sent</span>
+              {% elif log.status == "failed" %}
+                <span class="status-badge status-expired">Failed</span>
+              {% else %}
+                <span class="status-badge status-pending">{{ log.status|title }}</span>
+              {% endif %}
+            </td>
+            <td class="{% if log.status == 'failed' %}value-bad{% else %}field-highlight{% endif %}">
+              {% if log.status == "failed" and log.error %}
+                {{ log.error|truncatechars:80 }}
+              {% elif log.message_id %}
+                Message ID: {{ log.message_id }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="member-detail-empty">No WhatsApp reminders sent to this member yet.</p>
+    {% endif %}
+  </section>
+  <!-- ── Push Notification Activity ──────────────────────────────── -->
+  <section class="member-detail-card member-detail-card-wide">
+    <h2>Push Notification Activity</h2>
+    <p style="font-size:.72rem; color:var(--text-lo); margin:0 0 12px;">
+      FCM (mobile app) and Web Push (browser/PWA) sends to this member.
+    </p>
+    {% if push_log %}
+    <div class="member-detail-table-scroll">
+      <table class="member-detail-table">
+        <thead>
+          <tr><th>Date</th><th>Channel</th><th>Type</th><th>Status</th><th>Message</th></tr>
+        </thead>
+        <tbody>
+          {% for log in push_log %}
+          <tr>
+            <td>{{ log.created_at|date:"d M Y, h:i A" }}</td>
+            <td>{{ log.get_channel_display }}</td>
+            <td>{{ log.get_notif_type_display|default:"—" }}</td>
+            <td>
+              {% if log.success %}
+                <span class="status-badge status-active">Sent</span>
+              {% else %}
+                <span class="status-badge status-expired">Failed</span>
+              {% endif %}
+            </td>
+            <td class="{% if not log.success %}value-bad{% else %}field-highlight{% endif %}">
+              {% if not log.success and log.error %}
+                {{ log.error|truncatechars:80 }}
+              {% else %}
+                {{ log.title }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="member-detail-empty">No push notifications sent to this member yet.</p>
+    {% endif %}
+    <button type="button" class="db-btn db-btn-primary" id="checkNotifBtn">Check Notifications</button>
+    <span id="checkNotifResult" style="margin-left:10px; font-size:.8rem;"></span>
+  </section>
+  <!-- ── Invoice History ─────────────────────────────────────────── -->
+  <section class="member-detail-card member-detail-card-wide">
+    <h2>Invoice History</h2>
+    {% if invoices %}
+    <div class="member-detail-table-scroll">
+      <table class="member-detail-table">
+        <thead><tr><th>Invoice #</th><th>Date</th><th>Amount</th><th>Status</th><th>PDF</th></tr></thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+            <td>{{ invoice.invoice_number }}</td>
+            <td>{{ invoice.invoice_date|date:"d M Y" }}</td>
+            <td class="field-highlight">₹{{ invoice.grand_total }}</td>
+            <td>{{ invoice.get_status_display }}</td>
+            <td>
+              <a href="{% url 'invoice_pdf_view' invoice.pk %}" class="db-btn-outline-sm" target="_blank">
+                <i class="bi bi-download"></i> PDF
+              </a>
+            </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="member-detail-empty">No invoices yet.</p>
+    {% endif %}
+  </section>
+  
+  <!-- ── Activity Timeline ───────────────────────────────────────── -->
+  <section class="member-detail-card member-detail-card-wide">
+    <h2>Activity Timeline</h2>
+    <ul class="member-detail-timeline">
+      {% for event in activity_timeline %}
+      <li class="timeline-item timeline-{{ event.type }}">
+        <span class="timeline-date">{{ event.date|date:"d M Y" }}</span>
+        <span class="timeline-label">{{ event.label }}</span>
+        <span class="timeline-detail">{{ event.detail }}</span>
+      </li>
+      {% empty %}
+      <li class="member-detail-empty">No activity yet.</li>
+      {% endfor %}
+    </ul>
+  </section>
+  <!-- ── Message History ─────────────────────────────────────────── -->
+  <section class="member-detail-card member-detail-card-wide">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h2 style="margin:0;">Message History</h2>
+      <input type="text" id="msgHistorySearch" placeholder="Search by title..."
+       aria-label="Search message history by title" autocomplete="off"
+       style="padding:6px 10px; background:var(--surface-3); border:1px solid var(--border-2);
+              border-radius:var(--radius-sm); color:var(--text-hi); font-size:.78rem; width:180px;">
+    </div>
+    <div class="member-detail-table-scroll">
+      <table class="member-detail-table">
+        <thead>
+          <tr><th>#</th><th>Date</th><th>Title</th><th>Priority</th><th>Status</th></tr>
+        </thead>
+        <tbody id="msgHistoryBody">
+          <tr><td colspan="5" class="member-detail-empty">Loading...</td></tr>
+        </tbody>
+      </table>
+      <div id="msgHistoryPager" style="display:flex; gap:8px; margin-top:12px;"></div>
+    </div>
+  </section>
+
+</div>
+{% if member.computed_status == "expired" or member.computed_status == "pending" or member.days_remaining <= 7 %}
+<div id="detailRenewModal" class="att-panel-backdrop" style="z-index:1300;">
+  <div style="background:var(--surface-2); border:1px solid var(--border-2); border-radius:var(--radius-md);
+              padding:28px 24px; width:90%; max-width:420px; margin:8vh auto; position:relative;">
+    <button type="button" id="detailRenewClose"
+            style="position:absolute; top:10px; right:14px; background:none; border:none; color:var(--text-mid); font-size:22px; cursor:pointer;">×</button>
+    <h3 style="font-family:var(--font-d); font-size:1.15rem; color:var(--text-hi); margin:0 0 6px;">Renew Membership</h3>
+    <p style="font-size:.82rem; color:var(--text-mid); margin:0 0 18px;">
+      Renew {{ member.fullname }}'s membership by selecting a plan below.
+    </p>
+    <form method="POST" action="{% url 'staff_renew_membership' member.id %}">
+      {% csrf_token %}
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        {% for p in plans %}
+        <label style="display:flex; align-items:center; justify-content:space-between;
+                       background:var(--surface-3); border:1px solid var(--border-2);
+                       border-radius:var(--radius-sm); padding:10px 12px; cursor:pointer;">
+          <span style="display:flex; align-items:center; gap:8px;">
+            <input type="radio" name="plan" value="{{ p.id }}"
+              {% if member.selectPlan_id == p.id %}checked{% endif %}>
+            <span style="color:var(--text-hi); font-size:.85rem;">{{ p.plan }}</span>
+          </span>
+          <span style="color:var(--orange); font-weight:700; font-size:.85rem;">₹{{ p.price }}</span>
+        </label>
+        {% empty %}
+        <p class="member-detail-empty">No plans configured for this gym.</p>
+        {% endfor %}
+      </div>
+      <button type="submit" class="db-btn db-btn-primary" style="width:100%; margin-top:20px;">
+        Confirm Renewal
+      </button>
+    </form>
+  </div>
+</div>
+<script nonce="{{ request.csp_nonce }}">
+function initRenewModal() {
+  const btn   = document.getElementById('detailRenewBtn');
+  const modal = document.getElementById('detailRenewModal');
+  const close = document.getElementById('detailRenewClose');
+  if (!btn || !modal) return;
+  btn.addEventListener('click', () => modal.classList.add('open'));
+  close.addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('open'); });
+};
+document.addEventListener('DOMContentLoaded', initRenewModal);
+document.addEventListener('dum:content-refreshed', initRenewModal);
+</script>
+{% endif %}
+<div id="detailEditModal" class="att-panel-backdrop" style="z-index:1300;">
+  <div style="background:var(--surface-2); border:1px solid var(--border-2); border-radius:var(--radius-md);
+              padding:28px 24px; width:90%; max-width:420px; margin:8vh auto; position:relative;">
+    <button type="button" id="detailEditClose"
+            style="position:absolute; top:10px; right:14px; background:none; border:none; color:var(--text-mid); font-size:22px; cursor:pointer;">×</button>
+    <h3 style="font-family:var(--font-d); font-size:1.15rem; color:var(--text-hi); margin:0 0 6px;">Edit Member Details</h3>
+    <p style="font-size:.82rem; color:var(--text-mid); margin:0 0 18px;">
+      Correct {{ member.fullname }}'s personal info or membership start date.
+    </p>
+    <form method="POST" action="{% url 'staff_edit_member' member.id %}">
+      {% csrf_token %}
+
+      <label for="editFullname" style="display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo); margin-bottom:4px;">Name</label>
+      <input type="text" id="editFullname" name="fullname" value="{{ member.fullname }}" required autocomplete="name"
+            style="width:100%; margin-bottom:14px; padding:10px 12px; background:var(--surface-3);
+                    border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-hi); font-size:.85rem;">
+
+      <label for="editGender" style="display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo); margin-bottom:4px;">Gender</label>
+      <select id="editGender" name="gender" autocomplete="off"
+              style="width:100%; margin-bottom:14px; padding:10px 12px; background:var(--surface-3);
+                    border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-hi); font-size:.85rem;">
+        <option value="" {% if not member.gender %}selected{% endif %}>—</option>
+        <option value="M" {% if member.gender == "M" %}selected{% endif %}>Male</option>
+        <option value="F" {% if member.gender == "F" %}selected{% endif %}>Female</option>
+      </select>
+
+      <label for="editAddress" style="display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo); margin-bottom:4px;">Address</label>
+      <textarea id="editAddress" name="address" rows="2" autocomplete="street-address"
+                style="width:100%; margin-bottom:14px; padding:10px 12px; background:var(--surface-3);
+                      border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-hi); font-size:.85rem; resize:vertical;">{{ member.address }}</textarea>
+
+      <label for="editMembershipStartDate" style="display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo); margin-bottom:4px;">Membership Start Date</label>
+      <input type="date" id="editMembershipStartDate" name="membership_start_date" value="{{ member.membership_start_date|date:'Y-m-d' }}" required autocomplete="off"
+            style="width:100%; margin-bottom:6px; padding:10px 12px; background:var(--surface-3);
+                    border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-hi); font-size:.85rem;">
+      <p style="font-size:.72rem; color:var(--yellow); margin:0 0 18px;">
+        ⚠ Changing this will automatically recalculate the expiry date
+        ({{ member.selectPlan.duration_days|default:"—" }} days from the new start date).
+      </p>
+
+      <button type="submit" class="db-btn db-btn-primary" style="width:100%;">
+        Save Changes
+      </button>
+    </form>
+  </div>
+</div>
+<script nonce="{{ request.csp_nonce }}">
+function initEditModal() {
+  const btn   = document.getElementById('detailEditBtn');
+  const modal = document.getElementById('detailEditModal');
+  const close = document.getElementById('detailEditClose');
+  if (!btn || !modal) return;
+  btn.addEventListener('click', () => modal.classList.add('open'));
+  close.addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('open'); });
+}
+document.addEventListener('DOMContentLoaded', initEditModal);
+document.addEventListener('dum:content-refreshed', initEditModal);
+</script>
+{% if member.computed_status == "expired" or member.computed_status == "pending" or member.days_remaining <= 7 %}
+<div id="detailCollectModal" class="att-panel-backdrop" style="z-index:1300;">
+  <div style="background:var(--surface-2); border:1px solid var(--border-2); border-radius:var(--radius-md);
+              padding:28px 24px; width:90%; max-width:420px; margin:8vh auto; position:relative;">
+    <button type="button" id="detailCollectClose"
+            style="position:absolute; top:10px; right:14px; background:none; border:none; color:var(--text-mid); font-size:22px; cursor:pointer;">×</button>
+    <h3 style="font-family:var(--font-d); font-size:1.15rem; color:var(--text-hi); margin:0 0 6px;">Collect Payment</h3>
+    <p style="font-size:.82rem; color:var(--text-mid); margin:0 0 18px;">
+      Outstanding for {{ member.fullname }}: <strong style="color:var(--orange);">₹{{ member.pendingAmount }}</strong>
+    </p>
+
+    <label for="collectAmount" style="display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo); margin-bottom:4px;">Amount Paid</label>
+    <input type="number" id="collectAmount" min="0" step="0.01" max="{{ member.pendingAmount }}" value="{{ member.pendingAmount }}" autocomplete="off"
+          style="width:100%; margin-bottom:14px; padding:10px 12px; background:var(--surface-3);
+                  border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-hi); font-size:.85rem;">
+
+    <label for="collectMethod" style="display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo); margin-bottom:4px;">Payment Method</label>
+    <select id="collectMethod" autocomplete="off"
+            style="width:100%; margin-bottom:14px; padding:10px 12px; background:var(--surface-3);
+                  border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-hi); font-size:.85rem;">
+      <option value="C">Cash</option>
+      <option value="U">UPI</option>
+      <option value="B">UPI + Cash</option>
+    </select>
+
+    <label for="collectDate" style="display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo); margin-bottom:4px;">Payment Date</label>
+    <input type="date" id="collectDate" value="{% now 'Y-m-d' %}" autocomplete="off"
+          style="width:100%; margin-bottom:6px; padding:10px 12px; background:var(--surface-3);
+                  border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-hi); font-size:.85rem;">
+
+    <div id="collectError" style="color:var(--red); font-size:.78rem; margin:6px 0 0; display:none;"></div>
+
+    <button type="button" id="collectSubmit" class="db-btn db-btn-primary" style="width:100%; margin-top:18px;">
+      Confirm Payment
+    </button>
+  </div>
+</div>
+<script nonce="{{ request.csp_nonce }}">
+function initCollectModal() {
+  const btn     = document.getElementById('detailCollectBtn');
+  const modal   = document.getElementById('detailCollectModal');
+  const close   = document.getElementById('detailCollectClose');
+  const submit  = document.getElementById('collectSubmit');
+  const errBox  = document.getElementById('collectError');
+  if (!btn || !modal) return;
+
+  btn.addEventListener('click', () => modal.classList.add('open'));
+  close.addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('open'); });
+
+  submit.addEventListener('click', function () {
+    errBox.style.display = 'none';
+    submit.disabled = true;
+    submit.textContent = 'Processing...';
+
+    const collectedNow  = parseFloat(document.getElementById('collectAmount').value) || 0;
+    const alreadyPaid   = {{ member.paidAmount|default:0 }};
+    const newTotalPaid  = alreadyPaid + collectedNow;
+
+    fetch("{% url 'update_payment' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}',
+      },
+      body: JSON.stringify({
+        enrollment_id: {{ member.id }},
+        paid_amount: newTotalPaid,
+        payment_method: document.getElementById('collectMethod').value,
+        payment_date: document.getElementById('collectDate').value,
+      }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        errBox.textContent = data.error;
+        errBox.style.display = 'block';
+        submit.disabled = false;
+        submit.textContent = 'Confirm Payment';
+        return;
+      }
+      // Reload so the page reflects the new status/stats from the server —
+      // simplest way to keep everything (status badge, financial cards,
+      // timeline) in sync without duplicating that rendering logic in JS.
+      window.location.reload();
+    })
+    .catch(() => {
+      errBox.textContent = 'Something went wrong. Please try again.';
+      errBox.style.display = 'block';
+      submit.disabled = false;
+      submit.textContent = 'Confirm Payment';
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded', initCollectModal);
+document.addEventListener('dum:content-refreshed', initCollectModal);
+</script>
+{% endif %}
+<script nonce="{{ request.csp_nonce }}">
+function initMessageHistory() {
+  const body   = document.getElementById('msgHistoryBody');
+  const pager  = document.getElementById('msgHistoryPager');
+  const search = document.getElementById('msgHistorySearch');
+  const historyUrl = "{% url 'member_message_history' member.id %}";
+  let searchTimer = null;
+
+  function statusClass(status) {
+    return status === 'Read' ? 'status-active' : 'status-pending';
+  }
+
+  function load(page, q) {
+    const params = new URLSearchParams({ page: page || 1, q: q || '' });
+    fetch(`${historyUrl}?${params}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(r => r.json())
+      .then(data => {
+        body.innerHTML = '';
+        if (!data.rows.length) {
+          body.innerHTML = '<tr><td colspan="5" class="member-detail-empty">No messages sent to this member yet.</td></tr>';
+        } else {
+          const perPage = 25;
+          const startIndex = (data.current_page - 1) * perPage;
+          data.rows.forEach((m, i) => {
+            body.insertAdjacentHTML('beforeend', `
+              <tr>
+                <td>${startIndex + i + 1}</td>
+                <td>${m.created_at}</td>
+                <td>${m.title}</td>
+                <td><span class="status-badge">${m.priority}</span></td>
+                <td><span class="status-badge ${statusClass(m.status)}">${m.status}</span></td>
+              </tr>`);
+          });
+        }
+        pager.innerHTML = '';
+        if (data.has_previous) {
+          pager.insertAdjacentHTML('beforeend',
+            `<button type="button" class="db-btn" data-page="${data.current_page - 1}">Prev</button>`);
+        }
+        if (data.num_pages > 1) {
+          pager.insertAdjacentHTML('beforeend',
+            `<span style="color:var(--text-mid); font-size:.78rem; align-self:center;">
+               Page ${data.current_page} of ${data.num_pages}
+             </span>`);
+        }
+        if (data.has_next) {
+          pager.insertAdjacentHTML('beforeend',
+            `<button type="button" class="db-btn" data-page="${data.current_page + 1}">Next</button>`);
+        }
+        pager.querySelectorAll('button[data-page]').forEach(btn => {
+          btn.addEventListener('click', () => load(btn.dataset.page, search.value));
+        });
+      })
+      .catch(() => { body.innerHTML = '<tr><td colspan="5" class="member-detail-empty">Failed to load.</td></tr>'; });
+  }
+
+  search.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => load(1, search.value), 300);
+  });
+
+  load(1, '');
+}
+document.addEventListener('DOMContentLoaded', initMessageHistory);
+document.addEventListener('dum:content-refreshed', initMessageHistory);
+</script>
+<script nonce="{{ request.csp_nonce }}">
+function initCheckNotif() {
+  const btn    = document.getElementById('checkNotifBtn');
+  const result = document.getElementById('checkNotifResult');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+    result.textContent = '';
+
+    fetch("{% url 'check_member_notifications' member.id %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+    })
+      .then(r => r.json())
+      .then(data => {
+        const label = (v) =>
+          v === 'success'   ? '<span class="value-good">✓ Working</span>' :
+          v === 'no_device' ? '<span style="color:var(--text-lo)">— Not registered</span>' :
+                               '<span class="value-bad">✗ Failed</span>';
+        result.innerHTML =
+          `FCM: ${label(data.fcm)} &nbsp; | &nbsp; Web Push: ${label(data.web_push)}`;
+      })
+      .catch(() => { result.textContent = 'Check failed — please retry.'; })
+      .finally(() => {
+        btn.disabled = false;
+        btn.textContent = 'Check Notifications';
+      });
+  });
+}
+document.addEventListener('DOMContentLoaded', initCheckNotif);
+document.addEventListener('dum:content-refreshed', initCheckNotif);
+</script>
+{% endblock %}

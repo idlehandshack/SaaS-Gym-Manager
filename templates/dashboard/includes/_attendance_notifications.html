@@ -1,0 +1,7 @@
+{% comment %}
+Toast container + audio element. Included once in base.html. All content is
+injected by live-attendance.js — this file just provides the mount points.
+{% endcomment %}
+{% load static %}
+<div id="lacContainer" aria-live="polite"></div>
+<audio id="lacSound" preload="auto" src="{% static 'audio/attendance.mp3' %}"></audio>

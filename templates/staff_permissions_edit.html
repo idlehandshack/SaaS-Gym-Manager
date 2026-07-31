@@ -1,433 +1,215 @@
+{% extends "dashboard/base.html" %}
 {% load static %}
 {% load perm_extras %}
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Permissions — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
-    {% if favicon_url %}
-    <link rel="icon" href="{{ favicon_url }}">
-    <link rel="shortcut icon" href="{{ favicon_url }}">
-    {% else %}
-    <link rel="icon" href="{% static 'images/favicon.ico' %}">
-    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
-    {% endif %}
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" 
-  rel="stylesheet"/>
-  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
-  <style>
-    /* ── TOKENS (matched to contact.html / profile.html / today_attendance.html) ── */
-    :root {
-      --bg:          #080808;
-      --surface:     #111111;
-      --surface-2:   #181818;
-      --surface-3:   #1e1e1e;
-      --border:      rgba(255,255,255,.06);
-      --border-2:    rgba(255,255,255,.11);
-      --orange:      #ff5a00;
-      --orange-dim:  rgba(255,90,0,.10);
-      --orange-bdr:  rgba(255,90,0,.28);
-      --green:       #5de87c;
-      --green-dim:   rgba(93,232,124,.10);
-      --green-bdr:   rgba(93,232,124,.28);
-      --red:         #ef5350;
-      --red-dim:     rgba(239,83,80,.10);
-      --red-bdr:     rgba(239,83,80,.28);
-      --text-hi:     #f5f5f5;
-      --text-mid:    #888;
-      --text-lo:     #444;
-      --font-d:      "Barlow Condensed", sans-serif;
-      --font-b:      "Barlow", sans-serif;
-      --ease:        cubic-bezier(.4,0,.2,1);
-      --t:           .22s;
-      --radius-lg:   18px;
-      --radius-md:   12px;
-      --radius-sm:   8px;
-      --radius-pill: 40px;
-      --nav-h:       60px;
-    }
+{% block title %}Permissions Editor{% endblock %}
+{% block content %}
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+<a href="{% url 'staff_permissions_list' %}" class="db-back-btn">
+  <i class="bi bi-arrow-left"></i> Back to Staff Permissions
+</a>
 
-    body {
-      background: var(--bg);
-      color: var(--text-hi);
-      font-family: var(--font-b);
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-      min-height: 100vh;
-    }
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">Permissions Editor</h1>
+    <p class="db-page-sub">
+      <strong class="db-username-strong">{{ staff_profile.user.username }}</strong>
+      <span class="db-role-badge">{{ staff_profile.get_role_display }}</span>
+    </p>
+  </div>
+</div>
 
-    .hero-animate {
-      opacity: 0;
-      transform: translateY(30px);
-      animation: smoothFade 0.5s ease-out forwards;
-    }
-    @keyframes smoothFade {
-      to { opacity: 1; transform: translateY(0); }
-    }
+<form method="post">
+  {% csrf_token %}
 
-    /* ── STICKY NAV (same shell as contact / profile / attendance pages) ── */
-    .store-nav {
-      position: sticky; top: 0; z-index: 200;
-      height: var(--nav-h);
-      background: rgba(8,8,8,.94);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center;
-    }
-    .nav-inner {
-      width: 100%; padding: 0 clamp(16px,4vw,40px);
-      display: flex; align-items: center;
-      justify-content: space-between; gap: 12px;
-    }
-    .nav-brand {
-      font-family: var(--font-d); font-weight: 900;
-      font-size: clamp(1.1rem,3vw,1.5rem);
-      text-transform: uppercase; text-decoration: none;
-      color: var(--text-hi); letter-spacing: -.01em;
-      white-space: nowrap; display: flex; align-items: center; gap: 8px;
-      transition: color var(--t);
-      min-width: 0;
-    }
-    .nav-brand .acc { color: var(--orange); }
-    .nav-logo {
-      height: 26px;
-      width: auto;
-      flex-shrink: 0;
-      filter: drop-shadow(0 0 6px rgba(255,90,0,.35));
-    }
-    .back-icon {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(255,255,255,.06); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: .75rem; flex-shrink: 0;
-      transition: background var(--t);
-    }
-    .nav-brand:hover .back-icon { background: var(--orange-dim); }
-    .nav-brand:hover { color: var(--text-hi); }
-    .nav-badge {
-      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
-      background: var(--orange-dim); color: var(--orange);
-      border: 1px solid var(--orange-bdr);
-      padding: 5px 14px; border-radius: var(--radius-pill);
-      white-space: nowrap;
-    }
-
-    /* ── PAGE HEADER ── */
-    .page-header {
-      position: relative;
-      padding: clamp(32px,6vw,56px) 0 clamp(24px,4vw,36px);
-      text-align: center; overflow: hidden;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: clamp(24px,4vw,36px);
-    }
-    .page-header::before {
-      content: ""; position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
-      z-index: 0;
-    }
-    .header-inner {
-      position: relative; z-index: 1;
-      padding: 0 clamp(16px,4vw,40px);
-    }
-    .header-eyebrow {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
-      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--orange); margin-bottom: 10px;
-      padding: 5px 14px;
-      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
-      background: var(--orange-dim);
-    }
-    .page-header h1 {
-      font-family: var(--font-d); font-weight: 900;
-      font-size: clamp(1.9rem,6vw,3.2rem); line-height: .95;
-      letter-spacing: -.01em; text-transform: uppercase;
-      margin-bottom: 12px; color: var(--text-hi);
-    }
-    .page-header h1 .accent { color: var(--orange); }
-    .identity-row {
-      display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap;
-      justify-content: center;
-      font-family: var(--font-b); font-size: clamp(.85rem,2.2vw,.98rem);
-      color: var(--text-mid);
-    }
-    .identity-row strong { color: var(--text-hi); font-weight: 600; }
-    .role-badge {
-      font-family: var(--font-d); font-size: .7rem; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
-      background: var(--orange-dim); color: var(--orange);
-      border: 1px solid var(--orange-bdr);
-      padding: 4px 12px; border-radius: var(--radius-pill);
-      white-space: nowrap;
-    }
-
-    /* ── FLASH MESSAGES ── */
-    #message-container {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      width: 100%;
-      max-width: 400px;
-      padding: 0 16px;
-    }
-    .flash-message {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 20px;
-      margin-bottom: 12px;
-      border-radius: var(--radius-md);
-      font-size: 13px;
-      font-weight: 500;
-      color: #fff;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    }
-    .flash-message.success { background: #166534; border: 1px solid #22c55e44; }
-    .flash-message.error   { background: #7f1d1d; border: 1px solid #ef444444; }
-    .flash-message.default { background: #1f2937; border: 1px solid #ffffff18; }
-    .close-btn {
-      margin-left: 10px;
-      font-size: 17px;
-      font-weight: 700;
-      border: none;
-      background: none;
-      color: rgba(255, 255, 255, 0.6);
-      cursor: pointer;
-      transition: color 0.15s;
-    }
-    .close-btn:hover { color: #fff; }
-
-    /* ── MAIN CONTENT ── */
-    .perms-page {
-      max-width: 1100px; margin: 0 auto;
-      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
-    }
-
-    fieldset.perm-group-card { border: 0; margin: 0; padding: 0; min-width: 0; }
-
-    .perms-groups-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: clamp(16px, 2.5vw, 22px);
-      margin-bottom: clamp(20px, 3vw, 28px);
-    }
-
-    .perm-group-card {
-      background: var(--surface);
-      border: 1px solid var(--border-2);
-      border-radius: var(--radius-lg);
-      padding: clamp(18px, 3vw, 24px);
-    }
-
-    .perm-group-card legend {
-      display: flex; align-items: center; gap: 8px;
-      width: 100%;
-      font-family: var(--font-d); font-weight: 800;
-      font-size: 1rem; letter-spacing: .06em; text-transform: uppercase;
-      color: var(--text-hi);
-      padding-bottom: 12px; margin-bottom: 8px;
-      border-bottom: 1px solid var(--border-2);
-    }
-    .perm-group-card legend i { color: var(--orange); font-size: .95rem; }
-
-    .perm-toggle {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 14px; padding: 10px 2px;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-    }
-    .perm-toggle:last-child { border-bottom: none; }
-    .perm-toggle-label {
-      font-family: var(--font-b); font-size: 13px; font-weight: 500;
-      color: rgba(255,255,255,.8); line-height: 1.4;
-    }
-
-    /* Toggle switch */
-    .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
-    .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-    .slider {
-      position: absolute; inset: 0; pointer-events: none;
-      background: var(--surface-3);
-      border: 1px solid var(--border-2);
-      border-radius: 999px;
-      transition: background var(--t) var(--ease), border-color var(--t) var(--ease);
-    }
-    .slider::before {
-      content: "";
-      position: absolute; top: 2px; left: 2px;
-      height: 16px; width: 16px; border-radius: 50%;
-      background: var(--text-mid);
-      transition: transform var(--t) var(--ease), background var(--t) var(--ease);
-    }
-    .switch input:checked + .slider { background: var(--orange-dim); border-color: var(--orange-bdr); }
-    .switch input:checked + .slider::before { transform: translateX(18px); background: var(--orange); }
-    .switch input:focus-visible + .slider { outline: 2px solid var(--orange); outline-offset: 2px; }
-
-    .perms-empty {
-      background: var(--surface);
-      border: 1px dashed var(--border-2);
-      border-radius: var(--radius-lg);
-      padding: 28px; text-align: center;
-      color: var(--text-mid); font-size: 13px;
-    }
-
-    /* ── Actions ── */
-    .perms-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-
-    .btn-save, .btn-reset {
-      flex: 1 1 220px;
-      padding: 13px 18px;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-d); font-size: 14px; font-weight: 800;
-      letter-spacing: .08em; text-transform: uppercase;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background var(--t), border-color var(--t), color var(--t), transform .1s;
-    }
-    .btn-save:active, .btn-reset:active { transform: scale(0.98); }
-
-    .btn-save {
-      border: none;
-      background: var(--orange);
-      color: #fff;
-      width: 100%;
-    }
-    .btn-save:hover { background: #e04e00; }
-
-    .btn-reset {
-      background: transparent;
-      border: 1px solid var(--red-bdr);
-      color: var(--red);
-    }
-    .btn-reset:hover { background: var(--red-dim); }
-
-    .reset-form { margin-top: 12px; }
-    .reset-form .btn-reset { flex: 0 1 260px; }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 480px) {
-      .perm-group-card { padding: 18px; }
-      .reset-form .btn-reset { flex: 1 1 auto; width: 100%; }
-      .nav-brand span:not(.acc) { display: none; }
-    }
-    @supports (padding: env(safe-area-inset-left)) {
-      .nav-inner {
-        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
-        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- ══ FLASH MESSAGES ══ -->
-  <div id="message-container">
-    {% for message in messages %}
-    <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}default{% endif %}">
-      <span>{{ message }}</span>
-      <button class="close-btn">×</button>
+  {% if groups %}
+  <div class="row g-3 mb-3">
+    {% for group_name, fields in groups.items %}
+    <div class="col-12 col-md-6">
+      <fieldset class="db-perm-group-card h-100">
+        <legend><i class="bi bi-sliders"></i> {{ group_name }}</legend>
+        {% for field_name, label in fields %}
+        <label class="db-perm-toggle">
+          <span class="db-perm-toggle-label">{{ label }}</span>
+          <span class="db-switch">
+            <input type="checkbox" name="{{ field_name }}" {% if perms|get_attr:field_name %}checked{% endif %}>
+            <span class="db-slider"></span>
+          </span>
+        </label>
+        {% endfor %}
+      </fieldset>
     </div>
     {% endfor %}
   </div>
+  {% else %}
+  <div class="db-perms-empty mb-3">No permission groups are configured for this role yet.</div>
+  {% endif %}
 
-  <!-- ══ STICKY NAV ══ -->
-  <nav class="store-nav">
-    <div class="nav-inner">
-      <a class="nav-brand" href="{% url 'staff_permissions_list' %}">
-        <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
-        {% if gym and gym.logo %}
-          <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }} logo" class="nav-logo" />
-        {% else %}
-          <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM Logo" class="nav-logo" />
-        {% endif %}
-        <span>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</span>
-        <span class="acc">Permissions</span>
-      </a>
-      <div class="nav-badge">Access Control</div>
-    </div>
-  </nav>
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <button type="submit" class="db-btn-save">
+      <i class="bi bi-check-lg"></i> Save Permissions
+    </button>
+  </div>
+</form>
 
-  <!-- ══ PAGE HEADER ══ -->
-  <header class="page-header hero-animate">
-    <div class="header-inner">
-      <div class="header-eyebrow">
-        <i class="bi bi-shield-lock"></i> Staff Permissions
-      </div>
-      <h1>Permissions <span class="accent">Editor</span></h1>
-      <div class="identity-row">
-        <strong>{{ staff_profile.user.username }}</strong>
-        <span class="role-badge">{{ staff_profile.get_role_display }}</span>
-      </div>
-    </div>
-  </header>
+<form method="post" action="{% url 'staff_permissions_reset_defaults' staff_profile.id %}"
+      onsubmit="return confirm('Reset to role defaults? This overwrites current permissions.');">
+  {% csrf_token %}
+  <div class="d-flex flex-wrap gap-2">
+    <button type="submit" class="db-btn-reset">
+      <i class="bi bi-arrow-counterclockwise"></i> Reset to Role Defaults
+    </button>
+  </div>
+</form>
 
-  <!-- ══ MAIN CONTENT ══ -->
-  <main class="perms-page">
-    <form method="post">
-      {% csrf_token %}
+{% endblock %}
 
-      {% if groups %}
-      <div class="perms-groups-grid">
-        {% for group_name, fields in groups.items %}
-        <fieldset class="perm-group-card">
-          <legend><i class="bi bi-sliders"></i> {{ group_name }}</legend>
-          {% for field_name, label in fields %}
-          <label class="perm-toggle">
-            <span class="perm-toggle-label">{{ label }}</span>
-            <span class="switch">
-              <input type="checkbox" name="{{ field_name }}" {% if perms|get_attr:field_name %}checked{% endif %}>
-              <span class="slider"></span>
-            </span>
-          </label>
-          {% endfor %}
-        </fieldset>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="perms-empty">No permission groups are configured for this role yet.</div>
-      {% endif %}
+{% block extra_css %}
+<style nonce="{{ request.csp_nonce }}">
+  .db-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 7px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: transparent;
+    color: #999;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .db-back-btn:hover {
+    border-color: #ff5a00;
+    color: #f5f5f5;
+    background: rgba(255, 90, 0, .06);
+  }
 
-      <div class="perms-actions">
-        <button type="submit" class="btn-save">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          Save Permissions
-        </button>
-      </div>
-    </form>
+  .db-username-strong { color: #f5f5f5; font-weight: 600; margin-right: 10px; }
 
-    <form method="post" action="{% url 'staff_permissions_reset_defaults' staff_profile.id %}"
-          class="reset-form"
-          onsubmit="return confirm('Reset to role defaults? This overwrites current permissions.');">
-      {% csrf_token %}
-      <div class="perms-actions">
-        <button type="submit" class="btn-reset">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="1 4 1 10 7 10" />
-            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-          </svg>
-          Reset to Role Defaults
-        </button>
-      </div>
-    </form>
-  </main>
+  .db-role-badge {
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    background: rgba(255, 90, 0, .1);
+    color: #ff5a00;
+    border: 1px solid rgba(255, 90, 0, .28);
+    padding: 4px 12px;
+    border-radius: 40px;
+    white-space: nowrap;
+  }
 
-  <script src="{% static 'js/messages.js' %}"></script>
-  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+  .db-perm-group-card {
+    border: 1px solid rgba(255,255,255,.11);
+    border-radius: 18px;
+    padding: 20px;
+    margin: 0;
+    min-width: 0;
+    background: transparent;
+  }
+  .db-perm-group-card legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    font-family: "Barlow Condensed", sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #f5f5f5;
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,.11);
+  }
+  .db-perm-group-card legend i { color: #ff5a00; font-size: .95rem; }
 
-</body>
-</html>
+  .db-perm-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px 2px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: pointer;
+  }
+  .db-perm-toggle:last-child { border-bottom: none; }
+  .db-perm-toggle-label {
+    font-family: "Barlow", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,.8);
+    line-height: 1.4;
+  }
+
+  .db-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+  .db-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .db-slider {
+    position: absolute; inset: 0; pointer-events: none;
+    background: #1e1e1e;
+    border: 1px solid rgba(255,255,255,.11);
+    border-radius: 999px;
+    transition: background .22s cubic-bezier(.4,0,.2,1), border-color .22s cubic-bezier(.4,0,.2,1);
+  }
+  .db-slider::before {
+    content: "";
+    position: absolute; top: 2px; left: 2px;
+    height: 16px; width: 16px; border-radius: 50%;
+    background: #888;
+    transition: transform .22s cubic-bezier(.4,0,.2,1), background .22s cubic-bezier(.4,0,.2,1);
+  }
+  .db-switch input:checked + .db-slider { background: rgba(255, 90, 0, .1); border-color: rgba(255, 90, 0, .28); }
+  .db-switch input:checked + .db-slider::before { transform: translateX(18px); background: #ff5a00; }
+  .db-switch input:focus-visible + .db-slider { outline: 2px solid #ff5a00; outline-offset: 2px; }
+
+  .db-perms-empty {
+    border: 1px dashed rgba(255,255,255,.11);
+    border-radius: 18px;
+    padding: 28px;
+    text-align: center;
+    color: #888;
+    font-size: 13px;
+  }
+
+  .db-btn-save, .db-btn-reset {
+    padding: 13px 22px;
+    border-radius: 8px;
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background .22s, border-color .22s, color .22s, transform .1s;
+  }
+  .db-btn-save:active, .db-btn-reset:active { transform: scale(0.98); }
+
+  .db-btn-save {
+    border: none;
+    background: #ff5a00;
+    color: #fff;
+    width: 100%;
+  }
+  .db-btn-save:hover { background: #e04e00; color: #fff; }
+
+  .db-btn-reset {
+    background: transparent;
+    border: 1px solid rgba(239, 83, 80, .28);
+    color: #ef5350;
+    flex: 0 1 260px;
+  }
+  .db-btn-reset:hover { background: rgba(239, 83, 80, .1); }
+
+  @media (max-width: 480px) {
+    .db-perm-group-card { padding: 18px; }
+    .db-btn-reset { flex: 1 1 auto; width: 100%; }
+  }
+</style>
+{% endblock %}

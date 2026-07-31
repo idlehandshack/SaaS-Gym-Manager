@@ -1,1484 +1,517 @@
-{% load static %}
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      {% if favicon_url %}
-    <link rel="icon" href="{{ favicon_url }}">
-    <link rel="shortcut icon" href="{{ favicon_url }}">
-  {% else %}
-    <link rel="icon" href="{% static 'images/favicon.ico' %}">
-    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
-  {% endif %}
-    <title>EnterGYM — Payment Management</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
-    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+{% extends "dashboard/base.html" %}
+{% block title %}Payment Management{% endblock %}
 
-    <style>
-      :root {
-        --bg: #080808;
-        --surface: #111111;
-        --surface-2: #1a1a1a;
-        --border: rgba(255, 255, 255, 0.06);
-        --border-2: rgba(255, 255, 255, 0.12);
-        --orange: #ff5a00;
-        --orange-dim: rgba(255, 90, 0, 0.1);
-        --orange-glow: rgba(255, 90, 0, 0.25);
-        --green: #5de87c;
-        --green-bg: rgba(93, 232, 124, 0.12);
-        --green-border: rgba(93, 232, 124, 0.2);
-        --gold: #e6b800;
-        --gold-bg: rgba(230, 184, 0, 0.12);
-        --gold-bdr: rgba(230, 184, 0, 0.25);
-        --blue: #3b82f6;
-        --blue-bg: rgba(59, 130, 246, 0.12);
-        --blue-bdr: rgba(59, 130, 246, 0.25);
-        --red: #e53935;
-        --red-bg: rgba(229, 57, 53, 0.12);
-        --red-bdr: rgba(229, 57, 53, 0.25);
-        --text-hi: #f5f5f5;
-        --text-mid: #999;
-        --text-lo: #555;
-        --font-d: "Barlow Condensed", sans-serif;
-        --font-b: "Barlow", sans-serif;
-        --ease: cubic-bezier(0.4, 0, 0.2, 1);
-        --t: 0.22s;
-        --radius-lg: 18px;
-        --radius-md: 12px;
-        --radius-pill: 40px;
-      }
+{% block extra_css %}
+<style nonce="{{ request.csp_nonce }}">
+  /* ── Page-specific additions (payment table/cards) ──────────────
+     Colors, fonts, radii all inherit from dashboard.css / base.html.
+     Only layout rules unique to this page live here.               */
 
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
+  .pm-filters{ display:flex; gap:.6rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .pm-filter{
+    text-decoration:none; font-family:var(--font-d); font-size:.75rem; font-weight:700;
+    letter-spacing:.1em; text-transform:uppercase; padding:8px 20px;
+    border-radius:var(--radius-pill); background:var(--surface); border:1px solid var(--border-2);
+    color:var(--text-mid); transition:background var(--t), border-color var(--t), color var(--t);
+  }
+  .pm-filter:hover{ border-color:rgba(255,255,255,.25); color:var(--text-hi); }
+  .pm-filter.active{ background:var(--orange); border-color:var(--orange); color:#fff; }
 
-      body {
-        background: var(--bg);
-        color: var(--text-hi);
-        font-family: var(--font-b);
-        -webkit-font-smoothing: antialiased;
-        overflow-x: hidden;
-        min-height: 100vh;
-      }
+  .pm-card{ background:var(--surface); border-radius:var(--db-card-radius); overflow:hidden; border:1px solid var(--border); box-shadow:var(--db-shadow); }
 
-      /* ── NAV ── */
-      .store-nav {
-        position: sticky;
-        top: 0;
-        z-index: 200;
-        height: 60px;
-        background: rgba(8, 8, 8, 0.94);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-      }
-      .nav-inner {
-        width: 100%;
-        padding: 0 clamp(16px, 4vw, 40px);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-      .nav-brand {
-        font-family: var(--font-d);
-        font-weight: 900;
-        font-size: clamp(1.1rem, 3vw, 1.5rem);
-        text-transform: uppercase;
-        text-decoration: none;
-        color: var(--text-hi);
-        letter-spacing: -0.01em;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: color var(--t);
-      }
-      .nav-brand .acc {
-        color: var(--orange);
-      }
-      .nav-brand .back-icon {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.75rem;
-        flex-shrink: 0;
-        transition: background var(--t);
-      }
-      .nav-brand:hover .back-icon {
-        background: rgba(255, 90, 0, 0.15);
-      }
-      .nav-brand:hover {
-        color: var(--text-hi);
-      }
+  /* ── Desktop table ── */
+  .pm-table-wrap{ overflow-x:auto; }
+  table.pm-table{ width:100%; border-collapse:collapse; min-width:900px; }
+  table.pm-table thead th{
+    background:var(--surface-2); color:var(--orange); font-family:var(--font-d);
+    font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    padding:.75rem 1rem; text-align:left; white-space:nowrap; border-bottom:1px solid var(--border);
+  }
+  table.pm-table tbody tr{ border-bottom:1px solid var(--border); transition:background var(--t); }
+  table.pm-table tbody tr:last-child{ border-bottom:none; }
+  table.pm-table tbody tr:hover{ background:rgba(255,255,255,.03); }
+  table.pm-table tbody td{ padding:.95rem 1rem; color:var(--text-hi); font-size:.83rem; vertical-align:middle; }
 
-      /* ── PAGE HEADER ── */
-      .page-header {
-        position: relative;
-        padding: clamp(36px, 6vw, 64px) 0 clamp(24px, 4vw, 40px);
-        text-align: center;
-        overflow: hidden;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: clamp(24px, 4vw, 40px);
-      }
-      .page-header::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-          ellipse 70% 60% at 50% 0%,
-          rgba(255, 90, 0, 0.1) 0%,
-          transparent 70%
-        );
-        z-index: 0;
-      }
-      .header-inner {
-        position: relative;
-        z-index: 1;
-        padding: 0 clamp(16px, 4vw, 40px);
-        max-width: 620px;
-        margin: 0 auto;
-      }
-      .header-eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-family: var(--font-d);
-        font-size: clamp(0.68rem, 1.8vw, 0.82rem);
-        font-weight: 700;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: var(--orange);
-        margin-bottom: clamp(10px, 2vw, 16px);
-        padding: 6px 16px;
-        border: 1px solid rgba(255, 90, 0, 0.3);
-        border-radius: var(--radius-pill);
-        background: rgba(255, 90, 0, 0.07);
-      }
-      .page-header h1 {
-        font-family: var(--font-d);
-        font-weight: 900;
-        font-size: clamp(2rem, 6vw, 3.4rem);
-        line-height: 0.92;
-        letter-spacing: -0.01em;
-        text-transform: uppercase;
-        margin-bottom: clamp(8px, 1.5vw, 12px);
-      }
-      .page-header h1 .accent {
-        color: var(--orange);
-      }
-      .page-header p {
-        color: var(--text-mid);
-        font-size: clamp(0.85rem, 2vw, 0.98rem);
-        max-width: 360px;
-        margin: 0 auto;
-        line-height: 1.65;
-      }
+  .td-name{ font-weight:700; font-size:.95rem; color:var(--text-hi); }
+  .td-phone{ color:var(--text-mid); font-size:.82rem; }
+  .td-uid{
+    font-size:.68rem; background:var(--orange-dim); border:1px solid var(--orange-bdr);
+    padding:3px 8px; border-radius:6px; color:var(--orange); display:inline-block;
+    margin-top:2px; font-family:var(--font-b); font-weight:600; letter-spacing:.04em;
+  }
+  .td-pending-amt{ color:var(--red); font-weight:700; font-size:.92rem; }
+  .td-paid-amt{ color:var(--green); font-weight:600; }
 
-      /* ── PAGE SHELL ── */
-      .pm-section {
-        position: relative;
-        width: 100%;
-        padding: 0 1.5rem 4rem;
-        font-family: var(--font-b);
-        max-width: 1400px;
-        margin: 0 auto;
-      }
+  /* ── Inline form (desktop) ── */
+  .pay-form{ display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; }
+  .pay-form input[type="number"], .pay-form select, .pay-form input[type="date"]{
+    background:var(--surface-2); border:1px solid var(--border-2); color:var(--text-hi);
+    font-family:var(--font-b); font-size:.8rem; padding:6px 9px; border-radius:var(--radius-md);
+    outline:none; transition:border-color var(--t);
+  }
+  .pay-form input[type="number"]{ width:85px; }
+  .pay-form select{
+    cursor:pointer; appearance:none; -webkit-appearance:none; -moz-appearance:none; color-scheme:dark;
+    padding:6px 30px 6px 12px; background-color:var(--surface-2);
+    background-image:linear-gradient(135deg, var(--orange-dim) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23ff5a00' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:0 0, right 10px center; background-size:100% 100%, 10px 6px;
+    border:1px solid var(--border-2); border-radius:var(--radius-md); font-family:var(--font-d);
+    font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-hi);
+  }
+  .pay-form select:hover{ border-color:rgba(255,90,0,.45); }
+  .pay-form select:focus{ border-color:var(--orange); box-shadow:0 0 0 3px rgba(255,90,0,.18), 0 0 12px rgba(255,90,0,.25); }
+  .pay-form input[type="date"]{ color-scheme:dark; }
+  .pay-form input[type="number"]:focus, .pay-form input[type="date"]:focus{ border-color:var(--orange); }
+  .pay-form select option{
+    background-color:#14110d; color:var(--text-hi); font-family:var(--font-b); font-weight:600;
+    font-size:.85rem; text-transform:none; letter-spacing:normal; padding:10px 12px;
+  }
+  .pay-form select option:checked, .pay-form select option:hover{ background-color:var(--orange); color:#fff; }
 
-      /* ── PENDING BADGE (in header) ── */
-      .pm-badge-pending {
-        display: inline-flex;
-        margin-top: 14px;
-        background: var(--red-bg);
-        border: 1px solid var(--red-bdr);
-        color: var(--red);
-        font-family: var(--font-d);
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 6px 16px;
-        border-radius: var(--radius-pill);
-      }
+  .save-btn{
+    font-family:var(--font-d); background:var(--orange); color:#fff; border:1px solid var(--orange);
+    font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    padding:7px 15px; border-radius:var(--radius-md); cursor:pointer;
+    transition:opacity var(--t), transform .1s; white-space:nowrap;
+  }
+  .save-btn:hover{ opacity:.88; transform:translateY(-1px); }
+  .save-btn:active{ transform:scale(.97); }
+  .save-btn:disabled{ opacity:.4; cursor:not-allowed; }
 
-      /* ── FILTER PILLS ── */
-      .pm-filters {
-        display: flex;
-        gap: 0.6rem;
-        margin-bottom: clamp(18px, 2.5vw, 28px);
-        flex-wrap: wrap;
-      }
-      .pm-filter {
-        text-decoration: none;
-        font-family: var(--font-d);
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        padding: 8px 20px;
-        border-radius: var(--radius-pill);
-        background: var(--surface);
-        border: 1px solid var(--border-2);
-        color: var(--text-mid);
-        transition: background var(--t), border-color var(--t), color var(--t);
-      }
-      .pm-filter:hover {
-        border-color: rgba(255, 255, 255, 0.25);
-        color: var(--text-hi);
-      }
-      .pm-filter.active {
-        background: var(--orange);
-        border-color: var(--orange);
-        color: #fff;
-      }
+  .row-msg{ font-size:.72rem; font-family:var(--font-b); display:none; }
+  .row-msg.ok{ color:var(--green); display:inline; }
+  .row-msg.err{ color:var(--red); display:inline; }
 
-      /* ── CARD WRAPPER ── */
-      .pm-card {
-        background: var(--surface);
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        border: 1px solid var(--border);
-        animation: fadeUp 0.5s var(--ease) both;
-      }
+  .pending-live{ font-size:.68rem; color:var(--text-lo); margin-top:4px; font-family:var(--font-b); }
+  .pending-live span{ color:var(--red); font-weight:600; }
+  .pending-live span.zero{ color:var(--text-lo); }
 
-      @keyframes fadeUp {
-        from {
-          opacity: 0;
-          transform: translateY(14px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
+  /* ── Status badges ── */
+  .badge-done, .badge-pending, .badge-expired{
+    display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:var(--radius-pill);
+    font-family:var(--font-d); font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  }
+  .badge-done{ background:var(--green-dim); color:var(--green); border:1px solid var(--green-bdr); }
+  .badge-pending{ background:var(--yellow-dim); color:var(--yellow); border:1px solid var(--yellow-bdr); }
+  .badge-expired{ background:var(--red-dim); color:var(--red); border:1px solid var(--red-bdr); }
 
-      /* ═══════════════════════════════════
-       DESKTOP TABLE  (≥ 1024px)
-    ═══════════════════════════════════ */
-      .pm-table-wrap {
-        overflow-x: auto;
-      }
+  .pm-empty{
+    text-align:center; padding:3rem 2rem; color:var(--text-lo); font-size:.95rem;
+    font-family:var(--font-d); letter-spacing:.06em; text-transform:uppercase;
+  }
 
-      table.pm-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 900px;
-      }
-      table.pm-table thead th {
-        background: var(--surface-2);
-        color: var(--orange);
-        font-family: var(--font-d);
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        padding: 0.75rem 1rem;
-        text-align: left;
-        white-space: nowrap;
-        border-bottom: 1px solid var(--border);
-      }
-      table.pm-table tbody tr {
-        border-bottom: 1px solid var(--border);
-        transition: background var(--t);
-      }
-      table.pm-table tbody tr:last-child {
-        border-bottom: none;
-      }
-      table.pm-table tbody tr:hover {
-        background: rgba(255, 255, 255, 0.03);
-      }
-      table.pm-table tbody td {
-        padding: 0.95rem 1rem;
-        color: var(--text-hi);
-        font-size: 0.83rem;
-        vertical-align: middle;
-      }
+  /* ── Mobile card layout ── */
+  .mobile-cards{ display:none; }
+  .mob-card{ border-bottom:1px solid var(--border); padding:1.1rem; transition:background var(--t); }
+  .mob-card:last-child{ border-bottom:none; }
+  .mob-card:hover{ background:rgba(255,255,255,.03); }
 
-      /* ── SHARED cell styles ── */
-      .td-name {
-        font-weight: 700;
-        font-size: 0.95rem;
-        color: var(--text-hi);
-      }
-      .td-phone {
-        color: var(--text-mid);
-        font-size: 0.82rem;
-      }
-      .td-uid {
-        font-size: 0.68rem;
-        background: rgba(255, 90, 0, 0.1);
-        border: 1px solid rgba(255, 90, 0, 0.25);
-        padding: 3px 8px;
-        border-radius: 6px;
-        color: var(--orange);
-        display: inline-block;
-        margin-top: 2px;
-        font-family: var(--font-b);
-        font-weight: 600;
-        letter-spacing: 0.04em;
-      }
-      .td-pending-amt {
-        color: var(--red);
-        font-weight: 700;
-        font-size: 0.92rem;
-      }
-      .td-paid-amt {
-        color: var(--green);
-        font-weight: 600;
-      }
+  .mob-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:.5rem; margin-bottom:.75rem; }
+  .mob-identity{ display:flex; align-items:center; gap:.65rem; }
+  .mob-name{ font-family:var(--font-d); font-weight:700; font-size:1.05rem; color:var(--text-hi); text-transform:uppercase; letter-spacing:.01em; }
+  .mob-doj{ font-size:.72rem; color:var(--text-lo); margin-top:1px; }
 
-      /* ── INLINE FORM ── */
-      .pay-form {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-        flex-wrap: wrap;
-      }
-      .pay-form input[type="number"],
-      .pay-form select,
-      .pay-form input[type="date"] {
-        background: var(--surface-2);
-        border: 1px solid var(--border-2);
-        color: var(--text-hi);
-        font-family: var(--font-b);
-        font-size: 0.8rem;
-        padding: 6px 9px;
-        border-radius: var(--radius-md);
-        outline: none;
-        transition: border-color var(--t);
-      }
-      .pay-form input[type="number"] {
-        width: 85px;
-      }
-      .pay-form select {
-        cursor: pointer;
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        color-scheme: dark;
-        accent-color: var(--orange);
-        padding: 6px 30px 6px 12px;
-        background-color: var(--surface-2);
-        background-image: linear-gradient(
-            135deg,
-            rgba(255, 90, 0, 0.06) 0%,
-            transparent 60%
-          ),
-          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23ff5a00' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: 0 0, right 10px center;
-        background-size: 100% 100%, 10px 6px;
-        border: 1px solid var(--border-2);
-        border-radius: var(--radius-md);
-        font-family: var(--font-d);
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--text-hi);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-        transition: border-color var(--t), box-shadow var(--t),
-          background-color var(--t);
-      }
-      .pay-form select:hover {
-        border-color: rgba(255, 90, 0, 0.45);
-      }
-      .pay-form select:focus {
-        border-color: var(--orange);
-        box-shadow: 0 0 0 3px rgba(255, 90, 0, 0.18),
-          0 0 12px rgba(255, 90, 0, 0.25);
-      }
-      .pay-form input[type="date"] {
-        color-scheme: dark;
-      }
-      .pay-form input[type="number"]:focus,
-      .pay-form input[type="date"]:focus {
-        border-color: var(--orange);
-      }
-      .pay-form input[type="number"]::-webkit-inner-spin-button {
-        opacity: 0.3;
-      }
-      .pay-form select option {
-        background-color: #14110d;
-        color: var(--text-hi);
-        font-family: var(--font-b);
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-transform: none;
-        letter-spacing: normal;
-        padding: 10px 12px;
-      }
-      .pay-form select option:checked,
-      .pay-form select option:hover {
-        background-color: var(--orange);
-        color: #fff;
-      }
+  .mob-info{ display:grid; grid-template-columns:1fr 1fr; gap:.5rem .75rem; margin-bottom:.9rem; }
+  .mob-k{ font-family:var(--font-d); font-size:.65rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-lo); margin-bottom:2px; }
+  .mob-v{ font-size:.85rem; color:var(--text-hi); }
 
-      .save-btn {
-        font-family: var(--font-d);
-        background: var(--orange);
-        color: #fff;
-        border: 1px solid var(--orange);
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 7px 15px;
-        border-radius: var(--radius-md);
-        cursor: pointer;
-        transition: opacity var(--t), transform 0.1s;
-        white-space: nowrap;
-      }
-      .save-btn:hover {
-        opacity: 0.88;
-        transform: translateY(-1px);
-      }
-      .save-btn:active {
-        transform: scale(0.97);
-      }
-      .save-btn:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
+  .mob-amounts{ display:flex; gap:1rem; margin-bottom:.9rem; padding:.7rem .75rem; background:var(--surface-2); border-radius:var(--radius-md); border:1px solid var(--border); }
+  .mob-amt{ flex:1; text-align:center; min-width:0; }
+  .mob-amt-label{ font-family:var(--font-d); font-size:.65rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-lo); margin-bottom:3px; }
+  .mob-amt-val{
+    font-family:var(--font-d); font-weight:800;
+    font-size:clamp(.95rem, 4.5vw, 1.1rem); /* flexible so amounts never crop */
+    white-space:normal; overflow-wrap:break-word;
+  }
 
-      .row-msg {
-        font-size: 0.72rem;
-        font-family: var(--font-b);
-        display: none;
-      }
-      .row-msg.ok {
-        color: var(--green);
-        display: inline;
-      }
-      .row-msg.err {
-        color: var(--red);
-        display: inline;
-      }
+  .mob-form{ display:flex; flex-direction:column; gap:.55rem; }
+  .mob-form-row{ display:flex; gap:.5rem; align-items:center; }
+  .mob-form input[type="number"], .mob-form select, .mob-form input[type="date"]{
+    flex:1; background:var(--surface-2); border:1px solid var(--border-2); color:var(--text-hi);
+    font-family:var(--font-b); font-size:.88rem; padding:9px 11px; border-radius:var(--radius-md);
+    outline:none; transition:border-color var(--t); min-width:0;
+  }
+  .mob-form input[type="date"]{ color-scheme:dark; }
+  .mob-form select{
+    appearance:none; -webkit-appearance:none; -moz-appearance:none; cursor:pointer; color-scheme:dark;
+    padding:9px 32px 9px 13px; background-color:var(--surface-2);
+    background-image:linear-gradient(135deg, var(--orange-dim) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23ff5a00' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:0 0, right 12px center; background-size:100% 100%, 11px 7px;
+    font-family:var(--font-d); font-size:.8rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  }
+  .mob-form select:hover{ border-color:rgba(255,90,0,.45); }
+  .mob-form select:focus{ border-color:var(--orange); box-shadow:0 0 0 3px rgba(255,90,0,.18), 0 0 12px rgba(255,90,0,.25); }
+  .mob-form input[type="number"]:focus, .mob-form input[type="date"]:focus{ border-color:var(--orange); }
+  .mob-form select option{
+    background-color:#14110d; color:var(--text-hi); font-family:var(--font-b); font-weight:600;
+    font-size:.9rem; text-transform:none; letter-spacing:normal; padding:10px 12px;
+  }
+  .mob-form select option:checked, .mob-form select option:hover{ background-color:var(--orange); color:#fff; }
 
-      .pending-live {
-        font-size: 0.68rem;
-        color: var(--text-lo);
-        margin-top: 4px;
-        font-family: var(--font-b);
-      }
-      .pending-live span {
-        color: var(--red);
-        font-weight: 600;
-      }
-      .pending-live span.zero {
-        color: var(--text-lo);
-      }
+  .mob-save-btn{
+    width:100%; font-family:var(--font-d); background:var(--orange); color:#fff; border:1px solid var(--orange);
+    font-size:.85rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:10px;
+    border-radius:var(--radius-md); cursor:pointer; transition:opacity var(--t), transform .1s; margin-top:.2rem;
+  }
+  .mob-save-btn:hover{ opacity:.88; }
+  .mob-save-btn:active{ transform:scale(.98); }
+  .mob-save-btn:disabled{ opacity:.4; cursor:not-allowed; }
 
-      /* ── STATUS BADGES ── */
-      .badge-done,
-      .badge-pending,
-      .badge-expired {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 4px 12px;
-        border-radius: var(--radius-pill);
-        font-family: var(--font-d);
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      .badge-done {
-        background: var(--green-bg);
-        color: var(--green);
-        border: 1px solid var(--green-border);
-      }
-      .badge-pending {
-        background: var(--gold-bg);
-        color: var(--gold);
-        border: 1px solid var(--gold-bdr);
-      }
-      .badge-expired {
-        background: var(--red-bg);
-        color: var(--red);
-        border: 1px solid var(--red-bdr);
-      }
+  .mob-pending-preview{ text-align:center; font-size:.75rem; color:var(--text-lo); font-family:var(--font-b); margin-top:.3rem; }
+  .mob-pending-preview span{ color:var(--red); font-weight:600; }
+  .mob-pending-preview span.zero{ color:var(--text-lo); }
 
-      .pm-empty {
-        text-align: center;
-        padding: 3rem 2rem;
-        color: var(--text-lo);
-        font-size: 0.95rem;
-        font-family: var(--font-d);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-      }
+  .mob-msg{ font-size:.8rem; font-family:var(--font-b); text-align:center; margin-top:.35rem; display:none; }
+  .mob-msg.ok{ color:var(--green); display:block; }
+  .mob-msg.err{ color:var(--red); display:block; }
 
-      .pm-back {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        color: var(--text-hi);
-        text-decoration: none;
-        font-family: var(--font-d);
-        font-size: 0.85rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        transition: color var(--t);
-      }
-      .pm-back:hover {
-        color: var(--orange);
-      }
+  /* ── Breakpoints ── */
+  @media (max-width: 1023px){
+    table.pm-table{ min-width:760px; }
+    table.pm-table thead th{ padding:.65rem .75rem; font-size:.66rem; }
+    table.pm-table tbody td{ padding:.8rem .75rem; font-size:.78rem; }
+    .td-name{ font-size:.88rem; }
+    .pay-form input[type="number"]{ width:70px; }
+    .pay-form input[type="date"]{ width:120px; }
+  }
+  @media (max-width: 767px){
+    .pm-table-wrap{ display:none; }
+    .mobile-cards{ display:block; }
+  }
+  @media (max-width: 375px){
+    .mob-info{ grid-template-columns:1fr; }
+    .mob-form-row{ flex-direction:column; }
+    .mob-form-row > *{ width:100%; }
+  }
+</style>
+{% endblock %}
 
-      /* ═══════════════════════════════════
-       MOBILE CARD LAYOUT  (< 768px)
-       Each row becomes a stacked card
-    ═══════════════════════════════════ */
-      .mobile-cards {
-        display: none;
-      }
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">
+      {% if status_filter == "done" %}Recent Paid{% else %}Pending Payments{% endif %}
+    </h1>
+    <p class="db-page-sub">
+      {% if status_filter == "done" %}
+        Members who completed payment in the last 7 days
+      {% else %}
+        Members with outstanding balance across all plans
+      {% endif %}
+      {% if pending_count %}<span class="date-color">• {{ pending_count }} Pending</span>{% endif %}
+    </p>
+  </div>
+</div>
 
-      .mob-card {
-        border-bottom: 1px solid var(--border);
-        padding: 1.1rem;
-        transition: background var(--t);
-      }
-      .mob-card:last-child {
-        border-bottom: none;
-      }
-      .mob-card:hover {
-        background: rgba(255, 255, 255, 0.03);
-      }
+<div class="pm-filters">
+  <a href="?filter=pending" class="pm-filter {% if status_filter == 'pending' %}active{% endif %}">Pending ({{ pending_count }})</a>
+  <a href="?filter=done" class="pm-filter {% if status_filter == 'done' %}active{% endif %}">Paid ({{ paid_count }})</a>
+</div>
 
-      /* top row: id + name + badge */
-      .mob-top {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
-      }
-      .mob-identity {
-        display: flex;
-        align-items: center;
-        gap: 0.65rem;
-      }
-      .mob-name {
-        font-family: var(--font-d);
-        font-weight: 700;
-        font-size: 1.05rem;
-        color: var(--text-hi);
-        text-transform: uppercase;
-        letter-spacing: 0.01em;
-      }
-      .mob-doj {
-        font-size: 0.72rem;
-        color: var(--text-lo);
-        margin-top: 1px;
-      }
+{% include "partials/search_form.html" %}
 
-      /* info grid: 2-col key/value */
-      .mob-info {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem 0.75rem;
-        margin-bottom: 0.9rem;
-      }
-      .mob-kv {
-      }
-      .mob-k {
-        font-family: var(--font-d);
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--text-lo);
-        margin-bottom: 2px;
-      }
-      .mob-v {
-        font-size: 0.85rem;
-        color: var(--text-hi);
-      }
+<div class="pm-card">
+  {% if rows %}
 
-      /* amounts row */
-      .mob-amounts {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 0.9rem;
-        padding: 0.7rem 0.75rem;
-        background: var(--surface-2);
-        border-radius: var(--radius-md);
-        border: 1px solid var(--border);
-      }
-      .mob-amt {
-        flex: 1;
-        text-align: center;
-      }
-      .mob-amt-label {
-        font-family: var(--font-d);
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--text-lo);
-        margin-bottom: 3px;
-      }
-      .mob-amt-val {
-        font-family: var(--font-d);
-        font-size: 1.1rem;
-        font-weight: 800;
-      }
-
-      /* form fields stack */
-      .mob-form {
-        display: flex;
-        flex-direction: column;
-        gap: 0.55rem;
-      }
-      .mob-form-row {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-      }
-      .mob-form input[type="number"],
-      .mob-form select,
-      .mob-form input[type="date"] {
-        flex: 1;
-        background: var(--surface-2);
-        border: 1px solid var(--border-2);
-        color: var(--text-hi);
-        font-family: var(--font-b);
-        font-size: 0.88rem;
-        padding: 9px 11px;
-        border-radius: var(--radius-md);
-        outline: none;
-        transition: border-color var(--t);
-        min-width: 0;
-      }
-      .mob-form input[type="date"] {
-        color-scheme: dark;
-      }
-      .mob-form select {
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        cursor: pointer;
-        color-scheme: dark;
-        accent-color: var(--orange);
-        padding: 9px 32px 9px 13px;
-        background-color: var(--surface-2);
-        background-image: linear-gradient(
-            135deg,
-            rgba(255, 90, 0, 0.06) 0%,
-            transparent 60%
-          ),
-          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23ff5a00' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: 0 0, right 12px center;
-        background-size: 100% 100%, 11px 7px;
-        font-family: var(--font-d);
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-      }
-      .mob-form select:hover {
-        border-color: rgba(255, 90, 0, 0.45);
-      }
-      .mob-form select:focus {
-        border-color: var(--orange);
-        box-shadow: 0 0 0 3px rgba(255, 90, 0, 0.18),
-          0 0 12px rgba(255, 90, 0, 0.25);
-      }
-      .mob-form input[type="number"]:focus,
-      .mob-form input[type="date"]:focus {
-        border-color: var(--orange);
-      }
-      .mob-form select option {
-        background-color: #14110d;
-        color: var(--text-hi);
-        font-family: var(--font-b);
-        font-weight: 600;
-        font-size: 0.9rem;
-        text-transform: none;
-        letter-spacing: normal;
-        padding: 10px 12px;
-      }
-      .mob-form select option:checked,
-      .mob-form select option:hover {
-        background-color: var(--orange);
-        color: #fff;
-      }
-      .mob-form input[type="number"]::-webkit-inner-spin-button {
-        opacity: 0.3;
-      }
-
-      .mob-save-btn {
-        width: 100%;
-        font-family: var(--font-d);
-        background: var(--orange);
-        color: #fff;
-        border: 1px solid var(--orange);
-        font-size: 0.85rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 10px;
-        border-radius: var(--radius-md);
-        cursor: pointer;
-        transition: opacity var(--t), transform 0.1s;
-        margin-top: 0.2rem;
-      }
-      .mob-save-btn:hover {
-        opacity: 0.88;
-      }
-      .mob-save-btn:active {
-        transform: scale(0.98);
-      }
-      .mob-save-btn:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-
-      .mob-pending-preview {
-        text-align: center;
-        font-size: 0.75rem;
-        color: var(--text-lo);
-        font-family: var(--font-b);
-        margin-top: 0.3rem;
-      }
-      .mob-pending-preview span {
-        color: var(--red);
-        font-weight: 600;
-      }
-      .mob-pending-preview span.zero {
-        color: var(--text-lo);
-      }
-
-      .mob-msg {
-        font-size: 0.8rem;
-        font-family: var(--font-b);
-        text-align: center;
-        margin-top: 0.35rem;
-        display: none;
-      }
-      .mob-msg.ok {
-        color: var(--green);
-        display: block;
-      }
-      .mob-msg.err {
-        color: var(--red);
-        display: block;
-      }
-
-      /* ═══════════════════════════════════
-       BREAKPOINTS
-    ═══════════════════════════════════ */
-
-      /* TABLET: 768px – 1023px
-       Table stays but columns compress */
-      @media (max-width: 1023px) {
-        table.pm-table {
-          min-width: 760px;
-        }
-        table.pm-table thead th {
-          padding: 0.65rem 0.75rem;
-          font-size: 0.66rem;
-        }
-        table.pm-table tbody td {
-          padding: 0.8rem 0.75rem;
-          font-size: 0.78rem;
-        }
-        .td-name {
-          font-size: 0.88rem;
-        }
-        .pay-form input[type="number"] {
-          width: 70px;
-        }
-        .pay-form input[type="date"] {
-          width: 120px;
-        }
-      }
-
-      /* MOBILE: < 768px — switch to card layout */
-      @media (max-width: 767px) {
-        .pm-section {
-          padding: 0 1rem 6rem;
-        }
-
-        .pm-table-wrap {
-          display: none;
-        }
-        .mobile-cards {
-          display: block;
-        }
-      }
-
-      /* Small phones */
-      @media (max-width: 375px) {
-        .pm-section {
-          padding: 0 0.85rem 6rem;
-        }
-        .mob-info {
-          grid-template-columns: 1fr;
-        }
-        .mob-form-row {
-          flex-direction: column;
-        }
-        .mob-form-row > * {
-          width: 100%;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    {% csrf_token %}
-
-    <!-- ── STICKY NAV ── -->
-    <nav class="store-nav">
-      <div class="nav-inner">
-        <a class="nav-brand" href="/">
-          <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
-          {{ request.gym.gym_name|default:"EnterGYM" }}
-          <span class="acc">Admin</span>
-        </a>
-      </div>
-    </nav>
-
-    <!-- ── PAGE HEADER ── -->
-    <header class="page-header">
-      <div class="header-inner">
-        <div class="header-eyebrow">
-          <i class="bi bi-cash-coin"></i> Member Management
-        </div>
-        <h1>
-          {% if status_filter == "done" %}Recent <span class="accent">Paid</span>
-          {% else %}Pending <span class="accent">Payments</span>{% endif %}
-        </h1>
-        <p>
-          {% if status_filter == "done" %}Members who completed payment in the last 7 days.
-          {% else %}Members with outstanding balance across all plans.{% endif %}
-        </p>
-        {% if pending_count %}
-        <span class="pm-badge-pending">{{ pending_count }} Pending</span>
-        {% endif %}
-      </div>
-    </header>
-
-    <!-- PAGE CONTENT -->
-    <div class="pm-section">
-        <!-- Filters -->
-        <div class="pm-filters">
-          <a
-            href="?filter=pending"
-            class="pm-filter {% if status_filter == 'pending' %}active{% endif %}"
-            >Pending ({{ pending_count }})</a
-          >
-          <a
-            href="?filter=done"
-            class="pm-filter {% if status_filter == 'done' %}active{% endif %}"
-            >Paid ({{ paid_count }})</a
-          >
-        </div>
-        {% include "partials/search_form.html" %}
-        <!-- Card -->
-        <div class="pm-card">
-          {% if rows %}
-
-          <!-- ══ DESKTOP / TABLET TABLE ══ -->
-          <div class="pm-table-wrap">
-            <table class="pm-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Member</th>
-                  <th>Phone</th>
-                  <th>Plan</th>
-                  <th>Paid (₹)</th>
-                  <th>Pending (₹)</th>
-                  <th>Status</th>
-                  <th>Due Date</th>
-                  <th>Update Payment</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for row in rows %}
-                <tr
-                  id="row-{{ row.id }}"
-                  data-plan-price="{{ row.plan_price }}"
-                  data-id="{{ row.id }}"
-                >
-                  <td><span class="td-uid">{{ row.unique_id }}</span></td>
-
-                  <td>
-                    <div class="td-name">{{ row.fullname }}</div>
-                    <div
-                      style="
-                        font-size: 10px;
-                        color: var(--text-lo);
-                        margin-top: 2px;
-                      "
-                    >
-                      {{ row.doj }}
-                    </div>
-                  </td>
-
-                  <td class="td-phone">{{ row.phone }}</td>
-
-                  <td style="color: var(--text-mid); white-space: nowrap">
-                    {{ row.plan_name }}<br />
-                    <span style="font-size: 11px; color: var(--text-lo)"
-                      >₹{{ row.plan_price|floatformat:0 }}</span
-                    >
-                  </td>
-
-                  <td>
-                    <span class="td-paid-amt" id="paid-{{ row.id }}"
-                      >₹{{ row.paid|floatformat:2 }}</span
-                    >
-                  </td>
-
-                  <td>
-                    <span
-                      class="td-pending-amt {% if row.pending == 0 %}td-paid-amt{% endif %}"
-                      id="pending-{{ row.id }}"
-                    >
-                      ₹{{ row.pending|floatformat:2 }}
-                    </span>
-                  </td>
-
-                  <td id="status-{{ row.id }}">
-                    {% if row.is_expired %}
-                    <span class="badge-expired">Expired</span>
-                    {% elif row.payment_status == "Done" %}
-                    <span class="badge-done">Paid ✓</span>
-                    {% else %}
-                    <span class="badge-pending">Pending</span>
-                    {% endif %}
-                  </td>
-
-                  <td
-                    style="
-                      color: var(--text-mid);
-                      font-size: 12px;
-                      white-space: nowrap;
-                    "
-                  >
-                    {{ row.due_date }}
-                  </td>
-
-                  <td>
-                    <div class="pay-form">
-                      <input
-                        type="number"
-                        min="0"
-                        max="{{ row.plan_price }}"
-                        step="1"
-                        value="{{ row.paid|floatformat:0 }}"
-                        id="input-paid-{{ row.id }}"
-                        placeholder="₹ Paid"
-                        data-row-id="{{ row.id }}"
-                      />
-                      <select id="input-method-{{ row.id }}">
-                        <option value="">Method</option>
-                        <option
-                          value="C"
-                          {%
-                          if
-                          row.payment_method=""
-                          ="C"
-                          %}selected{%
-                          endif
-                          %}
-                        >
-                          Cash
-                        </option>
-                        <option
-                          value="U"
-                          {%
-                          if
-                          row.payment_method=""
-                          ="U"
-                          %}selected{%
-                          endif
-                          %}
-                        >
-                          UPI
-                        </option>
-                        <option
-                          value="B"
-                          {%
-                          if
-                          row.payment_method=""
-                          ="B"
-                          %}selected{%
-                          endif
-                          %}
-                        >
-                          UPI+Cash
-                        </option>
-                      </select>
-                      <input
-                        type="date"
-                        id="input-date-{{ row.id }}"
-                        value="{{ row.payment_date }}"
-                      />
-                      <button
-                        class="save-btn"
-                        id="btn-{{ row.id }}"
-                        data-row-id="{{ row.id }}"
-                      >
-                        Save
-                      </button>
-                      <span class="row-msg" id="msg-{{ row.id }}"></span>
-                    </div>
-                    <div class="pending-live">
-                      Pending:
-                      <span
-                        id="preview-{{ row.id }}"
-                        class="{% if row.pending == 0 %}zero{% endif %}"
-                        >₹{{ row.pending|floatformat:0 }}</span
-                      >
-                    </div>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- ══ MOBILE CARDS ══ -->
-          <div class="mobile-cards">
-            {% for row in rows %}
-            <div
-              class="mob-card"
-              id="mob-row-{{ row.id }}"
-              data-plan-price="{{ row.plan_price }}"
-              data-id="{{ row.id }}"
-            >
-              <!-- Top: identity + status -->
-              <div class="mob-top">
-                <div class="mob-identity">
-                  <span class="td-uid">{{ row.unique_id }}</span>
-                  <div>
-                    <div class="mob-name">{{ row.fullname }}</div>
-                    <div class="mob-doj">{{ row.doj }}</div>
-                  </div>
-                </div>
-                <div id="mob-status-{{ row.id }}">
-                  {% if row.is_expired %}
-                  <span class="badge-expired">Expired</span>
-                  {% elif row.payment_status == "Done" %}
-                  <span class="badge-done">Paid ✓</span>
-                  {% else %}
-                  <span class="badge-pending">Pending</span>
-                  {% endif %}
-                </div>
-              </div>
-
-              <!-- Info grid -->
-              <div class="mob-info">
-                <div class="mob-kv">
-                  <div class="mob-k">Phone</div>
-                  <div
-                    class="mob-v"
-                    style="color: var(--text-mid); font-size: 12px"
-                  >
-                    {{ row.phone }}
-                  </div>
-                </div>
-                <div class="mob-kv">
-                  <div class="mob-k">Plan</div>
-                  <div class="mob-v" style="font-size: 12px">
-                    {{ row.plan_name }}
-                    <span style="color: var(--text-lo)"
-                      >₹{{ row.plan_price|floatformat:0 }}</span
-                    >
-                  </div>
-                </div>
-                <div class="mob-kv">
-                  <div class="mob-k">Due Date</div>
-                  <div
-                    class="mob-v"
-                    style="font-size: 12px; color: var(--text-mid)"
-                  >
-                    {{ row.due_date }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Amounts -->
-              <div class="mob-amounts">
-                <div class="mob-amt">
-                  <div class="mob-amt-label">Paid</div>
-                  <div
-                    class="mob-amt-val td-paid-amt"
-                    id="mob-paid-{{ row.id }}"
-                  >
-                    ₹{{ row.paid|floatformat:0 }}
-                  </div>
-                </div>
-                <div style="width: 1px; background: var(--border)"></div>
-                <div class="mob-amt">
-                  <div class="mob-amt-label">Pending</div>
-                  <div
-                    class="mob-amt-val {% if row.pending == 0 %}td-paid-amt{% else %}td-pending-amt{% endif %}"
-                    id="mob-pending-{{ row.id }}"
-                  >
-                    ₹{{ row.pending|floatformat:0 }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Update form -->
-              <div class="mob-form">
-                <div class="mob-form-row">
-                  <input
-                    type="number"
-                    min="0"
-                    max="{{ row.plan_price }}"
-                    step="1"
-                    value="{{ row.paid|floatformat:0 }}"
-                    id="mob-input-paid-{{ row.id }}"
-                    placeholder="₹ Amount Paid"
-                  />
-                  <select id="mob-input-method-{{ row.id }}">
-                    <option value="">Method</option>
-                    <option
-                      value="C"
-                      {%
-                      if
-                      row.payment_method=""
-                      ="C"
-                      %}selected{%
-                      endif
-                      %}
-                    >
-                      Cash
-                    </option>
-                    <option
-                      value="U"
-                      {%
-                      if
-                      row.payment_method=""
-                      ="U"
-                      %}selected{%
-                      endif
-                      %}
-                    >
-                      UPI
-                    </option>
-                    <option
-                      value="B"
-                      {%
-                      if
-                      row.payment_method=""
-                      ="B"
-                      %}selected{%
-                      endif
-                      %}
-                    >
-                      UPI+Cash
-                    </option>
-                  </select>
-                </div>
-                <input
-                  type="date"
-                  id="mob-input-date-{{ row.id }}"
-                  value="{{ row.payment_date }}"
-                  style="width: 100%"
-                />
-                <button
-                  class="mob-save-btn"
-                  id="mob-btn-{{ row.id }}"
-                  data-row-id="{{ row.id }}"
-                >
-                  Save Payment
-                </button>
-                <div class="mob-pending-preview">
-                  After save — Pending:
-                  <span
-                    id="mob-preview-{{ row.id }}"
-                    class="{% if row.pending == 0 %}zero{% endif %}"
-                    >₹{{ row.pending|floatformat:0 }}</span
-                  >
-                </div>
-                <div class="mob-msg" id="mob-msg-{{ row.id }}"></div>
-              </div>
+  <!-- ══ DESKTOP / TABLET TABLE ══ -->
+  <div class="pm-table-wrap">
+    <table class="pm-table">
+      <thead>
+        <tr>
+          <th>ID</th><th>Member</th><th>Phone</th><th>Plan</th>
+          <th>Paid (₹)</th><th>Pending (₹)</th><th>Status</th><th>Due Date</th><th>Update Payment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr id="row-{{ row.id }}" data-plan-price="{{ row.plan_price }}" data-id="{{ row.id }}">
+          <td><span class="td-uid">{{ row.unique_id }}</span></td>
+          <td>
+            <div class="td-name">{{ row.fullname }}</div>
+            <div style="font-size:10px; color:var(--text-lo); margin-top:2px;">{{ row.doj }}</div>
+          </td>
+          <td class="td-phone">{{ row.phone }}</td>
+          <td style="color:var(--text-mid); white-space:nowrap">
+            {{ row.plan_name }}<br />
+            <span style="font-size:11px; color:var(--text-lo)">₹{{ row.plan_price|floatformat:0 }}</span>
+          </td>
+          <td><span class="td-paid-amt" id="paid-{{ row.id }}">₹{{ row.paid|floatformat:2 }}</span></td>
+          <td>
+            <span class="td-pending-amt {% if row.pending == 0 %}td-paid-amt{% endif %}" id="pending-{{ row.id }}">
+              ₹{{ row.pending|floatformat:2 }}
+            </span>
+          </td>
+          <td id="status-{{ row.id }}">
+            {% if row.is_expired %}<span class="badge-expired">Expired</span>
+            {% elif row.payment_status == "Done" %}<span class="badge-done">Paid ✓</span>
+            {% else %}<span class="badge-pending">Pending</span>{% endif %}
+          </td>
+          <td style="color:var(--text-mid); font-size:12px; white-space:nowrap">{{ row.due_date }}</td>
+          <td>
+            <div class="pay-form">
+              <input type="number" min="0" max="{{ row.plan_price }}" step="1"
+                value="{{ row.paid|floatformat:0 }}" id="input-paid-{{ row.id }}"
+                placeholder="₹ Paid" data-row-id="{{ row.id }}" />
+              <select id="input-method-{{ row.id }}">
+                <option value="">Method</option>
+                <option value="C" {% if row.payment_method == "C" %}selected{% endif %}>Cash</option>
+                <option value="U" {% if row.payment_method == "U" %}selected{% endif %}>UPI</option>
+                <option value="B" {% if row.payment_method == "B" %}selected{% endif %}>UPI+Cash</option>
+              </select>
+              <input type="date" id="input-date-{{ row.id }}" value="{{ row.payment_date }}" />
+              <button class="save-btn" id="btn-{{ row.id }}" data-row-id="{{ row.id }}">Save</button>
+              <span class="row-msg" id="msg-{{ row.id }}"></span>
             </div>
-            {% endfor %}
-          </div>
+            <div class="pending-live">
+              Pending:
+              <span id="preview-{{ row.id }}" class="{% if row.pending == 0 %}zero{% endif %}">₹{{ row.pending|floatformat:0 }}</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
-          {% else %}
-          <div class="pm-empty">
-            {% if status_filter == 'done' %} No paid enrollments in the last 7
-            days. {% else %} All caught up — no pending payments. ✓ {% endif %}
+  <!-- ══ MOBILE CARDS ══ -->
+  <div class="mobile-cards">
+    {% for row in rows %}
+    <div class="mob-card" id="mob-row-{{ row.id }}" data-plan-price="{{ row.plan_price }}" data-id="{{ row.id }}">
+      <div class="mob-top">
+        <div class="mob-identity">
+          <span class="td-uid">{{ row.unique_id }}</span>
+          <div>
+            <div class="mob-name">{{ row.fullname }}</div>
+            <div class="mob-doj">{{ row.doj }}</div>
           </div>
-          {% endif %}
         </div>
-        <!-- /pm-card -->
+        <div id="mob-status-{{ row.id }}">
+          {% if row.is_expired %}<span class="badge-expired">Expired</span>
+          {% elif row.payment_status == "Done" %}<span class="badge-done">Paid ✓</span>
+          {% else %}<span class="badge-pending">Pending</span>{% endif %}
+        </div>
+      </div>
+
+      <div class="mob-info">
+        <div class="mob-kv">
+          <div class="mob-k">Phone</div>
+          <div class="mob-v" style="color:var(--text-mid); font-size:12px">{{ row.phone }}</div>
+        </div>
+        <div class="mob-kv">
+          <div class="mob-k">Plan</div>
+          <div class="mob-v" style="font-size:12px">
+            {{ row.plan_name }} <span style="color:var(--text-lo)">₹{{ row.plan_price|floatformat:0 }}</span>
+          </div>
+        </div>
+        <div class="mob-kv">
+          <div class="mob-k">Due Date</div>
+          <div class="mob-v" style="font-size:12px; color:var(--text-mid)">{{ row.due_date }}</div>
+        </div>
+      </div>
+
+      <div class="mob-amounts">
+        <div class="mob-amt">
+          <div class="mob-amt-label">Paid</div>
+          <div class="mob-amt-val td-paid-amt" id="mob-paid-{{ row.id }}">₹{{ row.paid|floatformat:0 }}</div>
+        </div>
+        <div style="width:1px; background:var(--border)"></div>
+        <div class="mob-amt">
+          <div class="mob-amt-label">Pending</div>
+          <div class="mob-amt-val {% if row.pending == 0 %}td-paid-amt{% else %}td-pending-amt{% endif %}" id="mob-pending-{{ row.id }}">
+            ₹{{ row.pending|floatformat:0 }}
+          </div>
+        </div>
+      </div>
+
+      <div class="mob-form">
+        <div class="mob-form-row">
+          <input type="number" min="0" max="{{ row.plan_price }}" step="1"
+            value="{{ row.paid|floatformat:0 }}" id="mob-input-paid-{{ row.id }}" placeholder="₹ Amount Paid" />
+          <select id="mob-input-method-{{ row.id }}">
+            <option value="">Method</option>
+            <option value="C" {% if row.payment_method == "C" %}selected{% endif %}>Cash</option>
+            <option value="U" {% if row.payment_method == "U" %}selected{% endif %}>UPI</option>
+            <option value="B" {% if row.payment_method == "B" %}selected{% endif %}>UPI+Cash</option>
+          </select>
+        </div>
+        <input type="date" id="mob-input-date-{{ row.id }}" value="{{ row.payment_date }}" style="width:100%" />
+        <button class="mob-save-btn" id="mob-btn-{{ row.id }}" data-row-id="{{ row.id }}">Save Payment</button>
+        <div class="mob-pending-preview">
+          After save — Pending:
+          <span id="mob-preview-{{ row.id }}" class="{% if row.pending == 0 %}zero{% endif %}">₹{{ row.pending|floatformat:0 }}</span>
+        </div>
+        <div class="mob-msg" id="mob-msg-{{ row.id }}"></div>
+      </div>
     </div>
-    <!-- /pm-section -->
+    {% endfor %}
+  </div>
 
-    <script src="{% static 'js/base.js' %}"></script>
-    <script nonce="{{ request.csp_nonce }}">
-      const CSRF = "{{ csrf_token }}";
-      document.addEventListener("DOMContentLoaded", () => {
-        const todayISO = new Date().toISOString().split("T")[0];
-        document.querySelectorAll('input[id^="input-date-"]').forEach(el => {
-          if (!el.value) el.value = todayISO;
-        });
-        document.querySelectorAll('input[id^="mob-input-date-"]').forEach(el => {
-          if (!el.value) el.value = todayISO;
-        });
-        // Desktop save buttons
-        document.querySelectorAll(".save-btn").forEach(btn => {
-          btn.addEventListener("click", () => {
-            savePayment(btn.dataset.rowId);
-          });
-        });
+  {% else %}
+  <div class="pm-empty">
+    {% if status_filter == 'done' %}No paid enrollments in the last 7 days.
+    {% else %}All caught up — no pending payments. ✓{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
 
-        // Mobile save buttons
-        document.querySelectorAll(".mob-save-btn").forEach(btn => {
-          btn.addEventListener("click", () => {
-            savePaymentMob(btn.dataset.rowId);
-          });
-        });
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+  const CSRF = "{{ csrf_token }}";
 
-        // Enter key support
-        document.querySelectorAll('input[id^="input-paid-"]').forEach(input => {
-          input.addEventListener("keydown", e => {
-            if (e.key === "Enter") {
-              savePayment(input.dataset.rowId);
-            }
-          });
-        });
+  document.addEventListener("DOMContentLoaded", () => {
+    const todayISO = new Date().toISOString().split("T")[0];
+    document.querySelectorAll('input[id^="input-date-"]').forEach(el => { if (!el.value) el.value = todayISO; });
+    document.querySelectorAll('input[id^="mob-input-date-"]').forEach(el => { if (!el.value) el.value = todayISO; });
 
+    document.querySelectorAll(".save-btn").forEach(btn => btn.addEventListener("click", () => savePayment(btn.dataset.rowId)));
+    document.querySelectorAll(".mob-save-btn").forEach(btn => btn.addEventListener("click", () => savePaymentMob(btn.dataset.rowId)));
+
+    document.querySelectorAll('input[id^="input-paid-"]').forEach(input => {
+      input.addEventListener("keydown", e => { if (e.key === "Enter") savePayment(input.dataset.rowId); });
+    });
+
+    document.querySelectorAll('input[id^="input-paid-"]').forEach((input) => {
+      const rowId = input.id.replace("input-paid-", "");
+      const row = document.getElementById("row-" + rowId);
+      if (!row) return;
+      const planPrice = parseFloat(row.dataset.planPrice) || 0;
+      input.addEventListener("input", () => {
+        const paid = Math.min(parseFloat(input.value) || 0, planPrice);
+        const pending = Math.max(planPrice - paid, 0);
+        const el = document.getElementById("preview-" + rowId);
+        if (el) { el.textContent = "₹" + Math.round(pending); el.className = pending === 0 ? "zero" : ""; }
       });
-      /* ── Desktop table: live preview ── */
-      document.querySelectorAll('input[id^="input-paid-"]').forEach((input) => {
-        const rowId = input.id.replace("input-paid-", "");
-        const row = document.getElementById("row-" + rowId);
-        if (!row) return;
-        const planPrice = parseFloat(row.dataset.planPrice) || 0;
-        input.addEventListener("input", () => {
-          const paid = Math.min(parseFloat(input.value) || 0, planPrice);
-          const pending = Math.max(planPrice - paid, 0);
-          const el = document.getElementById("preview-" + rowId);
-          if (el) {
-            el.textContent = "₹" + Math.round(pending);
-            el.className = pending === 0 ? "zero" : "";
-          }
-        });
+    });
+
+    document.querySelectorAll('input[id^="mob-input-paid-"]').forEach((input) => {
+      const rowId = input.id.replace("mob-input-paid-", "");
+      const card = document.getElementById("mob-row-" + rowId);
+      if (!card) return;
+      const planPrice = parseFloat(card.dataset.planPrice) || 0;
+      input.addEventListener("input", () => {
+        const paid = Math.min(parseFloat(input.value) || 0, planPrice);
+        const pending = Math.max(planPrice - paid, 0);
+        const el = document.getElementById("mob-preview-" + rowId);
+        if (el) { el.textContent = "₹" + Math.round(pending); el.className = pending === 0 ? "zero" : ""; }
       });
+    });
+  });
 
-      /* ── Mobile cards: live preview ── */
-      document
-        .querySelectorAll('input[id^="mob-input-paid-"]')
-        .forEach((input) => {
-          const rowId = input.id.replace("mob-input-paid-", "");
-          const card = document.getElementById("mob-row-" + rowId);
-          if (!card) return;
-          const planPrice = parseFloat(card.dataset.planPrice) || 0;
-          input.addEventListener("input", () => {
-            const paid = Math.min(parseFloat(input.value) || 0, planPrice);
-            const pending = Math.max(planPrice - paid, 0);
-            const el = document.getElementById("mob-preview-" + rowId);
-            if (el) {
-              el.textContent = "₹" + Math.round(pending);
-              el.className = pending === 0 ? "zero" : "";
-            }
-          });
-        });
+  async function postPayment(rowId, paid, method, dt) {
+    const res = await fetch("/admin-tools/update-payment/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
+      body: JSON.stringify({ enrollment_id: rowId, paid_amount: paid, payment_method: method, payment_date: dt }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || "Error");
+    return data;
+  }
 
-      /* ── Shared API call ── */
-      async function postPayment(rowId, paid, method, dt) {
-        const res = await fetch("/admin-tools/update-payment/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
-          body: JSON.stringify({
-            enrollment_id: rowId,
-            paid_amount: paid,
-            payment_method: method,
-            payment_date: dt,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error || "Error");
-        return data;
+  async function savePayment(rowId) {
+    const btn = document.getElementById("btn-" + rowId);
+    const msgEl = document.getElementById("msg-" + rowId);
+    const paidEl = document.getElementById("input-paid-" + rowId);
+    const methodEl = document.getElementById("input-method-" + rowId);
+    const dateEl = document.getElementById("input-date-" + rowId);
+    const row = document.getElementById("row-" + rowId);
+    const planPrice = parseFloat(row.dataset.planPrice) || 0;
+    const paid = Math.min(parseFloat(paidEl.value) || 0, planPrice);
+
+    msgEl.className = "row-msg"; msgEl.textContent = "";
+    btn.disabled = true; btn.textContent = "...";
+
+    try {
+      const data = await postPayment(rowId, paid, methodEl.value, dateEl.value);
+      document.getElementById("paid-" + rowId).textContent = "₹" + data.paid.toFixed(2);
+      const pendingEl = document.getElementById("pending-" + rowId);
+      pendingEl.textContent = "₹" + data.pending.toFixed(2);
+      pendingEl.className = data.pending === 0 ? "td-paid-amt" : "td-pending-amt";
+      const prevEl = document.getElementById("preview-" + rowId);
+      if (prevEl) { prevEl.textContent = "₹" + Math.round(data.pending); prevEl.className = data.pending === 0 ? "zero" : ""; }
+      if (data.payment_status !== "Done") {
+        document.getElementById("status-" + rowId).innerHTML = '<span class="badge-pending">Pending</span>';
       }
-
-      /* ── Desktop save ── */
-      async function savePayment(rowId) {
-        const btn = document.getElementById("btn-" + rowId);
-        const msgEl = document.getElementById("msg-" + rowId);
-        const paidEl = document.getElementById("input-paid-" + rowId);
-        const methodEl = document.getElementById("input-method-" + rowId);
-        const dateEl = document.getElementById("input-date-" + rowId);
-        const row = document.getElementById("row-" + rowId);
-        const planPrice = parseFloat(row.dataset.planPrice) || 0;
-        const paid = Math.min(parseFloat(paidEl.value) || 0, planPrice);
-
-        msgEl.className = "row-msg";
-        msgEl.textContent = "";
-        btn.disabled = true;
-        btn.textContent = "...";
-
-        try {
-          const data = await postPayment(
-            rowId,
-            paid,
-            methodEl.value,
-            dateEl.value,
-          );
-          document.getElementById("paid-" + rowId).textContent =
-            "₹" + data.paid.toFixed(2);
-          const pendingEl = document.getElementById("pending-" + rowId);
-          pendingEl.textContent = "₹" + data.pending.toFixed(2);
-          pendingEl.className =
-            data.pending === 0 ? "td-paid-amt" : "td-pending-amt";
-          const prevEl = document.getElementById("preview-" + rowId);
-          if (prevEl) {
-            prevEl.textContent = "₹" + Math.round(data.pending);
-            prevEl.className = data.pending === 0 ? "zero" : "";
-          }
-          if (data.payment_status !== "Done") {
-            document.getElementById("status-" + rowId).innerHTML =
-              '<span class="badge-pending">Pending</span>';
-          }
-          paidEl.value = Math.round(data.paid);
-          if (data.payment_status === "Done") {
-            const rowEl = document.getElementById("row-" + rowId);
-            rowEl.style.transition = "opacity 0.4s ease, background 0.4s ease";
-            rowEl.style.background = "rgba(93,232,124,.10)";
-            msgEl.textContent = "✓ Paid — removing...";
-            msgEl.className = "row-msg ok";
-            setTimeout(() => {
-              rowEl.style.opacity = "0";
-              setTimeout(() => {
-                rowEl.remove();
-                updateBadge();
-                checkEmpty();
-              }, 400);
-            }, 800);
-          } else {
-            msgEl.textContent = "✓ Saved";
-            msgEl.className = "row-msg ok";
-            setTimeout(() => {
-              msgEl.className = "row-msg";
-            }, 2500);
-          }
-        } catch (err) {
-          msgEl.textContent = "✗ " + err.message;
-          msgEl.className = "row-msg err";
-        } finally {
-          btn.disabled = false;
-          btn.textContent = "Save";
-        }
+      paidEl.value = Math.round(data.paid);
+      if (data.payment_status === "Done") {
+        const rowEl = document.getElementById("row-" + rowId);
+        rowEl.style.transition = "opacity 0.4s ease, background 0.4s ease";
+        rowEl.style.background = "rgba(93,232,124,.10)";
+        msgEl.textContent = "✓ Paid — removing..."; msgEl.className = "row-msg ok";
+        setTimeout(() => {
+          rowEl.style.opacity = "0";
+          setTimeout(() => { rowEl.remove(); updateBadge(); checkEmpty(); }, 400);
+        }, 800);
+      } else {
+        msgEl.textContent = "✓ Saved"; msgEl.className = "row-msg ok";
+        setTimeout(() => { msgEl.className = "row-msg"; }, 2500);
       }
+    } catch (err) {
+      msgEl.textContent = "✗ " + err.message; msgEl.className = "row-msg err";
+    } finally {
+      btn.disabled = false; btn.textContent = "Save";
+    }
+  }
 
-      /* ── Mobile save ── */
-      async function savePaymentMob(rowId) {
-        const btn = document.getElementById("mob-btn-" + rowId);
-        const msgEl = document.getElementById("mob-msg-" + rowId);
-        const paidEl = document.getElementById("mob-input-paid-" + rowId);
-        const methodEl = document.getElementById("mob-input-method-" + rowId);
-        const dateEl = document.getElementById("mob-input-date-" + rowId);
-        const card = document.getElementById("mob-row-" + rowId);
-        const planPrice = parseFloat(card.dataset.planPrice) || 0;
-        const paid = Math.min(parseFloat(paidEl.value) || 0, planPrice);
+  async function savePaymentMob(rowId) {
+    const btn = document.getElementById("mob-btn-" + rowId);
+    const msgEl = document.getElementById("mob-msg-" + rowId);
+    const paidEl = document.getElementById("mob-input-paid-" + rowId);
+    const methodEl = document.getElementById("mob-input-method-" + rowId);
+    const dateEl = document.getElementById("mob-input-date-" + rowId);
+    const card = document.getElementById("mob-row-" + rowId);
+    const planPrice = parseFloat(card.dataset.planPrice) || 0;
+    const paid = Math.min(parseFloat(paidEl.value) || 0, planPrice);
 
-        msgEl.className = "mob-msg";
-        msgEl.textContent = "";
-        btn.disabled = true;
-        btn.textContent = "Saving...";
+    msgEl.className = "mob-msg"; msgEl.textContent = "";
+    btn.disabled = true; btn.textContent = "Saving...";
 
-        try {
-          const data = await postPayment(
-            rowId,
-            paid,
-            methodEl.value,
-            dateEl.value,
-          );
-          document.getElementById("mob-paid-" + rowId).textContent =
-            "₹" + Math.round(data.paid);
-          const mobPendEl = document.getElementById("mob-pending-" + rowId);
-          mobPendEl.textContent = "₹" + Math.round(data.pending);
-          mobPendEl.className =
-            "mob-amt-val " +
-            (data.pending === 0 ? "td-paid-amt" : "td-pending-amt");
-          const prevEl = document.getElementById("mob-preview-" + rowId);
-          if (prevEl) {
-            prevEl.textContent = "₹" + Math.round(data.pending);
-            prevEl.className = data.pending === 0 ? "zero" : "";
-          }
-          if (data.payment_status !== "Done") {
-            document.getElementById("mob-status-" + rowId).innerHTML =
-              '<span class="badge-pending">Pending</span>';
-          }
-          paidEl.value = Math.round(data.paid);
-          if (data.payment_status === "Done") {
-            card.style.transition = "opacity .4s ease, background .4s ease";
-            card.style.background = "rgba(93,232,124,.08)";
-            msgEl.textContent = "✓ Fully paid — removing...";
-            msgEl.className = "mob-msg ok";
-            setTimeout(() => {
-              card.style.opacity = "0";
-              setTimeout(() => {
-                card.remove();
-                updateBadge();
-                checkEmpty();
-              }, 400);
-            }, 900);
-          } else {
-            msgEl.textContent = "✓ Saved successfully";
-            msgEl.className = "mob-msg ok";
-            setTimeout(() => {
-              msgEl.className = "mob-msg";
-            }, 2500);
-          }
-        } catch (err) {
-          msgEl.textContent = "✗ " + err.message;
-          msgEl.className = "mob-msg err";
-        } finally {
-          btn.disabled = false;
-          btn.textContent = "Save Payment";
-        }
+    try {
+      const data = await postPayment(rowId, paid, methodEl.value, dateEl.value);
+      document.getElementById("mob-paid-" + rowId).textContent = "₹" + Math.round(data.paid);
+      const mobPendEl = document.getElementById("mob-pending-" + rowId);
+      mobPendEl.textContent = "₹" + Math.round(data.pending);
+      mobPendEl.className = "mob-amt-val " + (data.pending === 0 ? "td-paid-amt" : "td-pending-amt");
+      const prevEl = document.getElementById("mob-preview-" + rowId);
+      if (prevEl) { prevEl.textContent = "₹" + Math.round(data.pending); prevEl.className = data.pending === 0 ? "zero" : ""; }
+      if (data.payment_status !== "Done") {
+        document.getElementById("mob-status-" + rowId).innerHTML = '<span class="badge-pending">Pending</span>';
       }
-
-      function updateBadge() {
-        const badge = document.querySelector(".pm-badge-pending");
-        if (!badge) return;
-        const current = parseInt(badge.textContent) || 0;
-        const next = current - 1;
-        if (next <= 0) badge.remove();
-        else badge.textContent = next + " Pending";
+      paidEl.value = Math.round(data.paid);
+      if (data.payment_status === "Done") {
+        card.style.transition = "opacity .4s ease, background .4s ease";
+        card.style.background = "rgba(93,232,124,.08)";
+        msgEl.textContent = "✓ Fully paid — removing..."; msgEl.className = "mob-msg ok";
+        setTimeout(() => {
+          card.style.opacity = "0";
+          setTimeout(() => { card.remove(); updateBadge(); checkEmpty(); }, 400);
+        }, 900);
+      } else {
+        msgEl.textContent = "✓ Saved successfully"; msgEl.className = "mob-msg ok";
+        setTimeout(() => { msgEl.className = "mob-msg"; }, 2500);
       }
+    } catch (err) {
+      msgEl.textContent = "✗ " + err.message; msgEl.className = "mob-msg err";
+    } finally {
+      btn.disabled = false; btn.textContent = "Save Payment";
+    }
+  }
 
-      function checkEmpty() {
-        const hasTbodyRows = document.querySelector(".pm-table tbody tr");
-        const hasMobCards = document.querySelector(".mob-card");
-        if (!hasTbodyRows && !hasMobCards) {
-          document.querySelector(".pm-card").innerHTML =
-            '<div class="pm-empty">All caught up — no pending payments. ✓</div>';
-        }
-      }
-    </script>
-  </body>
-</html>
+  function updateBadge() {
+    const badge = document.querySelector(".date-color");
+    // header pending count isn't a dedicated badge anymore; skip silently if absent
+  }
+
+  function checkEmpty() {
+    const hasTbodyRows = document.querySelector(".pm-table tbody tr");
+    const hasMobCards = document.querySelector(".mob-card");
+    if (!hasTbodyRows && !hasMobCards) {
+      document.querySelector(".pm-card").innerHTML =
+        '<div class="pm-empty">All caught up — no pending payments. ✓</div>';
+    }
+  }
+</script>
+{% endblock %}

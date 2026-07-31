@@ -1,0 +1,150 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Announcement Analytics{% endblock %}
+
+{% block extra_css %}
+<style nonce="{{ request.csp_nonce }}">
+  /* Shared with the other announcements pages. */
+  .db-back-btn{
+    width:34px; height:34px; border-radius:var(--radius-sm);
+    border:1px solid var(--border); background:var(--surface-2); color:var(--text-mid);
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:border-color var(--t) var(--ease), color var(--t) var(--ease);
+  }
+  .db-back-btn:hover{ border-color:var(--orange-bdr); color:var(--orange); }
+
+  .db-table{
+    color:var(--text-hi); margin-bottom:0;
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-hi);
+    --bs-table-striped-bg: var(--surface-2);
+    --bs-table-striped-color: var(--text-hi);
+    --bs-table-hover-bg: var(--surface-2);
+    --bs-table-hover-color: var(--text-hi);
+    background-color: transparent;
+  }
+  .db-table thead th{
+    color:var(--text-mid); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; font-weight:600;
+    border-bottom:1px solid var(--border); background:transparent; padding:.75rem 1rem;
+  }
+  .db-table td{ border-bottom:1px solid var(--border); padding:.7rem 1rem; vertical-align:middle; font-size:.87rem; }
+  .db-table tbody tr:last-child td{ border-bottom:none; }
+  .db-table tbody tr:hover{ background:var(--surface-2); }
+
+  .db-priority-tag{
+    font-size:.72rem; font-weight:600; padding:2px 8px; border-radius:var(--radius-pill);
+    background:var(--surface-3); color:var(--text-mid); text-transform:capitalize;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="{% url 'announcement_list' %}" class="db-back-btn"><i class="bi bi-arrow-left"></i></a>
+  <h1 class="db-page-title" style="font-size:1.4rem;">Announcement Analytics</h1>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-6">
+    <div class="db-stat-card">
+      <div class="db-stat-icon db-stat-icon-primary"><i class="bi bi-megaphone-fill"></i></div>
+      <div class="db-stat-text">
+        <div class="db-stat-value">{{ total_announcements }}</div>
+        <div class="db-stat-label">Total</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="db-stat-card">
+      <div class="db-stat-icon db-stat-icon-success"><i class="bi bi-broadcast"></i></div>
+      <div class="db-stat-text">
+        <div class="db-stat-value">{{ active_announcements }}</div>
+        <div class="db-stat-label">Active</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="db-stat-card">
+      <div class="db-stat-icon"><i class="bi bi-archive-fill"></i></div>
+      <div class="db-stat-text">
+        <div class="db-stat-value">{{ expired_announcements }}</div>
+        <div class="db-stat-label">Expired</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="db-stat-card">
+      <div class="db-stat-icon db-stat-icon-info"><i class="bi bi-check2-circle"></i></div>
+      <div class="db-stat-text">
+        <div class="db-stat-value">{{ read_percentage }}%</div>
+        <div class="db-stat-label">Read Rate</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="db-stat-card">
+      <div class="db-stat-icon"><i class="bi bi-eye-fill"></i></div>
+      <div class="db-stat-text">
+        <div class="db-stat-value">{{ total_views }}</div>
+        <div class="db-stat-label">Total Views</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="db-stat-card">
+      <div class="db-stat-icon"><i class="bi bi-envelope-open-fill"></i></div>
+      <div class="db-stat-text">
+        <div class="db-stat-value">{{ total_reads }}</div>
+        <div class="db-stat-label">Total Reads</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="db-stat-card">
+      <div class="db-stat-icon db-stat-icon-warning"><i class="bi bi-x-circle-fill"></i></div>
+      <div class="db-stat-text">
+        <div class="db-stat-value">{{ dismissed_count }}</div>
+        <div class="db-stat-label">Dismissed</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="db-stat-card">
+      <div class="db-stat-icon db-stat-icon-primary"><i class="bi bi-send-fill"></i></div>
+      <div class="db-stat-text">
+        <div class="db-stat-value">{{ push_sent_count }}</div>
+        <div class="db-stat-label">Push Sent</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="db-card p-0">
+  <div class="db-card-header px-3 pt-3">
+    <h2 class="db-card-title">Top Announcements by Reads</h2>
+  </div>
+  <div class="table-responsive">
+    <table class="table db-table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Priority</th>
+          <th>Reads</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in top_announcements %}
+        <tr>
+          <td>{{ a.title }}</td>
+          <td>{{ a.get_announcement_type_display }}</td>
+          <td><span class="db-priority-tag">{{ a.get_priority_display }}</span></td>
+          <td>{{ a.read_total }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center py-4" style="color:var(--text-mid);">No data yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

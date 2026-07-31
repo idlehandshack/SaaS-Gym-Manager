@@ -9,7 +9,7 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
-
+from billing.services import revenue_service
 from billing.models import Invoice
 
 # ── Palette ────────────────────────────────────────────────────────────────────
@@ -73,12 +73,7 @@ def _merge_write(sheet, row, start_col, end_col, value, font=None, alignment=Non
 # ── Report builder ─────────────────────────────────────────────────────────────
 
 def generate_gstr1_style_report(gym, start_date, end_date) -> BytesIO:
-    invoices = list(
-        Invoice.objects
-        .filter(gym=gym, invoice_date__range=(start_date, end_date), status='issued')
-        .prefetch_related('line_items')
-        .order_by('invoice_date', 'invoice_number')
-    )
+    invoices = list(revenue_service.get_invoices_for_gst_report(gym, start_date, end_date))
 
     wb = Workbook()
     _build_sales_sheet(wb, gym, invoices, start_date, end_date)

@@ -1,1234 +1,595 @@
+{% extends "dashboard/base.html" %}
 {% load static custom_filters %}
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {% if favicon_url %}
-    <link rel="icon" href="{{ favicon_url }}">
-    <link rel="shortcut icon" href="{{ favicon_url }}">
-    {% else %}
-    <link rel="icon" href="{% static 'images/favicon.ico' %}">
-    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
-    {% endif %}
-    {% if gym %}
-    <title>{{gym.gym_name}} | Due Payment</title>
-    {% endif %}
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
-    />
-    <style>
-      :root {
-        --bg: #080808;
-        --surface: #111111;
-        --surface-2: #1a1a1a;
-        --border: rgba(255, 255, 255, 0.06);
-        --border-2: rgba(255, 255, 255, 0.12);
-        --orange: #ff5a00;
-        --orange-dim: rgba(255, 90, 0, 0.1);
-        --green: #25d366;
-        --green-bg: rgba(37, 211, 102, 0.12);
-        --green-border: rgba(37, 211, 102, 0.25);
-        --red: #ff6b6b;
-        --red-bg: rgba(255, 107, 107, 0.12);
-        --red-bdr: rgba(255, 107, 107, 0.25);
-        --text-hi: #f5f5f5;
-        --text-mid: #999;
-        --text-lo: #555;
-        --font-d: "Barlow Condensed", sans-serif;
-        --font-b: "Barlow", sans-serif;
-        --ease: cubic-bezier(0.4, 0, 0.2, 1);
-        --t: 0.22s;
-        --radius-lg: 18px;
-        --radius-md: 12px;
-        --radius-pill: 40px;
-      }
+{% block title %}Payment Reminders{% endblock %}
 
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
+{% block extra_css %}
+<style nonce="{{ request.csp_nonce }}">
+  /* ── Page-local tokens (WhatsApp accent only; everything else inherits base.html) ── */
+  :root { --wa-green: #25d366; }
 
-      body {
-        background: var(--bg);
-        color: var(--text-hi);
-        font-family: var(--font-b);
-        -webkit-font-smoothing: antialiased;
-        overflow-x: hidden;
-        min-height: 100vh;
-      }
+  /* ── PAGE HEADER — hero strip variant of db-page-header ── */
+  .wa-page-header {
+    position: relative;
+    padding: clamp(20px, 3vw, 28px) 1.5rem clamp(20px, 3vw, 28px);
+    margin: -1.5rem -1.5rem clamp(20px, 4vw, 28px);
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+  .wa-page-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 100% at 0% 0%, rgba(255,90,0,.08) 0%, transparent 70%);
+    z-index: 0;
+  }
+  .wa-header-inner { position: relative; z-index: 1; }
+  .header-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-d);
+    font-size: clamp(.66rem, 1.8vw, .76rem);
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: clamp(8px, 2vw, 12px);
+    padding: 5px 14px;
+    border: 1px solid var(--orange-bdr);
+    border-radius: var(--radius-pill);
+    background: var(--orange-dim);
+  }
+  .wa-page-header h1 {
+    font-family: var(--font-d);
+    font-weight: 600;
+    font-size: clamp(1.6rem, 4.5vw, 2.2rem);
+    line-height: 1.1;
+    letter-spacing: .01em;
+    color: var(--text-hi);
+    margin-bottom: clamp(6px, 1.5vw, 10px);
+  }
+  .wa-page-header h1 .accent { color: var(--orange); }
+  .wa-page-header p {
+    color: var(--text-mid);
+    font-size: clamp(.84rem, 2vw, .92rem);
+    max-width: 460px;
+    line-height: 1.6;
+    margin: 0;
+  }
+  .badge {
+    display: inline-flex;
+    margin-top: 14px;
+    background: var(--green-dim);
+    border: 1px solid var(--green-bdr);
+    color: var(--green);
+    font-family: var(--font-d);
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: var(--radius-pill);
+  }
+  .badge.red { background: var(--red-dim); border: 1px solid var(--red-bdr); color: var(--red); }
 
-      /* ── NAV ── */
-      .store-nav {
-        position: sticky;
-        top: 0;
-        z-index: 200;
-        height: 60px;
-        background: rgba(8, 8, 8, 0.94);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-      }
-      .nav-inner {
-        width: 100%;
-        padding: 0 clamp(16px, 4vw, 40px);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-      .nav-brand {
-        font-family: var(--font-d);
-        font-weight: 900;
-        font-size: clamp(1.1rem, 3vw, 1.5rem);
-        text-transform: uppercase;
-        text-decoration: none;
-        color: var(--text-hi);
-        letter-spacing: -0.01em;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: color var(--t);
-      }
-      .nav-brand .acc {
-        color: var(--orange);
-      }
-      .nav-brand .back-icon {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.75rem;
-        flex-shrink: 0;
-        transition: background var(--t);
-      }
-      .nav-brand:hover .back-icon {
-        background: rgba(255, 90, 0, 0.15);
-      }
-      .nav-brand:hover {
-        color: var(--text-hi);
-      }
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-family: var(--font-d);
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-lo);
+    margin-bottom: clamp(12px, 3vw, 18px);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 
-      /* ── PAGE HEADER (hero strip) ── */
-      .page-header {
-        position: relative;
-        padding: clamp(36px, 6vw, 64px) 0 clamp(24px, 4vw, 40px);
-        text-align: center;
-        overflow: hidden;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: clamp(24px, 4vw, 40px);
-      }
-      .page-header::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-          ellipse 70% 60% at 50% 0%,
-          rgba(255, 90, 0, 0.1) 0%,
-          transparent 70%
-        );
-        z-index: 0;
-      }
-      .header-inner {
-        position: relative;
-        z-index: 1;
-        padding: 0 clamp(16px, 4vw, 40px);
-        max-width: 620px;
-        margin: 0 auto;
-      }
-      .header-eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-family: var(--font-d);
-        font-size: clamp(0.68rem, 1.8vw, 0.82rem);
-        font-weight: 700;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: var(--orange);
-        margin-bottom: clamp(10px, 2vw, 16px);
-        padding: 6px 16px;
-        border: 1px solid rgba(255, 90, 0, 0.3);
-        border-radius: var(--radius-pill);
-        background: rgba(255, 90, 0, 0.07);
-      }
-      .page-header h1 {
-        font-family: var(--font-d);
-        font-weight: 900;
-        font-size: clamp(2rem, 6vw, 3.4rem);
-        line-height: 0.92;
-        letter-spacing: -0.01em;
-        text-transform: uppercase;
-        margin-bottom: clamp(8px, 1.5vw, 12px);
-      }
-      .page-header h1 .accent {
-        color: var(--orange);
-      }
-      .page-header p {
-        color: var(--text-mid);
-        font-size: clamp(0.85rem, 2vw, 0.98rem);
-        max-width: 380px;
-        margin: 0 auto;
-        line-height: 1.65;
-      }
+  /* ── SUMMARY CARDS — db-stat-card pattern ── */
+  .summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: clamp(24px, 4vw, 32px); }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--db-card-radius, var(--radius-lg));
+    box-shadow: var(--db-shadow);
+    padding: 18px 20px;
+    transition: transform var(--t) var(--ease), border-color var(--t) var(--ease);
+  }
+  .summary-card:hover { border-color: var(--border-2); transform: translateY(-2px); }
+  .summary-card-label {
+    font-family: var(--font-d); font-size: .7rem; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--text-mid); margin-bottom: 8px;
+  }
+  .summary-card-value {
+    font-family: var(--font-d); font-weight: 600;
+    font-size: clamp(1.5rem, 4vw, 2rem); color: var(--text-hi); line-height: 1.1;
+  }
+  @media (max-width: 480px) {
+    .summary-cards { gap: 8px; }
+    .summary-card { padding: 12px 10px; }
+    .summary-card-value { font-size: 1.3rem; }
+  }
 
-      /* ── BADGE (in header) ── */
-      .badge {
-        display: inline-flex;
-        margin-top: 14px;
-        background: var(--green-bg);
-        border: 1px solid var(--green-border);
-        color: var(--green);
-        font-family: var(--font-d);
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 6px 16px;
-        border-radius: var(--radius-pill);
-      }
-      .badge.red {
-        background: var(--red-bg);
-        border: 1px solid var(--red-bdr);
-        color: var(--red);
-      }
+  /* ── TABS — db-tabs pill variant ── */
+  .platform-tabs {
+    display: flex; gap: 4px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius-pill); padding: 4px;
+    width: fit-content; max-width: 100%; overflow-x: auto;
+    margin-bottom: clamp(20px, 4vw, 28px);
+  }
+  .tab-btn {
+    font-family: var(--font-d); font-size: .78rem; font-weight: 600; letter-spacing: .03em;
+    padding: 8px 16px; border: none; border-radius: var(--radius-pill);
+    background: transparent; color: var(--text-mid); cursor: pointer;
+    transition: background var(--t), color var(--t);
+    display: flex; align-items: center; gap: 7px; white-space: nowrap;
+  }
+  .tab-btn.active { background: var(--orange); color: #fff; }
+  .tab-btn:not(.active):hover { background: var(--surface-3); color: var(--text-hi); }
+  .tab-count { font-family: var(--font-b); font-size: .72rem; font-weight: 600; opacity: .85; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: waFadeUp .35s var(--ease) both; }
 
-      /* ── PAGE SHELL ── */
-      .page-wrapper {
-        position: relative;
-        width: 100%;
-        padding: 0 1.5rem 4rem;
-        font-family: var(--font-b);
-        max-width: 1200px;
-        margin: 0 auto;
-      }
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center; padding: 64px 20px; color: var(--text-lo);
+    font-size: .9rem; font-family: var(--font-d); letter-spacing: .04em; text-transform: uppercase;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  }
 
-      /* ── TABS (pattern reused from download.html) ── */
-      .section-label {
-        font-family: var(--font-d);
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        color: var(--text-lo);
-        margin-bottom: clamp(16px, 3vw, 24px);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .section-label::after {
-        content: "";
-        flex: 1;
-        height: 1px;
-        background: var(--border);
-      }
-      .summary-cards {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 14px;
-        margin-bottom: clamp(24px, 4vw, 36px);
-      }
-      .summary-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 18px 20px;
-        transition: border-color var(--t), transform var(--t);
-      }
-      .summary-card:hover {
-        border-color: var(--border-2);
-        transform: translateY(-2px);
-      }
-      .summary-card-label {
-        font-family: var(--font-d);
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--text-mid);
-        margin-bottom: 8px;
-      }
-      .summary-card-value {
-        font-family: var(--font-d);
-        font-weight: 900;
-        font-size: clamp(1.6rem, 4vw, 2.2rem);
-        color: var(--orange);
-        line-height: 1;
-      }
-      @media (max-width: 640px) {
-        .summary-cards {
-          grid-template-columns: repeat(3, 1fr);
-          gap: 8px;
-        }
-        .summary-card {
-          padding: 12px 10px;
-        }
-        .summary-card-value {
-          font-size: 1.3rem;
-        }
-      }
-      .platform-tabs {
-        display: flex;
-        gap: 4px;
-        background: var(--surface-2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-pill);
-        padding: 4px;
-        width: fit-content;
-        max-width: 100%;
-        overflow-x: auto;
-        margin-bottom: clamp(24px, 4vw, 36px);
-      }
-      .tab-btn {
-        font-family: var(--font-d);
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 8px 16px;
-        border: none;
-        border-radius: var(--radius-pill);
-        background: transparent;
-        color: var(--text-mid);
-        cursor: pointer;
-        transition: background var(--t), color var(--t);
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        white-space: nowrap;
-      }
-      .tab-btn.active {
-        background: var(--orange);
-        color: #fff;
-      }
-      .tab-btn:not(.active):hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--text-hi);
-      }
-      .tab-count {
-        font-family: var(--font-b);
-        font-size: 0.72rem;
-        font-weight: 700;
-        opacity: 0.85;
-      }
+  /* ── TABLE WRAP — db-card pattern ── */
+  .table-wrap {
+    overflow-x: auto; border-radius: var(--db-card-radius, var(--radius-lg));
+    border: 1px solid var(--border); background: var(--surface); box-shadow: var(--db-shadow);
+    animation: waFadeUp .5s var(--ease) both;
+  }
+  @keyframes waFadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 
-      .tab-panel {
-        display: none;
-      }
-      .tab-panel.active {
-        display: block;
-        animation: fadeUp 0.35s var(--ease) both;
-      }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; min-width: 860px; }
+  thead tr { background: var(--surface-2); }
+  thead th {
+    padding: .75rem 1rem; text-align: left; font-family: var(--font-d); font-weight: 600;
+    color: var(--orange); font-size: .7rem; text-transform: uppercase; letter-spacing: .1em;
+    white-space: nowrap; border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-top: 1px solid var(--border); transition: background var(--t); }
+  tbody tr:first-child { border-top: none; }
+  tbody tr:hover { background: rgba(255,255,255,.03); }
+  tbody td { padding: .95rem 1rem; vertical-align: middle; color: var(--text-hi); }
 
-      /* ── EMPTY STATE ── */
-      .empty-state {
-        text-align: center;
-        padding: 64px 20px;
-        color: var(--text-lo);
-        font-size: 0.95rem;
-        font-family: var(--font-d);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-      }
+  .cell-id {
+    font-size: .68rem; background: var(--orange-dim); border: 1px solid var(--orange-bdr);
+    padding: 3px 8px; border-radius: var(--radius-sm); color: var(--orange);
+    display: inline-block; font-family: var(--font-b); font-weight: 600; letter-spacing: .03em;
+  }
+  .cell-name { color: var(--text-hi); font-weight: 600; font-size: .92rem; }
+  .cell-phone, .cell-plan { color: var(--text-mid); font-size: .82rem; }
+  .cell-amount { color: var(--red); font-weight: 700; font-size: .95rem; }
+  .cell-due { font-size: .8rem; color: var(--text-mid); }
+  .cell-days-left { font-family: var(--font-d); font-weight: 600; font-size: .85rem; color: var(--orange); }
+  .cell-days-expired { font-family: var(--font-d); font-weight: 600; font-size: .85rem; color: var(--red); }
+  .expired-tag {
+    display: inline-block; background: var(--red-dim); border: 1px solid var(--red-bdr); color: var(--red);
+    font-family: var(--font-d); font-size: .6rem; font-weight: 600; padding: 2px 8px;
+    border-radius: var(--radius-pill); margin-left: 6px; letter-spacing: .06em; text-transform: uppercase;
+  }
 
-      /* ── TABLE WRAPPER (card) ── */
-      .table-wrap {
-        overflow-x: auto;
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border);
-        background: var(--surface);
-        animation: fadeUp 0.5s var(--ease) both;
-      }
-      @keyframes fadeUp {
-        from {
-          opacity: 0;
-          transform: translateY(14px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
+  /* ── TEMPLATE SELECT + WA BUTTON ── */
+  .wa-send-cell { display: flex; align-items: center; gap: 8px; justify-content: center; flex-wrap: nowrap; }
+  .wa-template-select {
+    background: var(--surface-2); border: 1px solid var(--border-2); color: var(--text-hi);
+    font-family: var(--font-b); font-size: .74rem; padding: 6px 8px; border-radius: var(--radius-sm);
+    max-width: 132px; cursor: pointer;
+  }
+  .wa-template-select:focus { outline: none; border-color: var(--orange-bdr); }
+  .wa-btn {
+    display: inline-flex; align-items: center; gap: 7px; background: var(--wa-green); color: #fff;
+    padding: 8px 14px; border-radius: var(--radius-pill); text-decoration: none;
+    font-family: var(--font-d); font-size: .78rem; font-weight: 600; letter-spacing: .02em;
+    white-space: nowrap; border: 1px solid var(--wa-green); transition: opacity var(--t), transform .1s;
+  }
+  .wa-btn:hover { opacity: .88; transform: translateY(-1px); }
+  .wa-btn:active { transform: translateY(0); }
+  .wa-btn.renew { background: var(--orange); border-color: var(--orange); }
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.85rem;
-        min-width: 760px;
-      }
-      thead tr {
-        background: var(--surface-2);
-      }
-      thead th {
-        padding: 0.75rem 1rem;
-        text-align: left;
-        font-family: var(--font-d);
-        font-weight: 700;
-        color: var(--orange);
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        white-space: nowrap;
-        border-bottom: 1px solid var(--border);
-      }
-      tbody tr {
-        border-top: 1px solid var(--border);
-        transition: background var(--t);
-      }
-      tbody tr:first-child {
-        border-top: none;
-      }
-      tbody tr:hover {
-        background: rgba(255, 255, 255, 0.03);
-      }
-      tbody td {
-        padding: 0.95rem 1rem;
-        vertical-align: middle;
-        color: var(--text-hi);
-      }
+  /* ── MOBILE CARDS — db-card pattern ── */
+  .cards { display: none; flex-direction: column; gap: 12px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--db-card-radius, var(--radius-lg)); box-shadow: var(--db-shadow);
+    padding: 16px; animation: waFadeUp .4s var(--ease) both;
+  }
+  .card-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+  .card-name { font-family: var(--font-d); font-size: 1.05rem; font-weight: 600; color: var(--text-hi); letter-spacing: .01em; }
+  .card-id {
+    font-size: .68rem; background: var(--orange-dim); border: 1px solid var(--orange-bdr);
+    padding: 3px 8px; border-radius: var(--radius-sm); color: var(--orange);
+    font-family: var(--font-b); font-weight: 600; letter-spacing: .03em; white-space: nowrap;
+  }
+  .card-meta { font-size: .82rem; color: var(--text-mid); margin-bottom: 4px; }
+  .card-amount { font-family: var(--font-d); font-size: 1.5rem; font-weight: 700; color: var(--red); margin: 10px 0; }
+  .card-amount.days-left { color: var(--orange); }
+  .card-amount.days-expired { color: var(--red); }
+  .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px; }
+  .card-due { font-size: .75rem; color: var(--text-lo); }
+  .card-wa-row { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .card-wa-row .wa-template-select { max-width: none; width: 100%; }
+  .card-wa-row .wa-btn { width: 100%; justify-content: center; }
 
-      /* ── CELL VARIANTS ── */
-      .cell-id {
-        font-size: 0.68rem;
-        background: rgba(255, 90, 0, 0.1);
-        border: 1px solid rgba(255, 90, 0, 0.25);
-        padding: 3px 8px;
-        border-radius: 6px;
-        color: var(--orange);
-        display: inline-block;
-        font-family: var(--font-b);
-        font-weight: 600;
-        letter-spacing: 0.04em;
-      }
-      .cell-name {
-        color: var(--text-hi);
-        font-weight: 700;
-        font-size: 0.92rem;
-      }
-      .cell-phone {
-        color: var(--text-mid);
-        font-size: 0.82rem;
-      }
-      .cell-plan {
-        color: var(--text-mid);
-        font-size: 0.82rem;
-      }
-      .cell-amount {
-        color: var(--red);
-        font-weight: 700;
-        font-size: 0.95rem;
-      }
-      .cell-due {
-        font-size: 0.8rem;
-        color: var(--text-mid);
-      }
-      .cell-days-left {
-        font-family: var(--font-d);
-        font-weight: 700;
-        font-size: 0.85rem;
-        color: var(--orange);
-      }
-      .cell-days-expired {
-        font-family: var(--font-d);
-        font-weight: 700;
-        font-size: 0.85rem;
-        color: var(--red);
-      }
-      .expired-tag {
-        display: inline-block;
-        background: var(--red-bg);
-        border: 1px solid var(--red-bdr);
-        color: var(--red);
-        font-family: var(--font-d);
-        font-size: 0.62rem;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: var(--radius-pill);
-        margin-left: 6px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
+  tbody tr.clickable-row { cursor: pointer; }
+  .card.clickable-card { cursor: pointer; }
 
-      /* ── WA BUTTON ── */
-      .wa-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        background: var(--green);
-        color: #fff;
-        padding: 8px 18px;
-        border-radius: var(--radius-pill);
-        text-decoration: none;
-        font-family: var(--font-d);
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        border: 1px solid var(--green);
-        transition: opacity var(--t), transform 0.1s;
-      }
-      .wa-btn:hover {
-        opacity: 0.88;
-        transform: translateY(-1px);
-      }
-      .wa-btn:active {
-        transform: translateY(0);
-      }
-      .wa-btn.renew {
-        background: var(--orange);
-        border-color: var(--orange);
-      }
+  /* ── SLIDE PANEL ── */
+  .panel-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 1900; }
+  .panel-backdrop.open { display: block; }
+  .slide-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw);
+    background: var(--surface); border-left: 1px solid var(--border-2); z-index: 1901;
+    overflow-y: auto; transform: translateX(100%); transition: transform .3s var(--ease);
+    display: flex; flex-direction: column;
+  }
+  .slide-panel.open { transform: translateX(0); }
+  .panel-head { padding: clamp(20px,4vw,28px) clamp(16px,4vw,24px) 0; flex-shrink: 0; }
+  .panel-close {
+    width: 32px; height: 32px; background: var(--surface-2); border: 1px solid var(--border-2);
+    color: var(--text-mid); border-radius: var(--radius-sm); font-size: .9rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: color var(--t), border-color var(--t); margin-bottom: clamp(16px,3vw,24px);
+  }
+  .panel-close:hover { color: var(--text-hi); border-color: var(--orange-bdr); }
+  .panel-id-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .panel-uid { font-family: var(--font-d); font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--orange); }
+  .panel-kind-tag { font-family: var(--font-d); font-size: .62rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding: 3px 10px; border-radius: var(--radius-pill); }
+  .panel-kind-tag.due { background: var(--orange-dim); border: 1px solid var(--orange-bdr); color: var(--orange); }
+  .panel-kind-tag.expiring { background: var(--yellow-dim); border: 1px solid var(--yellow-bdr); color: var(--yellow); }
+  .panel-kind-tag.expired { background: var(--red-dim); border: 1px solid var(--red-bdr); color: var(--red); }
+  .panel-name { font-family: var(--font-d); font-weight: 600; font-size: clamp(1.3rem,4vw,1.6rem); letter-spacing: .01em; color: var(--text-hi); word-break: break-word; }
+  .panel-accent { width: 32px; height: 3px; background: var(--orange); border-radius: 2px; margin: 12px 0 clamp(16px,3vw,24px); }
+  .panel-body { padding: 0 clamp(16px,4vw,24px) clamp(24px,4vw,36px); flex: 1; }
+  .panel-section-title { font-family: var(--font-d); font-size: .68rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--text-lo); margin-bottom: 12px; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px,2.5vw,14px); margin-bottom: 18px; }
+  .detail-item.full { grid-column: 1 / -1; }
+  .detail-label { font-family: var(--font-d); color: var(--text-lo); font-size: .68rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 3px; }
+  .detail-value { color: var(--text-hi); font-family: var(--font-b); font-size: clamp(11px,2.5vw,13px); font-weight: 500; word-break: break-word; }
+  .detail-value.highlight { color: var(--orange); }
+  .detail-value.success { color: var(--green); }
+  .detail-value.danger { color: var(--red); }
+  .panel-divider { height: 1px; background: var(--border); margin: clamp(14px,3vw,20px) 0; }
+  .panel-wa-row { padding: 0 clamp(16px,4vw,24px) clamp(20px,4vw,28px); display: flex; flex-direction: column; gap: 10px; }
+  .panel-wa-row .wa-template-select { width: 100%; max-width: none; padding: 10px 12px; font-size: .82rem; }
+  .panel-wa-row .wa-btn { width: 100%; justify-content: center; padding: 12px 0; }
+  .panel-template-preview {
+    font-family: var(--font-b); font-size: .78rem; color: var(--text-mid); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; line-height: 1.5;
+    max-height: 110px; overflow-y: auto;
+  }
+  @media (max-width: 440px) {
+    .slide-panel { border-left: none; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .detail-item.full { grid-column: 1; }
+  }
 
-      /* ── MOBILE CARDS ── */
-      .cards {
-        display: none;
-        flex-direction: column;
-        gap: 12px;
-      }
+  /* ═══ BREAKPOINTS ═══ */
+  @media (max-width: 640px) {
+    .wa-page-header { margin: -1rem -1rem clamp(16px, 4vw, 24px); padding: 16px 1rem 20px; }
+    .platform-tabs { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; border-radius: var(--radius-md); overflow-x: visible; gap: 4px; }
+    .tab-btn { padding: 9px 4px; font-size: .62rem; letter-spacing: .02em; justify-content: center; gap: 4px; border-radius: 9px; text-align: center; }
+    .tab-btn i { display: none; }
+    .tab-count { font-size: .6rem; }
+    .table-wrap { display: none; }
+    .cards { display: flex; }
+  }
+</style>
+{% endblock %}
 
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 16px;
-        animation: fadeUp 0.4s var(--ease) both;
-      }
+{% block content %}
 
-      .card-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-        gap: 8px;
-      }
+<!-- ── PAGE HEADER ── -->
+<div class="wa-page-header">
+  <div class="wa-header-inner">
+    <div class="header-eyebrow"><i class="bi bi-whatsapp"></i> Member Management</div>
+    <h1 id="pageTitle">Payment <span class="accent" id="pageTitleAccent">Reminders</span></h1>
+    <p id="pageDesc">Send reminders to members with pending dues.</p>
+    <span class="badge" id="statusBadge"></span>
+  </div>
+</div>
 
-      .card-name {
-        font-family: var(--font-d);
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: var(--text-hi);
-        text-transform: uppercase;
-        letter-spacing: 0.01em;
-      }
+<div class="summary-cards">
+  <div class="summary-card">
+    <div class="summary-card-label">Due Payments</div>
+    <div class="summary-card-value">{{ pending_count }}</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-card-label">Expiring Soon</div>
+    <div class="summary-card-value">{{ expiring_count }}</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-card-label">Renewal Due</div>
+    <div class="summary-card-value">{{ expired_count }}</div>
+  </div>
+</div>
 
-      .card-id {
-        font-size: 0.68rem;
-        background: rgba(255, 90, 0, 0.1);
-        border: 1px solid rgba(255, 90, 0, 0.25);
-        padding: 3px 8px;
-        border-radius: 6px;
-        color: var(--orange);
-        font-family: var(--font-b);
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        white-space: nowrap;
-      }
+<!-- ── TAB BAR ── -->
+<p class="section-label">Filter By Status</p>
+<div class="platform-tabs" id="reminder-tabs">
+  <button class="tab-btn active" data-tab="due">
+    <i class="bi bi-cash-coin"></i> Due Payments
+    <span class="tab-count">({{ pending_count }})</span>
+  </button>
+  <button class="tab-btn" data-tab="expiring">
+    <i class="bi bi-hourglass-split"></i> Expiring Soon
+    <span class="tab-count">({{ expiring_count }})</span>
+  </button>
+  <button class="tab-btn" data-tab="expired">
+    <i class="bi bi-x-circle"></i> Renewal Due
+    <span class="tab-count">({{ expired_count }})</span>
+  </button>
+</div>
 
-      .card-meta {
-        font-size: 0.82rem;
-        color: var(--text-mid);
-        margin-bottom: 4px;
-      }
-
-      .card-amount {
-        font-family: var(--font-d);
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: var(--red);
-        margin: 10px 0;
-      }
-
-      .card-amount.days-left {
-        color: var(--orange);
-      }
-      .card-amount.days-expired {
-        color: var(--red);
-      }
-
-      .card-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 12px;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .card-due {
-        font-size: 0.75rem;
-        color: var(--text-lo);
-      }
-
-      /* ── ROW / CARD CLICK AFFORDANCE ── */
-      tbody tr.clickable-row {
-        cursor: pointer;
-      }
-      .card.clickable-card {
-        cursor: pointer;
-      }
-
-      /* ── SLIDE PANEL (pattern reused from today_attendance.html) ── */
-      .panel-backdrop {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, .72);
-        z-index: 900;
-      }
-      .panel-backdrop.open { display: block; }
-
-      .slide-panel {
-        position: fixed;
-        top: 0; right: 0; bottom: 0;
-        width: min(420px, 100vw);
-        background: var(--surface);
-        border-left: 1px solid var(--border-2);
-        z-index: 901;
-        overflow-y: auto;
-        transform: translateX(100%);
-        transition: transform .3s var(--ease);
-        display: flex;
-        flex-direction: column;
-      }
-      .slide-panel.open { transform: translateX(0); }
-
-      .panel-head {
-        padding: clamp(20px,4vw,28px) clamp(16px,4vw,24px) 0;
-        flex-shrink: 0;
-      }
-      .panel-close {
-        width: 32px; height: 32px;
-        background: var(--surface-2);
-        border: 1px solid var(--border-2);
-        color: var(--text-mid);
-        border-radius: 8px;
-        font-size: .9rem;
-        cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        transition: color var(--t), border-color var(--t);
-        margin-bottom: clamp(16px,3vw,24px);
-      }
-      .panel-close:hover { color: var(--text-hi); border-color: rgba(255,255,255,.22); }
-
-      .panel-id-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-      .panel-uid {
-        font-family: var(--font-d);
-        font-size: .72rem; font-weight: 700;
-        letter-spacing: .2em; text-transform: uppercase;
-        color: var(--orange);
-      }
-      .panel-kind-tag {
-        font-family: var(--font-d);
-        font-size: .62rem; font-weight: 700;
-        letter-spacing: .14em; text-transform: uppercase;
-        padding: 3px 10px;
-        border-radius: var(--radius-pill);
-      }
-      .panel-kind-tag.due { background: var(--orange-dim); border: 1px solid rgba(255,90,0,.3); color: var(--orange); }
-      .panel-kind-tag.expiring { background: var(--orange-dim); border: 1px solid rgba(255,90,0,.3); color: var(--orange); }
-      .panel-kind-tag.expired { background: var(--red-bg); border: 1px solid var(--red-bdr); color: var(--red); }
-
-      .panel-name {
-        font-family: var(--font-d);
-        font-weight: 900;
-        font-size: clamp(1.3rem,4vw,1.7rem);
-        text-transform: uppercase;
-        letter-spacing: .01em;
-        color: var(--text-hi);
-        word-break: break-word;
-      }
-      .panel-accent {
-        width: 32px; height: 3px;
-        background: var(--orange);
-        border-radius: 2px;
-        margin: 12px 0 clamp(16px,3vw,24px);
-      }
-
-      .panel-body {
-        padding: 0 clamp(16px,4vw,24px) clamp(24px,4vw,36px);
-        flex: 1;
-      }
-      .panel-section-title {
-        font-family: var(--font-d);
-        font-size: .68rem; font-weight: 700;
-        letter-spacing: .22em; text-transform: uppercase;
-        color: var(--text-lo);
-        margin-bottom: 12px;
-      }
-      .detail-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: clamp(10px,2.5vw,14px);
-        margin-bottom: 18px;
-      }
-      .detail-item.full { grid-column: 1 / -1; }
-      .detail-label {
-        font-family: var(--font-d);
-        color: var(--text-lo);
-        font-size: .68rem; font-weight: 700;
-        letter-spacing: .18em; text-transform: uppercase;
-        margin-bottom: 3px;
-      }
-      .detail-value {
-        color: var(--text-hi);
-        font-family: var(--font-b);
-        font-size: clamp(11px,2.5vw,13px);
-        font-weight: 600;
-        word-break: break-word;
-      }
-      .detail-value.highlight { color: var(--orange); }
-      .detail-value.success   { color: var(--green); }
-      .detail-value.danger    { color: var(--red); }
-      .panel-divider { height: 1px; background: var(--border); margin: clamp(14px,3vw,20px) 0; }
-
-      .panel-wa-row { padding: 0 clamp(16px,4vw,24px) clamp(20px,4vw,28px); }
-      .panel-wa-row .wa-btn { width: 100%; justify-content: center; padding: 12px 0; }
-
-      @media (max-width: 440px) {
-        .slide-panel { border-left: none; }
-        .detail-grid { grid-template-columns: 1fr; }
-        .detail-item.full { grid-column: 1; }
-      }
-
-      /* ═══ BREAKPOINTS ═══ */
-      @media (max-width: 640px) {
-        .page-wrapper {
-          padding: 0 12px 40px;
-        }
-        .platform-tabs {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          width: 100%;
-          border-radius: var(--radius-md);
-          overflow-x: visible;
-          gap: 4px;
-        }
-        .tab-btn {
-          padding: 9px 4px;
-          font-size: 0.62rem;
-          letter-spacing: 0.03em;
-          justify-content: center;
-          gap: 4px;
-          border-radius: 9px;
-          text-align: center;
-        }
-        .tab-btn i {
-          display: none; /* icons take up space that's better spent on the label at this width */
-        }
-        .tab-count {
-          font-size: 0.6rem;
-        }
-
-        .table-wrap {
-          display: none;
-        }
-
-        .cards {
-          display: flex;
-        }
-
-        .wa-btn {
-          width: 100%;
-          justify-content: center;
-          padding: 11px 0;
-          font-size: 0.85rem;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    {% csrf_token %}
-
-    <!-- ── STICKY NAV ── -->
-    <nav class="store-nav">
-      <div class="nav-inner">
-        <a class="nav-brand" href="/">
-          <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
-          {{ request.gym.gym_name|default:"EnterGYM" }}
-          <span class="acc">Admin</span>
-        </a>
-      </div>
-    </nav>
-
-    <!-- ── PAGE HEADER ── -->
-    <header class="page-header">
-      <div class="header-inner">
-        <div class="header-eyebrow">
-          <i class="bi bi-whatsapp"></i> Member Management
-        </div>
-        <h1 id="pageTitle">Payment <span class="accent" id="pageTitleAccent">Reminders</span></h1>
-        <p id="pageDesc">Send reminders to members with pending dues.</p>
-        <span class="badge" id="statusBadge"></span>
-      </div>
-    </header>
-
-    <!-- PAGE CONTENT -->
-    <div class="page-wrapper">
-      <div class="summary-cards">
-      <div class="summary-card">
-        <div class="summary-card-label">Due Payments</div>
-        <div class="summary-card-value">{{ pending_count|default:pending|length }}</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-card-label">Expiring Soon</div>
-        <div class="summary-card-value">{{ expiring_count|default:expiring_soon|length }}</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-card-label">Renewal Due</div>
-        <div class="summary-card-value">{{ expired_count|default:expired_members|length }}</div>
-      </div>
-    </div>
-      <!-- ── TAB BAR ── -->
-      <p class="section-label">Filter By Status</p>
-      <div class="platform-tabs" id="reminder-tabs">
-        <button class="tab-btn active" data-tab="due">
-          <i class="bi bi-cash-coin"></i> Due Payments
-          <span class="tab-count">({{ pending_count|default:pending|length }})</span>
-        </button>
-        <button class="tab-btn" data-tab="expiring">
-          <i class="bi bi-hourglass-split"></i> Expiring Soon
-          <span class="tab-count">({{ expiring_count|default:expiring_soon|length }})</span>
-        </button>
-        <button class="tab-btn" data-tab="expired">
-          <i class="bi bi-x-circle"></i> Renewal Due
-          <span class="tab-count">({{ expired_count|default:expired_members|length }})</span>
-        </button>
-      </div>
-
-      <!-- ══════════════ PANEL 1: DUE PAYMENTS ══════════════ -->
-      <div id="tab-due" class="tab-panel active">
-        {% if not pending %}
-        <div class="empty-state">No pending payments</div>
-
-        {% else %}
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Member</th>
-                <th>Phone</th>
-                <th>Pending (₹)</th>
-                <th>Due Date</th>
-                <th style="text-align: center">WhatsApp</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in pending %} {% with e=item.enrollment %}
-              <tr class="clickable-row" data-json="{{ item.panel_data|data_json }}">
-                <td><span class="cell-id">{{ e.unique_id }}</span></td>
-                <td class="cell-name">{{ e.fullname }}</td>
-                <td class="cell-phone">{{ e.phone }}</td>
-                <td class="cell-amount">₹{{ e.pendingAmount }}</td>
-                <td class="cell-due">
-                  {{ e.DueDate|default:"—" }} {% if e.is_expired %}<span
-                    class="expired-tag"
-                    >Expired</span
-                  >{% endif %}
-                </td>
-                <td style="text-align: center">
-                  <a class="wa-btn" href="{{ item.wa_link }}" target="_blank">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="white"
-                    >
-                      <path
-                        d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"
-                      />
-                      <path
-                        d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"
-                      />
-                    </svg>
-                    Send
-                  </a>
-                </td>
-              </tr>
-              {% endwith %} {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <!-- MOBILE CARDS -->
-        <div class="cards">
-          {% for item in pending %}
-          {% with e=item.enrollment %}
-          <div class="card clickable-card" data-json="{{ item.panel_data|data_json }}">
-
-            <div class="card-row">
-              <span class="card-name">{{ e.fullname }}</span>
-              <span class="card-id">#{{ e.unique_id }}</span>
-            </div>
-
-            <div class="card-meta">📞 {{ e.phone }}</div>
-
-            <div class="card-amount">₹{{ e.pendingAmount }}</div>
-
-            <div class="card-footer">
-              <div class="card-due">
-                Due: {{ e.DueDate|default:"—" }}
-                {% if e.is_expired %}
-                  <span class="expired-tag">Expired</span>
-                {% endif %}
-              </div>
-            </div>
-
-            <div style="margin-top:12px;">
-              <a class="wa-btn" href="{{ item.wa_link }}" target="_blank">
+<!-- ══════════════ PANEL 1: DUE PAYMENTS ══════════════ -->
+<div id="tab-due" class="tab-panel active">
+  {% if not pending %}
+  <div class="empty-state">No pending payments</div>
+  {% else %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Member</th><th>Phone</th><th>Pending (₹)</th><th>Due Date</th>
+          <th style="text-align:center">WhatsApp</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pending %} {% with e=item.enrollment %}
+        <tr class="clickable-row" data-json="{{ item.panel_data|data_json }}">
+          <td><span class="cell-id">{{ e.unique_id }}</span></td>
+          <td class="cell-name">{{ e.fullname }}</td>
+          <td class="cell-phone">{{ e.phone }}</td>
+          <td class="cell-amount">₹{{ e.pendingAmount }}</td>
+          <td class="cell-due">{{ e.DueDate|default:"—" }} {% if e.is_expired %}<span class="expired-tag">Expired</span>{% endif %}</td>
+          <td>
+            <div class="wa-send-cell">
+              <select class="wa-template-select" data-json="{{ item.panel_data|data_json }}"></select>
+              <a class="wa-btn wa-send-btn" href="#" target="_blank">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
                   <path d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"/>
                 </svg>
-                Send WhatsApp Reminder
+                Send
               </a>
             </div>
-
-          </div>
-          {% endwith %}
-          {% endfor %}
-        </div>
-        {% endif %}
+          </td>
+        </tr>
+        {% endwith %} {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="cards">
+    {% for item in pending %} {% with e=item.enrollment %}
+    <div class="card clickable-card" data-json="{{ item.panel_data|data_json }}">
+      <div class="card-row"><span class="card-name">{{ e.fullname }}</span><span class="card-id">#{{ e.unique_id }}</span></div>
+      <div class="card-meta">📞 {{ e.phone }}</div>
+      <div class="card-amount">₹{{ e.pendingAmount }}</div>
+      <div class="card-footer">
+        <div class="card-due">Due: {{ e.DueDate|default:"—" }} {% if e.is_expired %}<span class="expired-tag">Expired</span>{% endif %}</div>
       </div>
-      <!-- /tab-due -->
-
-      <!-- ══════════════ PANEL 2: EXPIRING SOON ══════════════ -->
-      <div id="tab-expiring" class="tab-panel">
-        {% if not expiring_soon %}
-        <div class="empty-state">No memberships expiring soon</div>
-
-        {% else %}
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Member</th>
-                <th>Phone</th>
-                <th>Plan</th>
-                <th>Expiry Date</th>
-                <th>Days Left</th>
-                <th style="text-align: center">WhatsApp</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in expiring_soon %} {% with e=item.enrollment %}
-              <tr class="clickable-row" data-json="{{ item.panel_data|data_json }}">
-                <td><span class="cell-id">{{ e.unique_id }}</span></td>
-                <td class="cell-name">{{ e.fullname }}</td>
-                <td class="cell-phone">{{ e.phone }}</td>
-                <td class="cell-plan">{{ e.selectPlan.plan|default:"—" }}</td>
-                <td class="cell-due">{{ e.DueDate|default:"—" }}</td>
-                <td class="cell-days-left">{{ e.days_remaining }}d</td>
-                <td style="text-align: center">
-                  <a class="wa-btn" href="{{ item.wa_link }}" target="_blank">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="white"
-                    >
-                      <path
-                        d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"
-                      />
-                      <path
-                        d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"
-                      />
-                    </svg>
-                    Send
-                  </a>
-                </td>
-              </tr>
-              {% endwith %} {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <!-- MOBILE CARDS -->
-        <div class="cards">
-          {% for item in expiring_soon %}
-          {% with e=item.enrollment %}
-          <div class="card clickable-card" data-json="{{ item.panel_data|data_json }}">
-
-            <div class="card-row">
-              <span class="card-name">{{ e.fullname }}</span>
-              <span class="card-id">#{{ e.unique_id }}</span>
-            </div>
-
-            <div class="card-meta">📞 {{ e.phone }}</div>
-            <div class="card-meta">🏷️ {{ e.selectPlan.plan|default:"—" }}</div>
-
-            <div class="card-amount days-left">{{ e.days_remaining }}d left</div>
-
-            <div class="card-footer">
-              <div class="card-due">
-                Expires: {{ e.DueDate|default:"—" }}
-              </div>
-            </div>
-
-            <div style="margin-top:12px;">
-              <a class="wa-btn" href="{{ item.wa_link }}" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"/>
-                </svg>
-                Send WhatsApp Reminder
-              </a>
-            </div>
-
-          </div>
-          {% endwith %}
-          {% endfor %}
-        </div>
-        {% endif %}
-      </div>
-      <!-- /tab-expiring -->
-
-      <!-- ══════════════ PANEL 3: EXPIRED MEMBERS ══════════════ -->
-      <div id="tab-expired" class="tab-panel">
-        {% if not expired_members %}
-        <div class="empty-state">No renewals due</div>
-
-        {% else %}
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Member</th>
-                <th>Phone</th>
-                <th>Plan</th>
-                <th>Expiry Date</th>
-                <th>Expired</th>
-                <th style="text-align: center">WhatsApp</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in expired_members %} {% with e=item.enrollment %}
-              <tr class="clickable-row" data-json="{{ item.panel_data|data_json }}">
-                <td><span class="cell-id">{{ e.unique_id }}</span></td>
-                <td class="cell-name">{{ e.fullname }}</td>
-                <td class="cell-phone">{{ e.phone }}</td>
-                <td class="cell-plan">{{ e.selectPlan.plan|default:"—" }}</td>
-                <td class="cell-due">{{ e.DueDate|default:"—" }}</td>
-                <td class="cell-days-expired">{{ item.expired_days }}d ago</td>
-                <td style="text-align: center">
-                  <a class="wa-btn renew" href="{{ item.wa_link }}" target="_blank">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="white"
-                    >
-                      <path
-                        d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"
-                      />
-                      <path
-                        d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"
-                      />
-                    </svg>
-                    Send
-                  </a>
-                </td>
-              </tr>
-              {% endwith %} {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <!-- MOBILE CARDS -->
-        <div class="cards">
-          {% for item in expired_members %}
-          {% with e=item.enrollment %}
-          <div class="card clickable-card" data-json="{{ item.panel_data|data_json }}">
-
-            <div class="card-row">
-              <span class="card-name">{{ e.fullname }}</span>
-              <span class="card-id">#{{ e.unique_id }}</span>
-            </div>
-
-            <div class="card-meta">📞 {{ e.phone }}</div>
-            <div class="card-meta">🏷️ {{ e.selectPlan.plan|default:"—" }}</div>
-
-            <div class="card-amount days-expired">{{ item.expired_days }}d ago</div>
-
-            <div class="card-footer">
-              <div class="card-due">
-                Expired: {{ e.DueDate|default:"—" }}
-              </div>
-            </div>
-
-            <div style="margin-top:12px;">
-              <a class="wa-btn renew" href="{{ item.wa_link }}" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"/>
-                </svg>
-                Send WhatsApp Renewal
-              </a>
-            </div>
-
-          </div>
-          {% endwith %}
-          {% endfor %}
-        </div>
-        {% endif %}
-      </div>
-      <!-- /tab-expired -->
-
-    </div>
-
-    <!-- ── SLIDE PANEL BACKDROP ── -->
-    <div class="panel-backdrop" id="panelBackdrop"></div>
-
-    <!-- ── SLIDE PANEL ── -->
-    <div class="slide-panel" id="slidePanel" aria-modal="true" role="dialog" aria-label="Member detail">
-      <div class="panel-head">
-        <button class="panel-close" id="panelClose" aria-label="Close">
-          <i class="bi bi-x"></i>
-        </button>
-        <div class="panel-id-row">
-          <span class="panel-uid" id="pUid"></span>
-          <span class="panel-kind-tag" id="pKindTag"></span>
-        </div>
-        <div class="panel-name" id="pName"></div>
-        <div class="panel-accent"></div>
-      </div>
-
-      <div class="panel-body">
-
-        <div class="panel-section-title">Contact</div>
-        <div class="detail-grid">
-          <div class="detail-item">
-            <div class="detail-label">Phone</div>
-            <div class="detail-value" id="pPhone"></div>
-          </div>
-          <div class="detail-item">
-            <div class="detail-label">Gender</div>
-            <div class="detail-value" id="pGender"></div>
-          </div>
-          <div class="detail-item full">
-            <div class="detail-label">Email</div>
-            <div class="detail-value" id="pEmail"></div>
-          </div>
-          <div class="detail-item full">
-            <div class="detail-label">Address</div>
-            <div class="detail-value" id="pAddress"></div>
-          </div>
-        </div>
-
-        <div class="panel-divider"></div>
-
-        <div class="panel-section-title">Membership</div>
-        <div class="detail-grid">
-          <div class="detail-item">
-            <div class="detail-label">Plan</div>
-            <div class="detail-value highlight" id="pPlan"></div>
-          </div>
-          <div class="detail-item">
-            <div class="detail-label">Plan Price</div>
-            <div class="detail-value" id="pPlanPrice"></div>
-          </div>
-          <div class="detail-item">
-            <div class="detail-label">Trainer</div>
-            <div class="detail-value" id="pTrainer"></div>
-          </div>
-          <div class="detail-item">
-            <div class="detail-label">Joined</div>
-            <div class="detail-value" id="pDoj"></div>
-          </div>
-
-          <!-- "due" kind only -->
-          <div class="detail-item" id="pPayStatusWrap">
-            <div class="detail-label">Payment</div>
-            <div class="detail-value" id="pPayStatus"></div>
-          </div>
-          <div class="detail-item" id="pPendingWrap">
-            <div class="detail-label">Pending</div>
-            <div class="detail-value" id="pPending"></div>
-          </div>
-
-          <!-- shared: due date -->
-          <div class="detail-item" id="pDueWrap">
-            <div class="detail-label">Due Date</div>
-            <div class="detail-value" id="pDue"></div>
-          </div>
-
-          <!-- "expiring" kind only -->
-          <div class="detail-item full" id="pDaysLeftWrap">
-            <div class="detail-label">Days Remaining</div>
-            <div class="detail-value highlight" id="pDaysLeft"></div>
-          </div>
-
-          <!-- "expired" kind only -->
-          <div class="detail-item full" id="pDaysExpiredWrap">
-            <div class="detail-label">Days Expired</div>
-            <div class="detail-value danger" id="pDaysExpired"></div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- WhatsApp action mirrors the row/card the panel was opened from -->
-      <div class="panel-wa-row">
-        <a class="wa-btn" id="pWaBtn" href="#" target="_blank">
+      <div class="card-wa-row">
+        <select class="wa-template-select" data-json="{{ item.panel_data|data_json }}"></select>
+        <a class="wa-btn wa-send-btn" href="#" target="_blank">
           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
             <path d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"/>
           </svg>
-          <span id="pWaBtnLabel">Send</span>
+          Send WhatsApp Reminder
         </a>
       </div>
     </div>
+    {% endwith %} {% endfor %}
+  </div>
+  {% endif %}
+</div>
 
-    <script nonce="{{ request.csp_nonce }}">
+<!-- ══════════════ PANEL 2: EXPIRING SOON ══════════════ -->
+<div id="tab-expiring" class="tab-panel">
+  {% if not expiring_soon %}
+  <div class="empty-state">No memberships expiring soon</div>
+  {% else %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Member</th><th>Phone</th><th>Plan</th><th>Expiry Date</th><th>Days Left</th><th style="text-align:center">WhatsApp</th></tr>
+      </thead>
+      <tbody>
+        {% for item in expiring_soon %} {% with e=item.enrollment %}
+        <tr class="clickable-row" data-json="{{ item.panel_data|data_json }}">
+          <td><span class="cell-id">{{ e.unique_id }}</span></td>
+          <td class="cell-name">{{ e.fullname }}</td>
+          <td class="cell-phone">{{ e.phone }}</td>
+          <td class="cell-plan">{{ e.selectPlan.plan|default:"—" }}</td>
+          <td class="cell-due">{{ e.DueDate|default:"—" }}</td>
+          <td class="cell-days-left">{{ e.days_remaining }}d</td>
+          <td>
+            <div class="wa-send-cell">
+              <select class="wa-template-select" data-json="{{ item.panel_data|data_json }}"></select>
+              <a class="wa-btn wa-send-btn" href="#" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"/>
+                </svg>
+                Send
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endwith %} {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="cards">
+    {% for item in expiring_soon %} {% with e=item.enrollment %}
+    <div class="card clickable-card" data-json="{{ item.panel_data|data_json }}">
+      <div class="card-row"><span class="card-name">{{ e.fullname }}</span><span class="card-id">#{{ e.unique_id }}</span></div>
+      <div class="card-meta">📞 {{ e.phone }}</div>
+      <div class="card-meta">🏷️ {{ e.selectPlan.plan|default:"—" }}</div>
+      <div class="card-amount days-left">{{ e.days_remaining }}d left</div>
+      <div class="card-footer"><div class="card-due">Expires: {{ e.DueDate|default:"—" }}</div></div>
+      <div class="card-wa-row">
+        <select class="wa-template-select" data-json="{{ item.panel_data|data_json }}"></select>
+        <a class="wa-btn wa-send-btn" href="#" target="_blank">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"/>
+          </svg>
+          Send WhatsApp Reminder
+        </a>
+      </div>
+    </div>
+    {% endwith %} {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ══════════════ PANEL 3: EXPIRED MEMBERS ══════════════ -->
+<div id="tab-expired" class="tab-panel">
+  {% if not expired_members %}
+  <div class="empty-state">No renewals due</div>
+  {% else %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Member</th><th>Phone</th><th>Plan</th><th>Expiry Date</th><th>Expired</th><th style="text-align:center">WhatsApp</th></tr>
+      </thead>
+      <tbody>
+        {% for item in expired_members %} {% with e=item.enrollment %}
+        <tr class="clickable-row" data-json="{{ item.panel_data|data_json }}">
+          <td><span class="cell-id">{{ e.unique_id }}</span></td>
+          <td class="cell-name">{{ e.fullname }}</td>
+          <td class="cell-phone">{{ e.phone }}</td>
+          <td class="cell-plan">{{ e.selectPlan.plan|default:"—" }}</td>
+          <td class="cell-due">{{ e.DueDate|default:"—" }}</td>
+          <td class="cell-days-expired">{{ item.expired_days }}d ago</td>
+          <td>
+            <div class="wa-send-cell">
+              <select class="wa-template-select" data-json="{{ item.panel_data|data_json }}"></select>
+              <a class="wa-btn renew wa-send-btn" href="#" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"/>
+                </svg>
+                Send
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endwith %} {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="cards">
+    {% for item in expired_members %} {% with e=item.enrollment %}
+    <div class="card clickable-card" data-json="{{ item.panel_data|data_json }}">
+      <div class="card-row"><span class="card-name">{{ e.fullname }}</span><span class="card-id">#{{ e.unique_id }}</span></div>
+      <div class="card-meta">📞 {{ e.phone }}</div>
+      <div class="card-meta">🏷️ {{ e.selectPlan.plan|default:"—" }}</div>
+      <div class="card-amount days-expired">{{ item.expired_days }}d ago</div>
+      <div class="card-footer"><div class="card-due">Expired: {{ e.DueDate|default:"—" }}</div></div>
+      <div class="card-wa-row">
+        <select class="wa-template-select" data-json="{{ item.panel_data|data_json }}"></select>
+        <a class="wa-btn renew wa-send-btn" href="#" target="_blank">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"/>
+          </svg>
+          Send WhatsApp Renewal
+        </a>
+      </div>
+    </div>
+    {% endwith %} {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── SLIDE PANEL BACKDROP ── -->
+<div class="panel-backdrop" id="panelBackdrop"></div>
+
+<!-- ── SLIDE PANEL ── -->
+<div class="slide-panel" id="slidePanel" aria-modal="true" role="dialog" aria-label="Member detail">
+  <div class="panel-head">
+    <button class="panel-close" id="panelClose" aria-label="Close"><i class="bi bi-x"></i></button>
+    <div class="panel-id-row">
+      <span class="panel-uid" id="pUid"></span>
+      <span class="panel-kind-tag" id="pKindTag"></span>
+    </div>
+    <div class="panel-name" id="pName"></div>
+    <div class="panel-accent"></div>
+  </div>
+
+  <div class="panel-body">
+    <div class="panel-section-title">Contact</div>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-label">Phone</div><div class="detail-value" id="pPhone"></div></div>
+      <div class="detail-item"><div class="detail-label">Gender</div><div class="detail-value" id="pGender"></div></div>
+      <div class="detail-item full"><div class="detail-label">Email</div><div class="detail-value" id="pEmail"></div></div>
+      <div class="detail-item full"><div class="detail-label">Address</div><div class="detail-value" id="pAddress"></div></div>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <div class="panel-section-title">Membership</div>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-label">Plan</div><div class="detail-value highlight" id="pPlan"></div></div>
+      <div class="detail-item"><div class="detail-label">Plan Price</div><div class="detail-value" id="pPlanPrice"></div></div>
+      <div class="detail-item"><div class="detail-label">Trainer</div><div class="detail-value" id="pTrainer"></div></div>
+      <div class="detail-item"><div class="detail-label">Joined</div><div class="detail-value" id="pDoj"></div></div>
+
+      <div class="detail-item" id="pPayStatusWrap"><div class="detail-label">Payment</div><div class="detail-value" id="pPayStatus"></div></div>
+      <div class="detail-item" id="pPendingWrap"><div class="detail-label">Pending</div><div class="detail-value" id="pPending"></div></div>
+
+      <div class="detail-item" id="pDueWrap"><div class="detail-label">Due Date</div><div class="detail-value" id="pDue"></div></div>
+
+      <div class="detail-item full" id="pDaysLeftWrap"><div class="detail-label">Days Remaining</div><div class="detail-value highlight" id="pDaysLeft"></div></div>
+
+      <div class="detail-item full" id="pDaysExpiredWrap"><div class="detail-label">Days Expired</div><div class="detail-value danger" id="pDaysExpired"></div></div>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <div class="panel-section-title">Message Preview</div>
+    <div class="panel-template-preview" id="pTemplatePreview"></div>
+  </div>
+
+  <div class="panel-wa-row">
+    <select class="wa-template-select" id="pTemplateSelect"></select>
+    <a class="wa-btn" id="pWaBtn" href="#" target="_blank">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.132.558 4.133 1.528 5.865L0 24l6.335-1.508A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.727.977.995-3.63-.234-.374A9.818 9.818 0 1112 21.818z"/>
+      </svg>
+      <span id="pWaBtnLabel">Send</span>
+    </a>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}" id="wa-templates-data" type="application/json">{{ templates_json|safe }}</script>
+
+<script nonce="{{ request.csp_nonce }}">
   (function () {
     const COUNTS = {
-      due: {{ pending_count|default:pending|length }},
-      expiring: {{ expiring_count|default:expiring_soon|length }},
-      expired: {{ expired_count|default:expired_members|length }},
+      due: {{ pending_count }},
+      expiring: {{ expiring_count }},
+      expired: {{ expired_count }},
     };
 
     const CONTENT = {
-      due: {
-        title: 'Payment',
-        accent: 'Reminders',
-        desc: 'Send reminders to members with pending dues.',
-        badgeLabel: 'Pending',
-      },
-      expiring: {
-        title: 'Membership Expiry',
-        accent: 'Alerts',
-        desc: 'Notify members whose memberships are about to expire.',
-        badgeLabel: 'Expiring',
-      },
-      expired: {
-        title: 'Renewal',
-        accent: 'Campaign',
-        desc: 'Contact expired members and encourage renewal.',
-        badgeLabel: 'Renewal Due',
-      },
+      due:      { title: 'Payment',            accent: 'Reminders', desc: 'Send reminders to members with pending dues.',              badgeLabel: 'Pending' },
+      expiring: { title: 'Membership Expiry',   accent: 'Alerts',    desc: 'Notify members whose memberships are about to expire.',      badgeLabel: 'Expiring' },
+      expired:  { title: 'Renewal',             accent: 'Campaign',  desc: 'Contact expired members and encourage renewal.',             badgeLabel: 'Renewal Due' },
     };
 
     function updateHeader(tab) {
@@ -1265,136 +626,192 @@
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    updateHeader('due'); // initial state on load
+    updateHeader('due');
   })();
 </script>
 
-    <!-- ══ SLIDE PANEL SCRIPT (pattern reused from today_attendance.html) ══ -->
-    <script nonce="{{ request.csp_nonce }}">
-      (function () {
-        const panel    = document.getElementById('slidePanel');
-        const backdrop = document.getElementById('panelBackdrop');
-        const closeBtn = document.getElementById('panelClose');
+<script nonce="{{ request.csp_nonce }}">
+  (function () {
+    const TEMPLATES = JSON.parse(document.getElementById('wa-templates-data').textContent || '{}');
 
-        /* Delegated click — works across all three tab panels, table rows and mobile cards */
-        document.addEventListener('click', function (e) {
-          const row = e.target.closest('.clickable-row, .clickable-card');
-          if (!row) return;
-          // Ignore clicks on the WhatsApp button itself so it still opens wa.me normally
-          if (e.target.closest('.wa-btn')) return;
-          try { openPanel(JSON.parse(row.dataset.json)); }
-          catch (err) { console.error('Panel parse error:', err); }
+    function fillMessage(text, data) {
+      return text
+        .replace(/{name}/g, data.name || '')
+        .replace(/{gym}/g, data.gym_name || 'EnterGYM')
+        .replace(/{amount}/g, data.amount || '0')
+        .replace(/{due_date}/g, data.due_date || '—');
+    }
+
+    function buildWaLink(phone, message) {
+      return `https://api.whatsapp.com/send?phone=91${phone}&text=${encodeURIComponent(message)}`;
+    }
+
+    function openWa(url) {
+      console.log('WA click ->', url);
+      const win = window.open(url, '_blank');
+      if (!win) {
+        alert('Popup blocked! Please allow popups for this site, then click Send again.');
+      }
+    }
+
+    // ── Populate every inline template <select> (table rows + mobile cards) ──
+    document.querySelectorAll('.wa-send-cell .wa-template-select, .card-wa-row .wa-template-select').forEach((sel) => {
+      let data;
+      try { data = JSON.parse(sel.dataset.json); } catch (e) { return; }
+
+      const opts = TEMPLATES[data.kind] || [];
+      opts.forEach((o) => {
+        const opt = document.createElement('option');
+        opt.value = o.key;
+        opt.textContent = o.label;
+        sel.appendChild(opt);
+      });
+
+      const container = sel.closest('.wa-send-cell, .card-wa-row');
+      const btn = container ? container.querySelector('.wa-send-btn') : null;
+
+      function refresh() {
+        const chosen = opts.find((o) => o.key === sel.value) || opts[0];
+        if (!chosen || !btn) return;
+        const msg = fillMessage(chosen.text, data);
+        btn.href = buildWaLink(data.phone, msg);
+      }
+
+      if (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          openWa(btn.href);
         });
+      }
 
-        closeBtn.addEventListener('click', closePanel);
-        backdrop.addEventListener('click', closePanel);
-        document.addEventListener('keydown', function (e) {
-          if (e.key === 'Escape') closePanel();
-        });
+      sel.addEventListener('change', refresh);
+      refresh();
+    });
 
-        const KIND_LABELS = {
-          due:      { tag: 'Due Payment',  wa: 'Send Reminder' },
-          expiring: { tag: 'Expiring Soon', wa: 'Send Reminder' },
-          expired:  { tag: 'Renewal Due',       wa: 'Send Renewal' },
-        };
+    // ── Slide panel wiring ──
+    const panel    = document.getElementById('slidePanel');
+    const backdrop = document.getElementById('panelBackdrop');
+    const closeBtn = document.getElementById('panelClose');
+    const pTemplateSelect  = document.getElementById('pTemplateSelect');
+    const pTemplatePreview = document.getElementById('pTemplatePreview');
+    const pWaBtn = document.getElementById('pWaBtn');
 
-        function openPanel(r) {
-          document.getElementById('pUid').textContent  = 'UID · ' + (r.unique_id || '—');
-          document.getElementById('pName').textContent = r.name || '—';
+    pWaBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      openWa(pWaBtn.href);
+    });
 
-          const kindInfo = KIND_LABELS[r.kind] || KIND_LABELS.due;
-          const kindTag = document.getElementById('pKindTag');
-          kindTag.textContent = kindInfo.tag;
-          kindTag.className = 'panel-kind-tag ' + r.kind;
+    let currentPanelData = null;
 
-          document.getElementById('pPhone').textContent   = r.phone   || '—';
-          document.getElementById('pGender').textContent  = r.gender || '—';
-          document.getElementById('pEmail').textContent   = r.email  || '—';
-          document.getElementById('pAddress').textContent = r.address || '—';
-          document.getElementById('pPlan').textContent     = r.plan    || '—';
-          document.getElementById('pPlanPrice').textContent = r.plan_price != null ? '₹' + r.plan_price : '—';
-          document.getElementById('pTrainer').textContent = r.trainer || '—';
-          document.getElementById('pDoj').textContent     = r.doj     || '—';
+    document.addEventListener('click', function (e) {
+      const row = e.target.closest('.clickable-row, .clickable-card');
+      if (!row) return;
+      if (e.target.closest('.wa-send-cell, .card-wa-row')) return; // don't open panel when using inline send controls
+      try { openPanel(JSON.parse(row.dataset.json)); }
+      catch (err) { console.error('Panel parse error:', err); }
+    });
 
-          const payWrap   = document.getElementById('pPayStatusWrap');
-          const pendWrap  = document.getElementById('pPendingWrap');
-          const dueWrap   = document.getElementById('pDueWrap');
-          const leftWrap  = document.getElementById('pDaysLeftWrap');
-          const expWrap   = document.getElementById('pDaysExpiredWrap');
+    closeBtn.addEventListener('click', closePanel);
+    backdrop.addEventListener('click', closePanel);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
 
-          // Reset visibility, then show only what's relevant to this kind
-          [payWrap, pendWrap, dueWrap, leftWrap, expWrap].forEach(el => el.style.display = 'none');
+    const KIND_LABELS = {
+      due:      { tag: 'Due Payment',   wa: 'Send Reminder' },
+      expiring: { tag: 'Expiring Soon', wa: 'Send Reminder' },
+      expired:  { tag: 'Renewal Due',   wa: 'Send Renewal' },
+    };
 
-          if (r.kind === 'due') {
-            payWrap.style.display = '';
-            pendWrap.style.display = '';
-            dueWrap.style.display = '';
+    function refreshPanelTemplate() {
+      if (!currentPanelData) return;
+      const opts = TEMPLATES[currentPanelData.kind] || [];
+      const chosen = opts.find((o) => o.key === pTemplateSelect.value) || opts[0];
+      if (!chosen) { pTemplatePreview.textContent = 'No templates available.'; return; }
+      const msg = fillMessage(chosen.text, currentPanelData);
+      pTemplatePreview.textContent = msg;
+      pWaBtn.href = buildWaLink(currentPanelData.phone, msg);
+    }
 
-            const ps = document.getElementById('pPayStatus');
-            ps.textContent = r.payment_status || '—';
-            ps.className   = 'detail-value ' + (r.payment_status === 'Done' ? 'success' : 'danger');
+    function openPanel(r) {
+      currentPanelData = r;
 
-            const pend = document.getElementById('pPending');
-            pend.textContent = r.pending_amount != null ? '₹' + r.pending_amount : '—';
-            pend.className   = 'detail-value ' + (r.pending_amount > 0 ? 'danger' : 'success');
+      document.getElementById('pUid').textContent  = 'UID · ' + (r.unique_id || '—');
+      document.getElementById('pName').textContent = r.name || '—';
 
-            document.getElementById('pDue').textContent = r.due_date || '—';
+      const kindInfo = KIND_LABELS[r.kind] || KIND_LABELS.due;
+      const kindTag = document.getElementById('pKindTag');
+      kindTag.textContent = kindInfo.tag;
+      kindTag.className = 'panel-kind-tag ' + r.kind;
 
-          } else if (r.kind === 'expiring') {
-            dueWrap.style.display = '';
-            leftWrap.style.display = '';
+      document.getElementById('pPhone').textContent   = r.phone   || '—';
+      document.getElementById('pGender').textContent  = r.gender || '—';
+      document.getElementById('pEmail').textContent   = r.email  || '—';
+      document.getElementById('pAddress').textContent = r.address || '—';
+      document.getElementById('pPlan').textContent     = r.plan    || '—';
+      document.getElementById('pPlanPrice').textContent = r.plan_price != null ? '₹' + r.plan_price : '—';
+      document.getElementById('pTrainer').textContent = r.trainer || '—';
+      document.getElementById('pDoj').textContent     = r.doj     || '—';
 
-            document.getElementById('pDue').textContent = r.due_date || '—';
-            document.getElementById('pDaysLeft').textContent =
-              r.days_remaining != null ? r.days_remaining + ' days' : '—';
+      const payWrap   = document.getElementById('pPayStatusWrap');
+      const pendWrap  = document.getElementById('pPendingWrap');
+      const dueWrap   = document.getElementById('pDueWrap');
+      const leftWrap  = document.getElementById('pDaysLeftWrap');
+      const expWrap   = document.getElementById('pDaysExpiredWrap');
 
-          } else if (r.kind === 'expired') {
-            dueWrap.style.display = '';
-            expWrap.style.display = '';
+      [payWrap, pendWrap, dueWrap, leftWrap, expWrap].forEach(el => el.style.display = 'none');
 
-            document.getElementById('pDue').textContent = r.due_date || '—';
-            document.getElementById('pDaysExpired').textContent =
-              r.expired_days != null ? r.expired_days + ' days ago' : '—';
-          }
+      if (r.kind === 'due') {
+        payWrap.style.display = '';
+        pendWrap.style.display = '';
+        dueWrap.style.display = '';
 
-          // WhatsApp button: rebuild the link the same way the row's own button does,
-          // by reusing the link that's already rendered on the matching row/card.
-          const waBtn = document.getElementById('pWaBtn');
-          const sourceLink = findSourceWaLink(r);
-          waBtn.href = sourceLink || '#';
-          document.getElementById('pWaBtnLabel').textContent = kindInfo.wa;
+        const ps = document.getElementById('pPayStatus');
+        ps.textContent = r.payment_status || '—';
+        ps.className   = 'detail-value ' + (r.payment_status === 'Done' ? 'success' : 'danger');
 
-          panel.classList.add('open');
-          backdrop.classList.add('open');
-          document.body.style.overflow = 'hidden';
-        }
+        const pend = document.getElementById('pPending');
+        pend.textContent = r.pending_amount != null ? '₹' + r.pending_amount : '—';
+        pend.className   = 'detail-value ' + (r.pending_amount > 0 ? 'danger' : 'success');
 
-        /* The panel itself has no wa_link (panel_data is link-free by design —
-           keeps the JSON payload focused on display data). We look up the
-           matching row's own wa-btn href via its unique_id, scoped to the
-           currently active tab panel, so the right reminder text is reused. */
-        function findSourceWaLink(r) {
-          const activePanel = document.querySelector('.tab-panel.active');
-          if (!activePanel) return null;
-          const rows = activePanel.querySelectorAll('.clickable-row, .clickable-card');
-          for (const row of rows) {
-            try {
-              const data = JSON.parse(row.dataset.json);
-              if (data.unique_id === r.unique_id) {
-                const link = row.querySelector('.wa-btn');
-                return link ? link.getAttribute('href') : null;
-              }
-            } catch (e) { /* skip malformed row */ }
-          }
-          return null;
-        }
+        document.getElementById('pDue').textContent = r.due_date || '—';
 
-        function closePanel() {
-          panel.classList.remove('open');
-          backdrop.classList.remove('open');
-          document.body.style.overflow = '';
-        }
-      })();
-    </script>
-  </body>
-</html>
+      } else if (r.kind === 'expiring') {
+        dueWrap.style.display = '';
+        leftWrap.style.display = '';
+
+        document.getElementById('pDue').textContent = r.due_date || '—';
+        document.getElementById('pDaysLeft').textContent = r.days_remaining != null ? r.days_remaining + ' days' : '—';
+
+      } else if (r.kind === 'expired') {
+        dueWrap.style.display = '';
+        expWrap.style.display = '';
+
+        document.getElementById('pDue').textContent = r.due_date || '—';
+        document.getElementById('pDaysExpired').textContent = r.expired_days != null ? r.expired_days + ' days ago' : '—';
+      }
+
+      // Populate the panel's own template picker for this kind
+      pTemplateSelect.innerHTML = '';
+      const opts = TEMPLATES[r.kind] || [];
+      opts.forEach((o) => {
+        const opt = document.createElement('option');
+        opt.value = o.key;
+        opt.textContent = o.label;
+        pTemplateSelect.appendChild(opt);
+      });
+      pTemplateSelect.onchange = refreshPanelTemplate;
+      document.getElementById('pWaBtnLabel').textContent = kindInfo.wa;
+      refreshPanelTemplate();
+
+      panel.classList.add('open');
+      backdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePanel() {
+      panel.classList.remove('open');
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  })();
+</script>
+{% endblock %}

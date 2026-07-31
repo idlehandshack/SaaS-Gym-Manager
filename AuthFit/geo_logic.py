@@ -70,7 +70,7 @@ def mark_geo_attendance(user, gym, lat, lng):
 
     if enroll_data is None:
         try:
-            qs = Enrollment.objects.filter(user=user)
+            qs = Enrollment.objects.filter(user=user, is_deleted=False)
             if gym:
                 qs = qs.filter(gym=gym)
             enrollment = qs.get()
@@ -116,5 +116,14 @@ def mark_geo_attendance(user, gym, lat, lng):
 
     if created:
         logger.info("Geo attendance marked: user=%s gym=%s date=%s dist=%sm", uid, gym_pk, today, round(distance))
+        # NEW — broadcast. Fetch full enrollment (cached dict lacks selectPlan/face_image),
+        # only on this success branch, so it costs nothing on the hot status-check path.
+        try:
+            full_enrollment = Enrollment.objects.select_related('selectPlan', 'gym').get(user=user, gym=gym)
+            from notifications.attendance_broadcast import broadcast_attendance_marked
+            broadcast_attendance_marked(full_enrollment, _, method='geo')
+        except Exception:
+            logger.exception("mark_geo_attendance: broadcast lookup failed user=%s gym=%s", uid, gym_pk)
+            
         return {'status': 'success', 'message': 'Attendance marked!', 'distance': round(distance)}
     return {'status': 'exists', 'message': 'Attendance already marked today.', 'distance': round(distance)}

@@ -1,0 +1,12 @@
+{% comment %}
+Reusable status badge. Takes `status` = one of "active" | "pending" | "expired"
+(matches member_service's computed_status annotation / MEMBERSHIP_STATUS_CHOICES).
+Usage: {% include "dashboard/members/components/_status_badge.html" with status=member.computed_status %}
+{% endcomment %}
+{% if status == "expired" %}
+  <span class="db-badge-status db-badge-expired">Expired</span>
+{% elif status == "pending" %}
+  <span class="db-badge-status db-badge-pending">Pending</span>
+{% else %}
+  <span class="db-badge-status db-badge-active">Active</span>
+{% endif %}

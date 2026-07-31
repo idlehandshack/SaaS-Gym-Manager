@@ -1,27 +1,4 @@
 # AuthFit/notifications.py
-#
-# DIFF SUMMARY vs. previous version:
-#   - send_expiry_reminders() -> send_expiry_reminders(gym=None)
-#   - one extra .filter(gym=gym) applied to the enrollments queryset when
-#     `gym` is supplied
-#   - member notification bookkeeping changed from "collect successful IDs,
-#     one bulk update at the end" to "save last_expiry_notif_sent
-#     immediately, per enrollment, right after that member's send succeeds"
-#     — this is what makes the function safe against partial failures: if
-#     an exception (Firebase timeout, Web Push error, bug) happens anywhere
-#     later in the run, everyone already notified is already persisted, so
-#     a same-day retry can't double-notify them.
-#   - each enrollment and each receptionist bucket now runs inside its own
-#     try/except so one bad enrollment/bucket can't stop the rest.
-#   - receptionist batching itself (grouping by gym × days_left, one
-#     summary send per bucket) is UNCHANGED — only wrapped in isolation +
-#     given a small per-bucket bulk update instead of contributing to one
-#     giant end-of-run update.
-#   - message builders and the four channel helpers (_send_member_fcm,
-#     _send_member_web_push, _send_receptionist_fcm,
-#     _send_receptionist_web_push) are byte-for-byte unchanged.
-#   - the nightly cron (which calls send_expiry_reminders() with no args)
-#     behaves the same as before, just with safer partial-failure handling.
 
 import logging
 from collections import defaultdict
@@ -32,140 +9,104 @@ from django.utils import timezone
 
 from Shop.notifications import send_push_to_tokens
 from notifications.utils import send_web_push
-
+from Gym.services import whatsapp_service
+from Gym.services.whatsapp_templates import (
+    TEMPLATE_MEMBERSHIP_EXPIRY_BEFORE, TEMPLATE_MEMBERSHIP_EXPIRY_AFTER,
+    build_expiry_before_components, build_expiry_after_components,
+)
 from .models import Enrollment, UserDevice
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
 REMINDER_WINDOW_DAYS = 3  # start notifying 3 days before expiry
 OVERDUE_CUTOFF_DAYS  = 2  # stop notifying 2 days after expiry
-
+WHATSAPP_MAX_REMINDER_DAYS_BEFORE = 7  
+_REMINDER_TIME_TOLERANCE_MINUTES = 10
 
 # ── Public entry point ────────────────────────────────────────────────────────
 
 def send_expiry_reminders(gym=None) -> int:
-    """
-    Send expiry reminders to members (individual) and receptionists (batched).
-
-    gym:
-        None  -> process every gym's due enrollments (nightly cron behaviour,
-                 unchanged).
-        Gym   -> process ONLY that gym's due enrollments. Used by the manual
-                 "Send Expiry Reminder" button so one gym can never trigger
-                 notifications for another tenant.
-
-    Pass 1 — per-enrollment:
-        Fire member FCM and member web push for each enrollment.
-        Accumulate enrollments into (gym_id, days_left) buckets for batching.
-
-    Pass 2 — per gym × days_left group:
-        Build one summary message per bucket.
-        Fire receptionist FCM and receptionist web push once per bucket.
-
-    last_expiry_notif_sent is written for an enrollment when at least one
-    of the following is true:
-        - a member channel delivered for that enrollment (written
-          immediately via enrollment.save(), right after that member's
-          send completes — not deferred to a final bulk update)
-        - the staff batch for that enrollment's gym × days_left group
-          delivered (written via a small per-bucket bulk update, right
-          after that bucket's send completes)
-
-    Every enrollment and every receptionist bucket is processed inside
-    its own try/except: a Firebase timeout, Web Push exception, or bug
-    handling one member/bucket is logged and skipped, never aborting the
-    rest of the run. Because progress is persisted immediately rather
-    than at the end, a mid-run crash (process killed, unhandled
-    exception, etc.) can never cause a member who was already notified
-    to be re-notified on the next retry the same day.
-
-    Returns the number of enrollments marked as notified.
-    """
-
     today = timezone.localdate()
-
+ 
+    max_lookahead_days = max(REMINDER_WINDOW_DAYS, WHATSAPP_MAX_REMINDER_DAYS_BEFORE)
+ 
     query = (
         Enrollment.objects
         .filter(
             DueDate__isnull=False,
-            DueDate__lte=today + timedelta(days=REMINDER_WINDOW_DAYS),
+            DueDate__lte=today + timedelta(days=max_lookahead_days),
             DueDate__gte=today - timedelta(days=OVERDUE_CUTOFF_DAYS),
         )
-        .exclude(last_expiry_notif_sent=today)
-        .select_related('user', 'selectPlan', 'gym')
+        # CHANGED: no longer .exclude(last_expiry_notif_sent=today) here —
+        # see architectural note. Per-enrollment gating for FCM/web push
+        # happens inside the loop below via `already_notified_today`;
+        # WhatsApp needs no such gate at all (its own dedup key covers it).
+        .select_related('user', 'selectPlan', 'gym', 'gym__whatsapp_settings')
     )
-
+ 
     if gym:
-        # Tenant isolation: manual trigger only ever touches this gym's
-        # enrollments. Never fall through to a platform-wide query.
         query = query.filter(gym=gym)
-
+ 
     enrollments = list(query)
-
+ 
     logger.info(
         "send_expiry_reminders: scope=%s candidates=%d",
         getattr(gym, 'gym_code', 'ALL_GYMS') if gym else 'ALL_GYMS',
         len(enrollments),
     )
-
+ 
     total_count = len(enrollments)
-
-    # marked_ids is bookkeeping ONLY — for the final count/log line and to
-    # avoid re-touching a row in the receptionist pass below. It is never
-    # used to defer a database write; every write happens immediately at
-    # the point a channel succeeds.
     marked_ids = set()
-
-    # ── Bucket structure ──────────────────────────────────────────────────
-    # key: (gym_id, days_left)
-    # value: {'gym': Gym, 'enrollments': [Enrollment, ...]}
     buckets: dict[tuple, dict] = defaultdict(lambda: {'gym': None, 'enrollments': []})
-
-    # ── Pass 1: member notifications, saved immediately per enrollment ────
-    #
-    # Each enrollment is fully isolated: a Firebase timeout, Web Push
-    # exception, or any programming error while handling one member is
-    # caught, logged, and skipped — it can never abort processing for the
-    # rest of the gym. Any enrollment whose member channel(s) succeed has
-    # last_expiry_notif_sent written via enrollment.save() right away, so
-    # if the process dies immediately afterward, that member is never
-    # double-notified on retry.
+ 
     for enr in enrollments:
         try:
             days_left = (enr.DueDate - today).days
             gym_code  = getattr(enr.gym, 'gym_code', str(enr.gym_id))
-
-            member_title, member_body = _build_member_message(enr, today)
-
-            ch1_ok = _send_member_fcm(enr, member_title, member_body, gym_code)
-            ch2_ok = _send_member_web_push(enr, member_title, member_body, gym_code)
-
-            if ch1_ok or ch2_ok:
+ 
+            # Restores FCM/web push's EXACT original day range — the
+            # query above is now wider (for WhatsApp's sake), but FCM and
+            # web push must never act outside the range they always have.
+            in_fcm_web_window = (-OVERDUE_CUTOFF_DAYS <= days_left <= REMINDER_WINDOW_DAYS)
+            already_notified_today = (enr.last_expiry_notif_sent == today)
+ 
+            ch1_ok = False
+            ch2_ok = False
+            if in_fcm_web_window and not already_notified_today:
+                member_title, member_body = _build_member_message(enr, today)
+                ch1_ok = _send_member_fcm(enr, member_title, member_body, gym_code)
+                ch2_ok = _send_member_web_push(enr, member_title, member_body, gym_code)
+ 
+            # WhatsApp is evaluated regardless of already_notified_today —
+            # its own deduplication_key (per enrollment + DueDate +
+            # direction) is the actual duplicate guard, not this flag.
+            ch3_ok = _send_member_whatsapp_expiry(enr, days_left, gym_code)
+ 
+            if ch1_ok or ch2_ok or ch3_ok:
                 logger.info(
                     "Member notification succeeded enrollment=%s user=%s gym=%s "
-                    "fcm=%s web=%s — persisting immediately",
-                    enr.id, enr.user_id, gym_code, ch1_ok, ch2_ok,
+                    "fcm=%s web=%s whatsapp=%s — persisting immediately",
+                    enr.id, enr.user_id, gym_code, ch1_ok, ch2_ok, ch3_ok,
                 )
                 enr.last_expiry_notif_sent = today
                 enr.save(update_fields=["last_expiry_notif_sent"])
                 marked_ids.add(enr.id)
-                logger.debug(
-                    "last_expiry_notif_sent persisted enrollment=%s gym=%s",
-                    enr.id, gym_code,
-                )
-            else:
+            elif in_fcm_web_window and not already_notified_today:
                 logger.warning(
                     "Member notification failed on all channels "
                     "enrollment=%s user=%s gym=%s — will retry next run",
                     enr.id, enr.user_id, gym_code,
                 )
-
-            # Always bucket — staff should be notified even if the member
-            # has no device / both channels failed.
-            key = (enr.gym_id, days_left)
-            buckets[key]['gym'] = enr.gym
-            buckets[key]['enrollments'].append(enr)
-
+ 
+            # Bucket for receptionist batching — FCM/web-push-only, so
+            # only bucket enrollments within their original window,
+            # exactly as before this feature.
+            if in_fcm_web_window:
+                key = (enr.gym_id, days_left)
+                buckets[key]['gym'] = enr.gym
+                buckets[key]['enrollments'].append(enr)
+ 
         except Exception:
             logger.exception(
                 "Unexpected error processing enrollment=%s — skipping, "
@@ -284,7 +225,7 @@ def notify_member_plan_changed(enrollment, new_plan,*,new_due_date=None,pending_
     )
     ch2_ok = _send_member_web_push(
         enrollment, title, body, gym_code,
-        url="/profile/",
+        url="/profile/", notif_type="plan_changed",
     )
 
     ok = ch1_ok or ch2_ok
@@ -323,7 +264,7 @@ def notify_member_renewal_reminder(enrollment) -> bool:
     )
     ch2_ok = _send_member_web_push(
         enrollment, title, body, gym_code,
-        url="/renew-membership/",
+        url="/renew-membership/", notif_type="renewal_reminder",
     )
 
     ok = ch1_ok or ch2_ok
@@ -336,6 +277,32 @@ def notify_member_renewal_reminder(enrollment) -> bool:
 # ── Member channel implementations (shared by the expiry batch job and ───────
 # ── single-event callers like notify_member_plan_changed above) ──────────────
 # UNCHANGED from the existing implementation — reused as-is.
+
+def _log_push_notification(enr, channel, notif_type, title, body, success, error=""):
+    """
+    Persists one push-send attempt to PushNotificationLog. Wrapped in its
+    own try/except so a logging failure can NEVER take down the actual
+    notification send path — mirrors the isolation philosophy used
+    everywhere else in this file.
+    """
+    from Gym.models import PushNotificationLog
+    try:
+        PushNotificationLog.objects.create(
+            gym=enr.gym,
+            member=enr,
+            channel=channel,
+            notif_type=notif_type if notif_type in dict(PushNotificationLog.NOTIF_TYPE_CHOICES) else '',
+            title=title,
+            body=body,
+            success=success,
+            error=error[:2000],
+        )
+    except Exception:
+        logger.exception(
+            "_log_push_notification: failed to write log row enrollment=%s channel=%s",
+            enr.id, channel,
+        )
+
 
 def _send_member_fcm(
     enr, title: str, body: str, gym_code: str,
@@ -358,6 +325,10 @@ def _send_member_fcm(
                 "enrollment=%s user=%s gym=%s",
                 enr.id, enr.user_id, gym_code,
             )
+            _log_push_notification(
+                enr, 'fcm', notif_type, title, body,
+                success=False, error="No active FCM tokens registered for this user.",
+            )
             return False
 
         successes = send_push_to_tokens(
@@ -373,25 +344,34 @@ def _send_member_fcm(
             channel_id=channel_id,
         )
 
-        if successes > 0:
+        ok = successes > 0
+        if ok:
             logger.info(
                 "Expiry member FCM sent "
                 "enrollment=%s user=%s gym=%s successes=%s",
                 enr.id, enr.user_id, gym_code, successes,
             )
-        return successes > 0
+        _log_push_notification(
+            enr, 'fcm', notif_type, title, body,
+            success=ok, error="" if ok else "FCM send returned 0 successes.",
+        )
+        return ok
 
-    except Exception:
+    except Exception as exc:
         logger.exception(
             "_send_member_fcm: failed enrollment=%s gym=%s",
             enr.id, gym_code,
+        )
+        _log_push_notification(
+            enr, 'fcm', notif_type, title, body,
+            success=False, error=str(exc),
         )
         return False
 
 
 def _send_member_web_push(
     enr, title: str, body: str, gym_code: str,
-    *, url: str = "/renew-membership/",
+    *, url: str = "/renew-membership/", notif_type: str = 'plan_expiry',
 ) -> bool:
     """
     Channel 2 — Member browser/PWA via WebPushSubscription.
@@ -405,7 +385,8 @@ def _send_member_web_push(
             url=url,
         )
 
-        if successes > 0:
+        ok = successes > 0
+        if ok:
             logger.info(
                 "Expiry member web push sent "
                 "enrollment=%s user=%s gym=%s successes=%s",
@@ -417,12 +398,20 @@ def _send_member_web_push(
                 "enrollment=%s user=%s gym=%s",
                 enr.id, enr.user_id, gym_code,
             )
-        return successes > 0
+        _log_push_notification(
+            enr, 'web_push', notif_type, title, body,
+            success=ok, error="" if ok else "Web push returned 0 successful deliveries (subscription may be expired).",
+        )
+        return ok
 
-    except Exception:
+    except Exception as exc:
         logger.exception(
             "_send_member_web_push: failed enrollment=%s gym=%s",
             enr.id, gym_code,
+        )
+        _log_push_notification(
+            enr, 'web_push', notif_type, title, body,
+            success=False, error=str(exc),
         )
         return False
 
@@ -640,3 +629,153 @@ def _build_staff_summary_message(
         body = f"{', '.join(shown)} and {overflow} others expire {time_phrase}."
 
     return title, body
+
+def _send_member_whatsapp_expiry(enr, days_left: int, gym_code: str) -> bool:
+    """
+    Third member channel for expiry reminders. Now driven entirely by the
+    gym's own configurable GymWhatsAppSettings instead of a hardcoded
+    day-offset rule:
+ 
+      - Pre-expiry: fires ONLY when days_left == wa_settings.reminder_days_before
+        (exactly one day, not a range).
+      - Post-expiry: fires ONLY when wa_settings.send_post_expiry_reminder
+        is True AND days_left == -1 exactly (never on day -2 or earlier).
+      - Time-of-day: fires ONLY when the CURRENT time in the gym's own
+        configured timezone is within _REMINDER_TIME_TOLERANCE_MINUTES of
+        wa_settings.reminder_time. This is what makes the 3x-daily cron
+        model work — most invocations of send_expiry_reminders() will
+        find this check False for most gyms/enrollments and simply skip.
+ 
+    Still mirrors the try/except-isolated, return-False-on-any-failure
+    shape of _send_member_fcm/_send_member_web_push exactly.
+    """
+    if not enr.user_id and not enr.phone:
+        return False
+ 
+    try:
+        gym = enr.gym
+        try:
+            wa_settings = gym.whatsapp_settings
+        except Exception:
+            return False  # WhatsApp never configured for this gym — not an error
+ 
+        if not wa_settings.is_operational:
+            return False  # owner has WhatsApp turned off for this gym
+ 
+        if not _reminder_time_matches(wa_settings):
+            return False  # not this gym's configured send time yet — try again on a later run today
+ 
+        member_name = enr.fullname or (enr.user.get_full_name() if enr.user_id else "") or "Member"
+        to_phone = whatsapp_service.normalize_phone_to_e164(enr.phone)
+ 
+        if days_left < 0:
+            if not wa_settings.send_post_expiry_reminder:
+                return False
+            if days_left != -1:
+                return False  # spec: send ONLY on day -1, never day -2 or earlier
+            template_name = TEMPLATE_MEMBERSHIP_EXPIRY_AFTER
+            components = build_expiry_after_components(
+                member_name=member_name, gym_name=gym.gym_name, expiry_date=enr.DueDate,
+            )
+            dedup_key = f"whatsapp_expiry_after:{enr.id}:{enr.DueDate.isoformat()}"
+        elif days_left == wa_settings.reminder_days_before:
+            template_name = TEMPLATE_MEMBERSHIP_EXPIRY_BEFORE
+            components = build_expiry_before_components(
+                member_name=member_name, gym_name=gym.gym_name, expiry_date=enr.DueDate,
+            )
+            dedup_key = f"whatsapp_expiry_before:{enr.id}:{enr.DueDate.isoformat()}"
+        else:
+            return False  # not this gym's configured pre-expiry offset
+ 
+        result = whatsapp_service.send_template(
+            gym, to_phone, template_name,
+            components=components, member=enr, deduplication_key=dedup_key,
+        )
+ 
+        if result.success:
+            logger.info(
+                "WhatsApp expiry reminder sent enrollment=%s gym=%s template=%s "
+                "reminder_days_before=%s reminder_time=%s (skipped_duplicate=%s)",
+                enr.id, gym_code, template_name,
+                wa_settings.reminder_days_before, wa_settings.reminder_time,
+                result.skipped_duplicate,
+            )
+        return result.success
+ 
+    except Exception:
+        logger.exception(
+            "_send_member_whatsapp_expiry: failed enrollment=%s gym=%s",
+            enr.id, gym_code,
+        )
+        return False
+
+def _reminder_time_matches(wa_settings, now_utc=None) -> bool:
+    """
+    True when the CURRENT time, converted into this gym's own configured
+    timezone, falls within _REMINDER_TIME_TOLERANCE_MINUTES of
+    wa_settings.reminder_time. Falls back to Asia/Kolkata if the stored
+    timezone string is somehow invalid (defensive — the form's
+    TIMEZONE_CHOICES should prevent this, but a bad value must never
+    crash the whole cron run for every other gym).
+    """
+    try:
+        tz = ZoneInfo(wa_settings.timezone or "Asia/Kolkata")
+    except Exception:
+        logger.warning(
+            "_reminder_time_matches: invalid timezone '%s' for gym=%s, falling back to Asia/Kolkata",
+            wa_settings.timezone, wa_settings.gym_id,
+        )
+        tz = ZoneInfo("Asia/Kolkata")
+ 
+    now_local = (now_utc or timezone.now()).astimezone(tz)
+    now_minutes = now_local.hour * 60 + now_local.minute
+    configured_minutes = wa_settings.reminder_time.hour * 60 + wa_settings.reminder_time.minute
+ 
+    # Handle midnight wraparound (e.g. configured 23:50, now 00:05) just
+    # in case a future timezone choice puts a slot near midnight —
+    # none of today's three fixed options do, but this keeps the helper
+    # correct rather than quietly wrong at the boundary.
+    diff = abs(now_minutes - configured_minutes)
+    diff = min(diff, 1440 - diff)
+    return diff <= _REMINDER_TIME_TOLERANCE_MINUTES
+
+
+def send_test_notification_to_member(enr) -> dict:
+    """
+    Manual 'Check Notification' button — staff-triggered test push to a
+    single member on both channels. Reuses the exact same send path as
+    real notifications (_send_member_fcm / _send_member_web_push), so a
+    green result here means the real reminders will actually deliver.
+    """
+    from AuthFit.models import UserDevice
+    from notifications.models import WebPushSubscription
+
+    title = "Test Notification"
+    body  = "This is a test — if you see this, notifications are working."
+    gym_code = getattr(enr.gym, 'gym_code', str(enr.gym_id))
+
+    # FCM
+    has_fcm_device = enr.user_id and UserDevice.objects.filter(
+        user=enr.user, gym=enr.gym, active=True
+    ).exists()
+    fcm_ok = False
+    if has_fcm_device:
+        fcm_ok = _send_member_fcm(enr, title, body, gym_code, notif_type='test')
+
+    # Web Push
+    has_web_sub = enr.user_id and WebPushSubscription.objects.filter(
+        user=enr.user, active=True
+    ).exists()
+    web_ok = False
+    if has_web_sub:
+        web_ok = _send_member_web_push(enr, title, body, gym_code, notif_type='test')
+
+    def status(has_device, sent_ok):
+        if not has_device:
+            return "no_device"      # nothing registered — not a failure, just nothing to test
+        return "success" if sent_ok else "failed"
+
+    return {
+        "fcm": status(has_fcm_device, fcm_ok),
+        "web_push": status(has_web_sub, web_ok),
+    }

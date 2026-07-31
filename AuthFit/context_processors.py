@@ -10,6 +10,8 @@ from django.core.cache import cache
 from django.utils import timezone
 from Gym.branding import get_gym_branding
 from cloudinary.utils import cloudinary_url
+from Gym.theme import resolve_theme_color
+from .colorutils import hex_to_rgba, lighten
 
 logger = logging.getLogger(__name__)
 
@@ -234,3 +236,15 @@ def gym_theme(request):
     gym = getattr(request, 'gym', None)
     theme = getattr(gym, 'theme', None) or 'default'
     return {'gym_theme': theme}
+
+def dashboard_theme(request):
+    gym = getattr(request, 'gym', None)
+    color = resolve_theme_color(gym) if gym else '#ff5a00'
+    mode = getattr(gym, 'dashboard_mode', 'dark') if gym else 'dark'
+    return {
+        'theme_color':        color,
+        'theme_color_dim':    hex_to_rgba(color, 0.10),
+        'theme_color_border': hex_to_rgba(color, 0.28),
+        'theme_color_hover':  lighten(color, 0.15),
+        'dashboard_mode':     mode,
+    }

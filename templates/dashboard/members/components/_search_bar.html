@@ -1,0 +1,32 @@
+{% comment %}
+Reusable member search bar. Lives inside the parent <form> in list.html
+(id="memberFiltersForm") — this include only renders its own field, it
+does not open/close a <form> itself, so it can be reused inside any
+container that already provides one.
+
+Searches Member Name, Mobile Number, and Unique ID via the service's
+combined OR search (see member_service.SEARCH_FIELDS).
+{% endcomment %}
+<div class="db-card db-members-searchbar">
+  <div class="db-search db-members-search">
+    <i class="bi bi-search"></i>
+    <input
+      type="text"
+      name="search"
+      id="memberSearchInput"
+      value="{{ current_search }}"
+      placeholder="Search by name, mobile number, or unique ID…"
+      autocomplete="off"
+    >
+    {% if current_search %}
+      <a href="?{% if querystring %}{{ querystring }}&{% endif %}search="
+         class="db-search-clear" aria-label="Clear search"
+         onclick="document.getElementById('memberSearchInput').value=''; document.getElementById('memberFiltersForm').submit(); return false;">
+        <i class="bi bi-x-lg"></i>
+      </a>
+    {% endif %}
+  </div>
+  <button type="submit" class="btn db-btn-primary db-members-search-btn">
+    <i class="bi bi-search"></i><span class="d-none d-sm-inline ms-1">Search</span>
+  </button>
+</div>

@@ -355,11 +355,27 @@
         .sidebar-close { display: flex; }
         .menu-btn { display: flex; }
         .main { margin-left: 0; }
-        .topbar { padding: 12px 16px; }
-        .topbar-title { font-size: 1.2rem; }
+        .topbar { padding: 12px 16px; flex-wrap: wrap; row-gap: 8px; }
+        .topbar-title {
+          font-size: 1.1rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .topbar-left { min-width: 0; flex: 1 1 auto; display: flex; align-items: center; gap: 8px; }
         .topbar-gym-badge { display: inline-flex; }
+
+        /* "My Store" is already reachable from the sidebar — hide it here on
+          small screens so the gym-name badge has room next to the title */
+        .topbar-actions { display: none; }
+
         .stats-row { padding: 20px 16px 0; gap: 10px; }
         .table-area { padding: 0 16px 56px; }
+      }
+
+      @media (max-width: 480px) {
+        .topbar-title { font-size: 1rem; max-width: 40vw; }
+        .topbar-gym-badge span { display: none; }
       }
       @media (max-width: 576px) {
         .topbar-title { font-size: 1.1rem; }
@@ -401,13 +417,16 @@
         <span class="role-pill">Staff Panel</span>
       </div>
       <nav class="sidebar-nav">
-        <a class="nav-item" href="{% url 'admin_orders' %}">
-          <i class="bi bi-box-seam"></i> Orders
+        <a class="nav-item" href="{% url 'dashboard_home' %}">
+          <i class="bi bi-box-seam"></i> Dashboard
         </a>
         <a class="nav-item active" href="{% url 'product_dashboard' %}">
-          <i class="bi bi-bar-chart-line"></i> Dashboard
+          <i class="bi bi-bar-chart-line"></i> Order Dashboard
         </a>
-        <a class="nav-item" href="{% url 'gym_store_manage' %}">
+        <a class="nav-item " href="{% url 'admin_orders' %}">
+          <i class="bi bi-box-seam"></i> Orders
+        </a>
+        <a class="nav-item " href="{% url 'gym_store_manage' %}">
           <i class="bi bi-bag"></i> My Store
         </a>
         <a class="nav-item " href="{% url 'catalog_browse' %}">

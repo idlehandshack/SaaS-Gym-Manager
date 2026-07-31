@@ -1,0 +1,67 @@
+<div id="sendMessageModal" class="att-panel-backdrop" style="z-index:1300;">
+  <div style="background:var(--surface-2); border:1px solid var(--border-2); border-radius:var(--radius-md);
+              padding:28px 24px; width:92%; max-width:480px; margin:6vh auto; position:relative;">
+    <button type="button" id="sendMessageClose"
+            style="position:absolute; top:10px; right:14px; background:none; border:none; color:var(--text-mid); font-size:22px; cursor:pointer;">×</button>
+
+    <h3 style="font-family:var(--font-d); font-size:1.15rem; color:var(--text-hi); margin:0 0 6px;">Send Message</h3>
+    <p style="font-size:.82rem; color:var(--text-mid); margin:0 0 18px;">
+      Sends privately to {{ member.fullname }} only.
+    </p>
+
+    <form method="POST" action="{% url 'member_message_send' %}">
+      {% csrf_token %}
+      <input type="hidden" name="member_id" value="{{ member.id }}">
+      <input type="hidden" name="next" value="{{ request.path }}">
+
+      <label for="msgTitle" style="display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo); margin-bottom:4px;">Title</label>
+      <input type="text" id="msgTitle" name="title" required maxlength="200"
+            style="width:100%; margin-bottom:14px; padding:10px 12px; background:var(--surface-3);
+                    border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-hi); font-size:.85rem;">
+
+      <label for="msgBody" style="display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo); margin-bottom:4px;">Message</label>
+      <textarea id="msgBody" name="message" rows="4" required
+                style="width:100%; margin-bottom:14px; padding:10px 12px; background:var(--surface-3);
+                      border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-hi); font-size:.85rem; resize:vertical;"></textarea>
+
+      <label for="msgPriority" style="display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-lo); margin-bottom:4px;">Priority</label>
+      <select id="msgPriority" name="priority"
+              style="width:100%; margin-bottom:16px; padding:10px 12px; background:var(--surface-3);
+                    border:1px solid var(--border-2); border-radius:var(--radius-sm); color:var(--text-hi); font-size:.85rem;">
+        <option value="normal" selected>Normal</option>
+        <option value="important">Important</option>
+        <option value="urgent">Urgent</option>
+      </select>
+
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;">
+        <label style="display:flex; align-items:center; gap:8px; font-size:.82rem; color:var(--text-hi);">
+          <input type="checkbox" name="show_popup" checked> Show popup on next login
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; font-size:.82rem; color:var(--text-hi);">
+          <input type="checkbox" name="send_push" checked> Send push notification
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; font-size:.82rem; color:var(--text-hi);">
+          <input type="checkbox" name="save_inbox" checked> Save to member inbox
+        </label>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button type="button" id="sendMessageCancel" class="db-btn" style="flex:1; background:var(--surface-3); color:var(--text-hi);">Cancel</button>
+        <button type="submit" class="db-btn db-btn-primary" style="flex:1;">Send Message</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script nonce="{{ request.csp_nonce }}">
+(function () {
+  const btn    = document.getElementById('sendMessageBtn');
+  const modal  = document.getElementById('sendMessageModal');
+  const close  = document.getElementById('sendMessageClose');
+  const cancel = document.getElementById('sendMessageCancel');
+  if (!btn || !modal) return;
+  btn.addEventListener('click', () => modal.classList.add('open'));
+  close.addEventListener('click', () => modal.classList.remove('open'));
+  cancel.addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('open'); });
+})();
+</script>

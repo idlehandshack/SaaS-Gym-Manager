@@ -17,7 +17,7 @@ API_KEY = os.environ.get("INTERNAL_API_KEY", "")
 # Never use ["*"] — even in DEBUG it masks misconfiguration
 if DEBUG:
     ALLOWED_HOSTS = [
-        '.localhost', '127.0.0.1', '0.0.0.0', 'localhost', '*'
+        '.localhost', '127.0.0.1', '0.0.0.0', 'localhost', '*',"bilabiate-overdevoted-juan.ngrok-free.dev",
     ]
 else:
     ALLOWED_HOSTS = [
@@ -31,11 +31,17 @@ else:
 CSRF_TRUSTED_ORIGINS = [
     "https://entergym.in",
     "https://*.entergym.in",
+
+    # ngrok
+    "https://bilabiate-overdevoted-juan.ngrok-free.dev",
+
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]
 
 INSTALLED_APPS = [
+    'daphne',            # must be first if you use it for runserver
+    'channels',
     'jazzmin',
 
     'django.contrib.admin',
@@ -59,6 +65,11 @@ INSTALLED_APPS = [
     'billing',
     'reviews',
     'demoRequest',
+    'announcements',
+    'member_messages',
+    'expenses',
+    "communications",
+    'notification_center'
 ]
 
 JAZZMIN_UI_TWEAKS = {
@@ -83,9 +94,15 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
 ]
+ASGI_APPLICATION = 'Fitness.asgi.application'
+# Reuses the same REDIS_URL you already use for CACHES — one Redis instance,
+# two logical uses (cache DB vs channel layer), no new infra.
 
 ROOT_URLCONF = 'Fitness.urls'
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
+ENCRYPTION_KEY = os.environ["ENCRYPTION_KEY"]
+WHATSAPP_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v23.0")
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -103,13 +120,14 @@ TEMPLATES = [
                 'AuthFit.context_processors.gym_context',
                 'AuthFit.context_processors.gym_branding',
                 'AuthFit.context_processors.gym_theme',
+                'AuthFit.context_processors.dashboard_theme',
+                'Gym.context_processors.notification_bell',
             ],
         },
     }
 ]
 
 WSGI_APPLICATION = 'Fitness.wsgi.application'
-
 cloudinary.config(
     cloud_name=os.environ['CLOUDINARY_CLOUD_NAME'],
     api_key=os.environ['CLOUDINARY_API_KEY'],
@@ -204,7 +222,7 @@ SESSION_COOKIE_SECURE   = not DEBUG
 CSRF_COOKIE_HTTPONLY = False   # JS needs to read it for AJAX
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE   = not DEBUG
-
+WHATSAPP_DEFAULT_COUNTRY_CODE = os.getenv("WHATSAPP_DEFAULT_COUNTRY_CODE", "+91")
 # ── File upload limits ────────────────────────────────────────────────────
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
@@ -263,6 +281,24 @@ if not DEBUG:
     SECURE_SSL_REDIRECT            = True
     SECURE_PROXY_SSL_HEADER        = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                {
+                    "address": REDIS_URL,
+                    **(
+                        {"ssl_cert_reqs": None}
+                        if REDIS_URL.startswith("rediss://")
+                        else {}
+                    ),
+                }
+            ],
+        },
+    },
+}
+
 JAZZMIN_SETTINGS = {
     "site_title":   "EnterGYM Admin",
     "site_header":  "EnterGYM Dashboard",
@@ -299,6 +335,8 @@ JAZZMIN_SETTINGS = {
         "Gym.staffprofile",
         "Gym.staffpermission",
         "Gym.orphanuserdeletionlog",
+        "Gym.gymwhatsappsettings",
+        "Gym.whatsappmessagelog",
 
         # 2. Authentication
         "auth",
@@ -353,7 +391,7 @@ JAZZMIN_SETTINGS = {
         "Shop":            "fas fa-store",
         "AuthFit":         "fas fa-dumbbell",
         "billing":         "fas fa-file-invoice-dollar",
-
+        
         # EnterGYM Platform models
         "Gym.gym":                        "fas fa-building",
         "Gym.subscriptionplan":            "fas fa-tags",
@@ -365,6 +403,9 @@ JAZZMIN_SETTINGS = {
         "Gym.staffprofile":                "fas fa-user-shield",
         "Gym.staffpermission":             "fas fa-key",
         "Gym.orphanuserdeletionlog":       "fas fa-user-slash",
+        "Gym.gymwhatsappsettings":  "fab fa-whatsapp",
+        "Gym.whatsappmessagelog":   "fas fa-comment-dots",
+        
 
         # Demo Requests
         "demoRequest.demorequest": "fas fa-comment-dots",
@@ -413,3 +454,5 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ['EMAIL_HOST_USER']
 EMAIL_HOST_PASSWORD = os.environ['EMAIL_HOST_PASSWORD']
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+WHATSAPP_VERIFY_TOKEN = os.environ["WHATSAPP_VERIFY_TOKEN"]
+WHATSAPP_APP_SECRET = os.environ["WHATSAPP_APP_SECRET"]

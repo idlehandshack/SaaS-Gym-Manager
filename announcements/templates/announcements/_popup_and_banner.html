@@ -1,0 +1,36 @@
+{% comment %}
+Include this in home.html (member-facing, request.user.is_authenticated and
+enrolled) right before the closing </body>, alongside the existing
+push_subscribe.js / sw_register.js block. It is intentionally dependency-free
+(vanilla JS) and only activates for logged-in enrolled members — same guard
+used for {% raw %}{% if enrolled %}{% endraw %} elsewhere in home.html.
+
+    {% if enrolled %}
+      {% include 'announcements/_popup_and_banner.html' %}
+    {% endif %}
+{% endcomment %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'announcements/css/announcements.css' %}">
+
+<div id="annScrollBanner" class="ann-scroll-banner" style="display:none;">
+  <div class="ann-scroll-track" id="annScrollTrack"></div>
+</div>
+
+<div id="annPopupOverlay" class="ann-popup-overlay" style="display:none;">
+  <div class="ann-popup-card" id="annPopupCard" role="dialog" aria-modal="true">
+    <div class="ann-popup-header">
+      <span id="annPopupBadge" class="ann-badge"></span>
+      <button id="annPopupClose" class="ann-popup-close" aria-label="Close">&times;</button>
+    </div>
+    <img id="annPopupImage" class="ann-popup-image" style="display:none;">
+    <h3 id="annPopupTitle" class="ann-popup-title"></h3>
+    <div id="annPopupDescription" class="ann-popup-description"></div>
+    <a id="annPopupLink" class="ann-popup-link" target="_blank" rel="noopener noreferrer" style="display:none;">Learn more →</a>
+    <div class="ann-popup-actions">
+      <button id="annPopupDismiss" class="btn btn-outline-secondary btn-sm">Dismiss</button>
+      <button id="annPopupMarkRead" class="btn btn-primary btn-sm">Mark as Read</button>
+    </div>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}" src="{% static 'announcements/js/announcements.js' %}" defer></script>

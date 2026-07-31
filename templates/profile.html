@@ -222,7 +222,50 @@
       border-radius: 50%;
     }
     .avatar-circle:hover img { transform: scale(1.1); }
+    .nav-notif-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--color-white-10);
+      color: var(--color-white-hex);
+      text-decoration: none;
+      margin-left: 10px;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .nav-notif-btn:hover {
+      background: var(--color-primary-a20);
+      color: var(--color-primary);
+    }
+    .nav-notif-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #ff5a00;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      line-height: 1;
+    }
 
+    @media (max-width: 767px) {
+      .nav-notif-btn {
+        width: 32px;
+        height: 32px;
+        margin-left: 8px;
+      }
+    }
     .avatar-initial {
       width: 100%;
       height: 100%;
@@ -617,20 +660,31 @@
         {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
         <span class="acc">Profile</span>
       </a>
-      {% if enrollment %}
-        {% if enrollment.paymentStatus == 'Pending' and gym.upi_enabled and gym.upi_id %}
-          <button type="button" class="nav-badge pay-badge-btn" id="upiPayBtn"
-                  data-pending="{{ enrollment.pendingAmount }}">
-            {% if enrollment.pendingAmount and enrollment.pendingAmount > 0 %}
-              Pay ₹{{ enrollment.pendingAmount|floatformat:0 }}
-            {% else %}
-              Pay Now
-            {% endif %}
-          </button>
-        {% else %}
-          <div class="nav-badge">{{ enrollment.unique_id }}</div>
+      <div style="display:flex; align-items:center; gap:14px;">
+        {% if request.user.is_authenticated and not request.is_gym_staff and not request.is_super_admin %}
+        <a href="{% url 'notification_center' %}" class="nav-notif-btn" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C10.34 2 9 3.34 9 5v.29C6.6 6.17 5 8.4 5 11v4l-1.7 2.55c-.4.6.03 1.45.75 1.45h15.9c.72 0 1.15-.85.75-1.45L19 15v-4c0-2.6-1.6-4.83-4-5.71V5c0-1.66-1.34-3-3-3z" fill="currentColor"/>
+              <path d="M9.5 20a2.5 2.5 0 0 0 5 0h-5z" fill="currentColor"/>
+            </svg>
+            <span id="navNotifBadge" class="nav-notif-badge" style="display:none;"></span>
+          </a>
         {% endif %}
-      {% endif %}
+        {% if enrollment %}
+          {% if enrollment.paymentStatus == 'Pending' and gym.upi_enabled and gym.upi_id %}
+            <button type="button" class="nav-badge pay-badge-btn" id="upiPayBtn"
+                    data-pending="{{ enrollment.pendingAmount }}">
+              {% if enrollment.pendingAmount and enrollment.pendingAmount > 0 %}
+                Pay ₹{{ enrollment.pendingAmount|floatformat:0 }}
+              {% else %}
+                Pay Now
+              {% endif %}
+            </button>
+          {% else %}
+            <div class="nav-badge">{{ enrollment.unique_id }}</div>
+          {% endif %}
+        {% endif %}
+      </div>
     </div>
   </nav>
 
@@ -1177,5 +1231,23 @@
   <script src="{% static 'js/fetch_utils.js' %}" defer></script>
   <script src="{% static 'js/loc_permission.js' %}" defer></script>
   <script src="{% static 'js/geo_attendance.js' %}" defer></script>
+  {% if request.user.is_authenticated and not request.is_gym_staff and not request.is_super_admin %}
+    {% include "member_messages/_popup.html" %}
+    <script nonce="{{ request.csp_nonce }}">
+    (function () {
+      const badge = document.getElementById('msgUnreadBadge');
+      if (!badge) return;
+      fetch("{% url 'api_member_messages_unread_count' %}")
+        .then(r => r.json())
+        .then(data => {
+          if (data.unread_count > 0) {
+            badge.textContent = data.unread_count;
+            badge.style.display = 'inline-block';
+          }
+        })
+        .catch(() => {});
+    })();
+    </script>
+  {% endif %}
 </body>
 </html>

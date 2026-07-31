@@ -1,0 +1,17 @@
+{% comment %}
+communications/_banner.html
+
+Independent banner strip for Platform Communications
+(`show_banner=True`). Renders at whichever `banner_placement` each
+communication specifies (home/dashboard/carousel/top/bottom) — the
+containers below are placement anchors; communications.js decides which
+one(s) to populate per fetched communication. Purely additive: if empty,
+every anchor stays `hidden` and takes up no space.
+
+Not related to, and never populated from, any announcements banner markup.
+{% endcomment %}
+<div id="comm-banner-top" class="comm-banner comm-banner-top" data-placement="top" hidden></div>
+<div id="comm-banner-home" class="comm-banner comm-banner-home" data-placement="home" hidden></div>
+<div id="comm-banner-dashboard" class="comm-banner comm-banner-dashboard" data-placement="dashboard" hidden></div>
+<div id="comm-banner-carousel" class="comm-banner comm-banner-carousel" data-placement="carousel" hidden></div>
+<div id="comm-banner-bottom" class="comm-banner comm-banner-bottom" data-placement="bottom" hidden></div>

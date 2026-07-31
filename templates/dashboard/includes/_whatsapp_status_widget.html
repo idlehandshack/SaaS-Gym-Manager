@@ -1,0 +1,51 @@
+{# dashboard/includes/_whatsapp_status_widget.html #}
+{# Include from dashboard.html's Recent Activity row (or wherever fits):    #}
+{#     {% include "dashboard/includes/_whatsapp_status_widget.html" %}      #}
+{# Requires no context — fetches its own state via /owner/whatsapp/status/ #}
+{# so it never blocks _build_dashboard_context()'s main query set.         #}
+
+<div class="db-card db-whatsapp-widget" id="waStatusWidget">
+  <div class="db-card-header">
+    <h2 class="db-card-title">WhatsApp</h2>
+   <a href="{% url 'whatsapp_settings' %}" class="db-card-header-link">Manage <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span id="waWidgetBadge" class="wa-status-badge wa-status-unconfigured"><i class="bi bi-dash-circle"></i> Loading…</span>
+    <span id="waWidgetBusinessName" class="text-muted small"></span>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+  const badge = document.getElementById('waWidgetBadge');
+  const nameEl = document.getElementById('waWidgetBusinessName');
+  if (!badge) return;
+
+  fetch("{% url 'whatsapp_status' %}", { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then((r) => r.json())
+    .then((data) => {
+      if (!data.configured) {
+        badge.className = 'wa-status-badge wa-status-unconfigured';
+        badge.innerHTML = '<i class="bi bi-dash-circle"></i> Not Configured';
+        return;
+      }
+      if (data.ready) {
+        badge.className = 'wa-status-badge wa-status-connected';
+        badge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Connected';
+      } else if (data.status === 'error') {
+        badge.className = 'wa-status-badge wa-status-error';
+        badge.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> Error';
+      } else {
+        badge.className = 'wa-status-badge wa-status-pending';
+        badge.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + (data.status_display || 'Not Ready');
+      }
+      if (data.business_name) {
+        nameEl.textContent = data.business_name + (data.phone_number ? ' · ' + data.phone_number : '');
+      }
+    })
+    .catch(() => {
+      badge.className = 'wa-status-badge wa-status-unconfigured';
+      badge.innerHTML = '<i class="bi bi-question-circle"></i> Unavailable';
+    });
+});
+</script>

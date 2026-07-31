@@ -285,3 +285,4 @@ def owner_invoice_pdf(request, pk):
 
     # Redirect to Cloudflare R2 — PDF served directly from CDN, not proxied
     return redirect(invoice.pdf_url)
+

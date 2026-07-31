@@ -1,0 +1,76 @@
+<div class="db-card db-members-table-card">
+  {% if page_obj.object_list %}
+  <div class="table-responsive db-members-table-wrap">
+    <table class="table db-members-table align-middle">
+      <thead>
+        <tr>
+          <th>Photo</th>
+          <th>Member Name</th>
+          <th>Unique ID</th>
+          <th>Mobile Number</th>
+          <th>Current Plan</th>
+          <th>Last Payment</th>
+          <th>Expiry Date</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for member in page_obj %}
+      <tr class="db-member-row" data-href="{% url 'member_detail' member.id %}">
+        <td>
+          {% if member.face_image %}
+            <img src="{{ member.face_image.url }}" alt="{{ member.fullname }}" class="db-member-avatar">
+          {% else %}
+            <span class="db-member-avatar db-member-avatar-fallback">{{ member.fullname|slice:":1"|upper }}</span>
+          {% endif %}
+        </td>
+        <td class="db-member-name">{{ member.fullname }}</td>
+        <td>{{ member.unique_id }}</td>
+        <td>{{ member.phone }}</td>
+        <td>{{ member.selectPlan.plan|default:"—" }}</td>
+        <td>
+          {% with lp=member.latest_payment_list|first %}
+            {% if lp %}{{ lp.payment_date|date:"d M Y" }}{% else %}—{% endif %}
+          {% endwith %}
+        </td>
+        <td>{{ member.DueDate|date:"d M Y"|default:"—" }}</td>
+        <td>
+          {% include "dashboard/members/components/_status_badge.html" with status=member.computed_status %}
+        </td>
+        <td class="text-end">
+          <div class="dropdown db-member-actions">
+            <button class="btn db-icon-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+              <li><a class="dropdown-item" href="{% url 'member_detail' member.id %}"><i class="bi bi-person-lines-fill me-2"></i>View Profile</a></li>
+              <li><a class="dropdown-item" href="{% url 'payment_management' %}"><i class="bi bi-cash-stack me-2"></i>Collect Payment</a></li>
+              <li><a class="dropdown-item" href="{% url 'freeze_membership' %}?tab=changeplan&cmp_search={{ member.unique_id }}"><i class="bi bi-arrow-repeat me-2"></i>Renew / Change Plan</a></li>
+              <li>
+                <button type="button" class="dropdown-item db-mark-attendance-btn"
+                        data-member-id="{{ member.id }}"
+                        data-member-name="{{ member.fullname }}">
+                  <i class="bi bi-check2-square me-2"></i>Mark Attendance
+                </button>
+              </li>
+              <li><a class="dropdown-item" target="_blank" rel="noopener" href="https://wa.me/91{{ member.phone }}"><i class="bi bi-whatsapp me-2"></i>WhatsApp</a></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="db-members-empty">
+    <i class="bi bi-people"></i>
+    <p class="db-members-empty-title">No members found</p>
+    <p class="db-members-empty-sub">Try adjusting your search or filters.</p>
+    {% if current_search or current_filter != "all" %}
+      <a href="{% url 'member_list' %}" class="db-clear-filters-link"><i class="bi bi-x-circle"></i> Clear all filters</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>

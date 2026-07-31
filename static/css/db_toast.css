@@ -1,0 +1,70 @@
+/* ── Toast stack positioning ── */
+.db-toast-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1080;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 380px;
+}
+
+/* ── Card look, overriding Bootstrap's default alert box ── */
+.db-toast.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, rgba(0,0,0,.08));
+  border-left: 4px solid var(--db-info, #16a34a);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.14);
+  padding: 12px 40px 12px 14px;
+  font-family: "Barlow", sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text-hi, #111);
+  margin-bottom: 0;
+  animation: db-toast-in .25s ease-out;
+}
+
+.db-toast.alert-success { border-left-color: #16a34a; }
+.db-toast.alert-danger  { border-left-color: #dc2626; }
+.db-toast.alert-warning { border-left-color: #d97706; }
+.db-toast.alert-info    { border-left-color: #2563eb; }
+
+/* Small colored icon before the text, via ::before + Bootstrap Icons font */
+.db-toast.alert::before {
+  font-family: "bootstrap-icons";
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.db-toast.alert-success::before { content: "\f26b"; color: #16a34a; } /* check-circle-fill */
+.db-toast.alert-danger::before  { content: "\f333"; color: #dc2626; } /* exclamation-triangle-fill */
+.db-toast.alert-warning::before { content: "\f333"; color: #d97706; }
+.db-toast.alert-info::before    { content: "\f431"; color: #2563eb; } /* info-circle-fill */
+
+.db-toast .btn-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: .7rem;
+  opacity: .5;
+}
+.db-toast .btn-close:hover { opacity: .9; }
+
+@keyframes db-toast-in {
+  from { transform: translateX(16px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.lac-toast-exists {
+  border-left: 3px solid #f59e0b;
+}
+.lac-toast-exists .lac-toast-header i.bi-clock-history {
+  color: #f59e0b;
+}
+.lac-toast-exists .lac-toast-title {
+  color: #f59e0b;
+}

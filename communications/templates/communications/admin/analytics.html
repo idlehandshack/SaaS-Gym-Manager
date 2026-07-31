@@ -1,0 +1,186 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Communications Analytics — EnterGYM{% endblock %}
+{% block breadcrumb %}Communications Analytics{% endblock %}
+
+{% block content %}
+
+<div class="section-header">
+  <div>
+    <div class="section-title">Communications Analytics</div>
+    <div class="section-sub">Delivery performance across every channel and communication</div>
+  </div>
+  <a class="btn-sm" href="{% url 'communication_list' %}">← Back to list</a>
+</div>
+
+<div class="kpi-grid">
+
+  <div class="kpi-card" style="--kpi-accent:#ff7a0010;--kpi-bg:var(--orange-dim);--kpi-color:var(--orange)">
+    <div class="kpi-header">
+      <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg></div>
+      <span class="kpi-trend neutral">All time</span>
+    </div>
+    <div class="kpi-value">{{ total_communications }}</div>
+    <div class="kpi-label">Total Communications</div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent:#22c55e10;--kpi-bg:var(--green-dim);--kpi-color:var(--green)">
+    <div class="kpi-header">
+      <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg></div>
+      <span class="kpi-trend up">Live now</span>
+    </div>
+    <div class="kpi-value" style="color:var(--green)">{{ active_communications }}</div>
+    <div class="kpi-label">Active Communications</div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent:#3b82f610;--kpi-bg:var(--blue-dim);--kpi-color:var(--blue)">
+    <div class="kpi-header">
+      <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <span class="kpi-trend neutral">Queued</span>
+    </div>
+    <div class="kpi-value">{{ scheduled_communications }}</div>
+    <div class="kpi-label">Scheduled</div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent:#ef444410;--kpi-bg:var(--red-dim);--kpi-color:var(--red)">
+    <div class="kpi-header">
+      <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+      <span class="kpi-trend neutral">Past expiry</span>
+    </div>
+    <div class="kpi-value" style="color:var(--red)">{{ expired_communications }}</div>
+    <div class="kpi-label">Expired</div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent:#22c55e10;--kpi-bg:var(--green-dim);--kpi-color:var(--green)">
+    <div class="kpi-header">
+      <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <span class="kpi-trend up">FCM</span>
+    </div>
+    <div class="kpi-value" style="color:var(--green)">{{ push_delivered }}</div>
+    <div class="kpi-label">Push Delivered</div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent:#ef444410;--kpi-bg:var(--red-dim);--kpi-color:var(--red)">
+    <div class="kpi-header">
+      <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <span class="kpi-trend down">FCM</span>
+    </div>
+    <div class="kpi-value" style="color:var(--red)">{{ push_failed }}</div>
+    <div class="kpi-label">Push Failed</div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent:#a855f710;--kpi-bg:#a855f718;--kpi-color:var(--purple)">
+    <div class="kpi-header">
+      <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <span class="kpi-trend neutral">Lifetime</span>
+    </div>
+    <div class="kpi-value">{{ total_impressions }}</div>
+    <div class="kpi-label">Total Impressions</div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent:#3b82f610;--kpi-bg:var(--blue-dim);--kpi-color:var(--blue)">
+    <div class="kpi-header">
+      <div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <span class="kpi-trend neutral">of delivered</span>
+    </div>
+    <div class="kpi-value">{{ open_rate }}%</div>
+    <div class="kpi-label">Open Rate</div>
+  </div>
+
+</div>
+
+<div class="two-col">
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Daily Communications (last 14 days)</span></div>
+    <div class="card-body">
+      <div style="display:flex;align-items:flex-end;gap:4px;height:120px">
+        {% for day in daily_counts %}
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%">
+          <div style="width:100%;max-width:18px;background:var(--orange);border-radius:3px 3px 0 0;min-height:2px;height:{% widthratio day.count max_daily_count 100 %}%" title="{{ day.date }}: {{ day.count }}"></div>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:.6rem;color:var(--text-muted)">
+        <span>{{ daily_counts.0.date|date:"d M" }}</span>
+        <span>{{ daily_counts.last.date|date:"d M" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Channel Distribution (delivered)</span></div>
+    <div class="card-body">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-secondary);margin-bottom:6px">
+            <span>FCM (Mobile)</span><b style="color:var(--text-primary)">{{ channel_counts.fcm }}</b>
+          </div>
+          <div style="height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:var(--green);width:{% if channel_counts.fcm or channel_counts.web_push %}{% widthratio channel_counts.fcm channel_counts.fcm|add:channel_counts.web_push|default:1 100 %}{% else %}0{% endif %}%"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-secondary);margin-bottom:6px">
+            <span>Web Push / PWA</span><b style="color:var(--text-primary)">{{ channel_counts.web_push }}</b>
+          </div>
+          <div style="height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:var(--blue);width:{% if channel_counts.fcm or channel_counts.web_push %}{% widthratio channel_counts.web_push channel_counts.fcm|add:channel_counts.web_push|default:1 100 %}{% else %}0{% endif %}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="two-col">
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Engagement</span></div>
+    <div class="card-body">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-secondary);margin-bottom:6px">
+            <span>Read Rate</span><b style="color:var(--text-primary)">{{ read_rate }}%</b>
+          </div>
+          <div style="height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:var(--blue);width:{{ read_rate }}%"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-secondary);margin-bottom:6px">
+            <span>Click Rate</span><b style="color:var(--text-primary)">{{ click_rate }}%</b>
+          </div>
+          <div style="height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:var(--green);width:{{ click_rate }}%"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-secondary);margin-bottom:6px">
+            <span>Dismiss Rate</span><b style="color:var(--text-primary)">{{ dismiss_rate }}%</b>
+          </div>
+          <div style="height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:var(--yellow);width:{{ dismiss_rate }}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Notes</span></div>
+    <div class="card-body">
+      <p style="font-size:.8rem;color:var(--text-secondary);line-height:1.7">
+        Rates are computed against delivery-log rows that weren't marked <code>failed</code>.
+        FCM batch sends only get a per-recipient log row once a device reports back an
+        opened/clicked/dismissed/read event via the <code>/api/track/</code> endpoint — until
+        your mobile app wires that up, Open/Read/Click/Dismiss rates for FCM will read low
+        even when delivery itself succeeded. Web push already logs per-recipient.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

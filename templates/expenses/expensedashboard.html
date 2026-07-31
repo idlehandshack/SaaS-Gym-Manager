@@ -1,0 +1,198 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Expenses{% endblock %}
+{% load static %}
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">Expense &amp; Profit Dashboard</h1>
+    <p class="db-page-sub">{{ gym.gym_name }} • {{ today|date:"l, d M Y" }}</p>
+  </div>
+  <a href="{% url 'expenses:list' %}" class="db-visit-site-btn"><i class="bi bi-list-ul"></i> View All Expenses</a>
+</div>
+
+<div class="row g-3 mb-4">
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-cash-coin" label="Monthly Revenue" value=monthly_revenue|floatformat:0 color="primary" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-wallet-fill" label="Monthly Expenses" value=monthly_expense|floatformat:0 color="danger" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-graph-up-arrow" label="Monthly Profit" value=monthly_profit|floatformat:0 color="success" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-calendar-day" label="Today's Expense" value=today_expense|floatformat:0 color="warning" %}
+</div>
+
+<!-- ── Quick Add Expense ─────────────────────────────────────── -->
+<div class="db-card mb-4" style="height:auto;">
+  <div class="db-card-header"><h2 class="db-card-title">Quick Add Expense</h2></div>
+  <form method="post" action="{% url 'expenses:add' %}" enctype="multipart/form-data" id="quickExpenseForm" class="row g-2">
+    {% csrf_token %}
+    <div class="col-12">
+      <div class="d-flex flex-wrap gap-2 mb-2" id="categoryChips">
+        <!-- populated by expenses.js from CATEGORY_DEFAULTS -->
+      </div>
+    </div>
+    <input type="hidden" name="category" id="id_category" value="miscellaneous">
+    <div class="col-md-3">
+      <input type="text" name="title" id="id_title" class="form-control" placeholder="Title" required>
+    </div>
+    <div class="col-md-2">
+      <input type="number" step="0.01" name="amount" class="form-control" placeholder="Amount (₹)" required>
+    </div>
+    <div class="col-md-2">
+      <select name="payment_method" class="form-select" id="id_payment_method">
+        <option value="cash">Cash</option>
+        <option value="upi">UPI</option>
+        <option value="bank">Bank Transfer</option>
+        <option value="credit">Credit Card</option>
+        <option value="debit">Debit Card</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <input type="date" name="expense_date" class="form-control" value="{{ today|date:'Y-m-d' }}">
+    </div>
+    <div class="col-md-3">
+      <input type="file" name="receipt" class="form-control" accept="image/*,application/pdf">
+    </div>
+    <div class="col-md-8">
+      <input type="text" name="note" class="form-control" placeholder="Note (optional)">
+    </div>
+    <div class="col-md-2 form-check ms-2 d-flex align-items-center">
+      <input type="checkbox" name="is_recurring" class="form-check-input me-2" id="id_recurring">
+      <label class="form-check-label small text-muted" for="id_recurring">Recurring monthly</label>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn w-100" style="background:var(--orange); color:#fff;">Add Expense</button>
+    </div>
+  </form>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-5">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header"><h2 class="db-card-title">Expense by Category</h2></div>
+      <canvas id="categoryPieChart" height="220"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header"><h2 class="db-card-title">Revenue vs Expense (12 mo)</h2></div>
+      <canvas id="revenueExpenseChart" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header"><h2 class="db-card-title">Monthly Expense Trend</h2></div>
+      <canvas id="expenseTrendChart" height="160"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header"><h2 class="db-card-title">Profit Trend</h2></div>
+      <canvas id="profitTrendChart" height="160"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+  const palette = {
+    primary: '#ff5a00', success: '#5de87c', danger: '#ef5350', warning: '#f4c542',
+    grid: 'rgba(255,255,255,.06)', text: '#888',
+  };
+  Chart.defaults.color = palette.text;
+  Chart.defaults.font.family = "'Barlow', sans-serif";
+
+  // ── Category chips (quick-entry) ──────────────────────────────
+  const CATEGORY_DEFAULTS = {
+    rent: 'Monthly Gym Rent', salary: 'Staff Salary', electricity: 'Electricity Bill',
+    water: 'Water Bill', internet: 'Internet Bill', cleaning: 'Cleaning Expense',
+    maintenance: 'Maintenance Expense', equipment: 'Gym Equipment Purchase',
+    marketing: 'Marketing Expense', software: 'Software Subscription', tax: 'Tax Payment',
+    refreshments: 'Refreshments', office: 'Office Supplies', transport: 'Transport Expense',
+    repair: 'Equipment Repair', laundry: 'Laundry Expense', security: 'Security Expense',
+    miscellaneous: 'Miscellaneous Expense',
+  };
+  const CATEGORY_LABELS = {
+    rent: '🏠 Rent', salary: '👨 Salary', electricity: '⚡ Electricity', water: '💧 Water',
+    internet: '🌐 Internet', cleaning: '🧹 Cleaning', maintenance: '🛠 Maintenance',
+    equipment: '🏋 Equipment', marketing: '📢 Marketing', software: '💻 Software',
+    tax: '🧾 Tax', refreshments: '🥤 Refreshments', office: '📦 Office', transport: '🚗 Transport',
+    repair: '🔧 Repair', laundry: '🧺 Laundry', security: '🛡 Security', miscellaneous: '➕ Other',
+  };
+  const chipWrap = document.getElementById('categoryChips');
+  const catInput = document.getElementById('id_category');
+  const titleInput = document.getElementById('id_title');
+  Object.entries(CATEGORY_LABELS).forEach(([value, label]) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm';
+    btn.style.cssText = 'background:var(--surface-2); border:1px solid var(--border); color:var(--text-hi);';
+    btn.textContent = label;
+    btn.dataset.category = value;
+    btn.addEventListener('click', function () {
+      chipWrap.querySelectorAll('button').forEach(b => b.style.borderColor = 'var(--border)');
+      btn.style.borderColor = 'var(--orange-bdr)';
+      catInput.value = value;
+      if (!titleInput.value.trim()) titleInput.value = CATEGORY_DEFAULTS[value];
+    });
+    chipWrap.appendChild(btn);
+  });
+
+  // ── Category pie ───────────────────────────────────────────────
+  const categoryData = {{ category_breakdown|default:"[]"|safe }};
+  new Chart(document.getElementById('categoryPieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: categoryData.map(c => c.label),
+      datasets: [{
+        data: categoryData.map(c => c.total),
+        backgroundColor: ['#ff5a00','#5de87c','#ef5350','#f4c542','#7c5cff','#00c2ff','#ff8fab','#c084fc','#34d399','#fbbf24'],
+        borderColor: '#111111', borderWidth: 2,
+      }]
+    },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, color: palette.text } } } }
+  });
+
+  // ── Revenue vs Expense ─────────────────────────────────────────
+  new Chart(document.getElementById('revenueExpenseChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ revenue_vs_expense_labels|default:"[]"|safe }},
+      datasets: [
+        { label: 'Revenue', data: {{ revenue_vs_expense_revenue|default:"[]"|safe }}, backgroundColor: palette.success, borderRadius: 4 },
+        { label: 'Expense', data: {{ revenue_vs_expense_expense|default:"[]"|safe }}, backgroundColor: palette.danger, borderRadius: 4 },
+      ]
+    },
+    options: {
+      plugins: { legend: { labels: { color: palette.text } } },
+      scales: { y: { beginAtZero: true, grid: { color: palette.grid } }, x: { grid: { display: false } } },
+    }
+  });
+
+  // ── Expense trend ──────────────────────────────────────────────
+  new Chart(document.getElementById('expenseTrendChart'), {
+    type: 'line',
+    data: {
+      labels: {{ expense_trend_labels|default:"[]"|safe }},
+      datasets: [{ label: 'Expense', data: {{ expense_trend_data|default:"[]"|safe }}, borderColor: palette.danger, tension: 0.35, fill: false, pointRadius: 2 }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: palette.grid } }, x: { grid: { display: false } } } }
+  });
+
+  // ── Profit trend ────────────────────────────────────────────────
+  new Chart(document.getElementById('profitTrendChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ revenue_vs_expense_labels|default:"[]"|safe }},
+      datasets: [{
+        label: 'Profit', data: {{ revenue_vs_expense_profit|default:"[]"|safe }},
+        backgroundColor: {{ revenue_vs_expense_profit|default:"[]"|safe }}.map(v => v >= 0 ? palette.success : palette.danger),
+        borderRadius: 4,
+      }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: palette.grid } }, x: { grid: { display: false } } } }
+  });
+});
+</script>
+{% endblock %}

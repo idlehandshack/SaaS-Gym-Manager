@@ -1,0 +1,216 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{% if is_edit %}Edit{% else %}New{% endif %} Announcement{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Same approach as the announcements list page: reuse dashboard.css
+     vars/classes, only add what's missing (form field theming, since
+     Django widgets render bare <input>/<select>/<textarea> here). */
+
+  .db-content > .db-card{ height:auto; }
+
+  .db-back-btn{
+    width:34px; height:34px; border-radius:var(--radius-sm);
+    border:1px solid var(--border); background:var(--surface-2); color:var(--text-mid);
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:border-color var(--t) var(--ease), color var(--t) var(--ease);
+  }
+  .db-back-btn:hover{ border-color:var(--orange-bdr); color:var(--orange); }
+
+  .db-form-label{
+    font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.03em;
+    color:var(--text-hi); margin-bottom:.35rem; display:block;   /* was #fff */
+  }
+  .db-form-hint{ font-size:.76rem; color:var(--text-lo); margin-top:.3rem; }
+
+  /* Style whatever Django's widgets render — input/select/textarea */
+  .db-form-card input[type="text"],
+  .db-form-card input[type="url"],
+  .db-form-card input[type="datetime-local"],
+  .db-form-card input[type="file"],
+  .db-form-card select,
+  .db-form-card textarea{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color: var(--text-hi) !important;
+    -webkit-text-fill-color: var(--text-hi);
+    caret-color: var(--text-hi);
+    border-radius:var(--radius-sm);
+    padding:.5rem .75rem;
+    font-size:.87rem;
+    font-family:var(--font-b);
+  }
+  .db-form-card select option{ background:var(--surface-2); color:var(--text-hi); }
+  .db-form-card textarea{ min-height:110px; resize:vertical; }
+  .db-form-card input::placeholder,
+  .db-form-card textarea::placeholder{ color:var(--text-lo); }
+  .db-form-card input:focus,
+  .db-form-card select:focus,
+  .db-form-card textarea:focus{
+    outline:none; border-color:var(--orange-bdr); background:var(--surface-3);
+    box-shadow:0 0 0 .2rem var(--orange-dim);
+  }
+  .db-form-card input[type="file"]{ padding:.4rem .6rem; color:var(--text-mid); }
+  .db-form-card input[type="file"]::file-selector-button{
+    background:var(--surface-3); border:1px solid var(--border); color:var(--text-hi);
+    border-radius:var(--radius-sm); padding:.3rem .7rem; margin-right:.6rem; font-size:.8rem;
+  }
+
+  .db-form-card hr{ border-color:var(--border); opacity:1; margin:.25rem 0; }
+
+  .db-check-group{ display:flex; flex-wrap:wrap; gap:.5rem .5rem; }
+  .db-check{
+    display:flex; align-items:center; gap:.45rem;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-pill);
+    padding:.4rem .8rem .4rem .6rem; font-size:.82rem; color:var(--text-hi);
+    transition:border-color var(--t) var(--ease);
+  }
+  .db-check:has(input:checked){ border-color:var(--orange-bdr); background:var(--orange-dim); color:var(--orange); }
+  .db-check input[type="checkbox"]{
+    width:16px; height:16px; accent-color:var(--orange); margin:0; cursor:pointer;
+  }
+  .db-check label{ cursor:pointer; margin:0; font-weight:500; }
+
+  .db-form-footer{
+    display:flex; justify-content:flex-end; gap:.6rem;
+    border-top:1px solid var(--border); margin:1.25rem -1.2rem -1.1rem; padding:1rem 1.2rem;
+  }
+
+  .db-alert-danger{
+    background:var(--red-dim); border:1px solid var(--red-bdr); color:var(--red);
+    border-radius:var(--radius-sm); padding:.7rem 1rem; font-size:.85rem;
+  }
+  .db-field-error{ color:var(--red); font-size:.78rem; margin-top:.3rem; }
+  .img-thumb-preview{
+    max-height:80px; border-radius:var(--radius-sm); border:1px solid var(--border); margin-top:.5rem; display:block;
+  }
+  .db-form-card textarea {
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff; /* Chrome/Safari */
+      caret-color: #ffffff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="{% url 'announcement_list' %}" class="db-back-btn"><i class="bi bi-arrow-left"></i></a>
+  <h1 class="db-page-title" style="font-size:1.4rem;">{% if is_edit %}Edit Announcement{% else %}New Announcement{% endif %}</h1>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="db-card db-form-card">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+  <div class="db-alert-danger mb-3">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="row g-3">
+    <div class="col-md-8">
+      <label class="db-form-label">Title</label>
+      {{ form.title }}
+      {% if form.title.errors %}<div class="db-field-error">{{ form.title.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-4">
+      <label class="db-form-label">Category</label>
+      {{ form.announcement_type }}
+    </div>
+
+    <div class="col-12">
+      <label class="db-form-label">Description</label>
+      {{ form.description }}
+      {% if form.description.errors %}<div class="db-field-error">{{ form.description.errors }}</div>{% endif %}
+    </div>
+
+    <div class="col-md-4">
+      <label class="db-form-label">Priority</label>
+      {{ form.priority }}
+      <div class="db-form-hint">High: sticky popup until read/dismissed. Medium: shown once. Low: center only.</div>
+    </div>
+    <div class="col-md-4">
+      <label class="db-form-label">Image</label>
+      {{ form.image }}
+      {% if announcement.image %}<img src="{{ announcement.image.url }}" class="img-thumb-preview">{% endif %}
+    </div>
+    <div class="col-md-4">
+      <label class="db-form-label">Attachment</label>
+      {{ form.attachment }}
+    </div>
+
+    <div class="col-md-6">
+      <label class="db-form-label">External Link</label>
+      {{ form.external_link }}
+    </div>
+    <div class="col-md-3">
+      <label class="db-form-label">Publish At</label>
+      {{ form.publish_at }}
+    </div>
+    <div class="col-md-3">
+      <label class="db-form-label">Expires At</label>
+      {{ form.expires_at }}
+      {% if form.expires_at.errors %}<div class="db-field-error">{{ form.expires_at.errors }}</div>{% endif %}
+    </div>
+
+    <div class="col-12"><hr></div>
+
+    <div class="col-md-4">
+      <label class="db-form-label">Target Audience</label>
+      {{ form.target_audience }}
+    </div>
+    <div class="col-md-4" id="wrap-target_plan">
+      <label class="db-form-label">Plan</label>
+      {{ form.target_plan }}
+    </div>
+    <div class="col-md-4" id="wrap-target_trainer">
+      <label class="db-form-label">Trainer</label>
+      {{ form.target_trainer }}
+    </div>
+    <div class="col-12" id="wrap-target_members">
+      <label class="db-form-label">Specific Members</label>
+      {{ form.target_members }}
+    </div>
+
+    <div class="col-12"><hr></div>
+
+    <div class="col-12">
+      <label class="db-form-label">Display Channels</label>
+      <div class="db-check-group">
+        <div class="db-check">{{ form.show_popup }} <label>Popup</label></div>
+        <div class="db-check">{{ form.show_banner }} <label>Website Banner</label></div>
+        <div class="db-check">{{ form.show_web }} <label>Show on Website</label></div>
+        <div class="db-check">{{ form.show_mobile }} <label>Show on Mobile App</label></div>
+        <div class="db-check">{{ form.send_push }} <label>Send Push Notification</label></div>
+        <div class="db-check">{{ form.require_read }} <label>Require Read Confirmation</label></div>
+        <div class="db-check">{{ form.pin_home }} <label>Pin to Home</label></div>
+        <div class="db-check">{{ form.is_active }} <label>Active</label></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="db-form-footer">
+    <a href="{% url 'announcement_list' %}" class="btn db-btn">Cancel</a>
+    <button type="submit" class="btn db-btn db-btn-primary">{% if is_edit %}Save Changes{% else %}Create Announcement{% endif %}</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+  (function () {
+    var audienceSelect = document.getElementById('id_target_audience');
+    var wraps = {
+      plan: document.getElementById('wrap-target_plan'),
+      trainer: document.getElementById('wrap-target_trainer'),
+      specific: document.getElementById('wrap-target_members'),
+    };
+    function sync() {
+      var v = audienceSelect.value;
+      wraps.plan.style.display = v === 'plan' ? '' : 'none';
+      wraps.trainer.style.display = v === 'trainer' ? '' : 'none';
+      wraps.specific.style.display = v === 'specific' ? '' : 'none';
+    }
+    audienceSelect.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+{% endblock %}

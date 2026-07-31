@@ -55,39 +55,20 @@
     {% else %}
       <link rel="stylesheet" href="{% static 'css/home.css' %}">
     {% endif %}
+    <link rel="stylesheet" href="{% static 'css/notification_card.css' %}" />
+    <link rel="stylesheet" href="{% static 'communications/css/communications.css' %}" />
   </head>
   <body>
-    <!-- ===================== NOTIFICATION BAR ===================== -->
-      {% if gym_notifications %}
-      <div class="notif-bar" id="notifBar">
-        <div class="notif-inner">
-          <span class="notif-label">🔔 NOTICE</span>
-
-          <div class="notif-ticker-wrap">
-            <div class="notif-ticker" id="notifTicker">
-              {% for notif in gym_notifications %}
-              <span class="notif-item">
-                {% if notif.icon %}{{ notif.icon }}{% endif %}
-                {{ notif.message }}
-                {% if not forloop.last %}&nbsp;&nbsp;•&nbsp;&nbsp;{% endif %}
-              </span>
-              {% endfor %}
-              <!-- Duplicate for seamless loop -->
-              {% for notif in gym_notifications %}
-              <span class="notif-item" aria-hidden="true">
-                {% if notif.icon %}{{ notif.icon }}{% endif %}
-                {{ notif.message }}
-                {% if not forloop.last %}&nbsp;&nbsp;•&nbsp;&nbsp;{% endif %}
-              </span>
-              {% endfor %}
-            </div>
-          </div>
-
-          <button class="notif-close" id="notifClose" aria-label="Close">×</button>
-        </div>
-      </div>
-      {% endif %}
-      <!-- =================== END NOTIFICATION BAR =================== -->
+    {% if enrolled %}
+      {% include 'announcements/_popup_and_banner.html' %}
+    {% endif %}
+    {% if request.user.is_authenticated and not isStaff and not isSuperuser and enrolled %}
+      {% include "member_messages/_popup.html" %}
+    {% endif %}
+    {% if request.user.is_authenticated %}
+        {% include "communications/_popup.html" %}
+        {% include "communications/_banner.html" %}
+    {% endif %}
     <div id="message-container">
       {% for message in messages %}
       <div
@@ -144,56 +125,19 @@
                 <img src="{% static 'images/Logo1s.png' %}" alt="{{gym.gym_name}} Logo" class="logo-img" />
               {% endif %}
           </a>
-
+          {% if request.user.is_authenticated %}
+          <a href="{% url 'notification_center' %}" class="nav-notif-btn" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C10.34 2 9 3.34 9 5v.29C6.6 6.17 5 8.4 5 11v4l-1.7 2.55c-.4.6.03 1.45.75 1.45h15.9c.72 0 1.15-.85.75-1.45L19 15v-4c0-2.6-1.6-4.83-4-5.71V5c0-1.66-1.34-3-3-3z" fill="currentColor"/>
+              <path d="M9.5 20a2.5 2.5 0 0 0 5 0h-5z" fill="currentColor"/>
+            </svg>
+            <span id="navNotifBadge" class="nav-notif-badge" style="display:none;"></span>
+          </a>
+          {% endif %}
           <ul class="nav-links" id="navLinks">
             {% if isStaff %}
-              <!-- Analytics: reporting & insights -->
-              <li class="dropdown">
-                <a href="#">Analytics ▼</a>
-                <ul class="dropdown-menu">
-                  <li><a href="/ad/revenue/">Revenue Insights</a></li>
-                  {% if geo_attendance_enabled %}
-                  <li><a href="/ad/attendance/">Attendance Analytics</a></li>
-                  {% endif %}
-                  <li><a href="/admin-tools/today-attendance/">Attendance Records</a></li>
-                  <li><a href="/owner/staff-permissions/">Manage Access</a></li>
-                  <li><a href="/owner/attendance/qr/">QR Code</a></li>
-                </ul>
-              </li>
-
-              <!-- Members: roster + membership setup -->
-              <li class="dropdown">
-                <a href="#">Members ▼</a>
-                <ul class="dropdown-menu">
-                  <li><a href="/freeze-membership/">All Members</a></li>
-                  <li><a href="/admin-tools/transferred-members/">Transferred Members</a></li>
-                  <li><a href="/membership-plans/">Membership Plans</a></li>
-                  <li><a href="{% url 'whatsapp_pending' %}">Due Payments</a></li>
-                  <li><a href="/admin-tools/expiry-reminders/">Send Expiry Reminders</a></li>
-                </ul>
-              </li>
-
-              <!-- Operations: setup & support -->
-              <li class="dropdown">
-                <a href="#">Operations ▼</a>
-                <ul class="dropdown-menu">
-                  <li><a href="/trainers/">Add Trainer</a></li>
-                  <li><a href="/quick-enrollment/">Quick Enrollment</a></li>
-                  <li><a href="/settings/upi-payment/">UPI Settings</a></li>
-                  <li><a href="/contact-inquiries/">Support Requests</a></li>
-                  <li><a href="/owner/gym-extras/">Add Services</a></li>
-                  {% if gym.enable_store %}
-                  <li><a href="/manage/orders/">Order Management</a></li>
-                  {% endif %}
-                  <li><a href="#" class="owner-notif-btn">Enable Notifications</a></li>
-                  {% if gym.show_subscription_payment %}
-                    {% if request.staff_role == "gym_owner" or request.staff_role == "receptionist" %}
-                    <li><a href="{% url 'gym_payment_page' %}" style="color:#ff7a00;font-weight:700;">Pay Subscription</a></li>
-                    {% endif %}
-                  {% endif %}
-                </ul>
-              </li>
-
+              <li><a href="/owner/gym-extras/">Setting</a></li>
+              <li><a href="/admin-tools/today-attendance/">Today Attendance</a></li>
             {% else %}
               <li><a href="/">Home</a></li>
               {% if not enrolled %}
@@ -215,8 +159,7 @@
           <div class="nav-right">
             {% if request.user.is_authenticated %}
               {% if isStaff %}
-              <a href="/dashboard/" class="btn">Dashboard</a>
-              <a href="{% url 'payment_management' %}" class="btn">Registrations</a>
+              <a href="/dashboards/" class="btn">Dashboard</a>
               {% else %}
               <a href="/profile/" class="btn">My Profile</a>
 
@@ -320,77 +263,8 @@
 
         <ul class="menu-nav">
         {% if isStaff %}
-
-        <li class="nav-solo"><a href="{% url 'whatsapp_pending' %}">Due Payments <span>↗</span></a></li>
-        {% if geo_attendance_enabled %}
-        <li class="nav-solo"><a href="/admin-tools/today-attendance/">Attendance Records <span>↗</span></a></li>
-        {% endif %}
-        <li class="nav-solo"><a href="/quick-enrollment/">Quick Enrollment <span>↗</span></a></li>
-
-        <!-- Analytics -->
-        <li class="nav-group">
-          <div class="nav-group-trigger">
-            <div class="nav-group-left">
-              <div class="nav-group-icon">📈</div>
-              <span>Analytics</span>
-            </div>
-            <span class="nav-group-arrow">▾</span>
-          </div>
-          <ul class="nav-group-items">
-            <li><a href="/ad/revenue/">Revenue Insights <span>↗</span></a></li>
-            {% if geo_attendance_enabled %}
-            <li><a href="/ad/attendance/">Attendance Analytics <span>↗</span></a></li>
-            {% endif %}
-            <li><a href="/owner/staff-permissions/">Manage Access <span>↗</span></a></li>
-          </ul>
-        </li>
-
-        <!-- Members -->
-        <li class="nav-group">
-          <div class="nav-group-trigger">
-            <div class="nav-group-left">
-              <div class="nav-group-icon">👥</div>
-              <span>Members</span>
-            </div>
-            <span class="nav-group-arrow">▾</span>
-          </div>
-          <ul class="nav-group-items">
-            <li><a href="/freeze-membership/">All Members <span>↗</span></a></li>
-            <li><a href="/admin-tools/transferred-members/">Transferred Members <span>↗</span></a></li>
-          </ul>
-        </li>
-
-        <!-- Operations -->
-        <li class="nav-group">
-          <div class="nav-group-trigger">
-            <div class="nav-group-left">
-              <div class="nav-group-icon">⚙️</div>
-              <span>Operations</span>
-            </div>
-            <span class="nav-group-arrow">▾</span>
-          </div>
-          <ul class="nav-group-items">
-            <li><a href="/admin-tools/expiry-reminders/">Send Expiry Reminders<span>↗</span></a></li>
-            <li><a href="/membership-plans/">Membership Plans <span>↗</span></a></li>
-            <li><a href="/settings/upi-payment/">UPI Settings <span>↗</span></a></li>
-            <li><a href="/trainers/">Add Trainer <span>↗</span></a></li>
-            <li><a href="/contact-inquiries/">Support Requests <span>↗</span></a></li>
-          </ul>
-        </li>
-        {% if gym.enable_store %}
-        <li class="nav-solo"><a href="/manage/orders/">Order Management <span>↗</span></a></li>
-        {% endif %}
-        <li class="nav-solo">
-            <a href="#" class="owner-notif-btn">Enable Notifications</a>
-        </li>
-        {% if gym.show_subscription_payment %}
-          {% if request.staff_role == "gym_owner" or request.staff_role == "receptionist" %}
-        <li class="nav-solo">
-            <a href="{% url 'gym_payment_page' %}" style="color:#ff7a00;">Pay Subscription <span>↗</span></a>
-        </li>
-            {% endif %}
-        {% endif %}
-
+        <li><a href="/owner/gym-extras/">Setting <span>↗</span></a></li>
+        <li><a href="/admin-tools/today-attendance/">Attendnace Records <span>↗</span></a></li>
         {% else %}
         <li class="active"><a href="/">Home <span>↗</span></a></li>
           {% if enrolled and gym.enable_store %}
@@ -931,9 +805,6 @@
       {% if VAPID_PUBLIC_KEY %}
         <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
         <script src="{% static 'js/push_subscribe.js' %}" defer></script>
-        {% if isStaff %}
-        <script src="{% static 'js/owner_notification_permission.js' %}" defer></script>
-        {% endif %}
         <script src="{% static 'js/sw_register.js' %}" defer></script>
       {% endif %}
     {% endif %}
@@ -1043,5 +914,27 @@
     <script src="{% static 'js/fetch_utils.js' %}" defer></script>
     {% endif %}
     <script src="{% static 'js/RefreshTrigger.js' %}" defer></script>
+    {% if request.user.is_authenticated and not isStaff and not isSuperuser and enrolled %}
+    <script nonce="{{ request.csp_nonce }}">
+    (function () {
+      const badge     = document.getElementById('msgUnreadBadge');
+      const badgeM    = document.getElementById('msgUnreadBadgeMobile');
+      const navBadge  = document.getElementById('navNotifBadge');
+      fetch("{% url 'notification_center_unread_count' %}")
+        .then(r => r.json())
+        .then(data => {
+          if (data.unread_count > 0) {
+            if (badge)    { badge.textContent = data.unread_count; badge.style.display = 'inline-block'; }
+            if (badgeM)   { badgeM.textContent = `(${data.unread_count})`; badgeM.style.display = 'inline'; }
+            if (navBadge) { navBadge.textContent = data.unread_count; navBadge.style.display = 'flex'; }
+          }
+        })
+        .catch(() => {});
+    })();
+    </script>
+    {% endif %}
+    {% if request.user.is_authenticated %}
+    <script src="{% static 'communications/js/communications.js' %}" defer></script>
+    {% endif %}
   </body>
 </html>

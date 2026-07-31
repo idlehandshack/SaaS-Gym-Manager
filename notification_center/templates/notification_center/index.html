@@ -1,0 +1,410 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Notifications{% if gym %} | {{ gym.gym_name }}{% endif %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+
+<!-- Same theme switch as home.html — this page follows whatever
+     theme the gym has set (green/blue/pink), not a fixed palette. -->
+{% if gym_theme == 'blue' %}
+<link rel="stylesheet" href="{% static 'css/home_blue.css' %}">
+{% elif gym_theme == 'pink' %}
+<link rel="stylesheet" href="{% static 'css/home_pink.css' %}">
+{% elif gym_theme == 'green' %}
+<link rel="stylesheet" href="{% static 'css/home_green.css' %}">
+{% else %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endif %}
+<link rel="stylesheet" href="{% static 'css/notification_card.css' %}"/>
+
+<style>
+/* Every color/font token below comes from the theme stylesheet loaded
+   above (--color-primary, --color-bg-deep, --color-card-dark,
+   --color-white-XX, --color-text-warm, --color-black-hex,
+   --color-error, etc.) — nothing is redefined here, so switching
+   gym_theme re-skins this page automatically. Only the layout below
+   is new; the palette is untouched. Layout language matches the
+   member Messages inbox (sticky nav, centered header, card list). */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+
+:root{
+  --n-radius-lg:18px;
+  --n-radius-md:12px;
+  --n-radius-sm:8px;
+  --n-radius-pill:40px;
+  --n-nav-h:60px;
+  --n-ease:cubic-bezier(.4,0,.2,1);
+  --n-t:.22s;
+}
+
+body{
+  font-family:"Rajdhani",sans-serif;
+  background:var(--color-bg-deep);
+  color:var(--color-white-88);
+  min-height:100vh;
+  position:relative;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";
+  position:fixed; inset:0; z-index:-1;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--color-primary-a02) 2px,var(--color-primary-a02) 4px);
+  pointer-events:none;
+}
+
+/* ── STICKY NAV ── */
+.notif-nav{
+  position:sticky;top:0;z-index:200;
+  height:var(--n-nav-h);
+  background:var(--color-bg-deep);
+  background:color-mix(in srgb, var(--color-bg-deep) 94%, transparent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--color-white-10);
+  display:flex;align-items:center;
+}
+.nav-inner{
+  width:100%;
+  padding:0 clamp(16px,4vw,40px);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.nav-brand{
+  font-family:"Barlow Condensed",sans-serif;font-weight:800;
+  font-size:clamp(1.1rem,3vw,1.5rem);
+  text-transform:uppercase;text-decoration:none;
+  color:var(--color-white-hex);letter-spacing:-.01em;
+  white-space:nowrap;display:flex;align-items:center;gap:8px;min-width:0;
+  transition:color var(--n-t);
+}
+.nav-brand .acc{color:var(--color-primary)}
+.nav-brand-logo{height:24px;width:auto;flex-shrink:0;border-radius:4px}
+.nav-badge{
+  font-family:"Space Grotesk",sans-serif;font-size:.72rem;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;
+  background:var(--color-primary-a18);color:var(--color-primary);
+  border:1px solid var(--color-primary-a30);
+  padding:5px 14px;border-radius:var(--n-radius-pill);white-space:nowrap;
+}
+
+/* ── PAGE HEADER ── */
+.notif-header{
+  position:relative;
+  padding:clamp(28px,5vw,44px) 0 clamp(20px,3vw,28px);
+  text-align:center;overflow:hidden;
+  border-bottom:1px solid var(--color-white-10);
+  margin-bottom:clamp(20px,3vw,32px);
+}
+.notif-header::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 55% at 50% 0%, var(--color-primary-a18) 0%, transparent 70%);
+  z-index:0;
+}
+.header-inner{position:relative;z-index:1;padding:0 clamp(16px,4vw,40px)}
+.header-eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:"Barlow Condensed",sans-serif;font-size:clamp(.7rem,1.8vw,.82rem);font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--color-primary);
+  margin-bottom:8px;padding:5px 14px;
+  border:1px solid var(--color-primary-a30);border-radius:var(--n-radius-pill);
+  background:var(--color-primary-a18);
+}
+h1.notif-title{
+  font-family:"Barlow Condensed",sans-serif;font-weight:900;
+  font-size:clamp(2rem,7vw,3.2rem);line-height:.95;
+  letter-spacing:-.01em;text-transform:uppercase;color:var(--color-white-hex);
+  display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+  margin-bottom:8px;
+}
+h1.notif-title .acc-title{color:var(--color-primary)}
+.unread-pill{
+  font-family:"Barlow Condensed",sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;
+  background:var(--color-primary-a18);color:var(--color-primary);
+  border:1px solid var(--color-primary-a30);
+  padding:4px 12px;border-radius:20px;
+}
+.notif-sub{
+  font-family:"Rajdhani",sans-serif;font-size:.9rem;
+  color:var(--color-white-50);max-width:440px;margin:0 auto;
+}
+
+/* ── MAIN CONTENT ── */
+.notif-page{
+  max-width:700px;margin:0 auto;
+  padding:0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
+}
+
+/* Filter card */
+.filter-section{
+  background:var(--color-card-dark);
+  border:1px solid var(--color-primary-a18);
+  border-radius:var(--n-radius-lg);
+  padding:clamp(18px,3.5vw,24px);
+  margin-bottom:clamp(18px,3vw,24px);
+}
+.notif-controls{display:flex;gap:10px;flex-wrap:wrap}
+.notif-controls input{
+  flex:1;min-width:200px;
+  background:var(--color-bg-deep);
+  border:1px solid var(--color-primary-a18);
+  border-radius:var(--n-radius-sm);
+  padding:11px 14px;
+  color:var(--color-white-hex);font-family:"Rajdhani",sans-serif;font-size:15px;font-weight:500;
+  transition:border-color .25s;outline:none;
+}
+.notif-controls input::placeholder{color:var(--color-white-30)}
+.notif-controls input:focus{border-color:var(--color-primary)}
+.notif-controls .btn{height:auto;padding:0 22px;font-size:14px}
+
+.notif-tabbar{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.notif-tab{
+  font-family:"Space Grotesk",sans-serif;font-size:.72rem;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:8px 16px;border-radius:var(--n-radius-pill);
+  border:1px solid var(--color-white-10);
+  background:transparent;color:var(--color-white-60);
+  text-decoration:none;transition:background var(--n-t), border-color var(--n-t), color var(--n-t);
+}
+.notif-tab.active{background:var(--color-primary);border-color:var(--color-primary);color:var(--color-black-hex)}
+.notif-tab:hover:not(.active){border-color:var(--color-primary-a55);color:var(--color-white-hex)}
+
+/* ── NOTIFICATION LIST (mirrors msg-inbox-item) ── */
+.notif-list{display:flex;flex-direction:column;gap:12px}
+.notif-item{
+  background:var(--color-card-dark);
+  border:1px solid var(--color-primary-a18);
+  border-radius:var(--n-radius-lg);
+  padding:16px 18px;
+  display:flex;gap:14px;align-items:flex-start;
+  transition:border-color var(--n-t), transform var(--n-t), background var(--n-t);
+}
+.notif-item:hover{border-color:var(--color-primary-a55);background:var(--color-card-dark-hover);transform:translateY(-1px)}
+.notif-item.unread{border-color:var(--color-primary-a55);background:var(--color-card-dark-hover)}
+
+.notif-icon{
+  width:34px;height:34px;border-radius:var(--n-radius-sm);flex-shrink:0;
+  background:var(--color-primary-a18);
+  border:1px solid var(--color-primary-a30);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--color-primary);
+  font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:13px;
+}
+
+.notif-body{flex:1;min-width:0}
+.notif-item-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.notif-source{
+  font-family:"Space Grotesk",sans-serif;font-size:10px;font-weight:700;
+  color:var(--color-white-30);text-transform:uppercase;letter-spacing:1.5px;
+}
+.notif-badge{
+  font-family:"Space Grotesk",sans-serif;font-size:.68rem;font-weight:700;
+  padding:3px 10px;border-radius:var(--n-radius-pill);
+  background:var(--color-white-06);color:var(--color-white-60);
+  text-transform:uppercase;letter-spacing:.05em;
+  border:1px solid var(--color-white-10);
+}
+.notif-badge.priority-high{background:rgba(239,68,68,.10);color:var(--color-error);border-color:rgba(239,68,68,.28)}
+.notif-badge.priority-medium{background:rgba(245,158,11,.10);color:#f59e0b;border-color:rgba(245,158,11,.28)}
+.notif-badge.priority-low{background:var(--color-primary-a18);color:var(--color-primary);border-color:var(--color-primary-a30)}
+
+.notif-item-title{
+  font-family:"Space Grotesk",sans-serif;font-size:1.02rem;font-weight:700;
+  color:var(--color-text-warm);letter-spacing:.01em;margin-bottom:5px;
+}
+.notif-item-desc{font-size:.88rem;color:var(--color-white-70);line-height:1.5;margin-bottom:12px}
+.notif-item-meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.notif-item-time{font-family:"Space Grotesk",sans-serif;font-size:.72rem;color:var(--color-white-30);letter-spacing:.03em}
+.notif-item-actions{display:flex;gap:8px}
+
+.notif-btn-ghost{
+  font-family:"Space Grotesk",sans-serif;font-size:12px;font-weight:600;
+  padding:7px 14px;border-radius:var(--n-radius-sm);
+  border:1px solid var(--color-white-15);background:transparent;color:var(--color-white-70);
+  cursor:pointer;text-decoration:none;letter-spacing:.3px;transition:.2s;
+}
+.notif-btn-ghost:hover{border-color:var(--color-primary);color:var(--color-primary)}
+.notif-btn-solid{
+  font-family:"Space Grotesk",sans-serif;font-size:12px;font-weight:700;
+  padding:7px 14px;border-radius:var(--n-radius-sm);
+  border:none;background:var(--color-primary);color:var(--color-black-hex);
+  cursor:pointer;text-decoration:none;letter-spacing:.3px;transition:background .2s;
+}
+.notif-btn-solid:hover{background:var(--color-primary-hover)}
+
+/* ── EMPTY STATE (mirrors inbox-empty) ── */
+.notif-empty{
+  text-align:center;padding:60px 20px;color:var(--color-white-30);
+}
+.notif-empty-icon{font-size:40px;opacity:.35;margin-bottom:14px}
+.notif-empty p{font-family:"Space Grotesk",sans-serif;font-size:1rem;letter-spacing:.04em;text-transform:uppercase}
+
+/* ── PAGINATION (mirrors inbox-pager) ── */
+.notif-pagination{
+  display:flex;gap:10px;align-items:center;justify-content:center;margin-top:20px;
+}
+.notif-pagination a{
+  font-family:"Space Grotesk",sans-serif;font-size:.78rem;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  background:var(--color-white-06);color:var(--color-white-hex);
+  border:1px solid var(--color-white-10);border-radius:var(--n-radius-sm);
+  padding:8px 16px;text-decoration:none;display:inline-block;
+  transition:background var(--n-t), border-color var(--n-t), color var(--n-t);
+}
+.notif-pagination a:hover{background:var(--color-card-dark-hover);border-color:var(--color-primary-a55);color:var(--color-primary)}
+.notif-pagination .current{color:var(--color-white-60);font-size:.8rem;font-family:"Space Grotesk",sans-serif;letter-spacing:.03em}
+
+@media (max-width:480px){
+  .notif-item{flex-direction:column}
+  .notif-icon{display:none}
+  .notif-item-title{font-size:.95rem}
+  .notif-badge{font-size:.62rem;padding:2px 8px}
+}
+</style>
+</head>
+<body>
+
+<nav class="notif-nav">
+  <div class="nav-inner">
+    {% if isStaff %}
+    <a class="nav-brand" href="/dashboards/">
+    {% else %}
+    <a class="nav-brand" href="/">
+    {% endif %}
+      {% if gym and gym.logo %}
+        <img class="nav-brand-logo" src="{{ gym.logo.url }}" alt="{{ gym.gym_name }} logo"/>
+      {% endif %}
+      <span>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</span>
+      <span class="acc">Notifications</span>
+    </a>
+    <div class="nav-badge">Inbox</div>
+  </div>
+</nav>
+
+<header class="notif-header">
+  <div class="header-inner">
+    <div class="header-eyebrow">Inbox</div>
+    <h1 class="notif-title">Your <span class="acc-title">Notifications</span>
+      {% if unread_count %}<span class="unread-pill">{{ unread_count }} unread</span>{% endif %}
+    </h1>
+    <div class="notif-sub">{{ total_count }} total — everything from your gym, in one place.</div>
+  </div>
+</header>
+
+<main class="notif-page">
+
+  <div class="filter-section">
+    <form class="notif-controls" method="get">
+      <input type="text" name="q" value="{{ filters.q }}" placeholder="Search notifications…"/>
+      {% if filters.type %}<input type="hidden" name="type" value="{{ filters.type }}">{% endif %}
+      {% if filters.status %}<input type="hidden" name="status" value="{{ filters.status }}">{% endif %}
+      <button class="btn notif-btn-solid" type="submit">Search</button>
+    </form>
+
+    <div class="notif-tabbar">
+      <a class="notif-tab {% if not filters.type and not filters.status %}active{% endif %}" href="?q={{ filters.q }}">All</a>
+      {% if role == 'member' %}
+      <a class="notif-tab {% if filters.type == 'announcement' %}active{% endif %}" href="?type=announcement&q={{ filters.q }}">Announcements</a>
+      <a class="notif-tab {% if filters.type == 'message' %}active{% endif %}" href="?type=message&q={{ filters.q }}">Messages</a>
+      {% endif %}
+      <a class="notif-tab {% if filters.type == 'communication' %}active{% endif %}" href="?type=communication&q={{ filters.q }}">Communications</a>
+      <a class="notif-tab {% if filters.status == 'unread' %}active{% endif %}" href="?status=unread&q={{ filters.q }}">Unread</a>
+      <a class="notif-tab {% if filters.status == 'read' %}active{% endif %}" href="?status=read&q={{ filters.q }}">Read</a>
+    </div>
+  </div>
+
+  <div class="notif-list">
+    {% for n in page_obj %}
+      <div class="notif-item {% if not n.is_read %}unread{% endif %}">
+        <div class="notif-icon">{{ n.type_badge|slice:":1"|upper }}</div>
+        <div class="notif-body">
+          <div class="notif-item-top">
+            <span class="notif-source">{{ n.source_label }}</span>
+            <span class="notif-badge">{{ n.type_badge }}</span>
+            <span class="notif-badge priority-{{ n.priority }}">{{ n.priority|title }}</span>
+          </div>
+          <div class="notif-item-title">{{ n.title }}</div>
+          <div class="notif-item-desc">{{ n.description|truncatewords:36 }}</div>
+          <div class="notif-item-meta">
+            <span class="notif-item-time">{{ n.created_at|date:"d M, H:i" }}</span>
+            <div class="notif-item-actions">
+              {% if n.external_link %}<a class="notif-btn-ghost" href="{{ n.external_link }}" target="_blank" rel="noopener">Open →</a>{% endif %}
+              {% if not n.is_read %}
+              <form class="mark-read-form" method="post" action="{% url 'notification_center_mark_read' n.key %}">
+                {% csrf_token %}
+                <button class="notif-btn-solid" type="submit">Mark Read</button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="notif-empty">
+        <div class="notif-empty-icon">✉</div>
+        <p>You're all caught up</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="notif-pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&type={{ filters.type }}&status={{ filters.status }}&q={{ filters.q }}">← Prev</a>{% endif %}
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&type={{ filters.type }}&status={{ filters.status }}&q={{ filters.q }}">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+
+</main>
+
+<script nonce="{{ request.csp_nonce }}">
+document.querySelectorAll('.mark-read-form').forEach(function (form) {
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const btn = form.querySelector('button');
+    if (btn.disabled) return; // guard against double-click
+    btn.disabled = true;
+
+    const card = form.closest('.notif-item');
+    const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(form.action, {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrfToken,
+      },
+      body: new FormData(form),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.success) { btn.disabled = false; return; }
+        if (card) card.classList.remove('unread');
+        form.remove();
+        updateUnreadPill(-1);
+      })
+      .catch(function () {
+        // Network/server hiccup — re-enable so the person can retry.
+        btn.disabled = false;
+      });
+  });
+});
+
+function updateUnreadPill(delta) {
+  const pill = document.querySelector('.unread-pill');
+  if (!pill) return;
+  const current = parseInt(pill.textContent, 10) || 0;
+  const next = Math.max(0, current + delta);
+  if (next === 0) { pill.remove(); return; }
+  pill.textContent = next + ' unread';
+}
+</script>
+
+</body>
+</html>

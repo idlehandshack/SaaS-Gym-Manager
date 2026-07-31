@@ -9,7 +9,7 @@ urlpatterns = [
     path('invoice/<int:pk>/pdf/regen/', views.invoice_pdf_regenerate_view,  name='invoice_pdf_regen'),
     path('gstr1/',                      views.gstr1_export_view,            name='gstr1_export'),
     path('payment/create/',             views.create_payment_view,          name='create_payment'),
-
+    path('invoice/<int:invoice_pk>/refund/', views.issue_refund_view, name='issue_refund'),
     # Owner-only — nested under /billing/owner/
     path('owner/', include('billing.urls_owner')),
     

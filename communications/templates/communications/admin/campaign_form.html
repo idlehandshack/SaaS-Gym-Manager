@@ -1,0 +1,59 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}{% if is_edit %}Edit{% else %}New{% endif %} Campaign — EnterGYM{% endblock %}
+{% block breadcrumb %}{% if is_edit %}Edit Campaign{% else %}New Campaign{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="section-header">
+  <div class="section-title">{% if is_edit %}Edit '{{ campaign.name }}'{% else %}New Campaign{% endif %}</div>
+  <a class="btn-sm" href="{% url 'campaign_list' %}">← Back to list</a>
+</div>
+
+<div class="card" style="max-width:560px">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.name.id_for_label }}">Name</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="form-errors">{{ form.name.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.sponsor.id_for_label }}">Sponsor</label>
+        {{ form.sponsor }}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.budget.id_for_label }}">Budget (₹)</label>
+          {{ form.budget }}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.status.id_for_label }}">Status</label>
+          {{ form.status }}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.start_date.id_for_label }}">Start Date</label>
+          {{ form.start_date }}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.end_date.id_for_label }}">End Date</label>
+          {{ form.end_date }}
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-sm primary">{% if is_edit %}Save Changes{% else %}Create Campaign{% endif %}</button>
+        <a class="btn-sm" href="{% url 'campaign_list' %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

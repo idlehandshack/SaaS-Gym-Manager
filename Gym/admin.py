@@ -3,8 +3,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from cloudinary.utils import cloudinary_url
-from .models import Gym, SubscriptionPlan, StaffProfile , GymGSTProfile ,PlatformSubscriptionPayment ,PlatformSettings ,StaffPermission ,OrphanUserDeletionLog ,EquipmentBrand ,Service
-
+from .models import Gym, SubscriptionPlan, StaffProfile , GymGSTProfile ,PlatformSubscriptionPayment ,PlatformSettings ,StaffPermission ,OrphanUserDeletionLog ,EquipmentBrand ,Service ,GymWhatsAppSettings ,WhatsAppMessageLog,GymAICredit, AICreditTransaction
+from Gym.ai_credit_service import admin_adjust_credits
+from django import forms
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
@@ -322,3 +323,184 @@ class EquipmentBrandAdmin(admin.ModelAdmin):
     @admin.action(description='Mark selected brands as inactive')
     def deactivate_brands(self, request, queryset):
         queryset.update(is_active=False)
+
+@admin.register(GymWhatsAppSettings)
+class GymWhatsAppSettingsAdmin(admin.ModelAdmin):
+    """
+    Read-mostly in Django admin — credentials are managed exclusively
+    through the owner-only dashboard (Gym.whatsapp_views.whatsapp_settings),
+    never re-typed here. The three secret fields
+    (permanent_access_token, webhook_verify_token, webhook_secret) are
+    EncryptedTextFields that decrypt transparently on read, so a normal
+    admin input would print the live plaintext secret on screen — instead
+    they're masked, read-only display fields.
+    """
+    list_display = (
+        'gym', 'status', 'enabled', 'phone_number', 'masked_business_account_id',
+        'verified_at', 'updated_at',
+    )
+    list_filter = ('status', 'enabled')
+    search_fields = ('gym__gym_name', 'gym__gym_code', 'phone_number', 'business_name')
+    autocomplete_fields = ('gym',)
+ 
+    readonly_fields = (
+        'status', 'verified_at', 'last_error', 'created_at', 'updated_at',
+        'masked_permanent_access_token', 'masked_webhook_verify_token', 'masked_webhook_secret',
+    )
+ 
+    fieldsets = (
+        ('Gym', {'fields': ('gym', 'enabled')}),
+        ('Business Identity', {
+            'fields': ('business_name', 'phone_number', 'phone_number_id', 'business_account_id'),
+        }),
+        ('Credentials (masked — managed via the owner dashboard, not here)', {
+            'fields': (
+                'masked_permanent_access_token',
+                'masked_webhook_verify_token',
+                'masked_webhook_secret',
+            ),
+        }),
+        ('Connection Health', {
+            'fields': ('status', 'verified_at', 'last_error'),
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+ 
+    @admin.display(description='Business Account ID')
+    def masked_business_account_id(self, obj):
+        val = obj.business_account_id or ''
+        if len(val) <= 4:
+            return val
+        return f"{'*' * (len(val) - 4)}{val[-4:]}"
+ 
+    def _masked_secret(self, value):
+        if not value:
+            return '— not set —'
+        return format_html('{}', f"{'•' * 12} (set, hidden — edit via the owner dashboard)")
+ 
+    @admin.display(description='Permanent Access Token')
+    def masked_permanent_access_token(self, obj):
+        return self._masked_secret(obj.permanent_access_token)
+ 
+    @admin.display(description='Webhook Verify Token')
+    def masked_webhook_verify_token(self, obj):
+        return self._masked_secret(obj.webhook_verify_token)
+ 
+    @admin.display(description='Webhook Secret')
+    def masked_webhook_secret(self, obj):
+        return self._masked_secret(obj.webhook_secret)
+ 
+    def has_add_permission(self, request):
+        # Rows are created via get_or_create() the first time an owner
+        # opens the WhatsApp settings page — never manually in admin,
+        # matching the has_add_permission=False idiom already used by
+        # OrphanUserDeletionLogAdmin / PlatformSettingsAdmin above.
+        return False
+ 
+ 
+@admin.register(WhatsAppMessageLog)
+class WhatsAppMessageLogAdmin(admin.ModelAdmin):
+    """
+    Pure audit trail — same read-only pattern as OrphanUserDeletionLogAdmin
+    above: has_add_permission/has_change_permission both False,
+    readonly_fields built from every model field via the same
+    list-comprehension idiom.
+    """
+    list_display = (
+        'created_at', 'gym', 'phone', 'message_type', 'template_name',
+        'status', 'status_code', 'deduplication_key_short',
+    )
+    list_filter = ('status', 'message_type', 'gym')
+    search_fields = ('phone', 'message_id', 'deduplication_key', 'gym__gym_name', 'gym__gym_code')
+    date_hierarchy = 'created_at'
+    autocomplete_fields = ('gym', 'member')
+    readonly_fields = [f.name for f in WhatsAppMessageLog._meta.fields]
+ 
+    @admin.display(description='Dedup Key')
+    def deduplication_key_short(self, obj):
+        key = obj.deduplication_key or ''
+        return (key[:40] + '…') if len(key) > 40 else key
+ 
+    def has_add_permission(self, request):
+        return False  # audit log — created only via the sending flow
+ 
+    def has_change_permission(self, request, obj=None):
+        return False
+
+class GymAICreditAdminForm(forms.ModelForm):
+    """
+    Adds two virtual (non-model) fields so a Super Admin can top-up or
+    deduct credits straight from the wallet's admin page, with a mandatory
+    reason. balance/total_used stay read-only — they only ever move
+    through admin_adjust_credits() so the ledger can't drift.
+    """
+    adjustment_amount = forms.IntegerField(
+        required=False, initial=0,
+        help_text="Positive to add credits, negative to deduct. 0 = no change.",
+    )
+    adjustment_reason = forms.CharField(
+        required=False, max_length=255,
+        help_text="Required if Adjustment Amount is non-zero.",
+    )
+
+    class Meta:
+        model = GymAICredit
+        fields = ['gym']
+
+    def clean(self):
+        cleaned = super().clean()
+        amount = cleaned.get('adjustment_amount') or 0
+        reason = (cleaned.get('adjustment_reason') or '').strip()
+        if amount and not reason:
+            raise forms.ValidationError("A reason is required when adjusting credits.")
+        return cleaned
+
+
+@admin.register(GymAICredit)
+class GymAICreditAdmin(admin.ModelAdmin):
+    form = GymAICreditAdminForm
+    list_display = ('gym', 'balance', 'total_used', 'updated_at')
+    search_fields = ('gym__gym_name', 'gym__gym_code')
+    readonly_fields = ('balance', 'total_used', 'created_at', 'updated_at')
+    autocomplete_fields = ('gym',)
+    fieldsets = (
+        ('Gym', {'fields': ('gym',)}),
+        ('Current Wallet (read-only — use Manual Adjustment to change it)', {
+            'fields': ('balance', 'total_used', 'created_at', 'updated_at'),
+        }),
+        ('Manual Adjustment', {
+            'fields': ('adjustment_amount', 'adjustment_reason'),
+            'description': 'Add or deduct AI credits for this gym. Every '
+                            'adjustment is recorded in AI Credit Transactions.',
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        amount = form.cleaned_data.get('adjustment_amount') or 0
+        reason = (form.cleaned_data.get('adjustment_reason') or '').strip()
+        if amount:
+            admin_adjust_credits(obj.gym, delta=amount, reason=reason, created_by=request.user)
+
+    def has_delete_permission(self, request, obj=None):
+        return False  # 1:1 with a gym — deleting one is never a normal admin action
+
+
+@admin.register(AICreditTransaction)
+class AICreditTransactionAdmin(admin.ModelAdmin):
+    """Pure audit trail — same read-only pattern as WhatsAppMessageLogAdmin."""
+    list_display = ('created_at', 'gym', 'credits', 'balance_after', 'reason', 'created_by')
+    list_filter = ('gym',)
+    search_fields = ('gym__gym_name', 'gym__gym_code', 'reason')
+    date_hierarchy = 'created_at'
+    autocomplete_fields = ('gym', 'created_by')
+    readonly_fields = [f.name for f in AICreditTransaction._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

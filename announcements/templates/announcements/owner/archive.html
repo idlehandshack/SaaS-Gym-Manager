@@ -1,0 +1,98 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Announcement Archive{% endblock %}
+
+{% block extra_css %}
+<style nonce="{{ request.csp_nonce }}">
+  /* Same shared theming approach as the announcements list/form pages. */
+  .db-content > .db-card{ height:auto; }
+
+  .db-back-btn{
+    width:34px; height:34px; border-radius:var(--radius-sm);
+    border:1px solid var(--border); background:var(--surface-2); color:var(--text-mid);
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:border-color var(--t) var(--ease), color var(--t) var(--ease);
+  }
+  .db-back-btn:hover{ border-color:var(--orange-bdr); color:var(--orange); }
+
+  .db-badge-pill{
+    font-size:.68rem; font-weight:700; padding:3px 9px; border-radius:var(--radius-pill);
+    text-transform:uppercase; letter-spacing:.02em; display:inline-block; line-height:1.4;
+  }
+  .db-badge-neutral{ background:var(--surface-3); color:var(--text-mid); border:1px solid var(--border); }
+
+  .db-btn-icon{
+    width:32px; height:32px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface-2); color:var(--text-mid);
+    transition:border-color var(--t) var(--ease), color var(--t) var(--ease);
+  }
+  .db-btn-icon:hover{ border-color:var(--orange-bdr); color:var(--orange); }
+  .db-btn-icon-success:hover{ border-color:var(--green-bdr); color:var(--green); }
+
+  .db-table{
+    color:var(--text-hi); margin-bottom:0;
+    /* Bootstrap's .table sets its own bg/color CSS vars (defaults to
+       white bg) which override plain `color:` rules on tr/td. Reset them. */
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-hi);
+    --bs-table-striped-bg: var(--surface-2);
+    --bs-table-striped-color: var(--text-hi);
+    --bs-table-hover-bg: var(--surface-2);
+    --bs-table-hover-color: var(--text-hi);
+    background-color: transparent;
+  }
+  .db-table thead th{
+    color:var(--text-mid); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; font-weight:600;
+    border-bottom:1px solid var(--border); background:transparent; padding:.75rem 1rem;
+  }
+  .db-table td{ border-bottom:1px solid var(--border); padding:.7rem 1rem; vertical-align:middle; font-size:.87rem; }
+  .db-table tbody tr:last-child td{ border-bottom:none; }
+  .db-table tbody tr:hover{ background:var(--surface-2); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="{% url 'announcement_list' %}" class="db-back-btn"><i class="bi bi-arrow-left"></i></a>
+  <h1 class="db-page-title" style="font-size:1.4rem;">Archive</h1>
+</div>
+
+<div class="db-card p-0">
+  <div class="table-responsive">
+    <table class="table db-table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Publish / Expiry</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in page_obj %}
+        <tr>
+          <td>{{ a.title }}</td>
+          <td>{{ a.get_announcement_type_display }}</td>
+          <td class="small" style="color:var(--text-mid);">
+            {{ a.publish_at|date:"d M Y" }}{% if a.expires_at %} – {{ a.expires_at|date:"d M Y" }}{% endif %}
+          </td>
+          <td>
+            {% if a.is_expired %}<span class="db-badge-pill db-badge-neutral">Expired</span>
+            {% else %}<span class="db-badge-pill db-badge-neutral">Inactive</span>{% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'announcement_edit' a.pk %}" class="btn btn-sm db-btn-icon" title="Edit"><i class="bi bi-pencil"></i></a>
+            <form method="post" action="{% url 'announcement_toggle_active' a.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button class="btn btn-sm db-btn-icon db-btn-icon-success" title="Reactivate"><i class="bi bi-arrow-counterclockwise"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center py-5" style="color:var(--text-mid);">Nothing archived.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

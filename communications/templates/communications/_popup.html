@@ -1,0 +1,23 @@
+{% comment %}
+communications/_popup.html
+
+Independent popup container for Platform Communications (`show_popup=True`
+communications, e.g. type=maintenance / type=release). Structurally and
+stylistically separate from announcements/_popup_and_banner.html — no
+{% include %} of it, no shared classes, no shared JS.
+
+communications.js finds this container by #comm-popup-root and renders
+cards into it at runtime from /communications/api/home/. Include this
+once, anywhere after <body>, on every page that should show Communications
+(e.g. gym_home.html, saas_home.html) — it renders nothing if there is
+nothing to show.
+{% endcomment %}
+<div id="comm-popup-root" class="comm-popup-overlay" hidden>
+  <div class="comm-popup-dialog" role="dialog" aria-modal="true" aria-labelledby="comm-popup-title-active">
+    <button type="button" class="comm-popup-close" id="comm-popup-close" aria-label="Close">&times;</button>
+    <div id="comm-popup-content" class="comm-popup-content">
+      <!-- communications.js injects one .comm-card here per queued popup communication -->
+    </div>
+    <div class="comm-popup-pagination" id="comm-popup-pagination" hidden></div>
+  </div>
+</div>

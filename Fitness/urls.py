@@ -15,4 +15,9 @@ urlpatterns = [
     path('', include('reviews.urls_owner')),
     path('', include('demoRequest.urls')),
     path('', include('Gym.urls')),
+    path('', include('announcements.urls')),
+    path('', include('member_messages.urls')),
+    path('expenses/', include(('expenses.urls', 'expenses'), namespace='expenses')),
+    path("communications/",include("communications.urls")),
+    path('notifications/', include('notification_center.urls')),
 ]

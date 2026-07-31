@@ -73,9 +73,12 @@
   <main class="auth-form-col">
     <div class="glow-blob b1"></div>
     <div class="glow-blob b2"></div>
-
+    
     <div class="auth-card">
-
+      <p class="login-text">
+        Already have an account?
+        <a href="{% url 'login' %}">Login</a>
+      </p>
       <div class="auth-mobile-brand">
         {% if gym and gym.logo %}
           <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }}">
@@ -165,11 +168,6 @@
         <button type="submit" class="submit-btn" id="signup-btn">
           Create Account
         </button>
-
-        <p class="login-text">
-          Already have an account?
-          <a href="{% url 'login' %}">Login</a>
-        </p>
       </form>
     </div>
   </main>

@@ -1,5 +1,8 @@
 import logging
+from decimal import Decimal
+
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from billing.models import Payment
@@ -11,16 +14,22 @@ logger = logging.getLogger(__name__)
 
 def ensure_initial_invoice(enrollment):
     """
-    Idempotently create the Payment + Invoice for the payment collected
-    up-front during Quick Enrollment (owner enters paidAmount directly on
-    the Enrollment, bypassing Payment Management, so no Payment/Invoice
-    exists yet).
+    Idempotently create the Payment + Invoice for whatever portion of
+    Enrollment.paidAmount hasn't yet been invoiced.
+
+    Handles both:
+      - The simple case: Quick Enrollment collected money up-front, no
+        Payment/Invoice exists yet at all.
+      - The overlap case: staff recorded a top-up via Payment Management
+        BEFORE profile completion — that creates a Payment for the delta
+        only, so the original up-front amount is still uninvoiced and
+        must be backfilled here, not skipped.
 
     Cheap pre-checks avoid taking a lock on the common "nothing to do" path;
     the real guarantee comes from the row lock + re-checks inside the
     transaction, so concurrent calls (double-submitted Complete Profile,
     retries, etc.) can never create two Payments/Invoices for the same
-    enrollment.
+    uninvoiced amount.
     """
     if enrollment.initial_invoice_generated:
         return None
@@ -49,10 +58,19 @@ def ensure_initial_invoice(enrollment):
         if not locked.paidAmount or locked.paidAmount <= 0:
             return None
 
-        if Payment.objects.filter(enrollment=locked).exists():
-            # Something else (e.g. staff via Payment Management) already
-            # recorded a payment for this enrollment in the meantime.
-            # Nothing to backfill — just mark it settled so we never retry.
+        # ── The ONLY guard that decides how much to invoice ─────────────
+        # Never short-circuit on "a Payment exists" alone — a top-up
+        # Payment covers only its own delta, not the original up-front
+        # amount. Always reconcile against the actual sum.
+        existing_total = (
+            Payment.objects.filter(enrollment=locked)
+            .aggregate(total=Sum('paid_amount'))['total'] or 0
+        )
+        uninvoiced_amount = Decimal(str(locked.paidAmount)) - Decimal(str(existing_total))
+
+        if uninvoiced_amount <= 0:
+            # Fully covered already (e.g. a top-up Payment for >= the
+            # up-front amount already exists) — nothing left to backfill.
             locked.initial_invoice_generated = True
             locked.save(update_fields=["initial_invoice_generated"])
             return None
@@ -70,7 +88,7 @@ def ensure_initial_invoice(enrollment):
             plan_name=locked.selectPlan.plan if locked.selectPlan else '',
             plan_duration_days=locked.selectPlan.duration_days if locked.selectPlan else 30,
             amount=plan_price,
-            paid_amount=locked.paidAmount,
+            paid_amount=uninvoiced_amount,      # ← the actual gap, not locked.paidAmount
             pending_amount=locked.pendingAmount,
             payment_method=locked.paymentMethod or None,
             payment_date=locked.paymentDate or locked.doj or timezone.localdate(),

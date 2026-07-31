@@ -1,0 +1,308 @@
+{% extends "dashboard/base.html" %}
+{% block title %}WhatsApp Settings{% endblock %}
+{% load static %}
+{% block extra_css %}
+<style>
+  .db-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 7px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: transparent;
+    color: #999;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .db-back-btn:hover {
+    border-color: #ff5a00;
+    color: #f5f5f5;
+    background: rgba(255, 90, 0, .06);
+  }
+  .wa-header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 5px 12px;
+  margin-left: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border, #d1d5db);
+  color: var(--text-mid, #374151);
+  text-decoration: none;
+  vertical-align: middle;
+  transition: background 0.15s;
+}
+.wa-header-link:hover {
+  background: var(--bg-hover, #f3f4f6);
+  color: var(--text-mid, #374151);
+}
+.wa-header-link i {
+  font-size: 0.75rem;
+}
+.wa-input-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+#waTestResult {
+  margin-top: 10px;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-all;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.wa-result-success,
+.wa-result-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.wa-result-success i,
+.wa-result-error i {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.wa-result-msgid {
+  display: block;
+  margin-top: 4px;
+  margin-left: 20px;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.75rem;
+  color: var(--text-mid, #6b7280);
+  word-break: break-all;
+}
+</style>
+{% endblock %}
+{% block content %}
+<a href="{% url 'gym_extras' %}" class="db-back-btn">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+  Back to Settings
+</a>
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">
+      WhatsApp Settings
+      <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" class="wa-header-link">
+        <i class="bi bi-box-arrow-up-right"></i> Meta Developer Console
+      </a>
+      <a href="https://business.facebook.com/wa/manage/home/" target="_blank" rel="noopener noreferrer" class="wa-header-link">
+        <i class="bi bi-box-arrow-up-right"></i> WhatsApp Manager
+      </a>
+    </h1>
+    <p class="db-page-sub">
+      Connect {{ gym.gym_name }}'s own WhatsApp Business number — used for membership reminders and payment updates.
+    </p>
+  </div>
+</div>
+
+<div class="wa-settings-page">
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="db-card">
+      <div class="db-card-header">
+        <h2 class="db-card-title">Connection Status</h2>
+      </div>
+      <div class="mb-3">
+        {% if wa_settings.status == 'connected' and wa_settings.enabled %}
+          <span class="wa-status-badge wa-status-connected"><i class="bi bi-check-circle-fill"></i> Connected</span>
+        {% elif wa_settings.status == 'error' %}
+          <span class="wa-status-badge wa-status-error"><i class="bi bi-exclamation-triangle-fill"></i> Error</span>
+        {% elif wa_settings.status == 'disconnected' %}
+          <span class="wa-status-badge wa-status-disconnected"><i class="bi bi-x-circle-fill"></i> Disconnected</span>
+        {% elif wa_settings.status == 'pending' %}
+          <span class="wa-status-badge wa-status-pending"><i class="bi bi-hourglass-split"></i> Pending Verification</span>
+        {% else %}
+          <span class="wa-status-badge wa-status-unconfigured"><i class="bi bi-dash-circle"></i> Not Configured</span>
+        {% endif %}
+      </div>
+
+      {% if wa_settings.last_error %}
+        <div class="wa-alert mb-3">{{ wa_settings.last_error }}</div>
+      {% endif %}
+
+      {% if wa_settings.verified_at %}
+        <p class="wa-verified-note">Last verified: {{ wa_settings.verified_at|date:"d M Y, h:i A" }}</p>
+      {% endif %}
+
+      <form method="post" action="{% url 'whatsapp_verify' %}" class="mb-2">
+        {% csrf_token %}
+        <button type="submit" class="wa-btn-primary">
+          <i class="bi bi-patch-check-fill"></i> Verify &amp; Connect
+        </button>
+      </form>
+
+      {% if wa_settings.status != 'not_configured' %}
+      <form method="post" action="{% url 'whatsapp_disconnect' %}"
+            onsubmit="return confirm('Disconnect WhatsApp for this gym? No further messages will be sent until reconnected.');">
+        {% csrf_token %}
+        <button type="submit" class="wa-btn-outline-danger">
+          <i class="bi bi-x-circle"></i> Disconnect
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="db-card mt-3">
+      <div class="db-card-header">
+        <h2 class="db-card-title">Send Test Message</h2>
+      </div>
+      <p class="wa-hint">Enter a phone number (with or without country code) to confirm delivery.</p>
+      <div class="wa-input-group">
+        <input type="text" id="waTestPhone" class="wa-input" placeholder="9876543210 or +919876543210">
+        <button type="button" id="waSendTestBtn" class="wa-btn-primary">
+          <i class="bi bi-send"></i> Send
+        </button>
+      </div>
+      <div id="waTestResult" class="small"></div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="db-card">
+      <div class="db-card-header">
+        <h2 class="db-card-title">Business &amp; Credentials</h2>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="wa-alert mb-3">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="wa-form-label">Business Name</label>
+            {{ form.business_name }}
+            {% if form.business_name.errors %}<div class="wa-field-error">{{ form.business_name.errors|first }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="wa-form-label">Business Phone Number</label>
+            {{ form.phone_number }}
+            {% if form.phone_number.errors %}<div class="wa-field-error">{{ form.phone_number.errors|first }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="wa-form-label">Phone Number ID</label>
+            {{ form.phone_number_id }}
+            {% if form.phone_number_id.errors %}<div class="wa-field-error">{{ form.phone_number_id.errors|first }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="wa-form-label">Business Account ID</label>
+            {{ form.business_account_id }}
+            {% if form.business_account_id.errors %}<div class="wa-field-error">{{ form.business_account_id.errors|first }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="wa-form-label">Permanent Access Token</label>
+            {{ form.permanent_access_token }}
+            <div class="wa-form-text">{{ form.permanent_access_token.help_text }}</div>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <h2 class="db-card-title mb-3">Reminder Settings</h2>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="wa-form-label">Reminder Before Expiry</label>
+            <div class="wa-radio-group">
+              {% for radio in form.reminder_days_before %}
+                <label class="wa-radio-option">{{ radio.tag }} {{ radio.choice_label }}</label>
+              {% endfor %}
+            </div>
+            {% if form.reminder_days_before.errors %}<div class="wa-field-error">{{ form.reminder_days_before.errors|first }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="wa-form-label">Reminder Time</label>
+            <div class="wa-radio-group">
+              {% for radio in form.reminder_time %}
+                <label class="wa-radio-option">{{ radio.tag }} {{ radio.choice_label }}</label>
+              {% endfor %}
+            </div>
+            {% if form.reminder_time.errors %}<div class="wa-field-error">{{ form.reminder_time.errors|first }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="wa-checkbox-label">
+              {{ form.send_post_expiry_reminder }} Send Reminder After Membership Expiry
+            </label>
+          </div>
+          <div class="col-md-6">
+            <label class="wa-form-label">Time Zone</label>
+            {{ form.timezone }}
+            {% if form.timezone.errors %}<div class="wa-field-error">{{ form.timezone.errors|first }}</div>{% endif %}
+          </div>
+        </div>
+
+        <button type="submit" class="wa-btn-primary mt-4" style="width:auto; padding:.6rem 1.4rem;">
+          <i class="bi bi-save"></i> Save Settings
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+  const sendBtn = document.getElementById('waSendTestBtn');
+  const phoneInput = document.getElementById('waTestPhone');
+  const resultBox = document.getElementById('waTestResult');
+
+  function getCsrfToken() {
+    const el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+  }
+
+  sendBtn.addEventListener('click', function () {
+    const phone = phoneInput.value.trim();
+    if (!phone) {
+      resultBox.innerHTML = '<span class="wa-result-error">Enter a phone number first.</span>';
+      return;
+    }
+
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending...';
+    resultBox.innerHTML = '';
+
+    fetch("{% url 'whatsapp_send_test' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': getCsrfToken(),
+      },
+      body: new URLSearchParams({ phone: phone }),
+    })
+      .then((r) => r.json().then((data) => ({ status: r.status, data })))
+      .then(({ status, data }) => {
+        if (data.success) {
+          resultBox.innerHTML =
+            '<span class="wa-result-success"><i class="bi bi-check-circle-fill"></i>' +
+            '<span>Sent!<span class="wa-result-msgid">' + (data.message_id || '—') + '</span></span>' +
+            '</span>';
+        } else {
+          resultBox.innerHTML = '<span class="wa-result-error"><i class="bi bi-exclamation-triangle-fill"></i>' + (data.error || 'Failed to send.') + '</span>';
+        }
+      })
+      .catch(() => {
+        resultBox.innerHTML = '<span class="wa-result-error">Network error — please try again.</span>';
+      })
+      .finally(() => {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="bi bi-send"></i> Send';
+      });
+  });
+});
+</script>
+{% endblock %}

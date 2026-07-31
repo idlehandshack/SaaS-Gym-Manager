@@ -1,602 +1,280 @@
-{% load static %}
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Revenue Dashboard — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM\
-    {% endif %}</title>
-    {% if favicon_url %}
-    <link rel="icon" href="{{ favicon_url }}">
-    <link rel="shortcut icon" href="{{ favicon_url }}">
+{% extends "dashboard/base.html" %}
+{% block title %}Revenue{% endblock %}
+
+{% block extra_css %}
+<style nonce="{{ request.csp_nonce }}">
+  /* Local overrides — revenue page uses green as its primary accent
+     instead of the dashboard's orange, everything else inherits base */
+  .rev-accent-value   { color: var(--green) !important; }
+  .rev-accent-icon    { background: var(--green-dim) !important; color: var(--green) !important; border-color: var(--green-bdr) !important; }
+  .rev-alert-banner{
+    display:flex; align-items:center; gap:14px;
+    background: var(--yellow-dim); border:1px solid var(--yellow-bdr);
+    border-radius: var(--db-card-radius); padding: 14px 18px; margin-bottom: 1.25rem;
+  }
+  .rev-alert-icon{ font-size:1.3rem; flex-shrink:0; }
+  .rev-alert-text{ font-size:.9rem; font-weight:600; color:#fcd34d; }
+  .rev-alert-text strong{ color: var(--yellow); }
+  .rev-alert-pill{
+    margin-left:auto; flex-shrink:0; font-size:.7rem; font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase; color: var(--yellow);
+    border:1px solid var(--yellow-bdr); background: var(--yellow-dim);
+    padding:4px 12px; border-radius: var(--radius-pill); white-space:nowrap;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">Revenue Dashboard</h1>
+    <p class="db-page-sub">
+      Earnings &amp; payments for {{ gym.gym_name|default:"EnterGYM" }} <span class="date-color">• {{ today|date:"l, d M Y" }}</span>
+    </p>
+  </div>
+</div>
+
+<!-- ── KPI STRIP ─────────────────────────────────────── -->
+<div class="row g-3 mb-2">
+  {% if gst_enabled %}
+    {% include "dashboard/includes/_stat_card.html" with icon="bi-currency-rupee" label="Monthly Revenue" value=month_revenue|floatformat:0 color="success" key="month_revenue" %}
+    {% include "dashboard/includes/_stat_card.html" with icon="bi-bank" label="Monthly Collection" value=month_collection|floatformat:0 color="success" key="month_collection" %}
+    {% include "dashboard/includes/_stat_card.html" with icon="bi-graph-up-arrow" label="Today's Revenue" value=today_revenue|floatformat:0 color="success" key="today_revenue" %}
+    {% include "dashboard/includes/_stat_card.html" with icon="bi-wallet2" label="Today's Collection" value=today_collection|floatformat:0 color="success" key="today_collection" %}
   {% else %}
-    <link rel="icon" href="{% static 'images/favicon.ico' %}">
-    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+    {% include "dashboard/includes/_stat_card.html" with icon="bi-currency-rupee" label="Monthly Income" value=month_collection|floatformat:0 color="success" key="month_income" %}
+    {% include "dashboard/includes/_stat_card.html" with icon="bi-graph-up-arrow" label="Today's Income" value=today_collection|floatformat:0 color="success" key="today_income" %}
   {% endif %}
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+</div>
+<div class="row g-3 mb-4">
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-calendar-week" label="Weekly Income" value=week_collection|floatformat:0 color="primary" key="week_income" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-people-fill" label="Total Members" value=total_members color="primary" key="total_members" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-exclamation-triangle-fill" label="Pending Dues" value=pending_amount|floatformat:0 color="danger" key="pending_dues" %}
+  {% if gst_enabled %}
+    {% include "dashboard/includes/_stat_card.html" with icon="bi-currency-exchange" label="Lifetime Revenue" value=total_revenue|floatformat:0 color="info" key="lifetime_revenue" %}
+  {% else %}
+    {% include "dashboard/includes/_stat_card.html" with icon="bi-currency-exchange" label="Lifetime Income" value=total_collection|floatformat:0 color="info" key="lifetime_income" %}
+  {% endif %}
+</div>
 
-  <style>
-    /* ── DESIGN TOKENS — identical to attendance_analysis.html ── */
-    :root {
-      --bg:          #080808;
-      --surface:     #111111;
-      --surface-2:   #181818;
-      --surface-3:   #1e1e1e;
-      --border:      rgba(255,255,255,.06);
-      --border-2:    rgba(255,255,255,.11);
-      --orange:      #ff5a00;
-      --orange-dim:  rgba(255,90,0,.10);
-      --orange-bdr:  rgba(255,90,0,.28);
-      --green:       #5de87c;
-      --green-dim:   rgba(93,232,124,.10);
-      --green-bdr:   rgba(93,232,124,.28);
-      --red:         #ef5350;
-      --red-dim:     rgba(239,83,80,.10);
-      --red-bdr:     rgba(239,83,80,.28);
-      --blue:        #60a5fa;
-      --blue-dim:    rgba(96,165,250,.10);
-      --blue-bdr:    rgba(96,165,250,.28);
-      --amber:       #f59e0b;
-      --amber-dim:   rgba(245,158,11,.10);
-      --amber-bdr:   rgba(245,158,11,.28);
-      --purple:      #a855f7;
-      --purple-dim:  rgba(168,85,247,.10);
-      --purple-bdr:  rgba(168,85,247,.28);
-      --text-hi:     #f5f5f5;
-      --text-mid:    #888;
-      --text-lo:     #444;
-      --font-d:      "Barlow Condensed", sans-serif;
-      --font-b:      "Barlow", sans-serif;
-      --ease:        cubic-bezier(.4,0,.2,1);
-      --t:           .22s;
-      --radius-lg:   18px;
-      --radius-md:   12px;
-      --radius-sm:   8px;
-      --radius-pill: 40px;
-      --nav-h:       60px;
-    }
+<!-- ── ALERT BANNER ──────────────────────────────────── -->
+{% if pending_count %}
+<div class="rev-alert-banner">
+  <span class="rev-alert-icon">&#128276;</span>
+  <span class="rev-alert-text">
+    <strong>{{ pending_count }} member{{ pending_count|pluralize }}</strong>
+    have outstanding dues totalling <strong>&#8377;{{ pending_amount }}</strong> — follow up required.
+  </span>
+  <span class="rev-alert-pill">Action Required</span>
+</div>
+{% endif %}
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      background: var(--bg);
-      color: var(--text-hi);
-      font-family: var(--font-b);
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-      min-height: 100vh;
-    }
-
-    /* ── STICKY NAV ── */
-    .store-nav {
-      position: sticky; top: 0; z-index: 200;
-      height: var(--nav-h);
-      background: rgba(8,8,8,.94);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center;
-    }
-    .nav-inner {
-      width: 100%; padding: 0 clamp(16px,4vw,40px);
-      display: flex; align-items: center;
-      justify-content: space-between; gap: 12px;
-    }
-    .nav-brand {
-      font-family: var(--font-d); font-weight: 900;
-      font-size: clamp(1.1rem,3vw,1.5rem);
-      text-transform: uppercase; text-decoration: none;
-      color: var(--text-hi); letter-spacing: -.01em;
-      white-space: nowrap; display: flex; align-items: center; gap: 8px;
-      transition: color var(--t);
-    }
-    .nav-brand .acc { color: var(--orange); }
-    .back-icon {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(255,255,255,.06); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: .8rem; flex-shrink: 0;
-      transition: background var(--t);
-    }
-    .nav-brand:hover .back-icon { background: var(--orange-dim); }
-    .nav-brand:hover { color: var(--text-hi); }
-
-    .nav-right { display: flex; align-items: center; gap: 10px; }
-    .nav-badge {
-      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
-      background: var(--orange-dim); color: var(--orange);
-      border: 1px solid var(--orange-bdr);
-      padding: 5px 14px; border-radius: var(--radius-pill);
-      white-space: nowrap;
-    }
-    .live-dot {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
-      color: var(--orange); white-space: nowrap;
-    }
-    .live-dot::before {
-      content: ''; width: 7px; height: 7px;
-      background: var(--orange); border-radius: 50%;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(255,90,0,.4); }
-      50%      { opacity:.7; transform:scale(1.25); box-shadow:0 0 0 5px rgba(255,90,0,0); }
-    }
-
-    /* ── PAGE HEADER ── */
-    .page-header {
-      position: relative;
-      padding: clamp(40px,7vw,72px) 0 clamp(28px,5vw,48px);
-      text-align: center; overflow: hidden;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: clamp(24px,4vw,40px);
-    }
-    .page-header::before {
-      content: ""; position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
-      z-index: 0;
-    }
-    .header-inner { position: relative; z-index: 1; padding: 0 clamp(16px,4vw,40px); }
-    .header-eyebrow {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
-      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--orange); margin-bottom: 10px;
-      padding: 5px 14px;
-      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
-      background: var(--orange-dim);
-    }
-    .page-header h1 {
-      font-family: var(--font-d); font-weight: 900;
-      font-size: clamp(2rem,7vw,3.8rem); line-height: .92;
-      letter-spacing: -.01em; text-transform: uppercase;
-      margin-bottom: 8px; color: var(--text-hi);
-    }
-    .page-header h1 .accent { color: var(--orange); }
-    .header-sub {
-      font-family: var(--font-d); font-size: clamp(.85rem,2.2vw,.98rem);
-      font-weight: 700; letter-spacing: .08em; color: var(--text-mid);
-    }
-    .header-clock {
-      font-family: var(--font-d); font-size: clamp(.75rem,2vw,.85rem);
-      font-weight: 700; letter-spacing: .06em; color: var(--green);
-      margin-top: 6px;
-    }
-
-    /* ── MAIN CONTAINER ── */
-    .analytics-page {
-      max-width: 1100px; margin: 0 auto;
-      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
-    }
-
-    /* ── SECTION LABEL ── */
-    .section-label {
-      display: flex; align-items: center; gap: 10px;
-      margin: clamp(20px,4vw,32px) 0 clamp(10px,2vw,16px);
-    }
-    .section-label span {
-      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
-      letter-spacing: .2em; text-transform: uppercase;
-      color: var(--text-lo); white-space: nowrap;
-    }
-    .section-label::after {
-      content: ""; flex: 1; height: 1px; background: var(--border);
-    }
-
-    /* ── KPI STRIP ── */
-    .kpi-strip {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: clamp(8px,2vw,12px);
-      margin-bottom: clamp(16px,3vw,24px);
-    }
-    .kpi-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-top: 2px solid var(--kpi-color, var(--orange));
-      border-radius: var(--radius-md);
-      padding: clamp(14px,3vw,20px) clamp(12px,2.5vw,18px);
-      position: relative; overflow: hidden;
-      transition: border-color var(--t), background var(--t), transform var(--t);
-      animation: fadeUp .35s var(--ease) both;
-    }
-    .kpi-card::after {
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(ellipse at top left, var(--kpi-tint, rgba(255,90,0,.05)) 0%, transparent 65%);
-      pointer-events: none;
-    }
-    .kpi-card:hover { background: var(--surface-2); transform: translateY(-3px); }
-    .kpi-label {
-      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
-      letter-spacing: .2em; text-transform: uppercase;
-      color: var(--text-lo); margin-bottom: 8px;
-    }
-    .kpi-value {
-      font-family: var(--font-d); font-weight: 900;
-      font-size: clamp(1.6rem,5vw,2.4rem); line-height: 1;
-      color: var(--kpi-color, var(--orange)); margin-bottom: 6px;
-    }
-    .kpi-sub {
-      font-family: var(--font-d); font-size: .72rem; font-weight: 600;
-      color: var(--text-mid); letter-spacing: .04em;
-    }
-    .kpi-icon {
-      position: absolute; right: 12px; bottom: 10px;
-      font-size: 2rem; opacity: .06; line-height: 1;
-      transition: opacity var(--t);
-    }
-    .kpi-card:hover .kpi-icon { opacity: .12; }
-
-    /* ── ALERT BANNER ── */
-    .alert-banner {
-      display: flex; align-items: center; gap: 14px;
-      background: var(--amber-dim); border: 1px solid var(--amber-bdr);
-      border-radius: var(--radius-md); padding: 14px 18px;
-      margin-bottom: clamp(16px,3vw,24px);
-      animation: fadeUp .35s var(--ease) both;
-    }
-    .alert-icon { font-size: 1.4rem; flex-shrink: 0; }
-    .alert-text {
-      font-family: var(--font-d); font-size: clamp(.85rem,2.5vw,1rem);
-      font-weight: 700; color: #fcd34d; letter-spacing: .02em;
-    }
-    .alert-text strong { color: var(--amber); }
-    .alert-pill {
-      margin-left: auto; flex-shrink: 0;
-      font-family: var(--font-d); font-size: .68rem; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
-      color: var(--amber); border: 1px solid var(--amber-bdr);
-      background: var(--amber-dim); padding: 4px 12px;
-      border-radius: var(--radius-pill); white-space: nowrap;
-    }
-
-    /* ── CHART GRID ── */
-    .chart-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: clamp(10px,2vw,14px);
-    }
-    .chart-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: clamp(16px,3vw,22px);
-      overflow: hidden;
-      transition: border-color var(--t);
-      animation: fadeUp .4s var(--ease) both;
-    }
-    .chart-card:hover { border-color: var(--border-2); }
-    .chart-card.wide { grid-column: span 2; }
-    .chart-head {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: clamp(14px,2.5vw,18px);
-      padding-bottom: clamp(10px,2vw,14px);
-      border-bottom: 1px solid var(--border);
-    }
-    .chart-title {
-      font-family: var(--font-d); font-size: clamp(.9rem,2.5vw,1.05rem);
-      font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
-      color: var(--text-hi);
-    }
-    .chart-badge {
-      font-family: var(--font-d); font-size: .62rem; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
-      padding: 4px 10px; border-radius: var(--radius-pill);
-      border: 1px solid; white-space: nowrap;
-    }
-    .badge-orange { color: var(--orange); border-color: var(--orange-bdr); background: var(--orange-dim); }
-    .badge-green  { color: var(--green);  border-color: var(--green-bdr);  background: var(--green-dim); }
-    .badge-blue   { color: var(--blue);   border-color: var(--blue-bdr);   background: var(--blue-dim); }
-    .badge-purple { color: var(--purple); border-color: var(--purple-bdr); background: var(--purple-dim); }
-    canvas { max-height: 240px; }
-
-    /* ── ANIMATIONS ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 1024px) {
-      .kpi-strip { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 768px) {
-      .chart-grid { grid-template-columns: 1fr; }
-      .chart-card.wide { grid-column: span 1; }
-    }
-    @media (max-width: 480px) {
-      .kpi-strip { grid-template-columns: 1fr 1fr; }
-    }
-    @supports (padding: env(safe-area-inset-left)) {
-      .nav-inner {
-        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
-        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- ── STICKY NAV ── -->
-  <nav class="store-nav">
-    <div class="nav-inner">
-      <a class="nav-brand" href="/">
-        <span class="back-icon">&#8592;</span>
-        {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
-        <span class="acc">Revenue</span>
-      </a>
-      <div class="nav-right">
-        <span class="live-dot">Live</span>
-        <div class="nav-badge">{{ pending_count }} Pending</div>
-      </div>
+<!-- ── CHARTS ────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header"><h2 class="db-card-title">Monthly Revenue</h2></div>
+      <canvas id="monthlyChart" height="140"></canvas>
     </div>
-  </nav>
-
-  <!-- ── PAGE HEADER ── -->
-  <header class="page-header">
-    <div class="header-inner">
-      <div class="header-eyebrow">&#128176; Financial Overview</div>
-      <h1>Revenue <span class="accent">Dashboard</span></h1>
-      <div class="header-sub">
-        {% if gym %}{{ gym.gym_name }}{% if gym.city %} · {{ gym.city }}{% endif %}{% else %}EnterGYM{% endif %}
-        &nbsp;·&nbsp; Earnings &amp; Payments
-      </div>
-      <div class="header-clock" id="liveClock">—</div>
+  </div>
+  <div class="col-lg-6">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header"><h2 class="db-card-title">Daily Revenue · 7 Days</h2></div>
+      <canvas id="dailyChart" height="140"></canvas>
     </div>
-  </header>
+  </div>
+</div>
 
-  <!-- ── MAIN ── -->
-  <main class="analytics-page">
-
-    <!-- KPI STRIP -->
-    <div class="section-label"><span>&#128200; Key Metrics</span></div>
-
-    <div class="kpi-strip">
-
-      <div class="kpi-card" style="--kpi-color:var(--orange);--kpi-tint:rgba(255,90,0,.06)" data-delay="0">
-        <div class="kpi-label">Monthly Revenue</div>
-        <div class="kpi-value">&#8377;{{ total_revenue|default:"0" }}</div>
-        <div class="kpi-sub">Total earned this month</div>
-        <span class="kpi-icon">&#8377;</span>
-      </div>
-
-      <div class="kpi-card" style="--kpi-color:var(--green);--kpi-tint:rgba(93,232,124,.06)" data-delay="1">
-        <div class="kpi-label">Weekly Revenue</div>
-        <div class="kpi-value">&#8377;{{ today_revenue|default:"0" }}</div>
-        <div class="kpi-sub">Last 7 days</div>
-        <span class="kpi-icon">&#128200;</span>
-      </div>
-
-      <div class="kpi-card" style="--kpi-color:var(--blue);--kpi-tint:rgba(96,165,250,.06)" data-delay="2">
-        <div class="kpi-label">Total Members</div>
-        <div class="kpi-value">{{ total_members|default:"0" }}</div>
-        <div class="kpi-sub">All registered users</div>
-        <span class="kpi-icon">&#128101;</span>
-      </div>
-
-      <div class="kpi-card" style="--kpi-color:var(--amber);--kpi-tint:rgba(245,158,11,.06)" data-delay="3">
-        <div class="kpi-label">Pending Dues</div>
-        <div class="kpi-value">&#8377;{{ pending_amount|default:"0" }}</div>
-        <div class="kpi-sub">{{ pending_count|default:"0" }} member{{ pending_count|pluralize }} overdue</div>
-        <span class="kpi-icon">&#9888;</span>
-      </div>
-
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header"><h2 class="db-card-title">Member Growth</h2></div>
+      <canvas id="memberChart" height="140"></canvas>
     </div>
-
-    <!-- ALERT BANNER -->
-    {% if pending_count %}
-    <div class="alert-banner">
-      <span class="alert-icon">&#128276;</span>
-      <span class="alert-text">
-        <strong>{{ pending_count }} member{{ pending_count|pluralize }}</strong>
-        have outstanding dues totalling <strong>&#8377;{{ pending_amount }}</strong> — follow up required.
-      </span>
-      <span class="alert-pill">Action Required</span>
+  </div>
+  <div class="col-lg-6">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header"><h2 class="db-card-title">Payment Analytics</h2></div>
+      <canvas id="paymentChart" height="140"></canvas>
     </div>
-    {% endif %}
-
-    <!-- CHARTS -->
-    <div class="section-label"><span>&#128202; Revenue Breakdown</span></div>
-
-    <div class="chart-grid">
-
-      <div class="chart-card">
-        <div class="chart-head">
-          <span class="chart-title">Monthly Revenue</span>
-          <span class="chart-badge badge-orange">Bar</span>
+  </div>
+</div>
+<!-- ── Lifetime Revenue Trend — clean stock-chart style ────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header" style="display:flex; justify-content:space-between; align-items:baseline;">
+        <h2 class="db-card-title">{% if gst_enabled %}Lifetime Revenue Trend{% else %}Lifetime Income Trend{% endif %}</h2>
+        <div style="text-align:right;">
+          <span style="font-size:1.1rem; font-weight:700; color:var(--green);">
+            ₹{% if gst_enabled %}{{ lifetime_total_to_date|floatformat:0 }}{% else %}{{ total_collection|floatformat:0 }}{% endif %}
+          </span>
+          <span style="font-size:.8rem; color:#888; margin-left:6px;">
+            | {{ lifetime_as_of_date }}
+          </span>
+          <span style="font-size:.75rem; margin-left:8px; color:{% if lifetime_trend_up %}var(--green){% else %}#ef5350{% endif %};">
+            {% if lifetime_trend_up %}▲{% else %}▼{% endif %} {{ lifetime_change_pct }}%
+          </span>
         </div>
-        <canvas id="monthlyChart"></canvas>
       </div>
-
-      <div class="chart-card">
-        <div class="chart-head">
-          <span class="chart-title">Daily Revenue · 7 Days</span>
-          <span class="chart-badge badge-green">Line</span>
-        </div>
-        <canvas id="dailyChart"></canvas>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-head">
-          <span class="chart-title">Member Growth</span>
-          <span class="chart-badge badge-blue">Line</span>
-        </div>
-        <canvas id="memberChart"></canvas>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-head">
-          <span class="chart-title">Payment Analytics</span>
-          <span class="chart-badge badge-purple">Doughnut</span>
-        </div>
-        <canvas id="paymentChart"></canvas>
-      </div>
-
+      <canvas id="lifetimeRevenueChart" height="70"></canvas>
     </div>
+  </div>
+</div>
+{% endblock %}
 
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script nonce="{{ request.csp_nonce }}">
-  /* ── LIVE CLOCK ── */
-  (function tick() {
-    const el = document.getElementById('liveClock');
-    const now = new Date();
-    el.textContent = now.toLocaleString('en-IN', {
-      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true
-    });
-    setTimeout(tick, 1000);
-  })();
-
-  /* ── KPI CARD STAGGER ── */
-  document.querySelectorAll('.kpi-card').forEach((card, i) => {
-    card.style.animationDelay = (i * 0.07) + 's';
-  });
-
-  /* ── CHART DEFAULTS ── */
-  Chart.defaults.color       = '#444';
-  Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
-  Chart.defaults.font.family = "'Barlow', sans-serif";
-  Chart.defaults.font.size   = 11;
-
-  const gridStyle = { color: 'rgba(255,255,255,0.05)', drawBorder: false };
-  const tickStyle = { color: '#444', font: { size: 11 } };
-  const tooltipStyle = {
-    backgroundColor: 'rgba(8,8,8,0.95)',
-    borderColor: 'rgba(255,255,255,0.10)', borderWidth: 1,
-    titleColor: '#f5f5f5', bodyColor: '#888',
-    padding: 10, cornerRadius: 8,
-    titleFont: { family: "'Barlow Condensed'", size: 14, weight: '900' },
-    bodyFont:  { family: "'Barlow'", size: 12 },
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+  const palette = {
+    primary: '#ff5a00',
+    success: '#5de87c',
+    danger:  '#ef5350',
+    warning: '#f4c542',
+    grid:    'rgba(255,255,255,.06)',
+    text:    '#888'
   };
+  Chart.defaults.color = palette.text;
+  Chart.defaults.font.family = "'Barlow', sans-serif";
+  const lifetimeCtx = document.getElementById('lifetimeRevenueChart').getContext('2d');
 
-  /* ── MONTHLY REVENUE (Bar) ── */
   new Chart(document.getElementById('monthlyChart'), {
     type: 'bar',
     data: {
-      labels: {{ monthly_labels|safe }},
+      labels: {{ monthly_labels|default:"[]"|safe }},
       datasets: [{
         label: 'Revenue ₹',
-        data: {{ monthly_data|safe }},
-        backgroundColor: 'rgba(255,90,0,0.65)',
-        borderColor: '#ff5a00',
-        borderWidth: 1,
-        borderRadius: 6,
-        borderSkipped: false,
-        hoverBackgroundColor: 'rgba(255,90,0,0.9)',
+        data: {{ monthly_data|default:"[]"|safe }},
+        backgroundColor: 'rgba(93,232,124,0.65)',
+        borderColor: palette.success,
+        borderWidth: 1, borderRadius: 6, borderSkipped: false,
+        hoverBackgroundColor: 'rgba(93,232,124,0.9)',
       }]
     },
     options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: { ...tooltipStyle, callbacks: { label: c => ' ₹' + c.parsed.y } }
-      },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ₹' + c.parsed.y } } },
       scales: {
-        x: { grid: gridStyle, ticks: tickStyle },
-        y: { grid: gridStyle, ticks: { ...tickStyle, callback: v => '₹' + v } }
+        x: { grid: { color: palette.grid }, ticks: { color: palette.text } },
+        y: { grid: { color: palette.grid }, ticks: { color: palette.text, callback: v => '₹' + v } }
       }
     }
   });
-
-  /* ── DAILY REVENUE (Line) ── */
+  new Chart(lifetimeCtx, {
+    type: 'line',
+    data: {
+      labels: {{ lifetime_trend_labels|default:"[]"|safe }},
+      datasets: [{
+        label: 'Revenue',
+        data: {{ lifetime_trend_data|default:"[]"|safe }},
+        borderWidth: 2.5,
+        borderColor: palette.success,
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.15,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: palette.success,
+        pointHoverBorderWidth: 2,
+      }]
+    },
+    options: {
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#161616',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          titleColor: '#fff',
+          bodyColor: '#ccc',
+          callbacks: {
+            label: (item) => `  ₹${item.parsed.y.toLocaleString('en-IN')}`,
+          },
+        },
+      },
+      scales: {
+        // No grid lines, no y-axis ticks — matches the clean reference
+        // style where only the chart line itself carries information.
+        y: { display: false },
+        x: { display: false },
+      },
+    }
+  });
   new Chart(document.getElementById('dailyChart'), {
     type: 'line',
     data: {
-      labels: {{ daily_labels|safe }},
+      labels: {{ daily_labels|default:"[]"|safe }},
       datasets: [{
         label: 'Daily ₹',
-        data: {{ daily_data|safe }},
-        borderColor: '#5de87c',
+        data: {{ daily_data|default:"[]"|safe }},
+        borderColor: palette.success,
         backgroundColor: 'rgba(93,232,124,0.07)',
         borderWidth: 2, tension: 0.4, fill: true,
-        pointBackgroundColor: '#5de87c',
+        pointBackgroundColor: palette.success,
         pointBorderColor: 'rgba(8,8,8,0.8)',
         pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 7,
       }]
     },
     options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: { ...tooltipStyle, callbacks: { label: c => ' ₹' + c.parsed.y } }
-      },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ₹' + c.parsed.y } } },
       scales: {
-        x: { grid: gridStyle, ticks: tickStyle },
-        y: { grid: gridStyle, ticks: { ...tickStyle, callback: v => '₹' + v } }
+        x: { grid: { color: palette.grid }, ticks: { color: palette.text } },
+        y: { grid: { color: palette.grid }, ticks: { color: palette.text, callback: v => '₹' + v } }
       }
     }
   });
 
-  /* ── MEMBER GROWTH (Line) ── */
   new Chart(document.getElementById('memberChart'), {
     type: 'line',
     data: {
-      labels: {{ member_labels|safe }},
+      labels: {{ member_labels|default:"[]"|safe }},
       datasets: [{
         label: 'New Members',
-        data: {{ member_data|safe }},
-        borderColor: '#60a5fa',
-        backgroundColor: 'rgba(96,165,250,0.07)',
+        data: {{ member_data|default:"[]"|safe }},
+        borderColor: palette.primary,
+        backgroundColor: 'rgba(255,90,0,0.07)',
         borderWidth: 2, tension: 0.4, fill: true,
-        pointBackgroundColor: '#60a5fa',
+        pointBackgroundColor: palette.primary,
         pointBorderColor: 'rgba(8,8,8,0.8)',
         pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 7,
       }]
     },
     options: {
-      responsive: true,
-      plugins: { legend: { display: false }, tooltip: tooltipStyle },
+      plugins: { legend: { display: false } },
       scales: {
-        x: { grid: gridStyle, ticks: tickStyle },
-        y: { grid: gridStyle, ticks: tickStyle }
+        x: { grid: { color: palette.grid }, ticks: { color: palette.text } },
+        y: { grid: { color: palette.grid }, ticks: { color: palette.text } }
       }
     }
   });
 
-  /* ── PAYMENT ANALYTICS (Doughnut) ── */
   new Chart(document.getElementById('paymentChart'), {
     type: 'doughnut',
     data: {
-      labels: {{ payment_labels|safe }},
+      labels: {{ payment_labels|default:"[]"|safe }},
       datasets: [{
-        data: {{ payment_data|safe }},
+        data: {{ payment_data|default:"[]"|safe }},
         backgroundColor: [
-          'rgba(255,90,0,0.82)',
           'rgba(93,232,124,0.82)',
-          'rgba(96,165,250,0.82)',
-          'rgba(168,85,247,0.82)',
-          'rgba(245,158,11,0.82)',
+          'rgba(255,90,0,0.82)',
+          'rgba(244,197,66,0.82)',
+          'rgba(239,83,80,0.82)',
         ],
         borderColor: 'rgba(8,8,8,0.9)',
-        borderWidth: 3,
-        hoverOffset: 10,
-        hoverBorderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 3, hoverOffset: 10,
       }]
     },
     options: {
-      responsive: true,
       cutout: '64%',
       plugins: {
-        tooltip: tooltipStyle,
         legend: {
           position: 'bottom',
-          labels: {
-            color: '#888',
-            padding: 16,
-            font: { family: "'Barlow'", size: 11, weight: '500' },
-            usePointStyle: true,
-            pointStyleWidth: 9,
-          }
+          labels: { color: palette.text, padding: 16, usePointStyle: true, pointStyleWidth: 9 }
         }
       }
     }
   });
-  </script>
-
-</body>
-</html>
+});
+</script>
+{% endblock %}

@@ -1,0 +1,424 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% load static %}
+{% block extra_css %}
+<style>
+  .hist-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 1200; }
+  .hist-backdrop.open { display: block; }
+  .hist-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100vw);
+    background: var(--surface, #fff); border-left: 1px solid var(--border-2, #eee);
+    z-index: 1201; overflow-y: auto; transform: translateX(100%);
+    transition: transform .3s ease; padding: 24px;
+  }
+  .hist-panel.open { transform: translateX(0); }
+  .hist-panel-close { width: 32px; height: 32px; background: var(--surface-2, #f5f5f5); border: 1px solid var(--border-2, #eee); color: var(--text-mid, #777); border-radius: 8px; cursor: pointer; margin-bottom: 18px; }
+  .hist-panel h4 { font-weight: 700; font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-lo, #999); margin: 16px 0 8px; }
+  .hist-sub { font-size: .8rem; color: var(--text-mid, #777); }
+  .hist-list { display: flex; flex-direction: column; gap: 8px; }
+  .ai-tx-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface-2, #f8f8f8); border: 1px solid var(--border-2, #eee);
+    border-radius: 8px; padding: 8px 12px; font-size: .8rem;
+  }
+  .ai-tx-row .ai-tx-credits.pos { color: var(--green, #2fae5c); font-weight: 700; }
+  .ai-tx-row .ai-tx-credits.neg { color: var(--orange, #ff5a00); font-weight: 700; }
+  .ai-tx-row .ai-tx-meta { color: var(--text-lo, #999); font-size: .72rem; margin-top: 2px; }
+  .db-stat-card-clickable { cursor: pointer; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">Dashboard Overview</h1>
+    <p class="db-page-sub">
+      Performance summary for {{ gym.gym_name }} <a class="date-color"href="#">• {{ today|date:"l, d M Y" }}</a> 
+    </p>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  {% include "dashboard/includes/_stat_card.html" with key="active_members" icon="bi-people-fill" label="Active Members" value=stats.active_members color="primary" link=member_list_urls.active hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with key="unregistered_members" icon="bi-person-exclamation" label="Unregistered Members" value=stats.unregistered_members color="warning" link=member_list_urls.unregistered hidden_cards=hidden_cards %}
+
+{% if gst_enabled %}
+  {% include "dashboard/includes/_stat_card.html" with key="today_revenue" icon="bi-cash-coin" label="Today's Revenue" value=stats.today_revenue_display color="success" hidden_cards=hidden_cards %}
+  {% include "dashboard/includes/_stat_card.html" with key="today_collection" icon="bi-wallet2" label="Today's Collection" value=stats.today_collection_display color="success" hidden_cards=hidden_cards %}
+  {% include "dashboard/includes/_stat_card.html" with key="month_revenue" icon="bi-graph-up-arrow" label="Monthly Revenue" value=stats.month_revenue_display color="primary" hidden_cards=hidden_cards %}
+  {% include "dashboard/includes/_stat_card.html" with key="month_collection" icon="bi-bank" label="Monthly Collection" value=stats.month_collection_display color="primary" hidden_cards=hidden_cards %}
+{% else %}
+  {% include "dashboard/includes/_stat_card.html" with key="today_income" icon="bi-cash-coin" label="Today's Income" value=stats.today_collection_display color="success" hidden_cards=hidden_cards %}
+  {% include "dashboard/includes/_stat_card.html" with key="month_income" icon="bi-graph-up-arrow" label="Monthly Income" value=stats.month_collection_display color="primary" hidden_cards=hidden_cards %}
+{% endif %}
+
+{% include "dashboard/includes/_stat_card.html" with key="today_attendance" icon="bi-calendar-check-fill" label="Today's Attendance" value=stats.today_attendance color="success" link=member_list_urls.attendance_today hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with key="pending_payments" icon="bi-exclamation-triangle-fill" label="Pending Payments" value=stats.pending_payments color="danger" link=member_list_urls.pending hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with key="pending_amount" icon="bi-wallet-fill" label="Pending Amount" value=stats.pending_amount_display color="danger" link=member_list_urls.pending hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with key="expiring_today" icon="bi-clock-history" label="Expiring Today" value=stats.expiring_today color="warning" link=member_list_urls.expiring_today hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with key="total_trainers" icon="bi-person-badge-fill" label="Total Trainers" value=stats.total_trainers color="info" hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with key="total_staff" icon="bi-person-workspace" label="Total Staff" value=stats.total_staff color="info" hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with key="new_members_month" icon="bi-person-plus-fill" label="New This Month" value=stats.new_members_month color="primary" link=member_list_urls.new_month hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with key="renewals_today" icon="bi-arrow-repeat" label="Renewals Today" value=stats.renewals_today color="success" link=member_list_urls.renewals_today hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with key="ai_credits_balance" icon="bi-stars" label="AI Credits Remaining" value=stats.ai_credits_balance color="info" hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with key="ai_credits_used" icon="bi-cpu-fill" label="AI Credits Used" value=stats.ai_credits_used color="secondary" card_id="aiCreditsUsedCard" hidden_cards=hidden_cards %}
+</div>
+{% if stats.ai_credits_zero %}
+<div class="alert alert-danger" role="alert">
+  You don't have any AI credits remaining. Please contact the administrator.
+</div>
+{% elif stats.ai_credits_low %}
+<div class="alert alert-warning" role="alert">
+  Only {{ stats.ai_credits_balance }} AI credits remaining.
+</div>
+{% endif %}
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="db-card">
+      <div class="db-card-header"><h2 class="db-card-title">Upcoming Expiry</h2></div>
+      <ul class="nav nav-tabs db-tabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#expToday">Today</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#expTomorrow">Tomorrow</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#exp7">7 Days</button></li>
+      </ul>
+      <div class="tab-content db-tab-content">
+        <div class="tab-pane fade show active" id="expToday">
+          {% for m in expiry_today %}
+            <div class="db-mini-row"><span>{{ m.fullname }}</span><span class="text-muted small">{{ m.unique_id }}</span></div>
+          {% empty %}<p class="text-muted small mb-0">None today.</p>{% endfor %}
+        </div>
+        <div class="tab-pane fade" id="expTomorrow">
+          {% for m in expiry_tomorrow %}
+            <div class="db-mini-row"><span>{{ m.fullname }}</span><span class="text-muted small">{{ m.unique_id }}</span></div>
+          {% empty %}<p class="text-muted small mb-0">None tomorrow.</p>{% endfor %}
+        </div>
+        <div class="tab-pane fade" id="exp7">
+          {% for m in expiry_week %}
+            <div class="db-mini-row"><span>{{ m.fullname }}</span><span class="text-muted small">{{ m.unique_id }}</span></div>
+          {% empty %}<p class="text-muted small mb-0">Nothing in the next 7 days.</p>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header">
+        <h2 class="db-card-title">Membership Status</h2>
+      </div>
+      <canvas id="membershipPieChart" height="110"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-3">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header"><h2 class="db-card-title">New Members / Month</h2></div>
+      <canvas id="membersMonthlyChart" height="140"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ── Revenue Trend — stock-ticker style ─────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-7">
+    <div class="db-card db-chart-card db-stock-card">
+      <div class="db-card-header db-stock-header">
+        <div>
+          <h2 class="db-card-title">Revenue Trend</h2>
+          <div class="db-stock-sub">Last 14 days</div>
+        </div>
+        <div class="db-stock-ticker">
+          <div class="db-stock-value">{{ stats.today_revenue_display }}</div>
+          {% if gst_enabled %}
+          <div class="db-stock-sub" style="font-size:.7rem; opacity:.7; margin-top:2px;">
+            Collected: {{ stats.today_collection_display }}
+          </div>
+          {% endif %}
+          <div class="db-stock-badge {% if stats.revenue_trend_up %}up{% else %}down{% endif %}">
+            <i class="bi {% if stats.revenue_trend_up %}bi-caret-up-fill{% else %}bi-caret-down-fill{% endif %}"></i>
+            {{ stats.revenue_change_pct }}%
+          </div>
+        </div>
+      </div>
+      <canvas id="revenueChart" height="105"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="db-card db-chart-card">
+      <div class="db-card-header"><h2 class="db-card-title">Monthly Collection</h2></div>
+      <canvas id="collectionAreaChart" height="105"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="db-card">
+      <div class="db-card-header"><h2 class="db-card-title">Recent Activity</h2></div>
+      <ul class="db-activity-list">
+        {% for item in recent_activity %}
+        <li>
+          <i class="bi {{ item.icon }}"></i>
+          <div>
+            <div class="db-activity-text">{{ item.text }}</div>
+            <div class="db-activity-time">{{ item.when }}</div>
+          </div>
+        </li>
+        {% empty %}
+        <li class="text-muted small">No recent activity yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% include "dashboard/includes/_whatsapp_status_widget.html" %}
+<!-- ── AI Credits: transaction history + 7-day usage analysis ── -->
+<div class="hist-backdrop" id="aiCreditBackdrop"></div>
+<div class="hist-panel" id="aiCreditPanel" role="dialog" aria-modal="true" aria-label="AI credit usage">
+  <button type="button" class="hist-panel-close" id="aiCreditPanelClose" aria-label="Close">✕</button>
+  <h2 class="db-card-title" style="margin-bottom:4px;">AI Credit Activity</h2>
+  <p class="db-page-sub" style="margin-bottom:16px;">Last 10 transactions &amp; 7-day usage analysis</p>
+
+  <h4>7-Day Usage</h4>
+  <canvas id="aiCreditDailyChart" height="140"></canvas>
+  <div id="aiCreditInsight" class="hist-sub" style="margin:12px 0 20px;"></div>
+
+  <h4>Recent Transactions</h4>
+  <div id="aiCreditTxList" class="hist-list" style="margin-top:8px;">Loading…</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+  const rootStyles = getComputedStyle(document.documentElement);
+  const palette = {
+    primary: rootStyles.getPropertyValue('--orange').trim() || '#ff5a00',
+    success: rootStyles.getPropertyValue('--green').trim() || '#5de87c',
+    danger:  rootStyles.getPropertyValue('--red').trim() || '#ef5350',
+    warning: rootStyles.getPropertyValue('--yellow').trim() || '#f4c542',
+    info:    rootStyles.getPropertyValue('--orange').trim() || '#ff5a00',
+    grid:    'rgba(255,255,255,.06)',
+    text:    '#888'
+  };
+
+  Chart.defaults.color = palette.text;
+  Chart.defaults.font.family = "'Barlow', sans-serif";
+
+  // ── Revenue Trend — stock-ticker style line: gradient fill + ─────
+  // per-segment green/red coloring based on whether the value moved
+  // up or down versus the previous day, like a trading chart.
+  const revCtx = document.getElementById('revenueChart').getContext('2d');
+  const revGradient = revCtx.createLinearGradient(0, 0, 0, 260);
+  revGradient.addColorStop(0, 'rgba(93,232,124,.28)');
+  revGradient.addColorStop(1, 'rgba(93,232,124,0)');
+
+  new Chart(revCtx, {
+    type: 'line',
+    data: {
+      labels: {{ revenue_labels|default:"[]"|safe }},
+      datasets: [{
+        label: 'Revenue',
+        data: {{ revenue_data|default:"[]"|safe }},
+        borderWidth: 2,
+        borderColor: palette.success,
+        backgroundColor: revGradient,
+        fill: true,
+        tension: 0,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: '#fff',
+        segment: {
+          borderColor: (ctx) => (ctx.p0.parsed.y > ctx.p1.parsed.y ? palette.danger : palette.success),
+        },
+      }]
+    },
+    options: {
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#161616',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          titleColor: '#fff',
+          bodyColor: '#ccc',
+          callbacks: {
+            label: (item) => `  ₹${item.parsed.y.toLocaleString('en-IN')}`,
+          },
+        },
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: palette.grid }, ticks: { color: palette.text, callback: (v) => '₹' + v } },
+        x: { grid: { display: false }, ticks: { color: palette.text } },
+      },
+    }
+  });
+
+  new Chart(document.getElementById('membershipPieChart'), {
+    type: 'pie',
+    data: {
+      labels: {{ membership_status_labels|default:"[]"|safe }},
+      datasets: [{ data: {{ membership_status_data|default:"[]"|safe }}, backgroundColor:[palette.success, palette.danger, palette.warning], borderColor:'#111111', borderWidth:2 }]
+    },
+    options: { plugins:{legend:{position:'bottom', labels:{color:palette.text}}} }
+  });
+
+  // ── Monthly Collection — smooth spline area chart ────────────────
+  const collCtx = document.getElementById('collectionAreaChart').getContext('2d');
+  const collGradient = collCtx.createLinearGradient(0, 0, 0, 220);
+  collGradient.addColorStop(0, 'rgba(255,90,0,.30)');
+  collGradient.addColorStop(1, 'rgba(255,90,0,0)');
+
+  new Chart(collCtx, {
+    type: 'line',
+    data: {
+      labels: {{ collection_labels|default:"[]"|safe }},
+      datasets: [{
+        label: 'Collection',
+        data: {{ collection_data|default:"[]"|safe }},
+        borderColor: palette.primary,
+        backgroundColor: collGradient,
+        fill: true,
+        cubicInterpolationMode: 'monotone',
+        tension: 0.45,
+        pointRadius: 3,
+        pointBackgroundColor: palette.primary,
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (item) => `  ₹${item.parsed.y.toLocaleString('en-IN')}` } },
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: palette.grid }, ticks: { color: palette.text } },
+        x: { grid: { display: false }, ticks: { color: palette.text } },
+      },
+    }
+  });
+
+  // ── New Members / Month ───────────────────────────────────────────
+  new Chart(document.getElementById('membersMonthlyChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ members_monthly_labels|default:"[]"|safe }},
+      datasets: [{
+        label: 'New Members',
+        data: {{ members_monthly_data|default:"[]"|safe }},
+        backgroundColor: palette.primary,
+        borderRadius: 6,
+        maxBarThickness: 28,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0, color: palette.text }, grid: { color: palette.grid } },
+        x: { grid: { display: false }, ticks: { color: palette.text } },
+      },
+    }
+  });
+});
+</script>
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+  const card = document.getElementById('aiCreditsUsedCard');
+  if (!card) return;
+
+  const panel = document.getElementById('aiCreditPanel');
+  const backdrop = document.getElementById('aiCreditBackdrop');
+  const txList = document.getElementById('aiCreditTxList');
+  const insightEl = document.getElementById('aiCreditInsight');
+  let chartInstance = null;
+  let loaded = false;
+
+  function openPanel() {
+    panel.classList.add('open');
+    backdrop.classList.add('open');
+    if (!loaded) loadData();
+  }
+  function closePanel() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('open');
+  }
+
+  card.addEventListener('click', openPanel);
+  card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPanel(); } });
+  document.getElementById('aiCreditPanelClose').addEventListener('click', closePanel);
+  backdrop.addEventListener('click', closePanel);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  }
+
+  function loadData() {
+    fetch("{% url 'ai_credit_analysis' %}", { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) {
+          txList.innerHTML = '<div class="hist-sub">Could not load AI credit activity.</div>';
+          return;
+        }
+        loaded = true;
+
+        // ── Transaction list ──
+        if (!data.transactions.length) {
+          txList.innerHTML = '<div class="hist-sub">No transactions yet.</div>';
+        } else {
+          txList.innerHTML = data.transactions.map(t => `
+            <div class="ai-tx-row">
+              <div>
+                <div>${escapeHtml(t.reason)}</div>
+                <div class="ai-tx-meta">${t.created_at} · ${escapeHtml(t.created_by)} · balance: ${t.balance_after}</div>
+              </div>
+              <div class="ai-tx-credits ${t.credits >= 0 ? 'pos' : 'neg'}">
+                ${t.credits >= 0 ? '+' : ''}${t.credits}
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // ── Insight line ──
+        const ins = data.insight;
+        insightEl.innerHTML = ins.total_credits_used_7d
+          ? `In the last 7 days, <strong>${ins.total_credits_used_7d}</strong> credit${ins.total_credits_used_7d === 1 ? '' : 's'} were used to import
+             <strong>${ins.total_attendance_7d}</strong> attendance record${ins.total_attendance_7d === 1 ? '' : 's'} —
+             about <strong>${ins.avg_attendance_per_credit}</strong> attendance per credit spent.`
+          : `No AI credits were used in the last 7 days.`;
+
+        // ── 7-day chart ──
+        const ctx = document.getElementById('aiCreditDailyChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: data.daily.map(d => d.date),
+            datasets: [
+              {
+                label: 'Credits Used',
+                data: data.daily.map(d => d.credits_used),
+                backgroundColor: 'rgba(255,90,0,.75)',
+                borderRadius: 5,
+                maxBarThickness: 22,
+              },
+              {
+                label: 'Attendance Imported',
+                data: data.daily.map(d => d.attendance_saved),
+                backgroundColor: 'rgba(93,232,124,.75)',
+                borderRadius: 5,
+                maxBarThickness: 22,
+              },
+            ],
+          },
+          options: {
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+              y: { beginAtZero: true, ticks: { precision: 0 } },
+            },
+          },
+        });
+      })
+      .catch(() => { txList.innerHTML = '<div class="hist-sub">Network error loading AI credit activity.</div>'; });
+  }
+});
+</script>
+{% endblock %}

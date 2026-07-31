@@ -153,7 +153,7 @@ class SendExpiryReminderView(APIView):
         with transaction.atomic():
             gym = Gym.objects.select_for_update().get(pk=gym_pk)
 
-            if gym.last_expiry_reminder_sent_at and gym.last_expiry_reminder_sent_at.date() == today:
+            if gym.last_expiry_reminder_sent_at and timezone.localtime(gym.last_expiry_reminder_sent_at).date() == today:
                 logger.info(
                     "SendExpiryReminderView: duplicate trigger blocked gym=%s user=%s",
                     getattr(gym, "gym_code", gym.id), user_id,

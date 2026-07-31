@@ -6,8 +6,7 @@ from django.http import HttpResponseForbidden
 from cloudinary.utils import cloudinary_url
 from django.utils import timezone
 from .models import (
-    Contact, Trainer, MembershipPlan, Attendence,
-    GymNotification, Enrollment, UserDevice ,LoginSupportQuery
+    Contact, Trainer, MembershipPlan, Attendence, Enrollment, UserDevice ,LoginSupportQuery
 )
 from django.core.exceptions import PermissionDenied
 
@@ -159,28 +158,6 @@ class UserDeviceAdmin(GymScopedAdmin):
         if request.user.is_superuser and 'gym' not in cols:
             cols.insert(0, 'gym')
         return cols
-
-
-@admin.register(GymNotification)
-class GymNotificationAdmin(GymScopedAdmin):
-    list_display  = ['icon', 'message', 'is_active', 'order']
-    list_filter   = ['is_active']
-    list_editable = ['is_active', 'order']
-    ordering      = ['order', 'created_at']
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            qs = qs.select_related('gym')
-        return qs
-
-    # Superuser also sees which gym each notification belongs to
-    def get_list_display(self, request):
-        cols = list(self.list_display)
-        if request.user.is_superuser and 'gym' not in cols:
-            cols.insert(0, 'gym')
-        return cols
-
 
 @admin.register(Contact)
 class ContactAdmin(GymScopedAdmin):

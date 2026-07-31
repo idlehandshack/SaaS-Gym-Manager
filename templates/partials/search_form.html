@@ -10,6 +10,11 @@ preserve on submit (e.g. [("filter", status_filter)]). Pass from the view.
 {% endcomment %}
 
 <style>
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;
+  }
+
   .search-bar {
     display: flex;
     gap: 10px;
@@ -82,23 +87,32 @@ preserve on submit (e.g. [("filter", status_filter)]). Pass from the view.
     box-shadow: 0 0 0 3px var(--orange-glow);
   }
 
+  .search-btn-group {
+    display: flex;
+    gap: 8px;
+  }
+
   .search-submit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: var(--orange);
     color: #000;
     font-family: var(--font-d);
-    font-size: 18px;
+    font-size: 13px;
     font-weight: 800;
-    letter-spacing: .1em;
+    letter-spacing: .08em;
     text-transform: uppercase;
     border: none;
-    text-decoration:none;
+    text-decoration: none;
     border-radius: var(--radius-pill);
-    padding: 1px 2px;
+    padding: 12px 26px;
+    line-height: 1;
     cursor: pointer;
-    text-align:center;
+    text-align: center;
+    white-space: nowrap;
     transition: background var(--t), transform .15s, box-shadow var(--t);
     box-shadow: 0 0 20px rgba(255,90,0,.30);
-    white-space: nowrap;
   }
   .search-submit-btn:hover {
     background: #ff6a1a;
@@ -106,14 +120,43 @@ preserve on submit (e.g. [("filter", status_filter)]). Pass from the view.
     transform: translateY(-1px);
   }
   .search-submit-btn:active { transform: translateY(0); }
+
+  .search-reset-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--text-mid);
+    font-family: var(--font-d);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border-2);
+    text-decoration: none;
+    border-radius: var(--radius-pill);
+    padding: 12px 22px;
+    line-height: 1;
+    cursor: pointer;
+    text-align: center;
+    white-space: nowrap;
+    transition: all var(--t);
+  }
+  .search-reset-btn:hover {
+    border-color: var(--text-hi);
+    color: var(--text-hi);
+  }
+
   @media (max-width: 600px) {
     .search-bar { flex-direction: column; align-items: stretch; }
     .search-select-wrap,
     .search-input,
-    .search-submit-btn,
-    .search-reset-btn { width: 100%; min-width: 0; }
+    .search-btn-group { width: 100%; min-width: 0; }
     .search-select,
     .search-input { min-height: 50px; font-size: 16px; }
+    .search-btn-group { gap: 8px; }
+    .search-submit-btn,
+    .search-reset-btn { flex: 1; padding: 13px 16px; }
   }
 </style>
 
@@ -123,21 +166,27 @@ preserve on submit (e.g. [("filter", status_filter)]). Pass from the view.
   {% endfor %}
 
   <div class="search-select-wrap">
-    <select name="search_by" class="search-select">
+    <label for="{{ field_name|default:'search' }}-by" class="sr-only">Search by</label>
+    <select name="search_by" id="{{ field_name|default:'search' }}-by" class="search-select">
       {% for value, label in search_by_choices %}
         <option value="{{ value }}" {% if value == search_by %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
   </div>
 
+  <label for="{{ field_name|default:'search' }}-input" class="sr-only">Search</label>
   <input
     type="text"
-    name="search"
+    id="{{ field_name|default:'search' }}-input"
+    name="{{ field_name|default:'search' }}"
     value="{{ search }}"
     placeholder="Search..."
     class="search-input"
   />
+  <input type="hidden" name="tab" value="{{ current_tab }}">
 
-  <button type="submit" class="search-submit-btn">Search</button>
-    <a href="?{% for pair in extra_params_list %}{{ pair.0 }}={{ pair.1 }}{% if not forloop.last %}&{% endif %}{% endfor %}" class="search-submit-btn">Reset</a>
+  <div class="search-btn-group">
+    <button type="submit" class="search-submit-btn">Search</button>
+    <a href="?{% for pair in extra_params_list %}{{ pair.0 }}={{ pair.1 }}{% if not forloop.last %}&{% endif %}{% endfor %}" class="search-reset-btn">Reset</a>
+  </div>
 </form>

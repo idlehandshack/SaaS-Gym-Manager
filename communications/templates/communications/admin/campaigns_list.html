@@ -1,0 +1,70 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Campaigns — EnterGYM{% endblock %}
+{% block breadcrumb %}Campaigns{% endblock %}
+
+{% block content %}
+
+<div class="section-header">
+  <div>
+    <div class="section-title">Campaigns</div>
+    <div class="section-sub">Group communications under a sponsor-backed campaign</div>
+  </div>
+  <a class="btn-sm primary" href="{% url 'campaign_create' %}">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New Campaign
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Name</th><th>Sponsor</th><th>Budget</th><th>Start</th><th>End</th><th>Communications</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+      {% for c in page_obj %}
+        <tr>
+          <td style="color:var(--text-primary);font-weight:600">{{ c.name }}</td>
+          <td>{{ c.sponsor.name|default:"—" }}</td>
+          <td>{% if c.budget %}₹{{ c.budget }}{% else %}—{% endif %}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem">{{ c.start_date|date:"d M Y"|default:"—" }}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem">{{ c.end_date|date:"d M Y"|default:"—" }}</td>
+          <td>{{ c.communication_count }}</td>
+          <td>
+            {% if c.status == 'active' %}<span class="badge active">Active</span>
+            {% elif c.status == 'paused' %}<span class="badge expiring">Paused</span>
+            {% elif c.status == 'completed' %}<span class="badge neutral">Completed</span>
+            {% else %}<span class="badge inactive">Draft</span>{% endif %}
+          </td>
+          <td>
+            <div class="action-btns">
+              <a class="btn-icon warn" title="Edit" href="{% url 'campaign_edit' c.pk %}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </a>
+              <form method="post" action="{% url 'campaign_delete' c.pk %}" onsubmit="return confirm('Delete campaign \'{{ c.name|escapejs }}\'?');">
+                {% csrf_token %}
+                <button class="btn-icon danger" type="submit" title="Delete">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8"><div class="empty-state">No campaigns yet.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">← Prev</a>{% endif %}
+    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

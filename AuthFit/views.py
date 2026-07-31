@@ -29,10 +29,10 @@ from django.core.exceptions import PermissionDenied
 import io
 import logging
 from urllib.parse import urlencode
-from Gym.models import Gym                         
+from Gym.models import Gym,GymWhatsAppSettings                         
 from AuthFit.models import (
     Contact, Enrollment, EnrollmentTransfer, MembershipPlan, Trainer,
-    Attendence as Attendence_model, GymNotification
+    Attendence as Attendence_model ,MembershipPlanChangeLog
 )
 from django.db.models import Prefetch
 from django.http import HttpResponseRedirect
@@ -40,6 +40,7 @@ from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth,TruncDay
 from AuthFit.rate_limit import check_login_attempt, reset_attempt, record_failed_attempt ,get_client_ip
 from .forms import UserLogin , CompleteProfileForm , QuickEnrollmentForm ,GymExtrasForm
+from Gym.ai_credit_service import get_or_create_wallet
 from urllib.parse import quote
 from Shop.notifications import notify_staff_new_enrollment
 from django.contrib.auth.hashers import check_password
@@ -67,10 +68,41 @@ from .forms import LoginSupportRequestForm
 from AuthFit.models import LoginSupportQuery
 from AuthFit.support_rate_limit import is_support_request_rate_limited
 from Gym.utils.cloudinary_helpers import cloudinary_thumb
-
+from AuthFit.decorators import active_member_required
+from Gym.services.member_service import get_member_detail_queryset
+from Gym.theme import THEME_PRESETS
+from AuthFit.notifications import notify_member_plan_changed
+from urllib.parse import quote
+from Gym.dashboard_stat_cards import STAT_CARD_REGISTRY
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 ALLOWED_EXTENSIONS  = {'.jpg', '.jpeg', '.png', '.webp'}
 INTERNAL_API_KEY    = os.environ.get("INTERNAL_API_KEY", "")
+
+MESSAGE_TEMPLATES = {
+    "due": [
+        {"key": "friendly", "label": "Friendly Reminder",
+         "text": "Hello {name}! Reminder from {gym}: your payment of Rs.{amount} is pending. Please clear your dues at your earliest convenience. Thank you!"},
+        {"key": "firm", "label": "Firm Follow-up",
+         "text": "Hi {name}, this is a follow-up from {gym} regarding your outstanding payment of Rs.{amount}, due on {due_date}. Kindly clear it soon to keep your membership active."},
+        {"key": "final", "label": "Final Notice",
+         "text": "Dear {name}, your payment of Rs.{amount} to {gym} is still pending. This is a final reminder — please pay at the earliest to avoid suspension of services."},
+    ],
+    "expiring": [
+        {"key": "friendly", "label": "Friendly Reminder",
+         "text": "Hello {name}! Reminder from {gym}: your membership is expiring on {due_date}. Please renew soon to avoid interruption. Thank you!"},
+        {"key": "offer", "label": "Renewal Nudge",
+         "text": "Hi {name}, just a heads up — your membership at {gym} ends on {due_date}. Renew now to keep your streak going without any gap!"},
+    ],
+    "expired": [
+        {"key": "friendly", "label": "Friendly Reminder",
+         "text": "Hello {name}! Your membership at {gym} expired on {due_date}. Please renew to continue access. Thank you!"},
+        {"key": "winback", "label": "We Miss You",
+         "text": "Hi {name}, we miss you at {gym}! Your membership expired on {due_date}. Come back and renew today — we'd love to see you around again."},
+    ],
+}
+
+def _gym_name(e):
+    return e.gym.gym_name if e.gym else "EnterGYM"
 
 def robots_txt(request):
     content = """
@@ -92,11 +124,6 @@ def custom_403_view(request, exception=None):
 
 MANIFEST_CACHE_TTL = 60 * 60 * 6  # 6 hours
 def manifest(request):
-    """
-    GET /manifest.json
-    Per-tenant PWA manifest built from request.gym's logo, favicon,
-    splash_logo, app_name, app_short_name, theme_color. No auth required.
-    """
     gym = getattr(request, 'gym', None)
     cache_key = f"manifest_{gym.pk if gym else 'default'}"
 
@@ -144,9 +171,6 @@ def manifest(request):
     response["Cache-Control"] = "public, max-age=3600"
     return response
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Helpers
-# ──────────────────────────────────────────────────────────────────────────────
 def _superuser_required_local(view_fn):
     @login_required
     @functools.wraps(view_fn)
@@ -157,10 +181,6 @@ def _superuser_required_local(view_fn):
     return wrapped
 
 def gym_favicon(request):
-    """
-    Serves the gym's favicon. Falls back to a default if none is set.
-    Called by <link rel="icon" href="/favicon.ico"> in your base template.
-    """
     gym = getattr(request, 'gym', None)
 
     if gym and gym.favicon:
@@ -188,8 +208,6 @@ def gym_favicon(request):
 
         if favicon_url:
             return HttpResponseRedirect(favicon_url)
-
-    # Fall back to your static default favicon
     from django.templatetags.static import static
     return HttpResponseRedirect(static('favicon.ico'))
 
@@ -222,12 +240,8 @@ def _send_password_reset_email(request, user, gym):
             logger.exception("Password reset email failed to send — user_id=%s", user.id)
 
 def _build_attendance_entry(rec):
-    """Builds the display dict for one Attendence row. Shared by today + history views."""
-    enrollment = (
-        rec.user.gym_enrollment[0]
-        if getattr(rec.user, "gym_enrollment", None)
-        else None
-    )
+    enrollment = rec.enrollment  # direct FK on Attendence_model — same as today_attendance uses
+
     image_url = None
     if enrollment and enrollment.face_image:
         try:
@@ -243,7 +257,7 @@ def _build_attendance_entry(rec):
                     fetch_format="auto", quality="auto", secure=True,
                 )
         except Exception:
-            logger.exception("Cloudinary URL error for user %s", rec.user.id)
+            logger.exception("Cloudinary URL error for user %s", getattr(rec.user, 'id', None))
 
     pending_amount = float(enrollment.pendingAmount) if enrollment else 0
     is_expired = enrollment.is_expired if enrollment else False
@@ -256,8 +270,8 @@ def _build_attendance_entry(rec):
 
     return {
         "id": rec.id,
-        "time": rec.timestamp.strftime("%I:%M %p"),
-        "name": enrollment.fullname if enrollment else rec.user.username,
+        "time": timezone.localtime(rec.timestamp).strftime("%I:%M %p") if rec.timestamp else "—",
+        "name": enrollment.fullname if enrollment else (rec.user.username if rec.user else "Unknown"),
         "unique_id": enrollment.unique_id if enrollment else "—",
         "image_url": image_url,
         "pending_amount": pending_amount,
@@ -277,13 +291,16 @@ def _build_attendance_entry(rec):
         "payment_date": enrollment.paymentDate.strftime("%d %b %Y") if enrollment and enrollment.paymentDate else "—",
     }
 
+def _post_login_redirect(request, next_url):
+    if request.user.is_superuser:
+        return redirect('saas_dashboard')
+
+    staff_role = getattr(request, 'staff_role', None)
+    if staff_role in ('gym_owner', 'receptionist'):
+        return redirect('dashboard_home')
+    return redirect(_safe_next(next_url, request))
 
 def _get_previous_days_attendance(gym, today, days=3):
-    """
-    Returns a list of {"date": date, "label": "...", "records": [...]}
-    for the `days` days before `today`, strictly scoped to `gym`.
-    Superuser (gym=None) sees nothing here — this is a per-gym feature.
-    """
     if gym is None:
         return []
 
@@ -292,17 +309,8 @@ def _get_previous_days_attendance(gym, today, days=3):
 
     qs = (
         Attendence_model.objects
-        .filter(gym=gym, date__range=(start_date, end_date))   # ← gym scoping, mirrors today_attendance
-        .select_related("user")
-        .prefetch_related(
-            Prefetch(
-                "user__enrollment_set",
-                queryset=Enrollment.objects.filter(gym=gym).select_related(
-                    "selectPlan", "trainer",
-                ),
-                to_attr="gym_enrollment",
-            )
-        )
+        .filter(gym=gym, date__range=(start_date, end_date))
+        .select_related("user", "enrollment", "enrollment__selectPlan", "enrollment__trainer")
         .order_by("-date", "timestamp")
     )
 
@@ -323,11 +331,6 @@ def _get_previous_days_attendance(gym, today, days=3):
 
 @require_POST
 def login_support_submit(request):
-    """
-    POST /support/submit/  — AJAX endpoint for the login-page
-    'Forgot Password / Need Help?' modal. CSRF-protected (session cookie
-    exists even for anonymous users; template must send the csrf token).
-    """
     gym = getattr(request, 'gym', None)
     ip  = get_client_ip(request)
 
@@ -384,8 +387,6 @@ def login_support_tickets(request):
         qs = qs.filter(phone__icontains=phone_q)
     if email_q:
         qs = qs.filter(email__icontains=email_q)
-
-    # Counts reflect all tickets, not just the current filtered page
     all_tickets = LoginSupportQuery.objects.all()
 
     paginator = Paginator(qs, 25)
@@ -448,7 +449,6 @@ def _safe_next(next_url: str, request) -> str:
     return '/'
 
 def _gym_from_request(request):
-    """Pull the current gym off request (set by GymMiddleware)."""
     return getattr(request, 'gym', None)
 
 def _get_gym(request):
@@ -461,10 +461,6 @@ def _gym_staff_required(view_fn):
     @login_required
     @functools.wraps(view_fn)
     def wrapped(request, *args, **kwargs):
-        # OLD ❌
-        # if not (request.user.is_staff or request.user.is_superuser):
-
-        # NEW ✅
         if not getattr(request, 'is_gym_staff', False):
             raise PermissionDenied("Staff access required.")
         return view_fn(request, *args, **kwargs)
@@ -472,10 +468,6 @@ def _gym_staff_required(view_fn):
 
 
 def _gym_role_required(*allowed_roles):
-    """
-    Stricter than _gym_staff_required: restricts to specific staff_role values
-    within the current gym. Super admins always pass.
-    """
     def decorator(view_fn):
         @_gym_staff_required
         @functools.wraps(view_fn)
@@ -486,23 +478,21 @@ def _gym_role_required(*allowed_roles):
         return wrapped
     return decorator
 
-@login_required
+@_gym_staff_required
 def gym_extras(request):
-    if not _gym_staff_required(request):
-        messages.error(request, "You don't have permission to manage this page.")
-        return redirect('home')
-
     if request.method == 'POST':
         form = GymExtrasForm(request.POST, gym=request.gym)
         if form.is_valid():
             form.save()
             cache.delete(f"gym_services_{request.gym.pk}")
             cache.delete(f"gym_equipment_brands_{request.gym.pk}")
-            cache.delete(f"gym_social_links_{request.gym.pk}")  # new
+            cache.delete(f"gym_social_links_{request.gym.pk}")
+            cache.delete(f"membership_plans_{request.gym.pk}")
             messages.success(request, "Your selections were saved successfully.")
             return redirect('gym_extras')
     else:
         form = GymExtrasForm(gym=request.gym)
+
     selected_service_ids = set(request.gym.services.values_list('pk', flat=True))
     selected_brand_ids = set(request.gym.equipment_brands.values_list('pk', flat=True))
     service_catalog = [
@@ -515,37 +505,31 @@ def gym_extras(request):
          'selected': b.id in selected_brand_ids}
         for b in form.fields['brands'].queryset
     ]
+    plan_catalog = [
+        {'id': p.id, 'plan': p.plan, 'price': p.price, 'duration_days': p.duration_days,
+         'selected': p.show_on_home}
+        for p in form.fields['plans'].queryset
+    ]
+
+    hidden_cards = set(request.gym.hidden_stat_cards or [])
+    stat_card_catalog = [
+        {'key': key, 'label': label, 'selected': key not in hidden_cards}
+        for key, label in STAT_CARD_REGISTRY
+    ] 
+    wa_settings = GymWhatsAppSettings.objects.filter(gym=request.gym).first()
+
     return render(request, 'gym_extras/index.html', {
         'form': form,
         'service_catalog': service_catalog,
         'brand_catalog': brand_catalog,
+        'plan_catalog': plan_catalog,
+        'stat_card_catalog': stat_card_catalog,
+        'theme_presets': THEME_PRESETS,
+        'wa_settings': wa_settings,
     })
-# ──────────────────────────────────────────────────────────────────────────────
-# Internal API views (called by face recognition service / cron jobs)
-# ──────────────────────────────────────────────────────────────────────────────
-
 @csrf_exempt
 @require_POST
 def gym_login_api(request):
-    """
-    POST /api/gyms/login/
-    Body: {"username": "...", "password": "..."}
- 
-    Response (200):
-      {
-        "gym_id": "uuid",
-        "gym_name": "Golden Gym",
-        "base_url": "https://golden-gym.entergym.in",
-        "api_key": "...",
-        "role": "gym_owner"
-      }
- 
-    This is used ONLY by the desktop face-recognition client to bootstrap
-    a multi-tenant session. It deliberately does NOT call django's
-    auth_login()/start a session — the client only needs the returned
-    api_key + gym_id for subsequent X-Internal-Key calls, it never touches
-    Django session cookies.
-    """
     client_ip = get_client_ip(request)
  
     try:
@@ -558,10 +542,6 @@ def gym_login_api(request):
  
     if not username or not password:
         return JsonResponse({"error": "username and password are required"}, status=400)
- 
-    # Reuse the same brute-force protection used by the web login page.
-    # NOTE: this project's rate limiter is keyed per (ip, identifier) pair
-    # and returns a plain bool — matches the signature used in loginPage().
     if not check_login_attempt(client_ip, username):
         logger.warning("Face-client login rate-limited — username=%s ip=%s", username, client_ip)
         return JsonResponse(
@@ -580,12 +560,6 @@ def gym_login_api(request):
         return JsonResponse({"error": "This account is inactive"}, status=403)
  
     reset_attempt(client_ip, username)
- 
-    # ── Resolve role + gym ──────────────────────────────────────────────
-    # Super admins aren't tied to a single gym via StaffProfile in the same
-    # way gym owners are — adjust this branch if your super_admin flow
-    # differs (e.g. they pick a gym_id explicitly, or this endpoint simply
-    # isn't valid for them).
     if user.is_superuser:
         return JsonResponse(
             {"error": "Super admin login via the face client is not supported here."},
@@ -631,16 +605,8 @@ def gym_login_api(request):
         "role": "gym_owner",
     })
 
-# ── GET /api/embedding-version/ ───────────────────────────────────────────────
- 
 @csrf_exempt
 def get_embedding_version(request):
-    """
-    Ultra-lightweight endpoint polled by every attendance client.
- 
-    Returns a single integer; never loads embeddings or member lists.
-    Served from a 30-second cache; falls back to one DB values_list() query.
-    """
     if not _check_internal_key(request):
         return JsonResponse({"error": "Unauthorized"}, status=403)
  
@@ -720,17 +686,6 @@ def save_embeddings_batch(request):
 @csrf_exempt
 @require_POST
 def mark_attendance_api(request):
-    """
-    POST /api/mark-attendance/
-    Single attendance endpoint for BOTH:
-      1. Face/device attendance  -> body: {"unique_id": "...", "gym_id": "..."}
-         (desktop app, API-key/device auth — unchanged behavior)
-      2. Browser/geo attendance  -> body: {"lat": float, "lng": float}
-         (manual tap + background Service Worker — requires logged-in session)
-
-    Routing is by payload shape, not by URL, so there is exactly one
-    attendance endpoint and no duplicated attendance business rules.
-    """
     if not _is_json_request(request):
         return JsonResponse({'status': 'error', 'error': 'JSON required'}, status=415)
 
@@ -738,8 +693,6 @@ def mark_attendance_api(request):
         body = json.loads(request.body)
     except (ValueError, json.JSONDecodeError):
         return JsonResponse({'status': 'error', 'error': 'Invalid JSON'}, status=400)
-
-    # ── Path 1: device / face attendance (existing behavior) ───────
     if 'unique_id' in body:
         unique_id = body.get('unique_id')
         gym_id = body.get('gym_id') or getattr(request, 'gym', None) and request.gym.pk
@@ -747,7 +700,6 @@ def mark_attendance_api(request):
         status_code = 200 if result.get('status') in ('success', 'exists') else 400
         return JsonResponse(result, status=status_code)
 
-    # ── Path 2: browser geo attendance — requires session auth ─────
     if 'lat' in body and 'lng' in body:
         if not request.user.is_authenticated:
             return JsonResponse({'status': 'error', 'error': 'Login required'}, status=401)
@@ -769,7 +721,6 @@ def mark_attendance_api(request):
         }
         return JsonResponse(result, status=status_map.get(result['status'], 400))
     
-    # ── Path 3: static QR code attendance (mobile app scan) ─────────
     
     if 'qr_code' in body:
         if not request.user.is_authenticated:
@@ -907,9 +858,6 @@ def contact_inquiries(request):
         "total":    qs.count(),
         
     })
-# ──────────────────────────────────────────────────────────────────────────────
-# Auth views
-# ──────────────────────────────────────────────────────────────────────────────
 
 def signupPage(request):
     if request.user.is_authenticated:
@@ -925,10 +873,7 @@ def signupPage(request):
 
                 linked_enrollment = None
                 if gym:
-                    phone = getattr(user, 'username', None)  # confirm this matches how UserLogin stores phone
-
-                    # Req 8 — defensive check: never touch a pending row if this
-                    # user somehow already has an enrollment at this gym.
+                    phone = getattr(user, 'username', None)
                     already_enrolled = Enrollment.objects.filter(user=user, gym=gym).exists()
 
                     if phone and not already_enrolled:
@@ -940,10 +885,10 @@ def signupPage(request):
                         )
                         if linked_enrollment:
                             linked_enrollment.user = user
-                            linked_enrollment.source = "MEMBER"        # Req 2
+                            linked_enrollment.source = "MEMBER"    
 
                             update_fields = ['user', 'source']
-                            if not linked_enrollment.email and user.email:  # Req 3
+                            if not linked_enrollment.email and user.email:  
                                 linked_enrollment.email = user.email
                                 update_fields.append('email')
 
@@ -975,9 +920,6 @@ def loginPage(request):
 
     next_url = request.GET.get('next') or request.POST.get('next', '/')
     gym = getattr(request, 'gym', None)
-    
-
-    
     if request.method == "POST":
         ip       = get_client_ip(request)
         phone    = request.POST.get('username', '').strip()
@@ -992,7 +934,7 @@ def loginPage(request):
             reset_attempt(ip, phone)
             auth_log(request, user)
             messages.success(request, "Logged in successfully!")
-            return redirect(_safe_next(next_url, request))
+            return _post_login_redirect(request,next_url)
         else:
             check_password(password, "pbkdf2_sha256$600000$dummy$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=")
             record_failed_attempt(ip, phone)
@@ -1012,14 +954,8 @@ def handlelogout(request):
     messages.success(request, "Logged out successfully.")
     return redirect('/')
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Public / member views
-# ──────────────────────────────────────────────────────────────────────────────
 def homePage(request):
     gym = getattr(request, 'gym', None)
-
-    # ── SaaS root domain — no gym context ─────────────────────────────────
     if gym is None:
         verified_reviews = (
             Review.objects
@@ -1034,24 +970,13 @@ def homePage(request):
             context['gyms'] = Gym.objects.all().order_by('gym_name')
 
         return render(request, 'saas_home.html', context)
-
-    # ── Gym domain — load gym-specific content ─────────────────────────────
-    notif_key         = f"notifications_{gym.pk}"
-    gym_notifications = cache.get(notif_key)
-    if gym_notifications is None:
-        gym_notifications = list(
-            GymNotification.objects
-            .filter(gym=gym, is_active=True)
-            .values("icon", "message")
-        )
-        cache.set(notif_key, gym_notifications, timeout=3600)
-
     plans_key = f"membership_plans_{gym.pk}"
     plans     = cache.get(plans_key)
     if plans is None:
         plans = list(
             MembershipPlan.objects
-            .filter(gym=gym)
+            .filter(gym=gym, show_on_home=True)
+            .order_by('price')[:3]
             .values("id", "plan", "price", "duration_days")
         )
         cache.set(plans_key, plans, timeout=3600)
@@ -1063,8 +988,6 @@ def homePage(request):
             {
                 'name': s.name,
                 'description': s.description,
-                # 240x240 — sized for the carousel's circular image (max
-                # rendered size ~140px, so this covers retina displays)
                 'image_url': cloudinary_thumb(s.image, width=800, height=600, gravity="auto"),
             }
             for s in gym.services.filter(is_active=True).order_by('sort_order', 'name')
@@ -1085,7 +1008,7 @@ def homePage(request):
     social_key   = f"gym_social_links_{gym.pk}"
     social_links = cache.get(social_key)
     if social_links is None:
-        social_links = gym.social_links  # model property, no extra query
+        social_links = gym.social_links
         cache.set(social_key, social_links, timeout=3600)
 
     enrolled    = False
@@ -1110,7 +1033,6 @@ def homePage(request):
         "enrolled":          enrolled,
         "isStaff":           isStaff,
         "isSuperuser":       isSuperuser,
-        "gym_notifications": gym_notifications,
         "plans":             plans,
         "gym_services":         gym_services,          
         "gym_equipment_brands": gym_equipment_brands,    
@@ -1297,8 +1219,6 @@ def trainers(request):
         def fail(msg):
             messages.error(request, msg)
             return redirect('/trainers/')
-
-        # ── Validation ────────────────────────────────────────────────────
         if not name:
             return fail("Trainer name is required.")
         if len(name) > 30:
@@ -1322,7 +1242,6 @@ def trainers(request):
         except (ValueError, TypeError):
             return fail("Enter a valid non-negative salary.")
 
-        # ── Create or Update ──────────────────────────────────────────────
         if trainer_id:
             trainer = Trainer.objects.filter(id=trainer_id, gym=gym).first()
             if not trainer:
@@ -1347,8 +1266,6 @@ def trainers(request):
 
         cache.delete(f"trainers_{gym.pk}")
         return redirect('/trainers/')
-
-    # ── GET ───────────────────────────────────────────────────────────────
     trainers = Trainer.objects.filter(gym=gym).order_by("name")
     return render(request, "trainers.html", {
         "gym":      gym,
@@ -1370,16 +1287,18 @@ def quick_enrollment(request):
                 messages.success(request, f"{enrollment.fullname} enrolled and linked to their existing account.")
             else:
                 messages.success(request, f"{enrollment.fullname} enrolled — pending signup link.")
-            return redirect('/quick-enrollment/')
+
+            return redirect(
+                f"/quick-enrollment/?enrolled_id={enrollment.unique_id}&enrolled_name={quote(enrollment.fullname)}"
+            )
     else:
         form = QuickEnrollmentForm(gym=gym)
 
-    # Req 7 — richer table, still just reading the existing Enrollment model
     rows = (
         Enrollment.objects
         .filter(gym=gym)
         .select_related('selectPlan', 'trainer')
-        .order_by('-doj')[:100]
+        .order_by('-doj')[:10]
     )
     pending = [
         {
@@ -1394,17 +1313,19 @@ def quick_enrollment(request):
         }
         for e in rows
     ]
-    return render(request, "quick_enrollment.html", {"form": form, "pending": pending, "gym": gym,"today_iso": timezone.localdate().isoformat(),})
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Member views
-# ──────────────────────────────────────────────────────────────────────────────
+    return render(request, "quick_enrollment.html", {
+        "form": form,
+        "pending": pending,
+        "gym": gym,
+        "today_iso": timezone.localdate().isoformat(),
+        "enrolled_id": request.GET.get("enrolled_id"),
+        "enrolled_name": request.GET.get("enrolled_name"),
+    })
 
 @login_required
 def enrollment(request):
     gym = getattr(request, 'gym', None)    
-    if Enrollment.objects.filter(user=request.user, gym=gym).exists():
+    if Enrollment.objects.filter(user=request.user, gym=gym,is_deleted=False).exists():
         return redirect('/profile/')
 
     plans    = MembershipPlan.objects.filter(gym=gym) if gym else MembershipPlan.objects.none()
@@ -1438,10 +1359,6 @@ def enrollment(request):
         selected_plan = MembershipPlan.objects.filter(id=plan_id, gym=gym).first()
         if not selected_plan:
             return fail("Selected plan does not exist.")
-
-        # ── Cross-gym transfer check ────────────────────────────────────
-        # Only an ACTIVE enrollment at another gym triggers the popup. Once
-        # the old gym actions it (inactive/deleted), it stops blocking.
         if not confirm_transfer:
             other_enrollment = (
                 Enrollment.objects
@@ -1472,10 +1389,6 @@ def enrollment(request):
                     "Please enable JavaScript to confirm the transfer, or contact support."
                 )
                 return redirect('/enrollment/')
-
-        # ── Re-validate the referenced old enrollment on confirm ───────
-        # Never trust client-sent financial figures — only the id, then
-        # re-fetch fresh data server-side.
         old_enrollment = None
         if confirm_transfer:
             old_enrollment_id = request.POST.get('old_enrollment_id')
@@ -1486,9 +1399,6 @@ def enrollment(request):
                 .select_related('gym')
                 .first()
             )
-            # If it no longer matches (e.g. old gym already actioned it),
-            # don't block the member — just proceed as a normal enrollment.
-
         enroll = Enrollment(
             gym=gym,
             fullname=name,
@@ -1505,6 +1415,9 @@ def enrollment(request):
             profile_completed=bool(email and gender and address),
         )
         enroll.save()
+        if email and not request.user.email:
+            request.user.email = email
+            request.user.save(update_fields=['email'])
 
         if old_enrollment:
             try:
@@ -1524,9 +1437,6 @@ def enrollment(request):
                         last_payment_date=old_enrollment.paymentDate,
                     )
             except IntegrityError:
-                # A pending transfer already exists for this source enrollment
-                # (e.g. duplicate/double-click submission) — the existing
-                # pending record already covers it, so skip silently.
                 logger.info(
                     "Duplicate pending transfer skipped for enrollment_id=%s",
                     old_enrollment.id,
@@ -1548,16 +1458,11 @@ def enrollment(request):
 
     return render(request, 'enrollment.html', {"plans": plans, "trainers": trainers,})
 
-
+@active_member_required
 @login_required
 def Profile(request):
     gym = getattr(request, 'gym', None)
-    enrollment = (
-        Enrollment.objects
-        .filter(user=request.user, gym=gym)
-        .select_related("selectPlan", "trainer")
-        .first()
-    )
+    enrollment = request.enrollment
 
     plans_key = f"membership_plans_{gym.pk}" if gym else f"membership_plans_user_{request.user.id}"
     plans     = cache.get(plans_key)
@@ -1588,11 +1493,11 @@ def Profile(request):
             except Exception:
                 logger.exception("Cloudinary URL error for user %s", request.user.id)
     invoices = []
-    if enrollment:
+    if enrollment and enrollment.profile_completed:
         from billing.models import Invoice
         invoices = (
             Invoice.objects
-            .filter(member=enrollment, status='issued')
+            .filter(member=enrollment, status__in=Invoice.REVENUE_STATUSES)
             .order_by('-invoice_date', '-created_at')[:2]
         )
     return render(request, "profile.html", {
@@ -1606,7 +1511,7 @@ def Profile(request):
         "needs_profile_completion": bool(enrollment and not enrollment.profile_completed),
     })
 
-
+@active_member_required
 @login_required
 def complete_profile(request):
     gym = getattr(request, 'gym', None)
@@ -1617,11 +1522,11 @@ def complete_profile(request):
         if form.is_valid():
             obj = form.save(commit=False)
 
-            required_filled = bool(obj.email and obj.gender and obj.address)
+            required_filled = bool(obj.email and obj.address)
             obj.profile_completed = required_filled
 
             obj.save(update_fields=[
-                'email', 'gender', 'address', 'reference','profile_completed'
+                'email', 'address', 'reference', 'profile_completed'
             ])
 
             cache.delete(f"enrollment_{request.user.id}_{gym.pk}")
@@ -1629,34 +1534,24 @@ def complete_profile(request):
 
             if required_filled:
                 messages.success(request, "Profile completed!")
-
-                # Backfill the invoice for whatever was paid during Quick
-                # Enrollment, now that the member is linked + profiled.
-                # No-op if already done, no payment was ever collected,
-                # or this enrollment wasn't Quick-Enrollment-originated.
-                from billing.services.initial_invoice import ensure_initial_invoice
-                try:
-                    ensure_initial_invoice(obj)
-                except Exception:
-                    logger.exception(
-                        "ensure_initial_invoice failed for enrollment_id=%s", obj.id
-                    )
             else:
                 messages.info(request, "Progress saved. A few required fields are still missing.")
             return redirect('/profile/')
+        else:
+            messages.error(request, "Please correct the errors below.")
     else:
         form = CompleteProfileForm(instance=enrollment)
 
     return render(request, "complete_profile.html", {"form": form, "gym": gym, "enrollment": enrollment})
 
-
+@active_member_required
 @login_required
 def upload_profile_pic(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
 
     gym        = getattr(request, 'gym', None)
-    enrollment = Enrollment.objects.filter(user=request.user, gym=gym).first()
+    enrollment = request.enrollment
     if not enrollment:
         messages.error(request, "You are not enrolled yet.")
         return redirect('/profile/')
@@ -1714,11 +1609,11 @@ def upload_profile_pic(request):
 
     return redirect('/profile/')
 
-
+@active_member_required
 @login_required
 def attendance_page(request):
     gym        = getattr(request, 'gym', None)
-    enrollment = Enrollment.objects.filter(user=request.user, gym=gym).first()
+    enrollment = request.enrollment
     if not enrollment:
         return redirect('/enrollment/')
     geo_enabled = bool(gym and gym.enable_geo_attendance)
@@ -1747,13 +1642,13 @@ def attendance_page(request):
         "gym" : gym,
         "geo_enabled": geo_enabled,
     })
-
+@active_member_required
 @login_required
 @require_POST
 def renew_membership(request):
     gym        = getattr(request, 'gym', None)
     gym_pk     = gym.pk if gym else 'none'
-    enrollment = get_object_or_404(Enrollment, user=request.user, gym=gym)
+    enrollment = request.enrollment
 
     plan_id       = request.POST.get("plan")
     selected_plan = MembershipPlan.objects.filter(id=plan_id, gym=gym).first()
@@ -1787,107 +1682,195 @@ def renew_membership(request):
     messages.success(request, f"Membership renewed with {selected_plan.plan}! Please complete payment.")
     return redirect('/profile/')
 
+@_gym_staff_required
+@require_POST
+def staff_renew_membership(request, member_id):
+    gym = getattr(request, 'gym', None)
+    gym_pk = gym.pk if gym else 'none'
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Staff views — all scoped to request.gym
-# ──────────────────────────────────────────────────────────────────────────────
+    enrollment = get_object_or_404(
+        get_member_detail_queryset(gym), pk=member_id
+    )
 
-def _panel_data(e, kind, **extra):
-    """
-    Build a flat, JSON-serialisable dict for the slide-out detail panel.
-    `kind` tells the frontend which fields to show ('due' | 'expiring' | 'expired').
-    Dates are converted to strings — date objects are not JSON-serialisable.
-    """
-    data = {
-        "kind": kind,
+    plan_id = request.POST.get("plan")
+    selected_plan = MembershipPlan.objects.filter(id=plan_id, gym=gym).first()
+    if not selected_plan:
+        messages.error(request, "Invalid plan selected.")
+        return redirect('member_detail', member_id=member_id)
+    old_plan = enrollment.selectPlan
+    old_price = enrollment.Amount
+    old_due_date = enrollment.DueDate
+
+    today = timezone.now().date()
+    if enrollment.DueDate and enrollment.DueDate > today:
+        new_due_date = enrollment.DueDate + timedelta(days=selected_plan.duration_days)
+    else:
+        new_due_date = today + timedelta(days=selected_plan.duration_days)
+
+    enrollment.selectPlan    = selected_plan
+    enrollment.Amount        = selected_plan.price
+    enrollment.paidAmount    = 0
+    enrollment.pendingAmount = selected_plan.price
+    enrollment.paymentStatus = "Pending"
+    enrollment.paymentMethod = None
+    enrollment.paymentDate   = None
+    enrollment.DueDate       = new_due_date
+    enrollment.save(update_fields=[
+        "selectPlan", "Amount", "paidAmount", "pendingAmount",
+        "paymentStatus", "paymentMethod", "paymentDate", "DueDate",
+    ])
+    MembershipPlanChangeLog.objects.create(
+        gym=gym,
+        enrollment=enrollment,
+        old_plan=old_plan,
+        new_plan=selected_plan,
+        old_price=old_price,
+        new_price=selected_plan.price,
+        old_due_date=old_due_date,
+        new_due_date=new_due_date,
+        reason="Renewal",
+        changed_by=request.user,
+    )
+
+    from AuthFit.audit import log_action
+    log_action(
+        gym=gym,
+        action='membership_renewed',
+        staff_user=request.user,
+        request=request,
+        object_type='Enrollment',
+        object_id=enrollment.pk,
+        object_label=enrollment.fullname,
+        old_values={'plan': old_plan.plan if old_plan else None, 'due_date': str(old_due_date)},
+        new_values={'plan': selected_plan.plan, 'due_date': str(new_due_date)},
+    )
+    if enrollment.user_id:
+        cache.delete(f"enrollment_{enrollment.user_id}_{gym_pk}")
+        cache.delete(f"enrollment_status_{enrollment.user_id}_{gym_pk}")
+    cache.delete(f"admin_revenue_{gym_pk}")
+    
+    transaction.on_commit(lambda: notify_member_plan_changed(
+        enrollment,
+        selected_plan,
+        new_due_date=new_due_date,
+        pending_amount=enrollment.pendingAmount,
+    ))
+
+    messages.success(request, f"{enrollment.fullname}'s membership renewed with {selected_plan.plan}.")
+    return redirect('member_detail', member_id=member_id)
+
+
+@_gym_staff_required
+@require_POST
+def staff_edit_member(request, member_id):
+    gym = getattr(request, 'gym', None)
+    gym_pk = gym.pk if gym else 'none'
+
+    enrollment = get_object_or_404(
+        get_member_detail_queryset(gym), pk=member_id
+    )
+
+    fullname = request.POST.get("fullname", "").strip()
+    gender = request.POST.get("gender", "").strip()
+    address = request.POST.get("address", "").strip()
+    start_date_raw = request.POST.get("membership_start_date", "").strip()
+
+    if not fullname:
+        messages.error(request, "Name is required.")
+        return redirect('member_detail', member_id=member_id)
+
+    if gender not in ("M", "F", ""):
+        messages.error(request, "Select a valid gender.")
+        return redirect('member_detail', member_id=member_id)
+
+    try:
+        new_start_date = date.fromisoformat(start_date_raw) if start_date_raw else enrollment.membership_start_date
+    except ValueError:
+        messages.error(request, "Invalid start date.")
+        return redirect('member_detail', member_id=member_id)
+
+    start_date_changed = new_start_date != enrollment.membership_start_date
+
+    enrollment.fullname = fullname
+    enrollment.gender = gender or None
+    enrollment.address = address
+    enrollment.membership_start_date = new_start_date
+
+    update_fields = ["fullname", "gender", "address", "membership_start_date"]
+    if start_date_changed and enrollment.selectPlan and enrollment.selectPlan.duration_days:
+        enrollment.DueDate = new_start_date + timedelta(days=enrollment.selectPlan.duration_days)
+        update_fields.append("DueDate")
+
+    enrollment.save(update_fields=update_fields)
+
+    if enrollment.user_id:
+        cache.delete(f"enrollment_{enrollment.user_id}_{gym_pk}")
+        cache.delete(f"enrollment_status_{enrollment.user_id}_{gym_pk}")
+
+    messages.success(request, f"{enrollment.fullname}'s details updated.")
+    return redirect('member_detail', member_id=member_id)
+
+def _panel_data(e, kind, expired_days=None):
+    return {
         "unique_id": e.unique_id,
+        "kind": kind,
         "name": e.fullname,
         "phone": e.phone,
-        "email": e.email,
-        "gender": e.get_gender_display() if e.gender else None,
-        "address": e.address,
+        "gender": getattr(e, "gender", None),
+        "email": getattr(e, "email", None),
+        "address": getattr(e, "address", None),
+        "gym_name": _gym_name(e),
         "plan": e.selectPlan.plan if e.selectPlan else None,
-        "plan_price": float(e.selectPlan.price) if e.selectPlan else None,
-        "trainer": e.trainer.name if e.trainer else None,
+        "plan_price": getattr(e.selectPlan, "price", None) if e.selectPlan else None,
+        "trainer": e.trainer.name if getattr(e, "trainer", None) else None,
+        "doj": e.doj.strftime('%d %b %Y') if getattr(e, "doj", None) else None,
         "payment_status": e.paymentStatus,
-        "pending_amount": float(e.pendingAmount),
-        "due_date": e.DueDate.strftime("%d %b %Y") if e.DueDate else None,
-        "doj": e.doj.strftime("%d %b %Y") if e.doj else None,
-        "is_expired": e.is_expired,
-        "days_remaining": e.days_remaining,
+        "pending_amount": float(e.pendingAmount) if e.pendingAmount else 0,
+        "amount": str(e.pendingAmount) if e.pendingAmount else None,
+        "due_date": e.DueDate.strftime('%d %b %Y') if e.DueDate else None,
+        "days_remaining": e.days_remaining if hasattr(e, "days_remaining") else None,
+        "expired_days": expired_days,
     }
-    data.update(extra)
-    return data
- 
  
 @_gym_staff_required
 def whatsapp_pending_users(request):
     gym = getattr(request, 'gym', None)
-    
-
-    
     today = timezone.now().date()
- 
-    base_qs = Enrollment.objects.select_related("selectPlan", "gym", "trainer")
+
+    base_qs = Enrollment.objects.select_related("selectPlan", "gym", "trainer").filter(is_deleted=False)
     if gym:
         base_qs = base_qs.filter(gym=gym)
- 
-    # ── PANEL 1: Due Payments (unchanged logic) ──
+
+    # ── PANEL 1: Due Payments ──
     pending_qs = base_qs.filter(paymentStatus="Pending").order_by("DueDate")
- 
+
     pending_with_links = []
     for e in pending_qs:
-        gym_name = e.gym.gym_name if e.gym else "EnterGYM"
-        msg = (
-            f"Hello {e.fullname}! Reminder from {gym_name}: "
-            f"your payment of Rs.{e.pendingAmount} is pending. "
-            f"Please clear your dues at your earliest convenience. Thank you!"
-        )
         pending_with_links.append({
             "enrollment": e,
-            "wa_link":    f"https://wa.me/91{e.phone}?text={quote(msg)}",
             "panel_data": _panel_data(e, "due"),
         })
- 
-    # ── PANEL 2: Expiring Soon (DueDate within next 2 days, not yet expired) ──
-    expiring_cutoff = today + timedelta(days=2)
-    expiring_qs = base_qs.filter(
-        DueDate__gte=today,
-        DueDate__lte=expiring_cutoff,
-    ).order_by("DueDate")
- 
     expiring_with_links = []
-    for e in expiring_qs:
-        gym_name = e.gym.gym_name if e.gym else "EnterGYM"
-        msg = (
-            f"Hello {e.fullname}! Reminder from {gym_name}: "
-            f"your membership is expiring on {e.DueDate.strftime('%d %b %Y')}. "
-            f"Please renew soon to avoid interruption. Thank you!"
-        )
-        expiring_with_links.append({
-            "enrollment": e,
-            "wa_link":    f"https://wa.me/91{e.phone}?text={quote(msg)}",
-            "panel_data": _panel_data(e, "expiring"),
-        })
- 
-    # ── PANEL 3: Expired Members (DueDate already passed) ──
-    expired_qs = base_qs.filter(DueDate__lt=today).order_by("-DueDate")
- 
+    for e in base_qs:
+        days_left = getattr(e, "days_remaining", None)
+        if days_left is not None and 0 <= days_left <= 7:
+            expiring_with_links.append({
+                "enrollment": e,
+                "panel_data": _panel_data(e, "expiring"),
+            })
+    expiring_with_links.sort(key=lambda item: item["panel_data"]["days_remaining"])
     expired_with_links = []
-    for e in expired_qs:
-        gym_name = e.gym.gym_name if e.gym else "EnterGYM"
-        expired_days = (today - e.DueDate).days
-        msg = (
-            f"Hello {e.fullname}! Your membership at {gym_name} expired on "
-            f"{e.DueDate.strftime('%d %b %Y')}. Please renew to continue access. Thank you!"
-        )
-        expired_with_links.append({
-            "enrollment": e,
-            "wa_link":    f"https://wa.me/91{e.phone}?text={quote(msg)}",
-            "expired_days": expired_days,
-            "panel_data": _panel_data(e, "expired", expired_days=expired_days),
-        })
- 
+    for e in base_qs:
+        days_left = getattr(e, "days_remaining", None)
+        if days_left is not None and days_left < 0:
+            expired_days = abs(days_left)
+            expired_with_links.append({
+                "enrollment": e,
+                "expired_days": expired_days,
+                "panel_data": _panel_data(e, "expired", expired_days=expired_days),
+            })
+    expired_with_links.sort(key=lambda item: -item["expired_days"])
+
     return render(request, "admin_whatsapp.html", {
         "pending": pending_with_links,
         "expiring_soon": expiring_with_links,
@@ -1895,9 +1878,10 @@ def whatsapp_pending_users(request):
         "pending_count": len(pending_with_links),
         "expiring_count": len(expiring_with_links),
         "expired_count": len(expired_with_links),
-        "gym": gym,    })
+        "templates_json": json.dumps(MESSAGE_TEMPLATES),
+        "gym": gym,
+    })
  
-
 
 @_gym_staff_required
 def payment_management(request):
@@ -1908,8 +1892,7 @@ def payment_management(request):
 
     search_ctx = get_search_context(request)
 
-    # 1. Gym  → 2. Status filter  → 3. Search  → 4. Ordering
-    qs = Enrollment.objects.select_related("selectPlan", "trainer")
+    qs = Enrollment.objects.select_related("selectPlan", "trainer").filter(is_deleted=False)
     if gym:
         qs = qs.filter(gym=gym)
 
@@ -1945,10 +1928,9 @@ def payment_management(request):
         }
         for e in page_obj
     ]
-
-    # Counts are unaffected by search — they reflect the tab totals, not the
-    # filtered result set, matching prior behavior.
-    base_qs       = Enrollment.objects.filter(gym=gym) if gym else Enrollment.objects.all()
+    base_qs       = Enrollment.objects.filter(is_deleted=False)
+    if gym:
+        base_qs = base_qs.filter(gym=gym)
     pending_count = base_qs.filter(paymentStatus="Pending").count()
     paid_count    = base_qs.filter(created_at__gte=since, paymentStatus="Done").count()
 
@@ -2038,7 +2020,22 @@ def update_payment(request):
         cache.delete(f"admin_revenue_{gp}")
         cache.delete(f"enrollment_{uid}_{gp}")
         cache.delete(f"enrollment_status_{uid}_{gp}")
-
+        if amount_paid_now > 0:
+            from AuthFit.audit import log_action
+            log_action(
+                gym=gym,
+                action='payment_received',
+                staff_user=request.user,
+                request=request,
+                object_type='Enrollment',
+                object_id=enrollment.pk,
+                object_label=enrollment.fullname,
+                new_values={
+                    'amount_paid_now': str(amount_paid_now),
+                    'payment_method': payment_method,
+                    'total_paid': str(paid_amount),
+                },
+            )
         METHOD_LABELS = {"C": "Cash", "U": "UPI", "B": "UPI + Cash"}
         return JsonResponse({
             "ok":                   True,
@@ -2061,11 +2058,6 @@ def update_payment(request):
 @login_required
 @require_GET
 def invoice_pdf_view(request, pk):
-    """
-    Returns the PDF for an invoice.
-    If a cached R2 URL exists — redirects there.
-    Otherwise regenerates the PDF, uploads, then redirects.
-    """
     from django.shortcuts import redirect
  
     gym     = _gym_from_request(request)
@@ -2075,9 +2067,6 @@ def invoice_pdf_view(request, pk):
         generate_invoice_pdf(invoice)
  
     return redirect(invoice.pdf_url)
- 
- 
-# ── Regenerate PDF (force) ─────────────────────────────────────────────────────
  
 @login_required
 @require_GET
@@ -2091,27 +2080,14 @@ def invoice_pdf_regenerate_view(request, pk):
     except Exception as exc:
         return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
  
- 
-# ── GSTR-1 Export ─────────────────────────────────────────────────────────────
- 
 @login_required
 @require_GET
 def gstr1_export_view(request):
-    """
-    Query params:
-        from  — YYYY-MM-DD  (default: start of current FY)
-        to    — YYYY-MM-DD  (default: today)
- 
-    Streams the xlsx as a download AND saves a permanent copy to
-    Cloudflare R2 under reports/<gym_code>/<fy>/GSTR1_<fy>.xlsx, so it can
-    be re-downloaded later without regenerating.
-    """
     gym = _gym_from_request(request)
     if gym is None:
         return HttpResponse('Gym not found', status=404)
  
     today = date.today()
-    # Default: full current financial year
     if today.month >= 4:
         fy_start = date(today.year, 4, 1)
     else:
@@ -2127,10 +2103,7 @@ def gstr1_export_view(request):
  
     fy_label = f"{start_date.year}-{str(start_date.year + 1)[-2:]}"
     filename = f"GSTR1_{gym.gym_code}_{fy_label}.xlsx"
- 
-    # ── Save a permanent copy to R2 (non-fatal if it fails) ───────────────
-    # We write the BytesIO to a temp file first since upload_file_to_r2
-    # expects a path on disk (matches how invoice PDFs are uploaded).
+
     try:
         buf.seek(0)
         tmp_fd, tmp_path = tempfile.mkstemp(suffix='.xlsx')
@@ -2144,13 +2117,11 @@ def gstr1_export_view(request):
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
     except Exception:
-        # Report still downloads fine even if the R2 save fails — just log it.
         logger.exception("Failed to save GSTR-1 report to R2 for gym=%s", gym.gym_code)
     finally:
         if 'tmp_path' in locals() and os.path.exists(tmp_path):
             os.remove(tmp_path)
- 
-    # ── Stream the original download to the browser ───────────────────────
+
     buf.seek(0)
     response = HttpResponse(
         buf.read(),
@@ -2159,22 +2130,10 @@ def gstr1_export_view(request):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
  
- 
-# ── Record payment + create invoice ───────────────────────────────────────────
- 
+
 @login_required
 @require_POST
 def create_payment_view(request):
-    """
-    JSON POST body:
-    {
-        "enrollment_id": 123,
-        "paid_amount": "1500.00",
-        "payment_method": "U",       // C / U / B
-        "payment_date": "2026-06-27" // optional, defaults to today
-    }
-    Returns: { "ok": true, "invoice_number": "INV/2026-27/0001", "pdf_url": "..." }
-    """
     from AuthFit.models import Enrollment
  
     gym = _gym_from_request(request)
@@ -2228,14 +2187,21 @@ def create_payment_view(request):
     )
  
     invoice = create_invoice_for_payment(payment)
- 
-    # Generate PDF (synchronous — move to async if needed)
     try:
         generate_invoice_pdf(invoice)
     except Exception as exc:
-        # PDF failure is non-fatal — invoice is still created
         pass
- 
+    from AuthFit.audit import log_action
+    log_action(
+        gym=gym,
+        action='payment_received',
+        staff_user=request.user,
+        request=request,
+        object_type='Enrollment',
+        object_id=enrollment.pk,
+        object_label=enrollment.fullname,
+        new_values={'amount': str(paid_decimal), 'invoice_number': invoice.invoice_number},
+    )
     return JsonResponse({
         'ok': True,
         'invoice_number': invoice.invoice_number,
@@ -2248,27 +2214,26 @@ def today_attendance(request):
     today = timezone.localdate()
     search_ctx = get_search_context(request)
     search_by, search = search_ctx["search_by"], search_ctx["search"]
+    current_hour = timezone.localtime().hour
+    default_section = "Evening" if current_hour >= 16 else "Morning"
+    cache_key = f"today_attendance_{gym.pk if gym else 'super'}_{today}_{default_section}"
+    ai_wallet = get_or_create_wallet(gym) if gym else None
+    ai_credit_ctx = {
+        "ai_credits_balance": ai_wallet.balance if ai_wallet else None,
+        "ai_credits_low": bool(ai_wallet and 0 < ai_wallet.balance <= 3),
+        "ai_credits_zero": bool(ai_wallet and ai_wallet.balance == 0),
+    }
 
-    cache_key = f"today_attendance_{gym.pk if gym else 'super'}_{today}"
     if not search:
         cached = cache.get(cache_key)
         if cached:
+            cached.update(ai_credit_ctx)
             return render(request, "today_attendance.html", cached)
 
     qs = (
         Attendence_model.objects
         .filter(date=today)
-        .select_related("user")
-        .prefetch_related(
-            Prefetch(
-                "user__enrollment_set",
-                queryset=Enrollment.objects.filter(gym=gym).select_related(
-                    "selectPlan",
-                    "trainer",
-                ),
-                to_attr="gym_enrollment",
-            )
-        )
+        .select_related("user", "enrollment", "enrollment__selectPlan", "enrollment__trainer")
     )
     if gym:
         qs = qs.filter(gym=gym)
@@ -2284,13 +2249,9 @@ def today_attendance(request):
     EXPIRING_SOON_THRESHOLD = 3
 
     for rec in qs:
-        enrollment = (
-                        rec.user.gym_enrollment[0]
-                        if rec.user.gym_enrollment
-                        else None
-                    )
+        enrollment = rec.enrollment
         image_url  = None
-
+        local_ts = timezone.localtime(rec.timestamp)
         if enrollment and enrollment.face_image:
             try:
                 public_id = (
@@ -2327,7 +2288,7 @@ def today_attendance(request):
 
         entry = {
             "id":               rec.id,
-            "time":             rec.timestamp.strftime("%I:%M %p"),
+            "time": local_ts.strftime("%I:%M %p"),
             "name":             enrollment.fullname if enrollment else rec.user.username,
             "unique_id":        enrollment.unique_id if enrollment else "—",
             "image_url":        image_url,
@@ -2349,12 +2310,9 @@ def today_attendance(request):
             "payment_date":     enrollment.paymentDate.strftime("%d %b %Y") if enrollment and enrollment.paymentDate else "—",
         }
 
-        (morning if rec.timestamp.hour < 14 else evening).append(entry)
+        (morning if local_ts.hour < 14 else evening).append(entry)
         if alert_rank is not None:
             alerts.append(entry)
-
-    # ── SECOND LOOP REMOVED — it was duplicating every entry ──
-
     alerts.sort(key=lambda e: (e["alert_rank"], -e["pending_amount"]))
 
     previous_days = _get_previous_days_attendance(gym, today, days=3)
@@ -2370,8 +2328,10 @@ def today_attendance(request):
         "gym":          gym,
         "previous_days": previous_days,
         "previous_days_json": previous_days_json,
+        "default_section": default_section,
         "extra_params_list": [],
         **search_ctx,
+        **ai_credit_ctx,   # NEW
     }
     if not search:
         cache.set(cache_key, context, timeout=120)
@@ -2379,40 +2339,61 @@ def today_attendance(request):
 
 @_gym_staff_required
 def freeze_membership(request):
-    gym   = getattr(request, 'gym', None)
-    query = request.GET.get("q", "").strip()
+    gym = getattr(request, 'gym', None)
+    from AuthFit.permissions import has_permission
 
+    active_tab = request.GET.get("tab", "freeze")
+    if active_tab not in ("freeze", "changeplan", "deleteenrollment"):
+        active_tab = "freeze"
+    freeze_query = request.GET.get("freeze_search", "").strip()
     qs = Enrollment.objects.filter(is_deleted=False).select_related("selectPlan").order_by("fullname")
     if gym:
         qs = qs.filter(gym=gym)
-    if query:
-        qs = qs.filter(unique_id=query)
-    from AuthFit.permissions import has_permission
+    if freeze_query:
+        qs = qs.filter(unique_id=freeze_query)
     paginator = Paginator(qs, 20)
     page_obj  = paginator.get_page(request.GET.get("page", 1))
 
     can_change_plan = has_permission(request, "can_change_membership_plan")
     can_delete_enrollment = has_permission(request, "can_delete_enrollment")
-
     plans = []
     change_plan_rows = []
+    cmp_page_obj = None
+    cmp_query = ""
     if can_change_plan and gym:
         plans = list(
             MembershipPlan.objects.filter(gym=gym)
             .order_by('price')
             .values('id', 'plan', 'price', 'duration_days')
         )
-        member_ids = [e.id for e in page_obj.object_list]
+
+        cmp_query = request.GET.get("cmp_search", "").strip()
+        cmp_qs = (
+            Enrollment.objects.filter(gym=gym, is_deleted=False)
+            .select_related("selectPlan")
+            .order_by("fullname")
+        )
+        if cmp_query:
+            cmp_qs = cmp_qs.filter(
+                Q(fullname__icontains=cmp_query) |
+                Q(phone__icontains=cmp_query) |
+                Q(unique_id__icontains=cmp_query)
+            )
+
+        cmp_paginator = Paginator(cmp_qs, 20)
+        cmp_page_obj  = cmp_paginator.get_page(request.GET.get("cmp_page", 1))
+
+        member_ids = [e.id for e in cmp_page_obj.object_list]
         invoice_map = {}
         invoices_qs = (
             Invoice.objects
-            .filter(gym=gym, member_id__in=member_ids, status=Invoice.Status.ISSUED)
+            .filter(gym=gym, member_id__in=member_ids, status__in=Invoice.REVENUE_STATUSES)
             .order_by('member_id', '-invoice_date', '-created_at')
         )
         for inv in invoices_qs:
             invoice_map.setdefault(inv.member_id, inv.invoice_number)
 
-        for e in page_obj.object_list:
+        for e in cmp_page_obj.object_list:
             change_plan_rows.append({
                 "id": e.id,
                 "unique_id": e.unique_id,
@@ -2428,8 +2409,6 @@ def freeze_membership(request):
                 "due_date_display": e.DueDate.strftime("%d %b %Y") if e.DueDate else "—",
                 "invoice_number": invoice_map.get(e.id, "—"),
             })
-
-    # ── Delete Enrollment tab: independent search / filter / pagination ──
     del_page_obj = None
     del_query = ""
     del_status = "all"
@@ -2437,15 +2416,27 @@ def freeze_membership(request):
         del_query, del_status, del_page_obj = _build_delete_enrollment_page(request, gym)
 
     return render(request, "freeze_membership.html", {
+        "active_tab": active_tab,
+
         "page_obj": page_obj,
-        "query": query,
+        "freeze_search_by_choices": [("id", "Member ID")],
+        "freeze_search_by": "id",
+        "freeze_search": freeze_query,
+
         "can_change_plan": can_change_plan,
         "can_delete_enrollment": can_delete_enrollment,
         "plans": plans,
         "change_plan_rows": change_plan_rows,
+        "cmp_page_obj": cmp_page_obj,
+        "cmp_query": cmp_query,
+        "cmp_search_by_choices": [("all", "Name / Phone / ID")],
+        "cmp_search_by": "all",
+
         "del_page_obj": del_page_obj,
         "del_query": del_query,
         "del_status": del_status,
+        "del_search_by_choices": [("all", "Name / Phone / ID")],
+        "del_search_by": "all",
         "del_status_choices": [
             ("all", "All"),
             ("active", "Active"),
@@ -2458,18 +2449,12 @@ def freeze_membership(request):
 
 
 def _build_delete_enrollment_page(request, gym):
-    """
-    Builds the paginated, searched, filtered row-set for the Delete
-    Enrollment tab. Returns (query, status_filter, page_obj).
-    Every enrollment is shown here (not just duplicates) — duplicate
-    detection only adds a warning badge, it never restricts the list.
-    """
     from django.db.models import Count
     from datetime import timedelta
 
     today = timezone.localdate()
 
-    del_query  = request.GET.get("dq", "").strip()
+    del_query  = request.GET.get("del_search", "").strip()
     del_status = request.GET.get("dstatus", "all").strip() or "all"
 
     base_qs = (
@@ -2489,11 +2474,6 @@ def _build_delete_enrollment_page(request, gym):
     if del_status == "active":
         base_qs = base_qs.filter(user__isnull=False, DueDate__gte=today)
     elif del_status == "frozen":
-        # "Frozen" = a DueDate extension already applied and pushed comfortably
-        # into the future relative to their plan's normal cycle isn't tracked
-        # as a separate flag today, so we treat "frozen" as: active, not
-        # expiring soon, not pending signup. Adjust here if/when a dedicated
-        # frozen flag is added to the model.
         base_qs = base_qs.filter(user__isnull=False, DueDate__gt=today + timedelta(days=5))
     elif del_status == "expired":
         base_qs = base_qs.filter(DueDate__lt=today)
@@ -2513,13 +2493,6 @@ def _build_delete_enrollment_page(request, gym):
     paginator = Paginator(base_qs, 20)
     page_obj  = paginator.get_page(request.GET.get("dpage", 1))
 
-    # Duplicate-candidate detection for badges (computed once per page, not
-    # per row, to avoid N+1 queries). Two independent signals:
-    #   1. Same phone number shared by more than one enrollment in this gym.
-    #   2. Same full name (case-insensitive) shared by more than one
-    #      enrollment in this gym — catches the "re-registered under a new
-    #      number" case that a phone-based check alone would miss.
-    row_ids = [e.id for e in page_obj.object_list]
     phones_on_page = {e.phone for e in page_obj.object_list}
     names_on_page  = {e.fullname.strip().lower() for e in page_obj.object_list}
 
@@ -2543,17 +2516,10 @@ def _build_delete_enrollment_page(request, gym):
         e.is_possible_duplicate = is_dup_phone or is_dup_name
 
     return del_query, del_status, page_obj
- 
- 
-# 3) ADD this new view — the AJAX endpoint the modal posts to.
- 
+
 @permission_required("can_change_membership_plan")
 @require_POST
 def change_membership_plan_view(request, enrollment_id):
-    """
-    POST /owner/member/<enrollment_id>/change-plan/
-    Body (form-encoded): new_plan_id, effective_date, reason, confirm
-    """
     gym = getattr(request, 'gym', None)
     if gym is None:
         return JsonResponse({"success": False, "error": "No gym context available."}, status=403)
@@ -2603,16 +2569,12 @@ def change_membership_plan_view(request, enrollment_id):
             "success": False,
             "error": "Something went wrong updating the membership. No changes were saved.",
         }, status=500)
- 
+
     return JsonResponse({"success": True, **result})
 
 @permission_required("can_delete_enrollment")
 @require_POST
 def delete_enrollment_view(request, enrollment_id):
-    """
-    POST /owner/member/<enrollment_id>/delete/
-    Body (form-encoded): delete_type ('duplicate'|'soft'), reason, confirm_text
-    """
     gym = getattr(request, 'gym', None)
     if gym is None:
         return JsonResponse({"success": False, "error": "No gym context available."}, status=403)
@@ -2634,7 +2596,7 @@ def delete_enrollment_view(request, enrollment_id):
     from AuthFit.services.delete_enrollment import (
         delete_enrollment_duplicate, delete_enrollment_soft, DeleteEnrollmentError,
     )
-
+    enrollment_label = enrollment.fullname 
     try:
         if delete_type == 'duplicate':
             delete_enrollment_duplicate(enrollment, gym, request.user, reason)
@@ -2651,6 +2613,18 @@ def delete_enrollment_view(request, enrollment_id):
             "error": "Something went wrong while deleting. No changes were saved.",
         }, status=500)
 
+    from AuthFit.audit import log_action
+    log_action(
+        gym=gym,
+        action='enrollment_deleted',
+        staff_user=request.user,
+        request=request,
+        object_type='Enrollment',
+        object_id=enrollment_id,
+        object_label=enrollment_label,
+        new_values={'delete_type': delete_type, 'reason': reason},
+    )
+
     return JsonResponse({"success": True, "message": msg})
 
 
@@ -2662,7 +2636,7 @@ def freeze_membership_apply(request):
     days_raw      = request.POST.get("days", "").strip()
     back_query    = request.POST.get("q", "").strip()
     
-    redirect_url = f"/freeze-membership/?q={back_query}" if back_query else "/freeze-membership/"
+    redirect_url = f"/freeze-membership/?tab=freeze&freeze_search={back_query}" if back_query else "/freeze-membership/?tab=freeze"
 
     try:
         days = int(days_raw)
@@ -2701,11 +2675,6 @@ def freeze_membership_apply(request):
         f"{old_due.strftime('%d %b %Y')} → {new_due.strftime('%d %b %Y')}."
     )
     return redirect(redirect_url)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Transferred Members — old gym's view into outgoing transfers
-# ──────────────────────────────────────────────────────────────────────────────
 
 def _format_action_date(dt):
     if not dt:
@@ -2812,31 +2781,29 @@ def transfer_delete_enrollment(request, transfer_id):
 
 @_gym_staff_required
 def attendance_analytics(request):
-    gym = getattr(request, 'gym', None) 
+    gym = getattr(request, 'gym', None)
     cache_key = f"admin_attendance_data_{gym.pk if gym else 'super'}"
     cached = cache.get(cache_key)
- 
+
     if cached is None:
         from django.db.models import Count, Max
         from django.db.models.functions import ExtractWeekDay, ExtractHour, TruncMonth
         from collections import defaultdict
- 
-        now    = timezone.now()
-        today  = timezone.localdate()
+
+        now     = timezone.now()
+        today   = timezone.localdate()
         last_30 = now - timedelta(days=30)
- 
+
         qs        = Attendence_model.objects.all()
         enroll_qs = Enrollment.objects.all()
         if gym:
             qs        = qs.filter(gym=gym)
             enroll_qs = enroll_qs.filter(gym=gym)
- 
-        # ── Today vs yesterday ────────────────────────────────────────────
+
         today_count     = qs.filter(date=today).count()
         yesterday_count = qs.filter(date=today - timedelta(days=1)).count()
         today_delta     = today_count - yesterday_count
- 
-        # ── Day-of-week traffic ───────────────────────────────────────────
+
         ordered_dow = [2, 3, 4, 5, 6, 7, 1]
         day_labels  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         dow = (
@@ -2848,59 +2815,61 @@ def attendance_analytics(request):
         )
         dow_lookup = {d['dow']: d['total'] for d in dow}
         day_data   = [dow_lookup.get(d, 0) for d in ordered_dow]
- 
-        # ── Hourly traffic ────────────────────────────────────────────────
+
+        # ── Reusable hour-label helper ──
+        def _fmt_hour(h):
+            """0-23 -> 12am, 1am..11am, 12pm, 1pm..11pm. Never 0am/24pm."""
+            h = h % 24
+            if h == 0:
+                return "12am"
+            if h < 12:
+                return f"{h}am"
+            if h == 12:
+                return "12pm"
+            return f"{h - 12}pm"
+
+        # ── Full 24-hour aggregation, NULL-safe ──
+        hour_range = list(range(24))
         hourly = (
             qs.filter(date__gte=last_30.date())
-            .annotate(hr=ExtractHour('timestamp'))
-            .values('hr')
-            .annotate(total=Count('id'))
-            .order_by('hr')
+            .annotate(hr=ExtractHour("timestamp"))
+            .filter(hr__isnull=False)          # exclude NULLs before aggregating
+            .values("hr")
+            .annotate(total=Count("id"))
+            .order_by("hr")
         )
-        hour_lookup = {h['hr']: h['total'] for h in hourly}
-        hour_range  = list(range(5, 12)) + list(range(16, 23))
- 
-        def _fmt(h):
-            hh  = h if h <= 12 else h - 12
-            suf = 'am' if h < 12 else 'pm'
-            return f"{hh}{suf}" if h != 12 else '12p'
- 
-        hour_labels   = [_fmt(h) for h in hour_range]
-        hour_data     = [hour_lookup.get(h, 0) for h in hour_range]
- 
+        hour_lookup = {h['hr']: h['total'] for h in hourly if h['hr'] is not None}
+
+        hour_labels = [_fmt_hour(h) for h in hour_range]
+        hour_data   = [hour_lookup.get(h, 0) for h in hour_range]
+
+        # ── Peak hour: robust, wraps 23 -> 0, handles empty data ──
         if hour_lookup:
-            peak_hr       = max(hour_lookup, key=hour_lookup.get)
-            next_hr       = peak_hr + 1
-            peak_hr_label = (
-                f"{peak_hr if peak_hr <= 12 else peak_hr - 12}"
-                f"{'am' if peak_hr < 12 else 'pm'}"
-                f" – "
-                f"{next_hr if next_hr <= 12 else next_hr - 12}"
-                f"{'am' if next_hr < 12 else 'pm'}"
-            )
+            peak_hr  = max(hour_lookup, key=hour_lookup.get)
+            next_hr  = (peak_hr + 1) % 24
+            peak_hr_label = f"{_fmt_hour(peak_hr)} – {_fmt_hour(next_hr)}"
         else:
             peak_hr_label = '—'
- 
+
         busiest_day = day_labels[day_data.index(max(day_data))] if any(day_data) else '—'
- 
-        # ── Heatmap ───────────────────────────────────────────────────────
+
+        # ── 24-hour heatmap ──
         heatmap_raw = (
             qs.filter(date__gte=last_30.date())
             .annotate(dow=ExtractWeekDay('date'), hr=ExtractHour('timestamp'))
+            .filter(hr__isnull=False)
             .values('dow', 'hr')
             .annotate(total=Count('id'))
         )
         hm = defaultdict(lambda: defaultdict(int))
         for row in heatmap_raw:
             hm[row['dow']][row['hr']] = row['total']
- 
-        hm_hour_range = list(range(5, 12)) + list(range(16, 23))
+
         heatmap = {
-            label: [hm[db_dow].get(h, 0) for h in hm_hour_range]
+            label: [hm[db_dow].get(h, 0) for h in hour_range]
             for label, db_dow in zip(day_labels, ordered_dow)
         }
- 
-        # ── Monthly trend ─────────────────────────────────────────────────
+
         six_months_ago = now - timedelta(days=180)
         monthly = (
             qs.filter(date__gte=six_months_ago.date())
@@ -2911,8 +2880,7 @@ def attendance_analytics(request):
         )
         month_labels = [m['month'].strftime("%b %Y") for m in monthly if m['month']]
         month_data   = [m['total'] for m in monthly]
- 
-        # ── At-risk members (no N+1) ──────────────────────────────────────
+
         all_last_seen   = qs.values('user_id').annotate(last_date=Max('date'))
         absent_rows     = [r for r in all_last_seen if (today - r['last_date']).days >= 5]
         absent_user_ids = [r['user_id'] for r in absent_rows]
@@ -2920,7 +2888,7 @@ def attendance_analytics(request):
             e.user_id: e
             for e in enroll_qs.filter(user_id__in=absent_user_ids)
         }
- 
+
         at_risk = []
         for row in absent_rows:
             enroll = enrollment_map.get(row['user_id'])
@@ -2939,11 +2907,10 @@ def attendance_analytics(request):
                 'days':   days_absent,
                 'status': status,
             })
- 
+
         at_risk.sort(key=lambda x: -x['days'])
         at_risk = at_risk[:10]
- 
-        # ── Retention ─────────────────────────────────────────────────────
+
         total_enrolled    = enroll_qs.count()
         active_this_month = (
             qs.filter(date__year=today.year, date__month=today.month)
@@ -2953,7 +2920,7 @@ def attendance_analytics(request):
             round(active_this_month / total_enrolled * 100, 1)
             if total_enrolled else 0
         )
- 
+
         cached = {
             "today_count":       today_count,
             "today_delta":       today_delta,
@@ -2973,9 +2940,9 @@ def attendance_analytics(request):
             "retention_pct":     retention_pct,
         }
         cache.set(cache_key, cached, timeout=120)
- 
+
     return render(request, "attendance_analysis.html", {
-        "gym":               gym,      
+        "gym":               gym,
         "today_count":       cached["today_count"],
         "today_delta":       cached["today_delta"],
         "peak_hr_label":     cached["peak_hr_label"],
@@ -2994,92 +2961,105 @@ def attendance_analytics(request):
         "heatmap_json":      json.dumps(cached["heatmap"]),
     })
  
+def _invalidate_attendance_cache(gym_id):
+    cache.delete(f"admin_attendance_data_{gym_id}")
+    cache.delete("admin_attendance_data_super")
 
 @_gym_staff_required
 def revenue_view(request):
+    from billing.services import revenue_service
+
     gym = getattr(request, 'gym', None)
+    gst_enabled = revenue_service.is_gst_enabled(gym)
     cache_key = f"admin_revenue_{gym.pk if gym else 'super'}"
     data = cache.get(cache_key)
 
     if data is None:
-        qs = Enrollment.objects.all()
+        today = timezone.localdate()
+        last_7_days = today - timedelta(days=7)
+
+        daily_rev = revenue_service.get_daily_series(gym, days=7, metric='collection')
+        monthly_rev = revenue_service.get_monthly_series(gym, months=12, metric='collection')
+        plan_breakdown = revenue_service.get_plan_revenue_breakdown(gym)
+
+        today_figures = revenue_service.get_today_figures(gym)
+        week_figures = revenue_service.get_week_figures(gym, today)
+        month_figures = revenue_service.get_month_figures(gym, today)
+        lifetime_figures = revenue_service.get_lifetime_figures(gym)
+        gst_enabled_flag = revenue_service.is_gst_enabled(gym)
+        gym_start_date = gym.created_at.date() if gym and gym.created_at else today
+        trend_metric = 'revenue' if gst_enabled_flag else 'collection'
+        lifetime_series = revenue_service.get_monthly_series_since(gym, gym_start_date, metric=trend_metric)
+        lifetime_trend_labels = [
+            f"{today.replace(year=r['year'], month=r['month'], day=1):%b %Y}" for r in lifetime_series
+        ]
+        lifetime_trend_data = [float(r['value']) for r in lifetime_series]
+        lifetime_total_to_date = float(lifetime_figures['revenue'])
+        lifetime_as_of_date = today.strftime('%d %b %Y')
+
+        if len(lifetime_trend_data) >= 2 and lifetime_trend_data[-2] > 0:
+            lifetime_change_pct = round(
+                ((lifetime_trend_data[-1] - lifetime_trend_data[-2]) / lifetime_trend_data[-2]) * 100, 1
+            )
+            lifetime_trend_up = lifetime_trend_data[-1] >= lifetime_trend_data[-2]
+        else:
+            lifetime_change_pct = 0.0
+            lifetime_trend_up = True
+
+        enroll_qs = Enrollment.objects.filter(is_deleted=False)
         if gym:
-            qs = qs.filter(gym=gym)
+            enroll_qs = enroll_qs.filter(gym=gym)
 
-        monthly = (
-            qs.annotate(month=TruncMonth('created_at'))
-            .values('month')
-            .annotate(total=Sum('Amount'))
-            .order_by('month')
-        )
-        last_7_days = timezone.now() - timedelta(days=7)
-        daily = (
-            qs.filter(created_at__gte=last_7_days)
-            .annotate(day=TruncDay('created_at'))
-            .values('day')
-            .annotate(total=Sum('Amount'))
-            .order_by('day')
-        )
         members = (
-            qs.annotate(month=TruncMonth('created_at'))
-            .values('month')
-            .annotate(count=Count('id'))
-            .order_by('month')
+            enroll_qs.annotate(month=TruncMonth('doj'))
+            .values('month').annotate(count=Count('id')).order_by('month')
         )
-        payments = (
-            qs.exclude(paymentStatus__isnull=True)
-            .values('paymentStatus')
-            .annotate(count=Count('id'))
+        payments_breakdown = (
+            enroll_qs.exclude(paymentStatus__isnull=True)
+            .values('paymentStatus').annotate(count=Count('id'))
         )
-        pending_qs = qs.filter(pendingAmount__gt=0, paymentStatus="Pending")
-        pending_count = pending_qs.count()
-        pending_amount = pending_qs.aggregate(
-            total=Sum('pendingAmount'))['total'] or 0
-
-        plan_revenue = (
-            qs.values('selectPlan__plan')
-            .annotate(total=Sum('Amount'), count=Count('id'))
-            .order_by('-total')
-        )
+        pending_qs = enroll_qs.filter(pendingAmount__gt=0, paymentStatus="Pending")
 
         data = {
-            "monthly_labels": [x['month'].strftime("%b %Y") for x in monthly if x['month']],
-            "monthly_data":   [float(x['total'] or 0) for x in monthly],
-            "daily_labels":   [x['day'].strftime("%d %b") for x in daily if x['day']],
-            "daily_data":     [float(x['total'] or 0) for x in daily],
+            "monthly_labels": [f"{today.replace(year=r['year'], month=r['month'], day=1):%b %Y}" for r in monthly_rev],
+            "monthly_data":   [float(r['value']) for r in monthly_rev],
+            "daily_labels":   [r['date'].strftime("%d %b") for r in daily_rev],
+            "daily_data":     [float(r['value']) for r in daily_rev],
             "member_labels":  [x['month'].strftime("%b %Y") for x in members if x['month']],
             "member_data":    [x['count'] for x in members],
-            "payment_labels": [x['paymentStatus'] for x in payments],
-            "payment_data":   [x['count'] for x in payments],
-            "plan_labels":    [x['selectPlan__plan'] or 'Unknown' for x in plan_revenue],
-            "plan_revenue":   [float(x['total'] or 0) for x in plan_revenue],
-            "plan_count":     [x['count'] for x in plan_revenue],
-            "total_revenue":  sum(float(x['total'] or 0) for x in monthly),
-            "today_revenue":  sum(float(x['total'] or 0) for x in daily),
-            "total_members":  qs.count(),
-            "pending_count":  pending_count,
-            "pending_amount": float(pending_amount),
+            "payment_labels": [x['paymentStatus'] for x in payments_breakdown],
+            "payment_data":   [x['count'] for x in payments_breakdown],
+            "plan_labels":    [p['plan_name'] for p in plan_breakdown],
+            "plan_revenue":   [float(p['revenue']) for p in plan_breakdown],
+            "plan_count":     [p['count'] for p in plan_breakdown],
+
+            "lifetime_trend_labels": lifetime_trend_labels,     
+            "lifetime_trend_data":   lifetime_trend_data,       
+            "lifetime_change_pct":   lifetime_change_pct,       
+            "lifetime_trend_up":     lifetime_trend_up,         
+            "lifetime_total_to_date": lifetime_total_to_date,   
+            "lifetime_as_of_date":    lifetime_as_of_date,      
+
+            "total_revenue":      float(lifetime_figures['revenue']),
+            "total_collection":   float(lifetime_figures['collection']),
+            "month_revenue":      float(month_figures['revenue']),
+            "month_collection":   float(month_figures['collection']),
+            "week_revenue":       float(week_figures['revenue']),
+            "week_collection":    float(week_figures['collection']),
+            "today_revenue":      float(today_figures['revenue']),
+            "today_collection":   float(today_figures['collection']),
+
+            "total_members":  enroll_qs.count(),
+            "pending_count":  pending_qs.count(),
+            "pending_amount": float(pending_qs.aggregate(total=Sum('pendingAmount'))['total'] or 0),
         }
         cache.set(cache_key, data, timeout=60)
 
     return render(request, "revenue.html", {
         "gym": gym,
-        "monthly_labels": json.dumps(data["monthly_labels"]),
-        "monthly_data":   json.dumps(data["monthly_data"]),
-        "daily_labels":   json.dumps(data["daily_labels"]),
-        "daily_data":     json.dumps(data["daily_data"]),
-        "member_labels":  json.dumps(data["member_labels"]),
-        "member_data":    json.dumps(data["member_data"]),
-        "payment_labels": json.dumps(data["payment_labels"]),
-        "payment_data":   json.dumps(data["payment_data"]),
-        "plan_labels":    json.dumps(data["plan_labels"]),
-        "plan_revenue":   json.dumps(data["plan_revenue"]),
-        "plan_count":     json.dumps(data["plan_count"]),
-        "total_revenue":  data["total_revenue"],
-        "today_revenue":  data["today_revenue"],
-        "total_members":  data["total_members"],
-        "pending_count":  data["pending_count"],
-        "pending_amount": data["pending_amount"],
+        "gst_enabled": gst_enabled,
+        "hidden_cards": [],
+        **{k: (json.dumps(v) if isinstance(v, list) else v) for k, v in data.items()},
     })
 
 def feature_comp(request):

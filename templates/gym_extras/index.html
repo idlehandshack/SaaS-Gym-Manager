@@ -1,441 +1,469 @@
+{% extends "dashboard/base.html" %}
 {% load static %}
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gym Extras — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
-  {% if favicon_url %}
-    <link rel="icon" href="{{ favicon_url }}">
-    <link rel="shortcut icon" href="{{ favicon_url }}">
-  {% else %}
-    <link rel="icon" href="{% static 'images/favicon.ico' %}">
-    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
-  {% endif %}
+{% load gym_extras_tags %}
+{% block title %}Gym Extras{% endblock %}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+{% block extra_css %}
+<style>
+  /* ── Gym Extras — dashboard-themed overrides ──────────────────── */
+  .extras-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--db-card-radius);
+    box-shadow: var(--db-shadow);
+    padding: 1.1rem 1.2rem;
+    margin-bottom: 1rem;
+  }
 
-  <!-- PWA meta (kept from base.html) -->
-  <link rel="manifest" href="{% static 'js/manifest.json' %}" />
-  <meta name="theme-color" content="#080808" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta name="apple-mobile-web-app-title" content="EnterGYM" />
-  <style>
-    /* ── TOKENS (matched to contact.html / upi settings) ── */
-    :root {
-      --bg:          #080808;
-      --surface:     #111111;
-      --surface-2:   #181818;
-      --surface-3:   #1e1e1e;
-      --border:      rgba(255,255,255,.06);
-      --border-2:    rgba(255,255,255,.11);
-      --orange:      #ff5a00;
-      --orange-dim:  rgba(255,90,0,.10);
-      --orange-bdr:  rgba(255,90,0,.28);
-      --green:       #5de87c;
-      --green-dim:   rgba(93,232,124,.10);
-      --green-bdr:   rgba(93,232,124,.28);
-      --red:         #ef5350;
-      --red-dim:     rgba(239,83,80,.10);
-      --red-bdr:     rgba(239,83,80,.28);
-      --text-hi:     #f5f5f5;
-      --text-mid:    #888;
-      --text-lo:     #444;
-      --font-d:      "Barlow Condensed", sans-serif;
-      --font-b:      "Barlow", sans-serif;
-      --ease:        cubic-bezier(.4,0,.2,1);
-      --t:           .22s;
-      --radius-lg:   18px;
-      --radius-md:   12px;
-      --radius-sm:   8px;
-      --radius-pill: 40px;
-      --nav-h:       60px;
-    }
+  .extras-section-title {
+    font-family: var(--font-d);
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: .01em;
+    color: var(--text-hi);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .extras-section-title i { color: var(--orange); }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+  .extras-empty {
+    font-family: var(--font-b);
+    font-size: 13px;
+    color: var(--text-mid);
+    margin: 0;
+  }
 
-    body {
-      background: var(--bg);
-      color: var(--text-hi);
-      font-family: var(--font-b);
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-      min-height: 100vh;
-    }
+  /* Social fields */
+  .social-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .social-field { display: flex; flex-direction: column; gap: 6px; }
+  .social-field label {
+    font-family: var(--font-b);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-mid);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .social-field label i { color: var(--orange); }
+  .social-field input {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    color: var(--text-hi);
+    font-family: var(--font-b);
+    font-size: 13px;
+    outline: none;
+    transition: border-color var(--t) var(--ease), background var(--t) var(--ease);
+  }
+  .social-field input::placeholder { color: var(--text-lo); }
+  .social-field input:focus { border-color: var(--orange-bdr); background: var(--surface-3); }
 
-    .hero-animate {
-      opacity: 0;
-      transform: translateY(30px);
-      animation: smoothFade 0.5s ease-out forwards;
-    }
-    @keyframes smoothFade {
-      to { opacity: 1; transform: translateY(0); }
-    }
+  .social-note {
+    font-family: var(--font-b);
+    font-size: 12.5px;
+    color: var(--text-mid);
+    margin-bottom: 1rem;
+  }
 
-    /* ── STICKY NAV ── */
-    .store-nav {
-      position: sticky; top: 0; z-index: 200;
-      height: var(--nav-h);
-      background: rgba(8,8,8,.94);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center;
-    }
-    .nav-inner {
-      width: 100%; padding: 0 clamp(16px,4vw,40px);
-      display: flex; align-items: center;
-      justify-content: space-between; gap: 12px;
-    }
-    .nav-brand {
-      font-family: var(--font-d); font-weight: 900;
-      font-size: clamp(1.1rem,3vw,1.5rem);
-      text-transform: uppercase; text-decoration: none;
-      color: var(--text-hi); letter-spacing: -.01em;
-      white-space: nowrap; display: flex; align-items: center; gap: 8px;
-      transition: color var(--t);
-      min-width: 0;
-    }
-    .nav-brand .acc { color: var(--orange); }
-    .nav-logo {
-      height: 26px;
-      width: auto;
-      flex-shrink: 0;
-      filter: drop-shadow(0 0 6px rgba(255,90,0,.35));
-    }
-    .nav-badge {
-      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
-      background: var(--orange-dim); color: var(--orange);
-      border: 1px solid var(--orange-bdr);
-      padding: 5px 14px; border-radius: var(--radius-pill);
-      white-space: nowrap;
-    }
-    .nav-badge.badge-off {
-      background: rgba(255,255,255,.05); color: var(--text-mid);
-      border-color: var(--border-2);
-    }
+  /* Pick grid (services / brands) */
+  .pick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+  .extras-pick-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px 12px 14px;
+    cursor: pointer;
+    transition: border-color var(--t) var(--ease), background var(--t) var(--ease), transform var(--t) var(--ease);
+    text-align: center;
+  }
+  .extras-pick-card:hover {
+    border-color: var(--orange-bdr);
+    transform: translateY(-2px);
+  }
+  .extras-pick-card input[type="checkbox"] {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--orange);
+    cursor: pointer;
+  }
+  .extras-pick-card img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+  }
+  .extras-pick-card span {
+    font-family: var(--font-b);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-mid);
+  }
+  .extras-pick-card:has(input:checked) {
+    border-color: var(--orange-bdr);
+    background: var(--orange-dim);
+  }
+  .extras-pick-card:has(input:checked) span { color: var(--text-hi); }
 
-    /* ── PAGE HEADER ── */
-    .page-header {
-      position: relative;
-      padding: clamp(40px,7vw,72px) 0 clamp(28px,5vw,48px);
-      text-align: center; overflow: hidden;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: clamp(24px,4vw,40px);
-    }
-    .page-header::before {
-      content: ""; position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
-      z-index: 0;
-    }
-    .header-inner {
-      position: relative; z-index: 1;
-      padding: 0 clamp(16px,4vw,40px);
-    }
-    .header-eyebrow {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
-      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--orange); margin-bottom: 10px;
-      padding: 5px 14px;
-      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
-      background: var(--orange-dim);
-    }
-    .page-header h1 {
-      font-family: var(--font-d); font-weight: 900;
-      font-size: clamp(2rem,7vw,3.8rem); line-height: .92;
-      letter-spacing: -.01em; text-transform: uppercase;
-      margin-bottom: 8px; color: var(--text-hi);
-    }
-    .page-header h1 .accent { color: var(--orange); }
-    .contact-sub {
-      font-family: var(--font-b);
-      font-size: clamp(.85rem,2.2vw,.98rem);
-      color: var(--text-mid);
-      max-width: 560px;
-      margin: 0 auto;
-    }
+  /* Placeholder / coming soon card */
+  .extras-placeholder {
+    border: 1px dashed var(--border-2);
+    background: transparent;
+    box-shadow: none;
+  }
+  .extras-placeholder .extras-section-title,
+  .extras-placeholder .extras-section-title i { color: var(--text-lo); }
+  .extras-placeholder p {
+    font-family: var(--font-b);
+    font-size: 12.5px;
+    color: var(--text-mid);
+    margin: 0;
+  }
 
-    /* ── FLASH MESSAGES ── */
-    #message-container {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      width: 100%;
-      max-width: 400px;
-      padding: 0 16px;
-    }
-    .flash-message {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 20px;
-      margin-bottom: 12px;
-      border-radius: var(--radius-md);
-      font-size: 13px;
-      font-weight: 500;
-      color: #fff;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    }
-    .flash-message.success { background: #166534; border: 1px solid #22c55e44; }
-    .flash-message.error   { background: #7f1d1d; border: 1px solid #ef444444; }
-    .flash-message.warning { background: #7a5b00; border: 1px solid #eab30844; }
-    .flash-message.default { background: #1f2937; border: 1px solid #ffffff18; }
-    .close-btn {
-      margin-left: 10px;
-      font-size: 17px;
-      font-weight: 700;
-      border: none;
-      background: none;
-      color: rgba(255, 255, 255, 0.6);
-      cursor: pointer;
-      transition: color 0.15s;
-    }
-    .close-btn:hover { color: #fff; }
+  .submit-btn {
+    margin-top: .25rem;
+    padding: 12px 30px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--orange);
+    background: var(--orange);
+    color: #fff;
+    font-family: var(--font-d);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background var(--t) var(--ease), transform .1s;
+  }
+  .submit-btn:hover { background: #e04e00; }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn svg { flex-shrink: 0; }
 
-    /* ── MAIN CONTENT ── */
-    .contact-page {
-      max-width: 1100px; margin: 0 auto;
-      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
-    }
+  .extras-error {
+    color: var(--red);
+    font-size: 12.5px;
+    margin-top: 12px;
+  }
+  .upi-settings-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    text-decoration: none;
+    transition: border-color var(--t) var(--ease), transform var(--t) var(--ease);
+  }
+  .upi-settings-link:hover {
+    border-color: var(--orange-bdr);
+    transform: translateY(-2px);
+  }
+  .upi-settings-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    background: var(--orange-dim);
+    border: 1px solid var(--orange-bdr);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--orange);
+    flex-shrink: 0;
+  }
+  .upi-settings-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+  }
+  .upi-settings-text .name {
+    font-family: var(--font-b);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-hi);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .upi-settings-text .desc {
+    font-family: var(--font-b);
+    font-size: 12.5px;
+    color: var(--text-mid);
+  }
+  .upi-settings-arrow {
+    color: var(--text-mid);
+    flex-shrink: 0;
+  }
+  .upi-status-badge {
+    font-family: var(--font-d);
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: var(--radius-pill, 40px);
+  }
+  .upi-status-badge.on {
+    background: var(--green-dim, rgba(93,232,124,.10));
+    color: var(--green, #5de87c);
+    border: 1px solid var(--green-bdr, rgba(93,232,124,.28));
+  }
+  .upi-status-badge.off {
+    background: rgba(255,255,255,.05);
+    color: var(--text-mid);
+    border: 1px solid var(--border-2, rgba(255,255,255,.11));
+  }
+  
+  @media (max-width: 480px) {
+    .extras-section { padding: .9rem 1rem; }
+    .pick-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+  }
+</style>
+{% endblock %}
 
-    .extras-section {
-      background: var(--surface);
-      border: 1px solid var(--border-2);
-      border-radius: var(--radius-lg);
-      padding: clamp(24px, 4vw, 36px) clamp(20px, 4vw, 32px);
-      margin-bottom: clamp(20px, 3vw, 28px);
-    }
-    .social-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 14px;
-    }
-    .social-field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .social-field label {
-      font-family: var(--font-b);
-      font-size: 12.5px;
-      font-weight: 500;
-      color: rgba(255,255,255,.75);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .social-field label i { color: var(--orange); }
-    .social-field input {
-      background: var(--bg);
-      border: 1px solid var(--border-2);
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
-      color: var(--text-hi);
-      font-family: var(--font-b);
-      font-size: 13px;
-      outline: none;
-      transition: border-color var(--t);
-    }
-    .social-field input::placeholder { color: var(--text-lo); }
-    .social-field input:focus { border-color: var(--orange-bdr); }
-    .extras-section-title {
-      font-family: var(--font-d);
-      font-size: .8rem;
-      font-weight: 700;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      color: var(--text-mid);
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .extras-section-title i { color: var(--orange); }
-
-    .extras-empty {
-      font-family: var(--font-b);
-      font-size: 13px;
-      color: var(--text-mid);
-      margin: 0;
-    }
-
-    /* Pick grid */
-    .pick-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 12px;
-    }
-
-    .extras-pick-card {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      background: var(--bg);
-      border: 1px solid var(--border-2);
-      border-radius: var(--radius-md);
-      padding: 16px 12px 14px;
-      cursor: pointer;
-      transition: border-color var(--t), background var(--t);
-      text-align: center;
-    }
-    .extras-pick-card:hover {
-      border-color: rgba(255,90,0,.18);
-    }
-    .extras-pick-card input[type="checkbox"] {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 16px;
-      height: 16px;
-      accent-color: var(--orange);
-      cursor: pointer;
-    }
-    .extras-pick-card img {
-      width: 48px;
-      height: 48px;
-      object-fit: contain;
-      border-radius: var(--radius-sm);
-    }
-    .extras-pick-card span {
-      font-family: var(--font-b);
-      font-size: 12.5px;
-      font-weight: 500;
-      color: rgba(255,255,255,.75);
-    }
-    .extras-pick-card:has(input:checked) {
-      border-color: var(--orange-bdr);
-      background: var(--orange-dim);
-    }
-    .extras-pick-card:has(input:checked) span {
-      color: var(--text-hi);
-    }
-
-    /* Placeholder / coming soon card */
-    .extras-placeholder {
-      border: 1px dashed var(--border-2);
-      background: transparent;
-    }
-    .extras-placeholder .extras-section-title {
-      color: var(--text-lo);
-    }
-    .extras-placeholder .extras-section-title i { color: var(--text-lo); }
-    .extras-placeholder p {
-      font-family: var(--font-b);
-      font-size: 12.5px;
-      color: var(--text-mid);
-      margin: 0;
-    }
-
-    .submit-btn {
-      margin-top: 6px;
-      padding: 13px 32px;
-      border-radius: var(--radius-sm);
-      border: none;
-      background: var(--orange);
-      color: #fff;
-      font-family: var(--font-d);
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: background var(--t), transform .1s;
-    }
-    .submit-btn:hover { background: #e04e00; }
-    .submit-btn:active { transform: scale(0.98); }
-    .submit-btn svg { flex-shrink: 0; }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 480px) {
-      .extras-section { padding: 22px 16px; }
-      .pick-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
-      .nav-brand span:not(.acc) { display: none; }
-    }
-    @supports (padding: env(safe-area-inset-left)) {
-      .nav-inner {
-        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
-        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- ══ FLASH MESSAGES ══ -->
-  <div id="message-container">
-    {% for message in messages %}
-    <div class="flash-message {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}default{% endif %}">
-      <span>{{ message }}</span>
-      <button class="close-btn">×</button>
-    </div>
-    {% endfor %}
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">Setting</h1>
+    <p class="db-page-sub">
+      Pick which services and equipment brands apply to {{ gym.gym_name|default:"your gym" }} — these are maintained by the platform team, you just select what's relevant and it'll appear on your public homepage.
+    </p>
   </div>
+</div>
 
-  <!-- ══ STICKY NAV ══ -->
-  <nav class="store-nav">
-    <div class="nav-inner">
-      <a class="nav-brand" href="/">
-        {% if gym and gym.logo %}
-          <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }} logo" class="nav-logo" />
-        {% else %}
-          <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM Logo" class="nav-logo" />
+{% if form.non_field_errors %}
+  <div class="db-messages">
+    <div class="alert alert-danger py-2" role="alert">{{ form.non_field_errors }}</div>
+  </div>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="row g-3 mb-1">
+    <div class="col-12">
+      <!-- =================== DASHBOARD THEME =================== -->
+      <div class="extras-section">
+        <div class="extras-section-title"><i class="bi bi-palette2"></i> Dashboard Theme</div>
+        <p class="social-note">Pick an accent color for your dashboard — buttons, charts, and highlights update everywhere to match.</p>
+
+        <div class="theme-preset-grid">
+          {% for value, label in form.fields.theme.choices %}
+            {% if value != 'custom' %}
+            <label class="theme-swatch" style="--swatch:{{ theme_presets|dict_get:value }};">
+              <input type="radio" name="theme" value="{{ value }}"
+                    {% if gym.theme == value %}checked{% endif %}>
+              <span class="theme-swatch-dot"></span>
+              <span class="theme-swatch-label">{{ label }}</span>
+            </label>
+            {% endif %}
+          {% endfor %}
+
+          <label class="theme-swatch theme-swatch-custom">
+            <input type="radio" name="theme" value="custom" id="id_theme_custom_radio"
+                  {% if gym.theme == 'custom' %}checked{% endif %}>
+            <input type="color" name="theme_color" id="id_theme_color"
+                  value="{{ gym.theme_color|default:'#ff5a00' }}">
+            <span class="theme-swatch-label">Custom</span>
+          </label>
+        </div>
+
+        {% if form.theme_color.errors %}
+          <p class="extras-error">{{ form.theme_color.errors|first }}</p>
         {% endif %}
-        <span>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</span>
-        <span class="acc">Extras</span>
-      </a>
-      <div class="nav-badge">
-        Extras Catalog
       </div>
-    </div>
-  </nav>
+      <div class="extras-section">
+        <div class="extras-section-title"><i class="bi bi-circle-half"></i> Background Mode</div>
+        <p class="social-note">Choose a dark or light background for your dashboard.</p>
 
-  <!-- ══ PAGE HEADER ══ -->
-  <header class="page-header hero-animate">
-    <div class="header-inner">
-      <div class="header-eyebrow">
-        <i class="bi bi-grid-3x3-gap"></i> Gym Configuration
+        <div class="mode-toggle-grid">
+          <label class="mode-toggle-card">
+            <input type="radio" name="dashboard_mode" value="dark" {% if gym.dashboard_mode == 'dark' %}checked{% endif %}>
+            <div class="mode-preview mode-preview-dark"></div>
+            <span>Dark</span>
+          </label>
+          <label class="mode-toggle-card">
+            <input type="radio" name="dashboard_mode" value="light" {% if gym.dashboard_mode == 'light' %}checked{% endif %}>
+            <div class="mode-preview mode-preview-light"></div>
+            <span>Light</span>
+          </label>
+        </div>
       </div>
-      <h1>Gym <span class="accent">Extras</span></h1>
-      <div class="contact-sub">
-        Pick which services and equipment brands apply to your gym. These are maintained by the platform team — you just select what's relevant, and the picture/name will appear automatically on your public homepage.
+      <!-- =================== WHATSAPP SETTINGS =================== -->
+      <div class="extras-section">
+        <div class="extras-section-title"><i class="bi bi-whatsapp"></i> WhatsApp Settings</div>
+        <a href="{% url 'whatsapp_settings' %}" class="upi-settings-link">
+          <div class="upi-settings-icon"><i class="bi bi-whatsapp"></i></div>
+          <div class="upi-settings-text">
+            <span class="name">
+              Manage WhatsApp
+              {% if wa_settings.status == 'connected' and wa_settings.enabled %}
+                <span class="upi-status-badge on">Connected</span>
+              {% else %}
+                <span class="upi-status-badge off">Not Configured</span>
+              {% endif %}
+            </span>
+            <span class="desc">Connect your own WhatsApp Business number for membership reminders and payment updates.</span>
+          </div>
+          <i class="bi bi-chevron-right upi-settings-arrow"></i>
+        </a>
       </div>
-    </div>
-  </header>
-
-  <!-- ══ MAIN CONTENT ══ -->
-  <main class="contact-page">
-
-    {% if form.non_field_errors %}
-      <div class="flash-message error" style="position: static; margin-bottom: 20px; box-shadow: none;">
-        <span>{{ form.non_field_errors }}</span>
+      <!-- =================== UPI PAYMENT SETTINGS =================== -->
+      <div class="extras-section">
+        <div class="extras-section-title"><i class="bi bi-qr-code"></i> UPI Payment Settings</div>
+        <a href="{% url 'upi_payment_settings' %}" class="upi-settings-link">
+          <div class="upi-settings-icon"><i class="bi bi-qr-code"></i></div>
+          <div class="upi-settings-text">
+            <span class="name">
+              Manage UPI Payments
+              {% if gym.upi_enabled %}
+                <span class="upi-status-badge on">Enabled</span>
+              {% else %}
+                <span class="upi-status-badge off">Off</span>
+              {% endif %}
+            </span>
+            <span class="desc">Let members pay you directly via UPI — set your UPI ID, display name, and payment note.</span>
+          </div>
+          <i class="bi bi-chevron-right upi-settings-arrow"></i>
+        </a>
       </div>
-    {% endif %}
+      <!-- =================== SETTINGS LINKS =================== -->
+      <div class="extras-section">
+        <div class="extras-section-title"><i class="bi bi-gear"></i> QR Code Settings</div>
+        <div class="settings-links-grid">
+          <a href="{% url 'gym_qr_settings' %}" class="upi-settings-link">
+            <div class="upi-settings-icon"><i class="bi bi-qr-code-scan"></i></div>
+            <div class="upi-settings-text">
+              <span class="name">Attendance QR</span>
+              <span class="desc">Download or regenerate your reception QR code.</span>
+            </div>
+            <i class="bi bi-chevron-right upi-settings-arrow"></i>
+          </a>
 
-    <form method="post">
-      {% csrf_token %}
+        </div>
+      </div>
 
+      <!-- =================== GST / INVOICE SETTINGS =================== -->
+      <div class="extras-section">
+        <div class="extras-section-title"><i class="bi bi-receipt"></i> Invoice & GST Settings</div>
+        <a href="{% url 'gst_profile_edit' %}" class="upi-settings-link">
+          <div class="upi-settings-icon"><i class="bi bi-receipt"></i></div>
+          <div class="upi-settings-text">
+            <span class="name">
+              GST Profile
+              {% if gym.gst_profile.is_gst_registered %}
+                <span class="upi-status-badge on">GST Registered</span>
+              {% else %}
+                <span class="upi-status-badge off">Not Registered</span>
+              {% endif %}
+            </span>
+            <span class="desc">Set your legal business name, GSTIN, billing address, and invoice numbering.</span>
+          </div>
+          <i class="bi bi-chevron-right upi-settings-arrow"></i>
+        </a>
+      </div>
+
+      <!-- =================== ACCESS CONTROL =================== -->
+      <div class="extras-section">
+        <div class="extras-section-title"><i class="bi bi-shield-lock"></i> Access Control</div>
+        <a href="{% url 'staff_permissions_list' %}" class="upi-settings-link">
+          <div class="upi-settings-icon"><i class="bi bi-shield-lock"></i></div>
+          <div class="upi-settings-text">
+            <span class="name">Manage Staff Access</span>
+            <span class="desc">Control what receptionists and trainers can see and do in the dashboard.</span>
+          </div>
+          <i class="bi bi-chevron-right upi-settings-arrow"></i>
+        </a>
+      </div>
+      <!-- =================== CONTACT INFO =================== -->
+      <div class="extras-section">
+        <div class="extras-section-title"><i class="bi bi-person-lines-fill"></i> Contact Information</div>
+        <p class="social-note">Shown to members on your gym's public page and receipts.</p>
+        <div class="social-grid">
+          <div class="social-field">
+            <label for="id_contact_phone"><i class="bi bi-telephone"></i> Phone Number</label>
+            <input type="tel" id="id_contact_phone" name="contact_phone"
+                  placeholder="9876543210" maxlength="15"
+                  value="{{ form.contact_phone.value|default:'' }}">
+          </div>
+          <div class="social-field">
+            <label for="id_contact_email"><i class="bi bi-envelope"></i> Email</label>
+            <input type="email" id="id_contact_email" name="contact_email"
+                  placeholder="yourgym@email.com"
+                  value="{{ form.contact_email.value|default:'' }}">
+          </div>
+        </div>
+        {% if form.contact_phone.errors or form.contact_email.errors %}
+          <p class="extras-error">
+            {{ form.contact_phone.errors|first }}
+            {{ form.contact_email.errors|first }}
+          </p>
+        {% endif %}
+      </div>
+      <!-- =================== DASHBOARD STAT CARDS =================== -->
+      <div class="extras-section">
+        <div class="extras-section-title"><i class="bi bi-grid-1x2"></i> Dashboard Stat Cards</div>
+        <p class="social-note">Choose which stat cards appear on your Dashboard Overview page.</p>
+
+        {% if stat_card_catalog %}
+        <div class="pick-grid">
+          {% for item in stat_card_catalog %}
+          <label class="extras-pick-card">
+            <input type="checkbox" name="visible_stat_cards" value="{{ item.key }}"
+                  {% if item.selected %}checked{% endif %}>
+            <span>{{ item.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="extras-empty">No stat cards available.</p>
+        {% endif %}
+      </div>
+      <!-- =================== MEMBERSHIP PLANS =================== -->
+      <div class="extras-section">
+        <div class="extras-section-title"><i class="bi bi-card-checklist"></i> Membership Plans on Homepage</div>
+        <p class="social-note">Pick up to <strong>3</strong> plans to show in the pricing section on your public homepage — the 2nd is marked "Most Popular" and the last "Best Value", so exactly 3 looks best.</p>
+        {% if plan_catalog %}
+        <div class="pick-grid" id="planPickGrid" data-max="3">
+          {% for item in plan_catalog %}
+          <label class="extras-pick-card">
+            <input type="checkbox" name="plans" value="{{ item.id }}" class="plan-checkbox"
+                  {% if item.selected %}checked{% endif %}>
+            <span style="font-family:var(--font-d);font-weight:700;color:var(--text-hi);">₹{{ item.price }}</span>
+            <span>{{ item.plan }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="extras-empty">You haven't created any membership plans yet.</p>
+        {% endif %}
+      </div>
       <!-- ===================== SERVICES ===================== -->
       <div class="extras-section">
-        <div class="extras-section-title">
-          <i class="bi bi-stars"></i> Services
-        </div>
+        <div class="extras-section-title"><i class="bi bi-stars"></i> Services</div>
         {% if service_catalog %}
         <div class="pick-grid">
           {% for item in service_catalog %}
@@ -454,9 +482,7 @@
 
       <!-- =================== EQUIPMENT BRANDS =================== -->
       <div class="extras-section">
-        <div class="extras-section-title">
-          <i class="bi bi-cpu"></i> Equipment Brands
-        </div>
+        <div class="extras-section-title"><i class="bi bi-cpu"></i> Equipment Brands</div>
         {% if brand_catalog %}
         <div class="pick-grid">
           {% for item in brand_catalog %}
@@ -472,13 +498,11 @@
         <p class="extras-empty">No brands in the catalog yet — check back soon.</p>
         {% endif %}
       </div>
+
+      <!-- =================== SOCIAL MEDIA =================== -->
       <div class="extras-section">
-        <div class="extras-section-title">
-          <i class="bi bi-share"></i> Social Media
-        </div>
-        <div class="contact-sub" style="text-align:left;max-width:100%;margin-bottom:18px;">
-          Enter just your username or handle — we'll build the full link automatically.
-        </div>
+        <div class="extras-section-title"><i class="bi bi-share"></i> Social Media</div>
+        <p class="social-note">Enter just your username or handle — we'll build the full link automatically.</p>
         <div class="social-grid">
           <div class="social-field">
             <label for="id_instagram_username"><i class="bi bi-instagram"></i> Instagram</label>
@@ -487,7 +511,7 @@
           </div>
         </div>
         {% if form.instagram_username.errors or form.facebook_username.errors or form.youtube_username.errors or form.x_username.errors or form.linkedin_username.errors %}
-          <p class="extras-empty" style="color:var(--red);margin-top:12px;">
+          <p class="extras-error">
             {{ form.instagram_username.errors|first }}
             {{ form.facebook_username.errors|first }}
             {{ form.youtube_username.errors|first }}
@@ -496,14 +520,6 @@
           </p>
         {% endif %}
       </div>
-      <!-- =================== FUTURE EXTRAS =================== -->
-      <div class="extras-section extras-placeholder">
-        <div class="extras-section-title">
-          <i class="bi bi-hourglass-split"></i> More coming soon
-        </div>
-        <p>Future catalog-style options (amenities, classes, certifications, etc.) will appear here automatically — nothing to do on this page for now.</p>
-      </div>
-
       <button type="submit" class="submit-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -511,11 +527,29 @@
         </svg>
         Save Selections
       </button>
-    </form>
-  </main>
 
-  <script src="{% static 'js/messages.js' %}"></script>
-  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+    </div>
+  </div>
+</form>
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+(function () {
+  const grid = document.getElementById('planPickGrid');
+  if (!grid) return;
+  const max = parseInt(grid.dataset.max, 10) || 3;
+  const boxes = () => Array.from(grid.querySelectorAll('.plan-checkbox'));
 
-</body>
-</html>
+  function refresh() {
+    const checkedCount = boxes().filter(b => b.checked).length;
+    boxes().forEach(b => {
+      b.disabled = !b.checked && checkedCount >= max;
+      b.closest('.extras-pick-card').style.opacity = b.disabled ? '0.45' : '';
+    });
+  }
+
+  grid.addEventListener('change', refresh);
+  refresh();
+})();
+</script>
+{% endblock %}
+{% endblock %}

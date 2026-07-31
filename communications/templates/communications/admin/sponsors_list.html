@@ -1,0 +1,67 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Sponsors — EnterGYM{% endblock %}
+{% block breadcrumb %}Sponsors{% endblock %}
+
+{% block content %}
+
+<div class="section-header">
+  <div>
+    <div class="section-title">Sponsors</div>
+    <div class="section-sub">Businesses backing your sponsor campaigns</div>
+  </div>
+  <a class="btn-sm primary" href="{% url 'sponsor_create' %}">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New Sponsor
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Name</th><th>Contact</th><th>Email</th><th>Phone</th><th>Campaigns</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+      {% for s in page_obj %}
+        <tr>
+          <td style="color:var(--text-primary);font-weight:600">{{ s.name }}</td>
+          <td>{{ s.contact_person|default:"—" }}</td>
+          <td>{{ s.email|default:"—" }}</td>
+          <td>{{ s.phone|default:"—" }}</td>
+          <td>{{ s.campaign_count }}</td>
+          <td>
+            {% if s.status == 'active' %}<span class="badge active">Active</span>
+            {% else %}<span class="badge inactive">Inactive</span>{% endif %}
+          </td>
+          <td>
+            <div class="action-btns">
+              <a class="btn-icon warn" title="Edit" href="{% url 'sponsor_edit' s.pk %}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </a>
+              <form method="post" action="{% url 'sponsor_delete' s.pk %}" onsubmit="return confirm('Delete sponsor \'{{ s.name|escapejs }}\'?');">
+                {% csrf_token %}
+                <button class="btn-icon danger" type="submit" title="Delete">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7"><div class="empty-state">No sponsors yet.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">← Prev</a>{% endif %}
+    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

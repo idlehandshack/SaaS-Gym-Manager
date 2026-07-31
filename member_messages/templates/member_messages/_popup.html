@@ -1,0 +1,226 @@
+<div id="memberMsgPopupBackdrop" class="mp-backdrop" style="display:none;">
+  <div class="mp-card">
+    <span class="cyber-corner tl"></span>
+    <span class="cyber-corner br"></span>
+
+    <button type="button" id="memberMsgPopupClose" class="mp-close" aria-label="Close">×</button>
+
+    <div class="mp-badge-row">
+      <span id="memberMsgPopupPriority" class="mp-badge"></span>
+    </div>
+
+    <h3 id="memberMsgPopupTitle" class="mp-title"></h3>
+    <p id="memberMsgPopupBody" class="mp-body"></p>
+
+    <button type="button" id="memberMsgPopupMarkRead" class="mp-btn">
+      Mark as Read
+    </button>
+  </div>
+</div>
+
+<style>
+  /* ── Backdrop ─────────────────────────────────────── */
+  .mp-backdrop{
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    background: var(--color-black-60);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: mp-fade-in .25s ease forwards;
+  }
+  @keyframes mp-fade-in{
+    from{ opacity: 0; }
+    to{ opacity: 1; }
+  }
+
+  /* ── Card ─────────────────────────────────────────── */
+  .mp-card{
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    background: var(--color-card-dark);
+    border: 1px solid var(--color-primary-a18);
+    border-radius: 10px;
+    padding: 30px 26px 26px;
+    box-shadow: 0 20px 60px var(--color-black-60), 0 0 0 1px var(--color-white-04);
+    animation: mp-pop-in .3s cubic-bezier(.4,0,.2,1) forwards;
+  }
+  @keyframes mp-pop-in{
+    from{ opacity: 0; transform: scale(.94) translateY(10px); }
+    to{ opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .mp-card .cyber-corner{
+    width: 10px;
+    height: 10px;
+    border-color: var(--color-primary);
+    border-style: solid;
+    opacity: 1;
+  }
+  .mp-card .cyber-corner.tl{ top: 8px; left: 8px; border-width: 1.5px 0 0 1.5px; }
+  .mp-card .cyber-corner.br{ bottom: 8px; right: 8px; border-width: 0 1.5px 1.5px 0; }
+
+  /* ── Close button ───────────────────────────────────── */
+  .mp-close{
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--color-white-14);
+    border-radius: 50%;
+    color: var(--color-white-60);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .mp-close:hover{
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  /* ── Priority badge ─────────────────────────────────── */
+  .mp-badge-row{ margin: 4px 0 14px; }
+  .mp-badge{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: 1px solid var(--color-primary-a30);
+    background: var(--color-primary-a08);
+    color: var(--color-primary);
+  }
+  .mp-badge::before{
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .mp-badge.priority-urgent,
+  .mp-badge.priority-high{
+    border-color: var(--color-error);
+    background: rgba(239, 68, 68, .1);
+    color: var(--color-error);
+  }
+  .mp-badge.priority-medium,
+  .mp-badge.priority-normal{
+    border-color: rgba(244, 197, 66, .35);
+    background: rgba(244, 197, 66, .1);
+    color: #f4c542;
+  }
+
+  /* ── Title / body ───────────────────────────────────── */
+  .mp-title{
+    font-family: "Space Grotesk", "Inter", sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: .3px;
+    color: var(--color-white-hex);
+    margin: 0 0 10px;
+    line-height: 1.35;
+  }
+  .mp-body{
+    font-family: "Inter", sans-serif;
+    font-size: .92rem;
+    line-height: 1.7;
+    color: var(--color-white-70);
+    margin: 0 0 24px;
+    white-space: pre-wrap;
+  }
+
+  /* ── Action button ──────────────────────────────────── */
+  .mp-btn{
+    display: block;
+    width: 100%;
+    padding: 13px 0;
+    background: var(--color-primary);
+    color: var(--color-black-hex);
+    border: none;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+  }
+  .mp-btn:hover{ background: var(--color-primary-hover); }
+  .mp-btn:active{ transform: scale(.98); }
+
+  @media (max-width: 480px){
+    .mp-card{ padding: 26px 20px 22px; }
+    .mp-title{ font-size: 1.08rem; }
+  }
+</style>
+
+<script nonce="{{ request.csp_nonce }}">
+(function () {
+  const backdrop  = document.getElementById('memberMsgPopupBackdrop');
+  const closeBtn  = document.getElementById('memberMsgPopupClose');
+  const markRead  = document.getElementById('memberMsgPopupMarkRead');
+  const titleEl   = document.getElementById('memberMsgPopupTitle');
+  const bodyEl    = document.getElementById('memberMsgPopupBody');
+  const prioEl    = document.getElementById('memberMsgPopupPriority');
+
+  let queue = [];
+  let current = null;
+
+  function showNext() {
+    if (!queue.length) {
+      backdrop.style.display = 'none';
+      current = null;
+      return;
+    }
+    current = queue.shift();
+    titleEl.textContent = current.title;
+    bodyEl.textContent  = current.message;
+
+    prioEl.textContent = current.priority;
+    prioEl.className = 'mp-badge priority-' + String(current.priority || '').toLowerCase();
+
+    backdrop.style.display = 'flex';
+  }
+
+  function dismiss() {
+    backdrop.style.display = 'none';
+  }
+
+  closeBtn.addEventListener('click', dismiss);
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) dismiss(); });
+
+  markRead.addEventListener('click', function () {
+    if (!current) return;
+    fetch("{% url 'api_member_messages_read' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ message_id: current.id }),
+    })
+    .finally(showNext);
+  });
+
+  fetch("{% url 'api_member_messages_home' %}")
+    .then(r => r.json())
+    .then(data => {
+      queue = data.popups || [];
+      showNext();
+    })
+    .catch(() => {});
+})();
+</script>

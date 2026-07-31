@@ -1,0 +1,28 @@
+{% load static %}
+<div class="dropdown db-notif-bell">
+  <button class="db-notif-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+    <i class="bi bi-bell-fill"></i>
+    {% if notification_count %}
+      <span class="db-notif-badge">{{ notification_count }}</span>
+    {% endif %}
+  </button>
+
+  <div class="dropdown-menu dropdown-menu-end db-notif-dropdown">
+    <div class="db-notif-dropdown-header">Notifications</div>
+
+    {% for n in notifications %}
+      <a href="{{ n.action_url|default:'#' }}" class="db-notif-item db-notif-{{ n.severity }}">
+        <div class="db-notif-icon"><i class="bi {{ n.icon }}"></i></div>
+        <div class="db-notif-body">
+          <div class="db-notif-title">{{ n.title }}</div>
+          <div class="db-notif-message">{{ n.message }}</div>
+          <div class="db-notif-meta">
+            {{ n.current_members }} / {{ n.member_limit }} members &middot; {{ n.remaining_slots }} remaining
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="db-notif-empty text-muted small">No notifications right now.</div>
+    {% endfor %}
+  </div>
+</div>

@@ -77,7 +77,7 @@ from decimal import Decimal
 
 from django.core.cache import cache
 from django.db import transaction
-
+from AuthFit.audit import log_action
 from AuthFit.models import Enrollment, MembershipPlan, MembershipPlanChangeLog
 from billing.models import Invoice, InvoiceLineItem, Payment
 from billing.services.pdf_generator import generate_invoice_pdf
@@ -601,7 +601,7 @@ def change_membership_plan(enrollment, new_plan, effective_date, reason, changed
             )
 
             cgst, sgst, igst = calculate_line_item_tax(
-                new_price,
+                new_paid,
                 gst_rate,
                 gym_state_code,
                 invoice.customer_state_code,
@@ -612,8 +612,8 @@ def change_membership_plan(enrollment, new_plan, effective_date, reason, changed
                 description=f"{new_plan.plan} Membership - {_format_duration(new_plan.duration_days)}",
                 hsn_sac_code=hsn_sac_code,
                 quantity=1,
-                unit_price=new_price,
-                taxable_value=new_price,
+                unit_price=new_paid,
+                taxable_value=new_paid,
                 gst_rate=gst_rate,
                 cgst_amount=cgst,
                 sgst_amount=sgst,
@@ -696,6 +696,32 @@ def change_membership_plan(enrollment, new_plan, effective_date, reason, changed
             new_due_date=new_due_date,
             reason=reason or "",
             changed_by=changed_by,
+        )
+
+        # ── 6b. General financial audit trail (Gym.AuditLog) ─────────
+        # Kept here rather than in the calling view, since this is the
+        # only place with full context: invoice_id, payment_id, and the
+        # exact amounts written to each row in this transaction.
+        log_action(
+            gym=gym,
+            action='plan_changed',
+            staff_user=changed_by,
+            object_type='Enrollment',
+            object_id=enrollment.pk,
+            object_label=enrollment.fullname,
+            old_values={
+                'plan': old_plan.plan if old_plan else None,
+                'price': str(old_price),
+                'due_date': old_due_date.isoformat() if old_due_date else None,
+            },
+            new_values={
+                'plan': new_plan.plan,
+                'price': str(new_price),
+                'due_date': new_due_date.isoformat(),
+                'invoice_id': invoice.id if invoice else None,
+                'payment_id': payment.id if payment else None,
+                'reason': reason or '',
+            },
         )
 
         # ── 7. Logging (req. #13) ─────────────────────────────────────

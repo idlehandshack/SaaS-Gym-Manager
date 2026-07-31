@@ -1,5 +1,5 @@
-<!doctype html>
 {% load static %}
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -21,168 +21,176 @@
     <style>
       /* ── TOKENS (shared with catalog_browse.html) ── */
       :root {
-        --bg: #080808;
-        --surface: #111111;
-        --surface-2: #1a1a1a;
-        --border: rgba(255, 255, 255, 0.06);
+        --bg: #060606;
+        --surface: #0e0e0e;
+        --surface-2: #161616;
+        --surface-3: #1e1e1e;
+        --border: rgba(255,255,255,0.07);
+        --border-hi: rgba(255,255,255,0.13);
         --orange: #ff5a00;
-        --orange-glow: rgba(255, 90, 0, 0.25);
-        --gold: #ffca28;
-        --text-hi: #f5f5f5;
-        --text-lo: #555;
-        --text-mid: #999;
+        --orange-dim: rgba(255,90,0,0.10);
+        --orange-mid: rgba(255,90,0,0.20);
+        --green: #5de87c;
+        --green-dim: rgba(93,232,124,0.08);
+        --yellow: #ffca28;
+        --yellow-dim: rgba(255,202,40,0.08);
+        --red: #ef5350;
+        --red-dim: rgba(239,83,80,0.08);
+        --text-hi: #f0f0f0;
+        --text-mid: #888;
+        --text-lo: #444;
+        --font-d: "Barlow Condensed", sans-serif;
+        --font-b: "Barlow", sans-serif;
+        --t: 0.22s cubic-bezier(0.4,0,0.2,1);
+        --radius: 14px;
+        --radius-sm: 8px;
         --radius-card: 18px;
-        --radius-btn: 40px;
-        --font-display: "Barlow Condensed", sans-serif;
-        --font-body: "Barlow", sans-serif;
-        --t: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-        --nav-h: 60px;
+        --pill: 40px;
+        --sidebar-w: 220px;
       }
 
+      *, *::before, *::as { box-sizing: border-box; margin: 0; padding: 0; }
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html { scroll-behavior: smooth; }
+
       body {
         background: var(--bg);
         color: var(--text-hi);
-        font-family: var(--font-body);
+        font-family: var(--font-b);
         -webkit-font-smoothing: antialiased;
-        overflow-x: hidden;
         min-height: 100vh;
       }
 
-      /* ── NAV ── */
-      .store-nav {
-        position: sticky; top: 0; z-index: 200;
-        height: var(--nav-h);
-        background: rgba(8,8,8,0.94);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border-bottom: 1px solid var(--border);
-        display: flex; align-items: center;
+      /* ── OVERLAY (mobile drawer backdrop) ── */
+      .sidebar-overlay {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.65);
+        z-index: 199; backdrop-filter: blur(2px);
       }
-      .nav-inner {
-        width: 100%; max-width: 1400px; margin: 0 auto;
-        padding: 0 clamp(16px, 4vw, 40px);
-        display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      }
-      .nav-brand {
-        font-family: var(--font-display);
-        font-weight: 900;
-        font-size: clamp(1.1rem, 3vw, 1.5rem);
-        text-transform: uppercase;
-        text-decoration: none;
-        color: var(--text-hi);
-        letter-spacing: -0.01em;
-        white-space: nowrap;
-        display: flex; align-items: center; gap: 8px;
-        transition: color var(--t);
-      }
-      .nav-brand .acc { color: var(--orange); }
-      .nav-brand:hover { color: var(--text-hi); }
-      .nav-brand .back-icon {
-        width: 28px; height: 28px; border-radius: 50%;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid var(--border);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.75rem; flex-shrink: 0;
-        transition: background var(--t);
-      }
-      .nav-brand:hover .back-icon { background: rgba(255,90,0,0.15); }
+      .sidebar-overlay.show { display: block; }
 
-      .nav-new {
-        display: flex; align-items: center; gap: 7px;
-        font-family: var(--font-display);
-        font-size: 0.78rem; font-weight: 700;
-        letter-spacing: 0.12em; text-transform: uppercase;
-        color: #fff; text-decoration: none;
-        padding: 8px 18px;
-        background: var(--orange); border-radius: var(--radius-btn);
-        transition: background var(--t), transform var(--t), box-shadow var(--t);
-        white-space: nowrap; flex-shrink: 0;
-        border: none; cursor: pointer;
+      /* ── SIDEBAR ── */
+      .sidebar {
+        position: fixed; left: 0; top: 0; bottom: 0;
+        width: var(--sidebar-w);
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex; flex-direction: column;
+        z-index: 200; padding: 28px 0 24px;
+        transition: transform var(--t);
       }
-      .nav-new:hover {
-        background: #e65200; transform: translateY(-1px); color: #fff;
-        box-shadow: 0 6px 20px rgba(255,90,0,0.35);
+      .sidebar-brand { padding: 0 24px 28px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+      .sidebar-brand .logo {
+        font-family: var(--font-d); font-weight: 900; font-size: 1.4rem;
+        text-transform: uppercase; letter-spacing: -0.01em;
+        color: var(--text-hi); text-decoration: none; display: block; line-height: 1.15;
       }
-      .nav-new i { font-size: 0.85rem; }
-
-      /* ── HERO ── */
-      .store-header {
-        position: relative;
-        padding: clamp(56px, 10vw, 110px) 0 clamp(48px, 8vw, 80px);
-        text-align: center; overflow: hidden;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: clamp(36px, 5vw, 64px);
+      .sidebar-brand .logo .acc { color: var(--orange); }
+      .sidebar-gym-name {
+        display: block; margin-top: 4px; font-family: var(--font-d);
+        font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em;
+        text-transform: uppercase; color: var(--text-mid);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
-      .store-header::before {
-        content: ""; position: absolute; inset: 0;
-        opacity: 0.35; z-index: 0;
+      .sidebar-brand .role-pill {
+        display: inline-block; margin-top: 10px;
+        background: var(--orange-dim); border: 1px solid var(--orange-mid);
+        color: var(--orange); border-radius: 4px;
+        font-family: var(--font-d); font-size: 0.65rem; font-weight: 700;
+        letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 9px;
       }
-      .store-header::after {
-        content: ""; position: absolute; inset: 0;
-        background: linear-gradient(to bottom, rgba(8,8,8,0.55) 0%, rgba(8,8,8,0.97) 100%);
-        z-index: 1;
+      .sidebar-close {
+        display: none; background: none; border: none; color: var(--text-mid);
+        font-size: 1.2rem; cursor: pointer; padding: 4px; margin-left: auto; line-height: 1;
       }
-      .header-inner {
-        position: relative; z-index: 2;
-        padding: 0 clamp(16px, 4vw, 40px);
-        max-width: 640px; margin: 0 auto;
+      .sidebar-brand-row { display: flex; align-items: flex-start; justify-content: space-between; }
+      .sidebar-nav { padding: 0 12px; flex: 1; }
+      .nav-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 11px 14px; border-radius: var(--radius-sm);
+        font-family: var(--font-d); font-size: 0.82rem; font-weight: 700;
+        letter-spacing: 0.08em; text-transform: uppercase;
+        color: var(--text-mid); text-decoration: none;
+        transition: background var(--t), color var(--t); margin-bottom: 2px;
       }
-      .header-eyebrow {
-        display: inline-flex; align-items: center; gap: 8px;
-        font-family: var(--font-display);
-        font-size: clamp(0.68rem, 1.8vw, 0.82rem); font-weight: 700;
-        letter-spacing: 0.18em; text-transform: uppercase;
-        color: var(--orange); margin-bottom: clamp(12px, 2vw, 20px);
-        padding: 6px 16px;
-        border: 1px solid rgba(255,90,0,0.3); border-radius: var(--radius-btn);
-        background: rgba(255,90,0,0.07);
-      }
-      .store-header h1 {
-        font-family: var(--font-display); font-weight: 900;
-        font-size: clamp(2.4rem, 8vw, 5rem);
-        line-height: 0.92; letter-spacing: -0.01em;
-        text-transform: uppercase; margin-bottom: clamp(12px, 2vw, 20px);
-      }
-      .store-header h1 .accent { color: var(--orange); }
-      .store-header p {
-        color: var(--text-mid);
-        font-size: clamp(0.9rem, 2.2vw, 1.05rem);
-        max-width: 440px; margin: 0 auto; line-height: 1.65;
-      }
-
-      .shop-alert {
-        max-width: 640px; margin: 16px auto 0; padding: 12px 16px;
-        border-radius: 8px; font-size: 14px; text-align: center;
-      }
-      .shop-alert-success { background: #0f2a1a; color: #4dff88; border: 1px solid #1a4d2e; }
-      .shop-alert-error   { background: #2a0f0f; color: #ff6b6b; border: 1px solid #4d1a1a; }
-      .shop-alert-warning { background: #2a1f0a; color: #ffb84d; border: 1px solid #4d3a14; text-align: left; }
+      .nav-item i { font-size: 0.95rem; }
+      .nav-item:hover { background: var(--surface-2); color: var(--text-hi); }
+      .nav-item.active { background: var(--orange-dim); color: var(--orange); border: 1px solid var(--orange-mid); }
+      .sidebar-footer { padding: 16px 24px 0; border-top: 1px solid var(--border); margin-top: auto; }
+      .sidebar-user { font-family: var(--font-d); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-lo); }
+      .sidebar-user strong { display: block; color: var(--text-mid); font-size: 0.8rem; margin-top: 2px; }
 
       /* ── MAIN ── */
-      .store-main {
-        max-width: 760px; margin: 0 auto;
-        padding: 0 clamp(16px, 4vw, 40px) clamp(48px, 6vw, 80px);
+      .main { margin-left: var(--sidebar-w); min-height: 100vh; }
+
+      /* ── TOP BAR ── */
+      .topbar {
+        background: rgba(6,6,6,0.92);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 28px;
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        flex-wrap: wrap;
+        position: sticky; top: 0; z-index: 100;
       }
+      .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+      .menu-btn {
+        display: none; background: var(--surface-2); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); color: var(--text-mid); font-size: 1.1rem;
+        width: 36px; height: 36px; align-items: center; justify-content: center;
+        cursor: pointer; flex-shrink: 0;
+      }
+      .topbar-title {
+        font-family: var(--font-d); font-weight: 900; font-size: 1.45rem;
+        text-transform: uppercase; letter-spacing: -0.01em; white-space: nowrap;
+      }
+      .topbar-gym-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: var(--orange-dim); border: 1px solid var(--orange-mid);
+        color: var(--orange); border-radius: 6px;
+        font-family: var(--font-d); font-size: 0.65rem; font-weight: 700;
+        letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 9px;
+        white-space: nowrap; flex-shrink: 0;
+      }
+      .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+      .btn-new {
+        display: inline-flex; align-items: center; gap: 7px;
+        font-family: var(--font-d); font-size: 0.76rem; font-weight: 700;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        color: #fff; text-decoration: none;
+        padding: 9px 18px; background: var(--orange); border-radius: var(--pill);
+        transition: background var(--t), transform var(--t), box-shadow var(--t);
+        white-space: nowrap; border: none; cursor: pointer; flex-shrink: 0;
+      }
+      .btn-new:hover { background: #e65200; color: #fff; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,90,0,0.35); }
+
+      /* ── ALERTS ── */
+      .alerts-wrap { padding: 18px 28px 0; }
+      .shop-alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: 4px; }
+      .shop-alert-success { background: var(--green-dim); color: var(--green); border: 1px solid rgba(93,232,124,0.25); }
+      .shop-alert-error   { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,83,80,0.25); }
+      .shop-alert-warning { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(255,202,40,0.25); text-align: left; }
+
+      /* ── CONTENT AREA ── */
+      .form-area { padding: 24px 28px 60px; max-width: 760px; }
       .section-label {
-        font-family: var(--font-display); font-size: 0.72rem; font-weight: 700;
+        font-family: var(--font-d); font-size: 0.72rem; font-weight: 700;
         letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-lo);
-        margin-bottom: clamp(20px, 3vw, 28px);
-        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 20px; display: flex; align-items: center; gap: 12px;
       }
       .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 
       /* ── DUPLICATE WARNING ── */
       .duplicate-card {
-        margin-bottom: clamp(24px, 3vw, 36px);
+        margin-bottom: 24px;
         border-radius: var(--radius-card);
         padding: clamp(18px, 2.5vw, 26px);
       }
       .duplicate-card strong {
-        display: block; font-family: var(--font-display);
+        display: block; font-family: var(--font-d);
         font-size: 1rem; font-weight: 700; letter-spacing: 0.01em;
-        margin-bottom: 4px; color: var(--gold);
+        margin-bottom: 4px; color: var(--yellow);
       }
       .duplicate-sub { font-size: 0.85rem; color: #d9b26a; margin-bottom: 12px; }
       .duplicate-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
@@ -194,15 +202,15 @@
       }
       .duplicate-link {
         color: var(--orange); text-decoration: none;
-        font-family: var(--font-display); font-size: 0.75rem;
+        font-family: var(--font-d); font-size: 0.75rem;
         font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
         white-space: nowrap;
       }
       .duplicate-link:hover { text-decoration: underline; }
       .force-create-btn {
         padding: 9px 18px; background: transparent;
-        border: 1px solid #4d3a14; border-radius: var(--radius-btn);
-        color: #ffb84d; font-family: var(--font-display);
+        border: 1px solid #4d3a14; border-radius: var(--pill);
+        color: #ffb84d; font-family: var(--font-d);
         font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
         cursor: pointer; transition: background var(--t), border-color var(--t);
       }
@@ -216,7 +224,7 @@
         padding: clamp(20px, 3vw, 32px);
       }
       .form-label {
-        display: block; font-family: var(--font-display);
+        display: block; font-family: var(--font-d);
         font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
         color: var(--text-mid); margin: 20px 0 8px;
       }
@@ -226,7 +234,7 @@
         width: 100%; padding: 11px 16px;
         background: var(--surface-2); border: 1px solid var(--border);
         border-radius: 12px; color: var(--text-hi);
-        font-family: var(--font-body); font-size: 0.92rem;
+        font-family: var(--font-b); font-size: 0.92rem;
         outline: none; transition: border-color var(--t);
       }
       .form-input::placeholder, .form-textarea::placeholder { color: var(--text-lo); }
@@ -234,8 +242,8 @@
       .form-textarea { resize: vertical; }
       .form-input[type="file"] { padding: 9px 14px; font-size: 0.85rem; color: var(--text-mid); }
       .form-input[type="file"]::file-selector-button {
-        background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-btn);
-        color: var(--text-hi); font-family: var(--font-display); font-size: 0.72rem;
+        background: var(--surface); border: 1px solid var(--border); border-radius: var(--pill);
+        color: var(--text-hi); font-family: var(--font-d); font-size: 0.72rem;
         font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
         padding: 6px 12px; margin-right: 10px; cursor: pointer;
       }
@@ -247,16 +255,16 @@
       }
       @media (max-width: 640px) { .flavor-row { grid-template-columns: 1fr 1fr; } .flavor-row .flavor-input-file { grid-column: 1 / -1; } }
       .flavor-remove-btn {
-        background: #2a0f0f; color: #ff6b6b; border: 1px solid rgba(255,107,107,0.2);
+        background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,83,80,0.2);
         border-radius: 10px; width: 40px; height: 42px; cursor: pointer; font-size: 18px;
         display: flex; align-items: center; justify-content: center;
         transition: background var(--t);
       }
-      .flavor-remove-btn:hover { background: #3a1414; }
+      .flavor-remove-btn:hover { background: rgba(239,83,80,0.16); }
       .flavor-add-btn {
         background: transparent; border: 1px dashed var(--border); color: var(--text-mid);
         padding: 10px 16px; border-radius: 12px; cursor: pointer;
-        font-family: var(--font-display); font-size: 0.8rem; font-weight: 700;
+        font-family: var(--font-d); font-size: 0.8rem; font-weight: 700;
         letter-spacing: 0.04em; width: 100%; margin-top: 6px;
         transition: border-color var(--t), color var(--t);
       }
@@ -265,8 +273,8 @@
       .detail-submit {
         display: flex; align-items: center; justify-content: center; gap: 8px;
         width: 100%; margin-top: 28px; padding: 13px 0;
-        background: var(--orange); border: none; border-radius: var(--radius-btn);
-        color: #fff; font-family: var(--font-display); font-weight: 700;
+        background: var(--orange); border: none; border-radius: var(--pill);
+        color: #fff; font-family: var(--font-d); font-weight: 700;
         font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase;
         cursor: pointer;
         transition: background var(--t), transform var(--t), box-shadow var(--t);
@@ -276,126 +284,205 @@
         box-shadow: 0 6px 20px rgba(255,90,0,0.35);
       }
 
+      /* ══════════════════ RESPONSIVE ══════════════════ */
+      @media (max-width: 1100px) {
+        .topbar-gym-badge { display: none; }
+      }
+      @media (max-width: 900px) {
+        .sidebar { transform: translateX(-100%); box-shadow: none; }
+        .sidebar.open { transform: translateX(0); box-shadow: 4px 0 40px rgba(0,0,0,0.6); }
+        .sidebar-close { display: flex; }
+        .menu-btn { display: flex; }
+        .main { margin-left: 0; }
+
+        .topbar { padding: 12px 16px; row-gap: 10px; }
+        .topbar-title { font-size: 1.2rem; }
+        .topbar-gym-badge { display: inline-flex; }
+        .topbar-left { flex: 1 1 100%; order: 1; }
+        .topbar-actions { flex: 1 1 100%; order: 2; justify-content: flex-end; }
+
+        .alerts-wrap { padding: 16px 16px 0; }
+        .form-area { padding: 18px 16px 56px; }
+      }
+      @media (max-width: 640px) {
+        .btn-new span { display: none; }
+        .btn-new { padding: 9px 14px; }
+      }
+      @media (max-width: 576px) {
+        .topbar-title { font-size: 1.1rem; }
+        .section-label { font-size: 0.66rem; }
+      }
       @media (max-width: 380px) {
-        .nav-new span { display: none; }
-        .store-header h1 { font-size: 2.1rem; }
+        .topbar-title { font-size: 1rem; }
       }
     </style>
   </head>
   <body>
 
-    <!-- ══ STICKY NAV ══ -->
-    <nav class="store-nav">
-      <div class="nav-inner">
-        <a class="nav-brand" href="{% url 'catalog_browse' %}">
-          <span class="back-icon"><i class="bi bi-arrow-left"></i></span>
-          {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
-          <span class="acc">Catalog</span>
-        </a>
-        <a class="nav-new" href="{% url 'gym_store_manage' %}">
-          <i class="bi bi-shop"></i>
-          <span>My Store</span>
-        </a>
-      </div>
-    </nav>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-    <!-- ══ HERO ══ -->
-    <header class="store-header">
-      <div class="header-inner">
-        <div class="header-eyebrow">
-          <i class="bi bi-plus-circle-fill"></i> New Listing
+    <!-- ══ SIDEBAR ══ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-row">
+          <div>
+            <a class="logo" href="{% url 'product_list' %}">
+              {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
+              <span class="acc"> Store</span>
+            </a>
+            {% if gym %}
+            <span class="sidebar-gym-name">
+              <i class="bi bi-geo-alt-fill" style="font-size:.65rem;margin-right:3px;"></i>
+              {{ gym.gym_code }}
+            </span>
+            {% endif %}
+          </div>
+          <button class="sidebar-close" id="sidebar-close-btn" aria-label="Close menu">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
-        <h1>Create New <span class="accent">Product</span></h1>
-        <p>This product goes live in your store immediately. Other gyms will see it once approved by admin.</p>
-
-        {% if messages %}
-          {% for message in messages %}
-            <div class="shop-alert shop-alert-{{ message.tags }}">{{ message }}</div>
-          {% endfor %}
-        {% endif %}
+        <span class="role-pill">Staff Panel</span>
       </div>
-    </header>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="{% url 'dashboard_home' %}">
+          <i class="bi bi-box-seam"></i> Dashboard
+        </a>
+        <a class="nav-item" href="{% url 'product_dashboard' %}">
+          <i class="bi bi-bar-chart-line"></i> Order Dashboard
+        </a>
+        <a class="nav-item" href="{% url 'admin_orders' %}">
+          <i class="bi bi-box-seam"></i> Orders
+        </a>
+        <a class="nav-item" href="{% url 'gym_store_manage' %}">
+          <i class="bi bi-bag"></i> My Store
+        </a>
+        <a class="nav-item active" href="{% url 'catalog_browse' %}">
+          <i class="bi bi-gear"></i> Catalog
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          Logged in as
+          <strong>{{ request.user.username }}</strong>
+        </div>
+      </div>
+    </aside>
 
     <!-- ══ MAIN ══ -->
-    <main class="store-main">
+    <div class="main">
 
-      {% if duplicate_candidates %}
-      <div class="shop-alert shop-alert-warning duplicate-card">
-        <strong>This product may already exist</strong>
-        <div class="duplicate-sub">Consider importing one of these instead:</div>
-        <ul class="duplicate-list">
-          {% for candidate in duplicate_candidates %}
-          <li>
-            <span>{{ candidate.name }}{% if candidate.brand %} — {{ candidate.brand }}{% endif %}</span>
-            <a href="{% url 'catalog_browse' %}?q={{ candidate.name }}" class="duplicate-link">View in catalog <i class="bi bi-arrow-up-right"></i></a>
-          </li>
-          {% endfor %}
-        </ul>
-        <form method="post" enctype="multipart/form-data" class="force-create-form">
-          {% csrf_token %}
-          <input type="hidden" name="force_create" value="1">
-          <input type="hidden" name="brand" value="{{ posted.brand }}">
-          <input type="hidden" name="category" value="{{ posted.category }}">
-          <input type="hidden" name="name" value="{{ posted.name }}">
-          <input type="hidden" name="description" value="{{ posted.description }}">
-          {% for name, weight in flavor_pairs %}
-              <input type="hidden" name="flavor_name[]" value="{{ name }}">
-              <input type="hidden" name="weight[]" value="{{ weight }}">
-          {% endfor %}
-          <button type="submit" class="force-create-btn">No, this is genuinely a different product — create anyway</button>
-        </form>
+      <!-- TOP BAR -->
+      <div class="topbar">
+        <div class="topbar-left">
+          <button class="menu-btn" id="menu-btn" aria-label="Open menu" aria-expanded="false">
+            <i class="bi bi-list"></i>
+          </button>
+          <div class="topbar-title">Create Product</div>
+          {% if gym %}
+          <span class="topbar-gym-badge">
+            <i class="bi bi-building"></i>
+            {{ gym.gym_name }}
+          </span>
+          {% endif %}
+        </div>
+        <div class="topbar-actions">
+          <a class="btn-new" href="{% url 'catalog_browse' %}">
+            <i class="bi bi-arrow-left"></i>
+            <span>Back to Catalog</span>
+          </a>
+        </div>
+      </div>
+
+      {% if messages %}
+      <div class="alerts-wrap">
+        {% for message in messages %}
+          <div class="shop-alert shop-alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
       </div>
       {% endif %}
 
-      <p class="section-label">Product Details</p>
+      <!-- FORM AREA -->
+      <div class="form-area">
+        <p class="section-label">Product Details</p>
 
-      <div class="form-card">
-        <form method="post" enctype="multipart/form-data" class="product-form" id="new-product-form">
-          {% csrf_token %}
+        {% if duplicate_candidates %}
+        <div class="shop-alert shop-alert-warning duplicate-card">
+          <strong>This product may already exist</strong>
+          <div class="duplicate-sub">Consider importing one of these instead:</div>
+          <ul class="duplicate-list">
+            {% for candidate in duplicate_candidates %}
+            <li>
+              <span>{{ candidate.name }}{% if candidate.brand %} — {{ candidate.brand }}{% endif %}</span>
+              <a href="{% url 'catalog_browse' %}?q={{ candidate.name }}" class="duplicate-link">View in catalog <i class="bi bi-arrow-up-right"></i></a>
+            </li>
+            {% endfor %}
+          </ul>
+          <form method="post" enctype="multipart/form-data" class="force-create-form">
+            {% csrf_token %}
+            <input type="hidden" name="force_create" value="1">
+            <input type="hidden" name="brand" value="{{ posted.brand }}">
+            <input type="hidden" name="category" value="{{ posted.category }}">
+            <input type="hidden" name="name" value="{{ posted.name }}">
+            <input type="hidden" name="description" value="{{ posted.description }}">
+            {% for name, weight in flavor_pairs %}
+                <input type="hidden" name="flavor_name[]" value="{{ name }}">
+                <input type="hidden" name="weight[]" value="{{ weight }}">
+            {% endfor %}
+            <button type="submit" class="force-create-btn">No, this is genuinely a different product — create anyway</button>
+          </form>
+        </div>
+        {% endif %}
 
-          <label class="form-label">Brand</label>
-          <input type="text" name="brand" class="form-input" placeholder="e.g. MuscleBlaze" value="{{ posted.brand }}">
+        <div class="form-card">
+          <form method="post" enctype="multipart/form-data" class="product-form" id="new-product-form">
+            {% csrf_token %}
 
-          <label class="form-label">Category</label>
-          <input type="text" name="category" class="form-input" placeholder="e.g. Whey Protein" value="{{ posted.category }}">
+            <label class="form-label">Brand</label>
+            <input type="text" name="brand" class="form-input" placeholder="e.g. MuscleBlaze" value="{{ posted.brand }}">
 
-          <label class="form-label">Product Name <span class="req">*</span></label>
-          <input type="text" name="name" class="form-input" required placeholder="e.g. Biozyme Whey" value="{{ posted.name }}">
+            <label class="form-label">Category</label>
+            <input type="text" name="category" class="form-input" placeholder="e.g. Whey Protein" value="{{ posted.category }}">
 
-          <label class="form-label">Description</label>
-          <textarea name="description" class="form-textarea" rows="4" placeholder="Short product description...">{{ posted.description }}</textarea>
+            <label class="form-label">Product Name <span class="req">*</span></label>
+            <input type="text" name="name" class="form-input" required placeholder="e.g. Biozyme Whey" value="{{ posted.name }}">
 
-          <label class="form-label">Product Image</label>
-          <input type="file" name="image" accept="image/*" class="form-input">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-textarea" rows="4" placeholder="Short product description...">{{ posted.description }}</textarea>
 
-          <div class="flavor-section">
-            <label class="form-label" style="margin-top:0;">Flavors / Variants <span class="req">*</span></label>
-            <div id="flavor-rows">
-              {% if flavor_pairs %}
-                  {% for name, weight in flavor_pairs %}
-                  <div class="flavor-row">
-                      <input type="text" name="flavor_name[]" placeholder="Flavor name (e.g. Chocolate)" class="form-input flavor-input" value="{{ name }}" required>
-                      <input type="text" name="weight[]" placeholder="Weight (e.g. 1kg)" class="form-input flavor-input" value="{{ weight }}">
-                      <input type="file" name="flavor_image[]" accept="image/*" class="form-input flavor-input-file">
-                      <button type="button" class="flavor-remove-btn" onclick="removeFlavorRow(this)">&times;</button>
-                  </div>
-                  {% endfor %}
-              {% else %}
-                  <div class="flavor-row">
-                      <input type="text" name="flavor_name[]" placeholder="Flavor name (e.g. Chocolate)" class="form-input flavor-input" required>
-                      <input type="text" name="weight[]" placeholder="Weight (e.g. 1kg)" class="form-input flavor-input">
-                      <input type="file" name="flavor_image[]" accept="image/*" class="form-input flavor-input-file">
-                      <button type="button" class="flavor-remove-btn" onclick="removeFlavorRow(this)">&times;</button>
-                  </div>
-              {% endif %}
+            <label class="form-label">Product Image</label>
+            <input type="file" name="image" accept="image/*" class="form-input">
+
+            <div class="flavor-section">
+              <label class="form-label" style="margin-top:0;">Flavors / Variants <span class="req">*</span></label>
+              <div id="flavor-rows">
+                {% if flavor_pairs %}
+                    {% for name, weight in flavor_pairs %}
+                    <div class="flavor-row">
+                        <input type="text" name="flavor_name[]" placeholder="Flavor name (e.g. Chocolate)" class="form-input flavor-input" value="{{ name }}" required>
+                        <input type="text" name="weight[]" placeholder="Weight (e.g. 1kg)" class="form-input flavor-input" value="{{ weight }}">
+                        <input type="file" name="flavor_image[]" accept="image/*" class="form-input flavor-input-file">
+                        <button type="button" class="flavor-remove-btn" onclick="removeFlavorRow(this)">&times;</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="flavor-row">
+                        <input type="text" name="flavor_name[]" placeholder="Flavor name (e.g. Chocolate)" class="form-input flavor-input" required>
+                        <input type="text" name="weight[]" placeholder="Weight (e.g. 1kg)" class="form-input flavor-input">
+                        <input type="file" name="flavor_image[]" accept="image/*" class="form-input flavor-input-file">
+                        <button type="button" class="flavor-remove-btn" onclick="removeFlavorRow(this)">&times;</button>
+                    </div>
+                {% endif %}
+              </div>
+              <button type="button" class="flavor-add-btn" onclick="addFlavorRow()"><i class="bi bi-plus-lg"></i> Add another flavor</button>
             </div>
-            <button type="button" class="flavor-add-btn" onclick="addFlavorRow()"><i class="bi bi-plus-lg"></i> Add another flavor</button>
-          </div>
 
-          <button type="submit" class="detail-submit"><i class="bi bi-check2-circle"></i> Create Product</button>
-        </form>
+            <button type="submit" class="detail-submit"><i class="bi bi-check2-circle"></i> Create Product</button>
+          </form>
+        </div>
       </div>
-    </main>
+
+    </div>
+    <!-- /main -->
 
     <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
     <script nonce="{{ request.csp_nonce }}">
@@ -415,6 +502,32 @@
           const rows = document.getElementById('flavor-rows');
           if (rows.children.length > 1) { btn.closest('.flavor-row').remove(); }
       }
+
+      (function () {
+        const sidebar  = document.getElementById('sidebar');
+        const overlay  = document.getElementById('sidebar-overlay');
+        const menuBtn  = document.getElementById('menu-btn');
+        const closeBtn = document.getElementById('sidebar-close-btn');
+
+        function openSidebar() {
+          sidebar.classList.add('open');
+          overlay.classList.add('show');
+          menuBtn && menuBtn.setAttribute('aria-expanded', 'true');
+          document.body.style.overflow = 'hidden';
+        }
+        function closeSidebar() {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('show');
+          menuBtn && menuBtn.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+        }
+
+        menuBtn  && menuBtn.addEventListener('click', openSidebar);
+        closeBtn && closeBtn.addEventListener('click', closeSidebar);
+        overlay  && overlay.addEventListener('click', closeSidebar);
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeSidebar(); });
+        window.addEventListener('resize', function() { if (window.innerWidth > 900) closeSidebar(); });
+      })();
     </script>
   </body>
 </html>

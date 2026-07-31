@@ -1,3 +1,4 @@
+#AuthFit/models.py
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -9,8 +10,6 @@ from datetime import timedelta
 from Gym.models import Gym
 from Gym.mixins import GymManager
 import secrets
-# Create your models here.
-
 class Contact(models.Model):
     gym = models.ForeignKey(
         Gym,
@@ -49,7 +48,6 @@ class Trainer(models.Model):
     def __str__(self):
         return f"{self.name} - ₹{self.charge}"
 
-
 class MembershipPlan(models.Model):
     gym = models.ForeignKey(
         Gym,
@@ -59,7 +57,12 @@ class MembershipPlan(models.Model):
     plan = models.CharField(max_length=100)
     price = models.IntegerField()
     duration_days = models.IntegerField(default=30)
+    show_on_home = models.BooleanField(
+        default=True,
+        help_text="Show this plan in the pricing section of your gym's public homepage."
+    )
     objects = GymManager()
+
     def __str__(self):
         return f"{self.plan} - ₹{self.price}"
 
@@ -84,25 +87,18 @@ class Enrollment(models.Model):
                 "lets owners backdate enrollment for members who joined "
                 "before EnterGYM. Distinct from `doj` (record-creation date).",
     )
-    # CHANGED: nullable — a Quick Enrollment can exist before signup
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, null=True, blank=True
     )
-
-    # NEW
     profile_completed = models.BooleanField(default=False)
     source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default="OWNER")
 
     fullname = models.CharField(max_length=25)
-    email = models.EmailField(blank=True ,null=True)          # blank allowed — owner won't fill this
+    email = models.EmailField(blank=True ,null=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True ,null=True)
-    phone = models.CharField(max_length=10, db_index=True)   # primary lookup field now
+    phone = models.CharField(max_length=10, db_index=True)
     address = models.TextField(blank=True)
     reference = models.CharField(max_length=30, null=True, blank=True)
-
-    # ==============================
-    # MEMBERSHIP
-    # ==============================
     selectPlan = models.ForeignKey(MembershipPlan, on_delete=models.CASCADE)
     trainer = models.ForeignKey(
         Trainer, on_delete=models.SET_NULL, null=True, blank=True
@@ -127,10 +123,6 @@ class Enrollment(models.Model):
         help_text="Set once the up-front payment collected during Quick Enrollment "
                 "has been converted into a Payment + Invoice.",
     )
-
-    # ==============================
-    # DATES
-    # ==============================
     doj = models.DateField(auto_now_add=True)
     DueDate = models.DateField(blank=True, null=True,db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -140,16 +132,8 @@ class Enrollment(models.Model):
     deleted_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
     )
-
-    # ==============================
-    # 🔥 FACE SYSTEM (CLEAN)
-    # ==============================
     face_enrolled = models.BooleanField(default=False)
-
-    # Profile image
     face_image = CloudinaryField('image', null=True, blank=True)
-
-    # Multiple embeddings
     face_embeddings = models.JSONField(default=list, blank=True)
     class Meta:
         unique_together = ('gym', 'unique_id')
@@ -165,54 +149,34 @@ class Enrollment(models.Model):
                 name='unique_pending_enrollment_phone_per_gym',
             )
         ]
-    # ==============================
-    # UNIQUE ID GENERATOR
-    # ==============================
     def generate_unique_id(self):
         import random
         while True:
             uid = str(random.randint(1000, 9999))
             if not Enrollment.objects.filter(gym=self.gym, unique_id=uid).exists():
                 return uid
-
-    # ==============================
-    # SAVE METHOD (CLEAN)
-    # ==============================
     def save(self, *args, **kwargs):
-
-    # Generate unique ID
         if not self.unique_id:
             self.unique_id = self.generate_unique_id()
-
-        # Set amount automatically
         if self.selectPlan:
             self.Amount = self.selectPlan.price
 
             if not self.DueDate and self.selectPlan.duration_days:
-                # Use membership_start_date (defaults to today) instead of
-                # always anchoring to "today" — this lets Quick Enrollment
-                # backdate old members correctly. If DueDate was already set
-                # manually (e.g. renew_membership, change_membership_plan),
-                # we never touch it here.
-                start_date = self.membership_start_date or timezone.now().date()
+                start_date = self.membership_start_date or timezone.localdate()
                 self.DueDate = start_date + timedelta(days=self.selectPlan.duration_days)
             self.pendingAmount = self.selectPlan.price - self.paidAmount
 
         super().save(*args, **kwargs)
-
-    # ==============================
-    # EXPIRY LOGIC
-    # ==============================
     @property
     def is_expired(self):
         if self.DueDate:
-            return timezone.now().date() > self.DueDate
+            return timezone.localdate() > self.DueDate
         return False
 
     @property
     def days_remaining(self):
         if self.DueDate:
-            return (self.DueDate - timezone.now().date()).days
+            return (self.DueDate - timezone.localdate()).days
         return None
 
     def __str__(self):
@@ -220,7 +184,6 @@ class Enrollment(models.Model):
 
 class MembershipPlanChangeLogQuerySet(models.QuerySet):
     def delete(self, *args, **kwargs):
-        # Business rule: "Never delete logs." Blocks bulk qs.delete() too.
         raise PermissionError(
             "MembershipPlanChangeLog rows are a permanent audit trail and "
             "cannot be bulk-deleted."
@@ -233,10 +196,6 @@ class MembershipPlanChangeLogManager(models.Manager):
  
  
 class MembershipPlanChangeLog(models.Model):
-    """
-    Permanent audit trail for the 'Change Membership Plan' feature.
-    One row per plan change. Rows are never edited or deleted.
-    """
     gym = models.ForeignKey(
         Gym, on_delete=models.CASCADE, db_index=True,
         related_name='plan_change_logs',
@@ -278,8 +237,6 @@ class MembershipPlanChangeLog(models.Model):
         verbose_name_plural = 'Membership Plan Change Logs'
  
     def delete(self, *args, **kwargs):
-        # Belt-and-braces: block instance-level delete() as well as the
-        # queryset-level block above.
         raise PermissionError(
             "MembershipPlanChangeLog rows are a permanent audit trail and "
             "cannot be deleted."
@@ -289,20 +246,14 @@ class MembershipPlanChangeLog(models.Model):
         old_name = self.old_plan.plan if self.old_plan else "—"
         new_name = self.new_plan.plan if self.new_plan else "—"
         return f"{self.enrollment.unique_id}: {old_name} → {new_name} ({self.created_at:%d %b %Y})"
+    
 class EnrollmentDeletionLog(models.Model):
-    """
-    Permanent audit trail for every enrollment deletion (duplicate or soft).
-    Never edited or deleted — mirrors MembershipPlanChangeLog's pattern.
-    """
     DELETE_TYPE_CHOICES = [
         ('duplicate', 'Duplicate Enrollment (permanent)'),
         ('soft', 'Delete Enrollment Only (soft delete)'),
     ]
-
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE, db_index=True, related_name='enrollment_deletion_logs')
     gym_owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
-
-    # Not a FK — enrollment may no longer exist after a 'duplicate' delete.
     enrollment_id = models.IntegerField(db_index=True)
     member_name = models.CharField(max_length=100)
     member_phone = models.CharField(max_length=10)
@@ -329,55 +280,28 @@ class Attendence(models.Model):
         on_delete=models.CASCADE,
         db_index=True
     )
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    date = models.DateField(default=timezone.localdate)
-    timestamp = models.TimeField(auto_now_add=True)
-    objects = GymManager()
-    class Meta:
-        unique_together = ('gym', 'user', 'date')
-
-    def __str__(self):
-        if hasattr(self.user, "enrollment"):
-            return f"{self.user.enrollment.unique_id}"
-        return f"{self.user.username} - {self.date}"
-
-class GymNotification(models.Model):
-    """
-    Admin-managed notification ticker on the homepage.
-    Each active entry scrolls across the notification bar.
-    """
-    ICON_CHOICES = [
-        ("🎉", "🎉 Party / Offer"),
-        ("💪", "💪 Training"),
-        ("🏖️", "🏖️ Summer / Season"),
-        ("⚡", "⚡ Alert / Closure"),
-        ("🏷️", "🏷️ Deal / Discount"),
-        ("📢", "📢 Announcement"),
-        ("", "No icon"),
-    ]
-    gym = models.ForeignKey(
-        Gym,
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    enrollment = models.ForeignKey(
+        'AuthFit.Enrollment',
         on_delete=models.CASCADE,
-        db_index=True
+        null=True,         
+        blank=True,
+        related_name='attendance_logs',
+        db_index=True,
     )
+    date = models.DateField(default=timezone.localdate)
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
     objects = GymManager()
-    icon = models.CharField(
-        max_length=5, choices=ICON_CHOICES, blank=True, default="📢")
-    message = models.CharField(
-        max_length=200, help_text="Short notification text (max 200 chars)")
-    is_active = models.BooleanField(
-        default=True, help_text="Uncheck to hide from homepage")
-    created_at = models.DateTimeField(auto_now_add=True)
-    order = models.PositiveSmallIntegerField(
-        default=0, help_text="Lower number = shows first")
 
     class Meta:
-        ordering = ["order", "created_at"]
-        verbose_name = "Gym Notification"
-        verbose_name_plural = "Gym Notifications"
+        unique_together = ('gym', 'enrollment', 'date')
 
     def __str__(self):
-        return f"{self.icon} {self.message[:60]}"
+        if self.enrollment_id:
+            return f"{self.enrollment.unique_id}"
+        if self.user:
+            return f"{self.user.username} - {self.date}"
+        return f"Attendance {self.pk} - {self.date}"
     
 @receiver([post_save, post_delete], sender=Enrollment)
 def clear_enrollment_cache(sender, instance, update_fields=None, **kwargs):
@@ -387,22 +311,12 @@ def clear_enrollment_cache(sender, instance, update_fields=None, **kwargs):
     uid    = instance.user_id
     gym_pk = instance.gym_id
 
-    # Gym-scoped keys (match context_processors.py + geo_views.py + views.py)
     cache.delete(f"enrollment_status_{uid}_{gym_pk}")
     cache.delete(f"enrolled_{uid}_{gym_pk}")
     cache.delete(f"enrollment_{uid}_{gym_pk}")
-
-    # User-scoped keys (profile image is per-user, not per-gym)
     cache.delete(f"profile_image_{uid}")
-
-    # Admin analytics caches
     cache.delete(f"admin_revenue_{gym_pk}")
     cache.delete(f"face_users_{gym_pk}")
-
-
-@receiver([post_save, post_delete], sender=GymNotification)
-def clear_notification_cache(sender, instance=None, **kwargs):
-    cache.delete(f"notifications_{instance.gym_id}")
 
 @receiver([post_save, post_delete], sender=MembershipPlan)
 def clear_plan_cache(sender,instance =None, **kwargs):
@@ -410,10 +324,6 @@ def clear_plan_cache(sender,instance =None, **kwargs):
 
 
 class UserDevice(models.Model):
-    """
-    FCM push token for a member's device (separate from StaffDevice,
-    which is for admin/owner order alerts). One user can have multiple devices.
-    """
     gym = models.ForeignKey(
         Gym,
         on_delete=models.CASCADE,
@@ -435,12 +345,6 @@ class UserDevice(models.Model):
 
 
 class EnrollmentTransfer(models.Model):
-    """
-    Created when a member who already has an ACTIVE enrollment at one gym
-    confirms enrollment at a different gym. Visible only to the previous gym,
-    which later decides whether to mark the old enrollment inactive or delete it.
-    """
-
     STATUS_CHOICES = [
         ('pending',  'Pending'),
         ('inactive', 'Inactive'),
@@ -452,17 +356,10 @@ class EnrollmentTransfer(models.Model):
 
     previous_gym = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='outgoing_transfers')
     new_gym      = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='incoming_transfers')
-
-    # Nulled out automatically if the old gym later deletes the source row —
-    # the transfer record itself is kept as a historical log either way.
     previous_enrollment = models.ForeignKey(
         Enrollment, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='transfer_records'
     )
-
-    # Snapshot of old-gym data at the moment of transfer.
-    # Kept as plain fields (not FKs) so the history survives deletion of the
-    # source enrollment / plan.
     previous_member_id      = models.CharField(max_length=10)
     previous_plan_name      = models.CharField(max_length=50, blank=True)
     previous_joining_date   = models.DateField(null=True, blank=True)
@@ -482,9 +379,6 @@ class EnrollmentTransfer(models.Model):
     class Meta:
         indexes = [models.Index(fields=['previous_gym', 'status'])]
         constraints = [
-            # DB-level guarantee: only one PENDING transfer per source
-            # enrollment at a time. Prevents duplicate records even under
-            # concurrent/double-click submissions.
             models.UniqueConstraint(
                 fields=['previous_enrollment'],
                 condition=models.Q(status='pending'),
@@ -497,11 +391,6 @@ class EnrollmentTransfer(models.Model):
         return f"{self.mobile_number}: {self.previous_gym} → {self.new_gym} ({self.status})"
     
 class LoginSupportQuery(models.Model):
-    """
-    Support ticket created from the login-page 'Forgot Password / Need Help?'
-    modal for anything that isn't a straight password reset (Django's builtin
-    reset flow handles that path directly and never creates a row here).
-    """
     PROBLEM_CHOICES = [
         ('forgot_password',  'Forgot Password'),
         ('unable_login',     'Unable to Login'),
@@ -513,9 +402,6 @@ class LoginSupportQuery(models.Model):
         ('in_progress', 'In Progress'),
         ('resolved',    'Resolved'),
     ]
-
-    # Nullable — the root SaaS domain has no gym context, and a phone
-    # number might not resolve to any Enrollment at all.
     gym  = models.ForeignKey(Gym, on_delete=models.CASCADE, null=True, blank=True, db_index=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                               related_name='login_support_queries')
@@ -576,7 +462,6 @@ class GymQRCode(models.Model):
 
 
 class AttendanceAttempt(models.Model):
-    """Failed QR scans — expired plan / not enrolled / invalid QR."""
     REASON_CHOICES = [
         ('expired_plan', 'Expired Plan'),
         ('not_enrolled', 'Not Enrolled'),
@@ -596,8 +481,6 @@ class AttendanceAttempt(models.Model):
     def __str__(self):
         return f"{self.user} - {self.reason} @ {self.gym}"
 
-
-# ── Auto-create QR when a Gym is created (multi_tenant requirement) ──
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -605,3 +488,69 @@ from django.dispatch import receiver
 def create_gym_qr_code(sender, instance, created, **kwargs):
     if created:
         GymQRCode.objects.get_or_create(gym=instance)
+
+class RegisterScanImport(models.Model):
+    STATUS_CHOICES = [("pending", "Pending"), ("completed", "Completed")]
+ 
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, db_index=True, related_name='register_scan_imports')
+    imported_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+ 
+    image = CloudinaryField('image', null=True, blank=True)
+    image_public_id = models.CharField(max_length=255, blank=True)
+ 
+    raw_ai_response = models.JSONField(default=list, blank=True)   
+    edited_response = models.JSONField(default=list, blank=True)   
+ 
+    detected_count = models.PositiveIntegerField(default=0)        
+    manual_count = models.PositiveIntegerField(default=0)          
+    rows_edited = models.PositiveIntegerField(default=0)           
+    saved_count = models.PositiveIntegerField(default=0)
+    already_present_count = models.PositiveIntegerField(default=0)
+    needs_review_count = models.PositiveIntegerField(default=0) 
+    failed_count = models.PositiveIntegerField(default=0)
+ 
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending', db_index=True)
+    credit_consumed = models.BooleanField(
+        default=False,
+        help_text="True once one AI credit has been deducted for this import. "
+                   "Guards against double-deduction if the same import is saved "
+                   "more than once (refresh/resubmit).",
+    )
+    summary_broadcasted = models.BooleanField(
+        default=False,
+        help_text="True once the single Live Attendance summary notification "
+                   "has been sent for this import. Guards against a duplicate "
+                   "broadcast if save is retried/double-clicked for the same "
+                   "import_batch.",
+    )
+    started_at = models.DateTimeField(null=True, blank=True)
+    duration_ms = models.PositiveIntegerField(null=True, blank=True)
+ 
+    created_at = models.DateTimeField(auto_now_add=True)
+ 
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['gym', 'created_at']), models.Index(fields=['gym', 'status'])]
+        verbose_name = 'Register Scan Import'
+        verbose_name_plural = 'Register Scan Imports'
+ 
+    def __str__(self):
+        return f"{self.gym.gym_name} — {self.saved_count}/{self.detected_count + self.manual_count} @ {self.created_at:%d %b %Y %H:%M}"
+ 
+ 
+class RegisterScanImportRow(models.Model):
+    SOURCE_CHOICES = [('ai', 'AI Detected'), ('manual', 'Manual')]
+    STATUS_CHOICES = [('saved', 'Saved'), ('skipped_exists', 'Already Marked'), ('failed', 'Failed')]
+ 
+    import_batch = models.ForeignKey(RegisterScanImport, on_delete=models.CASCADE, related_name='rows')
+    unique_id = models.CharField(max_length=10, blank=True)
+    detected_time = models.CharField(max_length=10, blank=True)
+    confidence = models.FloatField(null=True, blank=True)
+    needs_review = models.BooleanField(default=False)
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='ai')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    error_message = models.CharField(max_length=255, blank=True)
+ 
+    class Meta:
+        indexes = [models.Index(fields=['import_batch'])]

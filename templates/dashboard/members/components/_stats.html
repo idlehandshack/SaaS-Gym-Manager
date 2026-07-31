@@ -1,0 +1,18 @@
+{% comment %}
+Statistics row. Reuses the SAME stat-card partial the main Dashboard
+already uses (dashboard/includes/_stat_card.html) rather than inventing
+a parallel card markup — keeps the two pages visually and structurally
+consistent for free.
+
+Values come from stats (member_service.get_member_stats), which honors
+search + narrowing filters but shows all five numbers side-by-side
+regardless of which single `filter=` is currently applied.
+{% endcomment %}
+<div class="row g-3 db-members-stats">
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-people-fill" label="Total Members" value=stats.total color="primary" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-person-check-fill" label="Active Members" value=stats.active color="success" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-person-exclamation" label="Unregistered" value=stats.unregistered color="warning" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-person-x-fill" label="Expired Members" value=stats.expired color="danger" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-cash-coin" label="Pending Payments" value=stats.pending color="warning" %}
+  {% include "dashboard/includes/_stat_card.html" with icon="bi-calendar-check-fill" label="Today's Attendance" value=stats.today_attendance color="info" %}
+</div>

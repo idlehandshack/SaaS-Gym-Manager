@@ -1,0 +1,129 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Expenses{% endblock %}
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title">Expenses</h1>
+    <p class="db-page-sub">{{ total_count }} expense{{ total_count|pluralize }} found</p>
+  </div>
+  <a href="{% url 'expenses:dashboard' %}" class="db-visit-site-btn"><i class="bi bi-speedometer2"></i> Dashboard</a>
+</div>
+
+<div class="db-card mb-3 exp-filter-card">
+  <form method="get" class="exp-filter-grid">
+    <div class="exp-filter-field">
+      <label class="exp-filter-label">Date</label>
+      <select name="date_filter" class="exp-select">
+        <option value="today" {% if filters.date_filter == 'today' %}selected{% endif %}>Today</option>
+        <option value="yesterday" {% if filters.date_filter == 'yesterday' %}selected{% endif %}>Yesterday</option>
+        <option value="this_week" {% if filters.date_filter == 'this_week' %}selected{% endif %}>This Week</option>
+        <option value="this_month" {% if filters.date_filter == 'this_month' %}selected{% endif %}>This Month</option>
+        <option value="last_month" {% if filters.date_filter == 'last_month' %}selected{% endif %}>Last Month</option>
+        <option value="custom" {% if filters.date_filter == 'custom' %}selected{% endif %}>Custom</option>
+      </select>
+    </div>
+    <div class="exp-filter-field">
+      <label class="exp-filter-label">From</label>
+      <input type="date" name="start_date" class="exp-input" value="{{ filters.start_date }}">
+    </div>
+    <div class="exp-filter-field">
+      <label class="exp-filter-label">To</label>
+      <input type="date" name="end_date" class="exp-input" value="{{ filters.end_date }}">
+    </div>
+    <div class="exp-filter-field">
+      <label class="exp-filter-label">Category</label>
+      <select name="category" class="exp-select">
+        <option value="">All</option>
+        {% for value, label in categories %}
+          <option value="{{ value }}" {% if filters.category == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="exp-filter-field">
+      <label class="exp-filter-label">Payment</label>
+      <select name="payment_method" class="exp-select">
+        <option value="">All</option>
+        {% for value, label in payment_methods %}
+          <option value="{{ value }}" {% if filters.payment_method == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="exp-filter-field exp-filter-wide">
+      <label class="exp-filter-label">Search</label>
+      <div class="exp-search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" class="exp-input exp-search-input" placeholder="Title or note" value="{{ filters.q }}">
+      </div>
+    </div>
+    <div class="exp-filter-field">
+      <label class="exp-filter-label">Min ₹</label>
+      <input type="number" name="amount_min" class="exp-input" value="{{ filters.amount_min }}">
+    </div>
+    <div class="exp-filter-field">
+      <label class="exp-filter-label">Max ₹</label>
+      <input type="number" name="amount_max" class="exp-input" value="{{ filters.amount_max }}">
+    </div>
+    <div class="exp-filter-actions">
+      <button type="submit" class="exp-filter-btn"><i class="bi bi-funnel-fill"></i> Filter</button>
+      <a href="{% url 'expenses:list' %}" class="exp-filter-reset">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="db-card exp-table-card">
+  <div class="table-responsive">
+    <table class="exp-table">
+      <thead>
+        <tr>
+          <th>Date</th><th>Title</th><th>Category</th><th class="text-end">Amount</th>
+          <th>Payment</th><th class="text-center">Receipt</th><th>Created By</th><th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in page_obj %}
+        <tr>
+          <td class="exp-date">{{ e.expense_date|date:"d M Y" }}</td>
+          <td>
+            <span class="exp-title">{{ e.title }}</span>
+            {% if e.is_recurring %}<span class="exp-badge-recurring"><i class="bi bi-arrow-repeat"></i> Recurring</span>{% endif %}
+          </td>
+          <td><span class="exp-cat-badge">{{ e.category_label }}</span></td>
+          <td class="text-end exp-amount">₹{{ e.amount|floatformat:2 }}</td>
+          <td><span class="exp-pay-badge">{{ e.get_payment_method_display }}</span></td>
+          <td class="text-center">
+            {% if e.receipt %}<a href="{{ e.receipt.url }}" target="_blank" class="exp-receipt-link"><i class="bi bi-paperclip"></i></a>{% else %}<span class="exp-muted">—</span>{% endif %}
+          </td>
+          <td class="exp-muted">{{ e.created_by.username|default:"—" }}</td>
+          <td class="text-end">
+            <form method="post" action="{% url 'expenses:delete' e.pk %}" class="d-inline"
+                  onsubmit="return confirm('Delete this expense?');">
+              {% csrf_token %}
+              <button type="submit" class="exp-delete-btn"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="exp-empty">
+          <i class="bi bi-receipt"></i>
+          <div>No expenses found for this filter.</div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center mb-0">
+      {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

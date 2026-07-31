@@ -14,7 +14,8 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 import json as json_lib
 from .forms import UPISettingsForm, GymCreateForm, StaffProfileCreateForm, GymGSTProfileForm
-from .models import Gym, SubscriptionPlan, StaffProfile ,PlatformSettings ,PlatformSubscriptionPayment
+from django.http import HttpResponseForbidden
+from .models import Gym, SubscriptionPlan, StaffProfile ,PlatformSettings ,PlatformSubscriptionPayment ,GymGSTProfile
 from AuthFit.models import Enrollment ,GymQRCode, AttendanceAttempt
 from .services import platform_insights as pi
 import calendar
@@ -33,6 +34,9 @@ from AuthFit.notifications import notify_member_renewal_reminder
 from django.conf import settings
 from qrcode.constants import ERROR_CORRECT_H
 from PIL import Image
+from AuthFit.views import _gym_staff_required
+from AuthFit.views import _get_gym
+
 QR_TEMPLATE_PATH = os.path.join(settings.BASE_DIR, "static", "images", "Attendance template.png")
  
 # Region inside the template where the white QR panel sits (measured from the template)
@@ -161,7 +165,43 @@ def _filters_from_request(request) -> dict:
         "city": request.GET.get("city") or None,
         "search": request.GET.get("search") or None,
     }
-
+def gst_profile_edit(request):
+    gym = _get_gym(request)
+    if gym is None:
+        return HttpResponseForbidden("No gym context found for this request.")
+ 
+    profile, created = GymGSTProfile.objects.get_or_create(
+        gym=gym,
+        defaults={
+            "legal_business_name": gym.gym_name,
+            "address_line1": "",
+            "city": "",
+            "state": "",
+            "state_code": "",
+            "pincode": "",
+        },
+    )
+ 
+    if request.method == "POST":
+        form = GymGSTProfileForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Invoice / GST details updated successfully.")
+            return redirect("gst_profile_edit")
+        else:
+            messages.error(request, "Please fix the errors below.")
+    else:
+        form = GymGSTProfileForm(instance=profile)
+ 
+    return render(
+        request,
+        "gst_profile.html",
+        {
+            "form": form,
+            "gym": gym,
+            "is_new": created,
+        },
+    )
 
 @superuser_required
 def platform_insights_page(request):
@@ -1038,3 +1078,6 @@ def orphan_user_bulk_delete(request):
         "deleted_count": len(deleted),
         "skipped": skipped,
     })
+
+def data_deletion(request):
+    return render(request,'data_deletion.html')
