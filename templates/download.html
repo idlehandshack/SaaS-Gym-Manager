@@ -5,18 +5,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %} — Download App</title>
-      {% if favicon_url %}
+    {% if favicon_url %}
     <link rel="icon" href="{{ favicon_url }}">
     <link rel="shortcut icon" href="{{ favicon_url }}">
-  {% else %}
+    {% else %}
     <link rel="icon" href="{% static 'images/favicon.ico' %}">
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
-  {% endif %}
+    {% endif %}
+    <link rel="manifest" href="{% url 'manifest' %}">
+    <link rel="apple-touch-icon" href="{{ apple_touch_icon_url }}">
+    <meta name="theme-color" content="{{ theme_color }}">
+    <meta name="application-name" content="{{ app_short_name }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ app_short_name }}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap"
-      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"
     />
     <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
     <link
@@ -1070,14 +1078,23 @@
               <li><i class="bi bi-bell-fill"></i> Push notifications</li>
             </ul>
             <div class="btn-group-dl">
-              <a
-                href="https://github.com/SheikhAz/Fitness-Website/releases/download/v1.0.0/EnterGYM.apk"
-                download
-                class="btn-download"
-              >
-                <i class="bi bi-download"></i> Download APK
-              </a>
-              <!-- Revealed by JS when Chrome fires beforeinstallprompt -->
+              {% if download_url %}
+                <a href="{{ download_url }}"
+                  class="btn-download"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download>
+                  <i class="bi bi-download"></i> Download App
+                </a>
+              {% else %}
+                <div class="notice-box" style="margin-bottom:0">
+                  <i class="bi bi-info-circle-fill"></i>
+                  <div class="notice-box-text">
+                    <h6>Coming Soon</h6>
+                    <p>App download is not available yet. Please contact your gym.</p>
+                  </div>
+                </div>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -1400,11 +1417,5 @@
         setTimeout(openIOSModal, 900); // slight delay so page settles first
       }
     </script>
-    {% if request.user.is_authenticated %}
-      {% if VAPID_PUBLIC_KEY %}
-        <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
-        <script src="{% static 'js/push_subscribe.js' %}" defer></script>
-      {% endif %}
-    {% endif %}
   </body>
 </html>

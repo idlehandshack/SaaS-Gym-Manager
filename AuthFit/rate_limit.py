@@ -34,19 +34,12 @@ def check_login_attempt(ip: str, phone: str) -> bool:
 
 
 def record_failed_attempt(ip: str, phone: str) -> None:
-    """
-    Increments both the phone counter and the IP counter.
-    Uses cache.add + cache.incr to avoid the get→set race condition.
-    TTL is reset on each failure so the window slides correctly.
-    """
     for key, limit in ((_phone_key(phone), MAX_ATTEMPTS), (_ip_key(ip), MAX_IP_ATTEMPTS)):
         try:
-            # cache.add sets only if key doesn't exist — atomic
             added = cache.add(key, 1, timeout=LOCKOUT_SECONDS)
             if not added:
-                # Key exists — increment, then reset TTL so window slides
                 cache.incr(key)
-                cache.expire(key, LOCKOUT_SECONDS)
+                cache.touch(key, LOCKOUT_SECONDS)  # was cache.expire() — doesn't exist
         except Exception:
             pass
 

@@ -34,12 +34,13 @@ from AuthFit.models import (
     Contact, Enrollment, EnrollmentTransfer, MembershipPlan, Trainer,
     Attendence as Attendence_model ,MembershipPlanChangeLog
 )
+from AuthFit.email_utils import send_transactional_email
 from django.db.models import Prefetch
 from django.http import HttpResponseRedirect
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth,TruncDay
 from AuthFit.rate_limit import check_login_attempt, reset_attempt, record_failed_attempt ,get_client_ip
-from .forms import UserLogin , CompleteProfileForm , QuickEnrollmentForm ,GymExtrasForm
+from .forms import UserLogin , CompleteProfileForm , QuickEnrollmentForm ,GymExtrasForm ,UpdateEmailForm
 from Gym.ai_credit_service import get_or_create_wallet
 from urllib.parse import quote
 from Shop.notifications import notify_staff_new_enrollment
@@ -223,21 +224,17 @@ def _send_password_reset_email(request, user, gym):
         "gym_name": gym.gym_name if gym else "EnterGYM",
         "gym": gym,
     }
-    subject = "Reset Your EnterGYM Password"
     html_body = render_to_string("registration/password_reset_email.html", context)
 
     if user.email:
-        try:
-            send_mail(
-                subject=subject,
-                message=html_body,
-                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-                recipient_list=[user.email],
-                html_message=html_body,
-                fail_silently=False,
-            )
-        except Exception:
-            logger.exception("Password reset email failed to send — user_id=%s", user.id)
+        sent = send_transactional_email(
+            subject="Reset Your EnterGYM Password",
+            html_content=html_body,
+            to_email=user.email,
+            to_name=user.get_full_name() or user.username,
+        )
+        if not sent:
+            logger.error("Password reset email failed to send — user_id=%s", user.id)
 
 def _build_attendance_entry(rec):
     enrollment = rec.enrollment  # direct FK on Attendence_model — same as today_attendance uses
@@ -428,14 +425,6 @@ def _check_internal_key(request) -> bool:
 def invalidate_gym_branding_cache(gym_pk):
     cache.delete(f"gym_favicon_{gym_pk}")
     cache.delete(f"gym_logo_{gym_pk}")
-
-
-def get_client_ip(request):
-    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if forwarded_for:
-        return forwarded_for.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR')
-
 
 def _safe_next(next_url: str, request) -> str:
     if not next_url:
@@ -1104,9 +1093,12 @@ def download_app(request):
     gym = getattr(request, 'gym', None) 
     gym_name  = gym.gym_name if gym else "EnterGYM"
     gym_short = gym_name.replace(" ", "") 
+    download_url = gym.app_download_url if gym and gym.app_download_url else None
+
     return render(request, 'download.html', {
         'gym_name':  gym_name,
         'gym_short': gym_short,
+        'download_url': download_url,
     })
 
 
@@ -3079,3 +3071,36 @@ def guide(request):
 
 def aiattendance(request):
     return render(request, "aiattendance.html")
+
+@login_required
+@require_POST
+def update_email(request):
+    gym = getattr(request, 'gym', None)
+    form = UpdateEmailForm(request.POST)
+
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    if not form.is_valid():
+        error = next(iter(form.errors.values()))[0]
+        if is_ajax:
+            return JsonResponse({"error": error}, status=400)
+        messages.error(request, error)
+        return redirect('/profile/')
+
+    new_email = form.cleaned_data['email']
+
+    request.user.email = new_email
+    request.user.save(update_fields=['email'])
+
+    enrollment = Enrollment.objects.filter(user=request.user, gym=gym).first()
+    if enrollment:
+        enrollment.email = new_email
+        enrollment.save(update_fields=['email'])
+
+    cache.delete(f"enrollment_{request.user.id}_{gym.pk if gym else 'none'}")
+
+    if is_ajax:
+        return JsonResponse({"ok": True, "email": new_email})
+
+    messages.success(request, "Email updated successfully.")
+    return redirect('/profile/')

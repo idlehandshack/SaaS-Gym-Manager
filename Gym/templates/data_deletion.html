@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Deletion Instructions — EnterGYM</title>
+<link rel="icon" href="{% static 'images/favicon.ico' %}">
+<link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── TOKENS ── */
+  :root {
+    --bg: #080810;
+    --bg-card: #0f0f1a;
+    --bg-surface: #16162a;
+    --indigo: #5B5FFF;
+    --indigo-light: #7b7fff;
+    --indigo-dim: rgba(91,95,255,0.12);
+    --indigo-border: rgba(91,95,255,0.25);
+    --off-white: #F0EEE8;
+    --muted: #8888aa;
+    --muted-2: #5a5a7a;
+    --border: rgba(255,255,255,0.06);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --green: #22d3a0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--off-white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 48px;
+    background: rgba(8,8,16,0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    min-height: 60px;
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 20px;
+    color: var(--off-white); text-decoration: none;
+    letter-spacing: -0.5px; flex-shrink: 0;
+  }
+  .nav-logo span { color: var(--indigo); }
+  .nav-back {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    text-decoration: none; letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 6px;
+    transition: color 0.2s; white-space: nowrap;
+  }
+  .nav-back:hover { color: var(--indigo-light); }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 120px 48px 72px;
+    text-align: center;
+    background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(91,95,255,0.1) 0%, transparent 70%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--indigo-dim);
+    border: 1px solid var(--indigo-border);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--indigo-light);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .hero-eyebrow::before { content: '🗑'; font-size: 13px; }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    color: var(--off-white);
+    margin-bottom: 20px;
+  }
+  h1 span { color: var(--indigo); }
+
+  .hero-sub {
+    max-width: 600px; margin: 0 auto 36px;
+    color: var(--muted); font-size: clamp(14px, 2vw, 17px); line-height: 1.65;
+  }
+  .hero-meta {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; flex-wrap: wrap;
+  }
+  .meta-item {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted-2);
+  }
+  .meta-item .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--indigo); flex-shrink: 0;
+  }
+
+  /* ── LAYOUT (single column, no sidebar — this page is short) ── */
+  .layout {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 56px 48px 100px;
+  }
+
+  .short-version {
+    background: linear-gradient(135deg, rgba(91,95,255,0.08), rgba(34,211,160,0.04));
+    border: 1px solid var(--indigo-border);
+    border-left: 3px solid var(--indigo);
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    margin-bottom: 48px;
+    font-size: 14.5px; line-height: 1.75;
+    color: var(--muted);
+  }
+  .short-version strong { color: var(--indigo-light); }
+
+  .section { margin-bottom: 56px; scroll-margin-top: 90px; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 20px;
+  }
+  .section-num {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--indigo);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 14px;
+    color: #fff; flex-shrink: 0;
+  }
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(20px, 3vw, 26px);
+    font-weight: 700; letter-spacing: -0.4px;
+    color: var(--off-white);
+  }
+
+  .section p { color: var(--muted); margin-bottom: 14px; font-size: 14.5px; }
+  .section p:last-child { margin-bottom: 0; }
+  .section strong { color: var(--off-white); }
+
+  /* info cards */
+  .info-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-top: 20px;
+  }
+  .info-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    transition: border-color 0.2s;
+  }
+  .info-card:hover { border-color: var(--indigo-border); }
+  .info-card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em;
+    color: var(--muted-2); text-transform: uppercase;
+    margin-bottom: 7px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .info-card-value { font-size: 13.5px; font-weight: 500; color: var(--off-white); word-break: break-word; }
+  .info-card-value a { color: var(--indigo-light); text-decoration: none; }
+  .info-card-value a:hover { text-decoration: underline; }
+
+  /* checklist */
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .checklist li {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px; color: var(--off-white);
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+  .checklist li:hover { border-color: var(--indigo-border); }
+  .checklist li::before {
+    content: '';
+    width: 18px; height: 18px; min-width: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--indigo);
+    background: var(--indigo-dim);
+    margin-top: 1px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%235B5FFF' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 10px;
+  }
+
+  /* stepper for "what happens next" */
+  .steps { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+  .step {
+    display: flex; gap: 16px; align-items: flex-start;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+  }
+  .step-num {
+    width: 28px; height: 28px; min-width: 28px; border-radius: 50%;
+    background: var(--indigo-dim);
+    border: 1px solid var(--indigo-border);
+    color: var(--indigo-light);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 600;
+  }
+  .step-body strong { display: block; color: var(--off-white); font-size: 14px; margin-bottom: 3px; }
+  .step-body span { color: var(--muted); font-size: 13.5px; }
+
+  /* highlight / warning boxes */
+  .highlight-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    margin-top: 14px;
+    font-size: 14px; color: var(--muted);
+    line-height: 1.7;
+  }
+  .highlight-box strong { color: var(--indigo-light); }
+
+  .warning-box {
+    background: rgba(255,154,64,0.06);
+    border: 1px solid rgba(255,154,64,0.2);
+    border-left: 3px solid #ff9a40;
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    margin-top: 14px;
+    font-size: 14px; color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* request card with CTA buttons */
+  .request-card {
+    background: linear-gradient(135deg, rgba(91,95,255,0.1), rgba(91,95,255,0.02));
+    border: 1px solid var(--indigo-border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-top: 16px;
+  }
+  .request-card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 17px;
+    color: var(--off-white); margin-bottom: 8px;
+  }
+  .request-card p { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+  .request-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600;
+    padding: 11px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.18s;
+    border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--indigo); color: #fff; }
+  .btn-primary:hover { background: var(--indigo-light); }
+  .btn-outline {
+    background: transparent; color: var(--off-white);
+    border-color: var(--border);
+  }
+  .btn-outline:hover { border-color: var(--indigo-border); background: var(--indigo-dim); }
+
+  /* divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0 0 56px; }
+
+  .mono-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px; color: var(--indigo-light);
+    word-break: break-all;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 36px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 17px; color: var(--off-white);
+  }
+  .footer-logo span { color: var(--indigo); }
+  .footer-copy {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; color: var(--muted-2);
+  }
+  .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+  .footer-links a {
+    font-size: 13px; color: var(--muted);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--indigo-light); }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg-surface); border-radius: 3px; }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 860px) {
+    nav { padding: 14px 20px; }
+    .nav-logo { font-size: 18px; }
+    .hero { padding: 96px 20px 56px; }
+    .layout { padding: 40px 20px 80px; }
+    .info-cards { grid-template-columns: 1fr 1fr; }
+    footer { padding: 28px 20px; flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+  @media (max-width: 560px) {
+    nav { padding: 12px 16px; min-height: 54px; }
+    .nav-logo { font-size: 16px; }
+    .hero { padding: 82px 16px 48px; }
+    h1 { margin-bottom: 16px; }
+    .layout { padding: 28px 16px 60px; }
+    .short-version { padding: 16px 18px; font-size: 13.5px; margin-bottom: 36px; }
+    .section { margin-bottom: 44px; }
+    .info-cards { grid-template-columns: 1fr; gap: 10px; }
+    .request-actions { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+    .divider { margin-bottom: 44px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Enter<span>GYM</span></div>
+  <a class="nav-back" href="/">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M10 3L5 8l5 5"/>
+    </svg>
+    <span class="nav-back">Back to Home</span>
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">Data Deletion Instructions</div>
+  <h1>Delete Your <span>Data</span></h1>
+  <p class="hero-sub">You're in control of your data. This page explains what we delete, how long it takes, and how to submit a request — including for data connected through WhatsApp.</p>
+  <div class="hero-meta">
+    <div class="meta-item"><span class="dot"></span> Effective: 29 July 2026</div>
+    <div class="meta-item"><span class="dot"></span> Arrow SoftTech</div>
+  </div>
+</section>
+
+<div class="layout">
+
+  <div class="short-version">
+    <strong>The short version:</strong> Email us at <strong>shiekazmatulla@gmail.com</strong> with your name, gym name, and phone number. We verify the request and permanently delete your personal data within <strong>30 days</strong>, except records we're legally required to keep (like invoices).
+  </div>
+
+  <!-- S1: What data we hold -->
+  <div class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>What Data We Hold</h2>
+    </div>
+    <p>Depending on how you use EnterGYM (as a gym owner, staff member, or gym member), we may hold the following categories of personal data:</p>
+    <ul class="checklist">
+      <li>Name, email address, and phone number</li>
+      <li>Gym membership details — plan, join date, renewal history</li>
+      <li>Attendance records, including GPS check-in and AI Face Attendance data</li>
+      <li>Payment and billing history, including GST invoices</li>
+      <li>WhatsApp message logs sent via our WhatsApp Cloud API integration (e.g. payment reminders, expiry alerts)</li>
+      <li>Profile photos uploaded to your gym's dashboard</li>
+    </ul>
+  </div>
+
+  <hr class="divider">
+
+  <!-- S2: How to request -->
+  <div class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>How to Request Deletion</h2>
+    </div>
+    <p>Send us an email with the details below. This lets us locate your record and confirm it's really you before we delete anything.</p>
+
+    <div class="request-card">
+      <div class="request-card-title">Submit a Deletion Request</div>
+      <p>Include the following in your email so we can process it without back-and-forth:</p>
+      <ul class="checklist" style="margin-bottom: 18px;">
+        <li>Your full name</li>
+        <li>Your email address</li>
+        <li>Your gym name (if applicable)</li>
+        <li>The phone number associated with your account</li>
+        <li>A brief description of your deletion request</li>
+      </ul>
+      <div class="request-actions">
+        <a class="btn btn-primary" href="mailto:shiekazmatulla@gmail.com?subject=Data%20Deletion%20Request%20-%20EnterGYM&body=Full%20Name%3A%0AEmail%20Address%3A%0AGym%20Name%20(if%20applicable)%3A%0APhone%20Number%3A%0ADescription%20of%20Request%3A%0A">
+          ✉️ Email a Deletion Request
+        </a>
+        <a class="btn btn-outline" href="https://wa.me/917000032565" target="_blank" rel="noopener noreferrer">
+          💬 Message Us on WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- S3: What happens next -->
+  <div class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>What Happens Next</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>We verify your identity</strong>
+          <span>We confirm the request matches the account on file using your registered name, gym, and phone number.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>We locate and review your data</strong>
+          <span>We check what personal data we hold, and whether any of it must be retained for legal reasons.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>We delete what we can</strong>
+          <span>Personal data — profile info, attendance logs, face recognition data, WhatsApp message history — is permanently deleted within 30 days of verification.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>We confirm completion</strong>
+          <span>We email you once the deletion is complete, along with a note on anything retained and why.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- S4: WhatsApp-specific -->
+  <div class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Data Shared via WhatsApp</h2>
+    </div>
+    <p>EnterGYM uses the <strong>WhatsApp Cloud API</strong> (provided by Meta) to send membership and payment reminders on behalf of gym owners. When you interact with a gym through WhatsApp:</p>
+    <ul class="checklist">
+      <li>Your phone number and message content are processed by Meta to deliver the message</li>
+      <li>We store a copy of message logs (e.g. delivery status, message ID) to help gym owners confirm reminders were sent</li>
+      <li>We do not use your WhatsApp data for advertising or share it with any third party beyond Meta's role as the messaging provider</li>
+    </ul>
+    <div class="highlight-box">
+      <strong>Note:</strong> Deleting your data from EnterGYM removes it from our systems, but does not delete your WhatsApp account or messages stored on your own device. If you'd also like to manage what Meta/WhatsApp itself retains, you can do so directly through your WhatsApp app settings or Meta's Accounts Center.
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- S5: Retention exceptions -->
+  <div class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>What We're Required to Keep</h2>
+    </div>
+    <p>Some records can't be deleted immediately, even on request, because Indian law requires us to retain them:</p>
+    <div class="warning-box">
+      GST invoices and tax-related billing records are retained for the period required under Indian tax law, even after a deletion request is processed. Records needed for an active legal dispute or fraud investigation may also be retained until resolved.
+    </div>
+    <p style="margin-top: 16px">All other personal data — profile details, attendance history, face recognition data, and message logs — is fully and permanently deleted once your request is verified.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- S6: Contact -->
+  <div class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Contact Us</h2>
+    </div>
+    <p>Questions about this policy or your data? Reach out any time:</p>
+    <div class="info-cards">
+      <div class="info-card">
+        <div class="info-card-label">📧 Email</div>
+        <div class="info-card-value"><a href="mailto:shiekazmatulla@gmail.com">shiekazmatulla@gmail.com</a></div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">💬 WhatsApp</div>
+        <div class="info-card-value"><a href="https://wa.me/917000032565" target="_blank" rel="noopener noreferrer">+91 70000 32565</a></div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">📍 Address</div>
+        <div class="info-card-value">Korba, Chhattisgarh, India</div>
+      </div>
+    </div>
+    <p style="margin-top:20px">We aim to acknowledge every deletion request within <strong>2 business days</strong> and complete verified requests within <strong>30 days</strong>.</p>
+  </div>
+
+</div><!-- /layout -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Enter<span>GYM</span></div>
+  <div class="footer-links">
+    <a href="/termsandconditions/">Terms &amp; Conditions</a>
+    <a href="/privacypolicy/">Privacy Policy</a>
+    <a href="https://wa.me/917000032565">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 Arrow SoftTech. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

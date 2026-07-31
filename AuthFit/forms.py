@@ -13,6 +13,9 @@ from django.utils import timezone
 from Gym.theme import THEME_PRESETS
 import logging
 logger = logging.getLogger(__name__)
+
+EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+
 class UserLogin(UserCreationForm):
 
     username = forms.CharField(
@@ -468,3 +471,12 @@ class EquipmentBrandSelectionForm(forms.Form):
         selected = self.cleaned_data['brands']
         self.gym.equipment_brands.set(selected)
         return self.gym
+
+class UpdateEmailForm(forms.Form):
+    email = forms.EmailField(max_length=254)
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        if not EMAIL_RE.match(email):
+            raise forms.ValidationError("Enter a valid email address.")
+        return email

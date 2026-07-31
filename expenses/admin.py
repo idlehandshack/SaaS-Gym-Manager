@@ -7,10 +7,10 @@ class ExpenseAdmin(admin.ModelAdmin):
     list_display = ('title', 'gym', 'category', 'amount', 'payment_method',
                      'expense_date', 'is_recurring', 'created_by')
     list_filter = ('category', 'payment_method', 'is_recurring', 'gym')
-    search_fields = ('title', 'note')          # exact/indexed fields only — avoid icontains on gym FK
+    search_fields = ('title', 'note')          
     date_hierarchy = 'expense_date'
-    list_select_related = ('gym', 'created_by')   # avoid N+1 on list page
-    show_full_result_count = False                # avoid COUNT(*) on large tables
+    list_select_related = ('gym', 'created_by')   
+    show_full_result_count = False              
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('-expense_date',)
 

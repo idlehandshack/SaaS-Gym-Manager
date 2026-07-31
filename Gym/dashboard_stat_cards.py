@@ -1,11 +1,4 @@
 # Gym/dashboard_stat_cards.py
-"""
-Canonical registry of dashboard stat cards. Single source of truth for
-keys used by: the GymExtrasForm (owner/receptionist picker), the
-dashboard view (hidden_cards set), and dashboard.html (per-card key=).
-Keep key strings stable — they're persisted in Gym.hidden_stat_cards.
-"""
-
 STAT_CARD_REGISTRY = [
     ("active_members",       "Active Members"),
     ("unregistered_members", "Unregistered Members"),

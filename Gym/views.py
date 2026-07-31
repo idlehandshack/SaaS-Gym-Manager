@@ -12,7 +12,6 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
-import json as json_lib
 from .forms import UPISettingsForm, GymCreateForm, StaffProfileCreateForm, GymGSTProfileForm
 from django.http import HttpResponseForbidden
 from .models import Gym, SubscriptionPlan, StaffProfile ,PlatformSettings ,PlatformSubscriptionPayment ,GymGSTProfile
@@ -27,7 +26,6 @@ from .models import OrphanUserDeletionLog
 from .services import orphan_users as ou
 import json as json_lib
 from django.core.paginator import Paginator
-from AuthFit.views import _gym_staff_required
 import qrcode, io ,os
 from django.http import HttpResponse
 from AuthFit.notifications import notify_member_renewal_reminder

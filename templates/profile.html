@@ -792,9 +792,34 @@
           </div>
           <div class="card-cell">
             <div class="cell-label">Email Address</div>
-            <div class="cell-value orange">
-              {{ enrollment.email|default:user.email }}
+
+            <div id="emailDisplay" class="cell-value orange" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <span id="emailDisplayText">{{ enrollment.email|default:user.email|default:"Not Provided" }}</span>
+              <button type="button" id="editEmailBtn" class="renew-btn" style="background:var(--surface-2); color:var(--orange); border:1px solid var(--orange-bdr);">
+                {% if enrollment.email or user.email %}Change{% else %}Add Email{% endif %}
+              </button>
             </div>
+
+            <form id="emailForm" method="POST" action="{% url 'update_email' %}" style="display:none; margin-top:8px;">
+              {% csrf_token %}
+              <input
+                type="email"
+                name="email"
+                id="emailInput"
+                value="{{ enrollment.email|default:user.email }}"
+                placeholder="you@example.com"
+                required
+                style="width:100%; padding:10px 14px; background:var(--surface-2);
+                      border:1px solid var(--border-2); border-radius:var(--radius-sm);
+                      color:var(--text-hi); font-size:14px; font-family:var(--font-b);">
+
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button type="submit" class="renew-btn">Save</button>
+                <button type="button" id="cancelEmailBtn" class="renew-btn" style="background:var(--surface-2); color:var(--text-mid);">Cancel</button>
+              </div>
+
+              <div id="emailError" style="color:var(--red); font-size:12px; margin-top:6px; display:none;"></div>
+            </form>
           </div>
         </div>
 
@@ -921,7 +946,6 @@
         </div>
       </div>
     </div>
-
     <script nonce="{{ request.csp_nonce }}">
     (function () {
       const payBtn        = document.getElementById('upiPayBtn');
@@ -1249,5 +1273,52 @@
     })();
     </script>
   {% endif %}
+  <!-- ══ EMAIL UPDATE SCRIPT ══ -->
+  <script nonce="{{ request.csp_nonce }}">
+    (function () {
+      const editBtn    = document.getElementById('editEmailBtn');
+      const cancelBtn  = document.getElementById('cancelEmailBtn');
+      const display    = document.getElementById('emailDisplay');
+      const form       = document.getElementById('emailForm');
+      const errorBox   = document.getElementById('emailError');
+      const displayText = document.getElementById('emailDisplayText');
+
+      editBtn.addEventListener('click', function () {
+        display.style.display = 'none';
+        form.style.display = 'block';
+      });
+
+      cancelBtn.addEventListener('click', function () {
+        form.style.display = 'none';
+        display.style.display = 'flex';
+        errorBox.style.display = 'none';
+      });
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        errorBox.style.display = 'none';
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form),
+          });
+          const data = await res.json();
+          if (res.ok) {
+            displayText.textContent = data.email;
+            editBtn.textContent = 'Change';
+            form.style.display = 'none';
+            display.style.display = 'flex';
+          } else {
+            errorBox.textContent = data.error || 'Something went wrong.';
+            errorBox.style.display = 'block';
+          }
+        } catch (err) {
+          errorBox.textContent = 'Network error. Please try again.';
+          errorBox.style.display = 'block';
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
