@@ -19,7 +19,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from django.conf import settings
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator ,EmptyPage
 from django.db import transaction ,IntegrityError
 import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
@@ -2328,6 +2328,91 @@ def today_attendance(request):
     if not search:
         cache.set(cache_key, context, timeout=120)
     return render(request, "today_attendance.html", context)
+
+def needs_attention(request):
+    gym = getattr(request, 'gym', None)
+    search_ctx = get_search_context(request)
+    search_by, search = search_ctx["search_by"], search_ctx["search"]
+
+    qs = Enrollment.objects.filter(is_deleted=False).select_related("selectPlan", "trainer")
+    if gym:
+        qs = qs.filter(gym=gym)
+
+    qs = apply_search(qs, search_by, search)
+
+    EXPIRING_SOON_THRESHOLD = 3
+    alerts = []
+
+    for enrollment in qs:
+        pending_amount = float(enrollment.pendingAmount)
+        is_expired = enrollment.is_expired
+        days_remaining = enrollment.days_remaining
+        is_expiring_soon = (
+            not is_expired and days_remaining is not None
+            and days_remaining <= EXPIRING_SOON_THRESHOLD
+        )
+        has_pending = pending_amount > 0
+
+        if is_expired:
+            alert_rank = 0
+        elif is_expiring_soon:
+            alert_rank = 1
+        elif has_pending:
+            alert_rank = 2
+        else:
+            continue
+
+        image_url = None
+        if enrollment.face_image:
+            try:
+                public_id = (
+                    enrollment.face_image.public_id
+                    if hasattr(enrollment.face_image, "public_id")
+                    else str(enrollment.face_image)
+                )
+                if public_id:
+                    image_url, _ = cloudinary_url(
+                        public_id, width=60, height=60,
+                        crop="fill", gravity="face",
+                        fetch_format="auto", quality="auto", secure=True,
+                    )
+            except Exception:
+                logger.exception("Cloudinary URL error for enrollment %s", enrollment.id)
+
+        alerts.append({
+            "id": enrollment.id,
+            "name": enrollment.fullname,
+            "unique_id": enrollment.unique_id,
+            "image_url": image_url,
+            "pending_amount": pending_amount,
+            "due_date": enrollment.DueDate.strftime("%d %b %Y") if enrollment.DueDate else "—",
+            "is_expired": is_expired,
+            "is_expiring_soon": is_expiring_soon,
+            "has_pending": has_pending,
+            "alert_rank": alert_rank,
+            "phone": enrollment.phone,
+            "plan": enrollment.selectPlan.plan if enrollment.selectPlan else "—",
+            "days_remaining": days_remaining,
+        })
+
+    alerts.sort(key=lambda e: (e["alert_rank"], -e["pending_amount"]))
+
+    paginator = Paginator(alerts, 25)
+    requested_page = request.GET.get("page", 1)
+    try:
+        page_obj = paginator.get_page(requested_page)
+    except EmptyPage:
+        page_obj = paginator.get_page(1)
+
+    context = {
+        "gym": gym,
+        "active": "member_management",
+        "alerts": page_obj.object_list,
+        "alerts_count": len(alerts),
+        "page_obj": page_obj,
+        **search_ctx,
+    }
+    return render(request, "needs_attention.html", context)
 
 @_gym_staff_required
 def freeze_membership(request):

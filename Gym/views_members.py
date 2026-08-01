@@ -1,14 +1,5 @@
 # Gym/views_members.py
-"""
-Views for the Member Management Center.
-
-Per the reusable-architecture requirement: this module contains NO
-filtering, searching, sorting, or gym-scoping logic. Every query comes
-from Gym.services.member_service — this file only reads request.GET,
-forwards it to the service, paginates the result, and renders.
-"""
-
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator,EmptyPage
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from Gym.services.member_service import (
@@ -21,7 +12,8 @@ from Gym.services.member_service import (
 )
 from django.core.cache import cache
 from AuthFit.models import Enrollment, MembershipPlan, Trainer
-from Gym.dashboard_views import _staff_dashboard_required  # same access rule as the rest of the portal
+# same access rule as the rest of the portal
+from Gym.dashboard_views import _staff_dashboard_required
 from Gym.services.member_service import (
     FILTER_CHOICES,
     MEMBERSHIP_STATUS_CHOICES,
@@ -35,6 +27,7 @@ from AuthFit.attendance import mark_staff_attendance
 from AuthFit.notifications import send_test_notification_to_member
 MEMBERS_PER_PAGE = 25
 
+
 @_staff_dashboard_required
 @require_POST
 def check_member_notifications(request, member_id):
@@ -44,20 +37,19 @@ def check_member_notifications(request, member_id):
     result = send_test_notification_to_member(member)
     return JsonResponse(result)
 
+
 @_staff_dashboard_required
 def member_list(request):
     gym = request.gym
 
-    filter_key         = request.GET.get("filter", "all")
-    search              = request.GET.get("search", "").strip()
-    sort                = request.GET.get("sort", "newest")
-    plan                = request.GET.get("plan") or None
-    trainer             = request.GET.get("trainer") or None
-    gender              = request.GET.get("gender") or None
-    payment_status      = request.GET.get("payment_status") or None
-    membership_status   = request.GET.get("membership_status") or None
-
-    # ── The queryset — the ONLY call that produces member rows. ────────
+    filter_key = request.GET.get("filter", "all")
+    search = request.GET.get("search", "").strip()
+    sort = request.GET.get("sort", "newest")
+    plan = request.GET.get("plan") or None
+    trainer = request.GET.get("trainer") or None
+    gender = request.GET.get("gender") or None
+    payment_status = request.GET.get("payment_status") or None
+    membership_status = request.GET.get("membership_status") or None
     members_qs = get_member_queryset(
         gym=gym,
         filter=filter_key,
@@ -69,8 +61,6 @@ def member_list(request):
         payment_status=payment_status,
         membership_status=membership_status,
     )
-
-    # ── Stats row — also built entirely from the service. ──────────────
     stats = get_member_stats(
         gym=gym,
         search=search,
@@ -81,27 +71,24 @@ def member_list(request):
     )
 
     paginator = Paginator(members_qs, MEMBERS_PER_PAGE)
-    page_obj = paginator.get_page(request.GET.get("page", 1))
-
-    # ── Filter dropdown data sources (gym-scoped, id + display name only —
-    #    these populate <select> options, nothing else needs to load) ──
-    plans    = MembershipPlan.objects.filter(gym=gym).order_by("plan").values("id", "plan")
-    trainers = Trainer.objects.filter(gym=gym).order_by("name").values("id", "name")
-
-    # Preserve every current querystring param except `page` when building
-    # pagination links, so filters/search/sort survive page navigation.
+    requested_page = request.GET.get("page", 1)
+    try:
+        page_obj = paginator.get_page(requested_page)
+    except EmptyPage:
+        page_obj = paginator.get_page(1)
+    plans = MembershipPlan.objects.filter(
+        gym=gym).order_by("plan").values("id", "plan")
+    trainers = Trainer.objects.filter(
+        gym=gym).order_by("name").values("id", "name")
     querystring = request.GET.copy()
     querystring.pop("page", None)
 
     context = {
         "gym": gym,
-        "active": "member_management",  # distinct from the sidebar's existing
-                                         # "members" value (used by Enrollment) —
-                                         # left unlinked in the sidebar until
-                                         # Dashboard Integration step.
-        "page_obj": page_obj,
+        "active": "member_management",
         "stats": stats,
-
+        "page_obj": page_obj,
+        "members": page_obj.object_list,
         "filter_choices": FILTER_CHOICES,
         "sort_choices": SORT_CHOICES,
         "membership_status_choices": MEMBERSHIP_STATUS_CHOICES,
@@ -123,19 +110,16 @@ def member_list(request):
     }
     return render(request, "dashboard/members/list.html", context)
 
+
 @_staff_dashboard_required
 def member_detail(request, member_id):
     gym = request.gym
-
-    # get_member_detail_queryset already does gym-scoping + soft-delete
-    # exclusion + the heavier prefetches this page needs (payments,
-    # invoices, plan_change_logs) — same rule as the list view: this view
-    # does no filtering/query-building of its own.
     member = get_object_or_404(get_member_detail_queryset(gym), pk=member_id)
     plans_key = f"membership_plans_{gym.pk}"
     plans = cache.get(plans_key)
     if plans is None:
-        plans = list(MembershipPlan.objects.filter(gym=gym).values("id", "plan", "price", "duration_days"))
+        plans = list(MembershipPlan.objects.filter(gym=gym).values(
+            "id", "plan", "price", "duration_days"))
         cache.set(plans_key, plans, timeout=3600)
     context = {
         "gym": gym,
@@ -147,17 +131,16 @@ def member_detail(request, member_id):
         "activity_timeline": get_member_activity_timeline(member),
         "whatsapp_log": get_member_whatsapp_log(member),
         "push_log": get_member_push_log(member),
-        "invoices": member.invoices.all(),  # already prefetched, ordered -invoice_date
-        "payments": member.payments.all(),  # already prefetched, ordered -payment_date
+        "invoices": member.invoices.all(),
+        "payments": member.payments.all(),
     }
     return render(request, "dashboard/members/detail.html", context)
+
 
 @_staff_dashboard_required
 @require_POST
 def staff_mark_attendance(request, member_id):
     gym = request.gym
-
-    # gym-scoping + soft-delete exclusion, same rule as member_detail
     member = get_object_or_404(get_member_detail_queryset(gym), pk=member_id)
 
     result = mark_staff_attendance(member, marked_by=request.user)

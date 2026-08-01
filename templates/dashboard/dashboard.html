@@ -55,8 +55,7 @@
 {% include "dashboard/includes/_stat_card.html" with key="pending_payments" icon="bi-exclamation-triangle-fill" label="Pending Payments" value=stats.pending_payments color="danger" link=member_list_urls.pending hidden_cards=hidden_cards %}
 {% include "dashboard/includes/_stat_card.html" with key="pending_amount" icon="bi-wallet-fill" label="Pending Amount" value=stats.pending_amount_display color="danger" link=member_list_urls.pending hidden_cards=hidden_cards %}
 {% include "dashboard/includes/_stat_card.html" with key="expiring_today" icon="bi-clock-history" label="Expiring Today" value=stats.expiring_today color="warning" link=member_list_urls.expiring_today hidden_cards=hidden_cards %}
-{% include "dashboard/includes/_stat_card.html" with key="total_trainers" icon="bi-person-badge-fill" label="Total Trainers" value=stats.total_trainers color="info" hidden_cards=hidden_cards %}
-{% include "dashboard/includes/_stat_card.html" with key="total_staff" icon="bi-person-workspace" label="Total Staff" value=stats.total_staff color="info" hidden_cards=hidden_cards %}
+{% include "dashboard/includes/_stat_card.html" with icon="bi-person-x-fill" label="Expired Members" value=stats.expired_members color="danger" link=member_list_urls.expired %}
 {% include "dashboard/includes/_stat_card.html" with key="new_members_month" icon="bi-person-plus-fill" label="New This Month" value=stats.new_members_month color="primary" link=member_list_urls.new_month hidden_cards=hidden_cards %}
 {% include "dashboard/includes/_stat_card.html" with key="renewals_today" icon="bi-arrow-repeat" label="Renewals Today" value=stats.renewals_today color="success" link=member_list_urls.renewals_today hidden_cards=hidden_cards %}
 {% include "dashboard/includes/_stat_card.html" with key="ai_credits_balance" icon="bi-stars" label="AI Credits Remaining" value=stats.ai_credits_balance color="info" hidden_cards=hidden_cards %}

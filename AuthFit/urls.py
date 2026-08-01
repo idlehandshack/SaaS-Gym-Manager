@@ -98,6 +98,7 @@ profile_patterns = [
     path('inactivemember/', active_member_required, name='inactive_member'),
     path('gstproile/', gst_profile_edit, name='gst_profile_edit'),
     path('workout/', views.workout, name='workout'),
+    path('needs-attention/', views.needs_attention, name='needs_attention'),
 ]
 
 

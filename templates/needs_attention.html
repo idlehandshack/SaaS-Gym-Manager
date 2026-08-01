@@ -1,0 +1,154 @@
+{% extends "dashboard/base.html" %}
+{% load static custom_filters %}
+{% block title %}Needs Attention{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/members.css' %}">
+<style>
+  .na-page { max-width: 860px; margin: 0 auto; padding: 0 0 clamp(40px,6vw,60px); }
+  .db-back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-bottom: 18px; padding: 7px 14px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.1); background: transparent;
+    color: #999; font-size: 12px; font-weight: 500; text-decoration: none;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .db-back-btn:hover { border-color: #ff5a00; color: #f5f5f5; background: rgba(255, 90, 0, .06); }
+
+  /* reuse att-card / att-tag / att-avatar styles from today_attendance.html
+     — kept minimal here since this page only needs the card + tags, not
+     the full slide panel / scan register machinery. */
+  .att-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: clamp(10px,2.5vw,14px) clamp(12px,3vw,18px);
+    display: flex; align-items: center; gap: clamp(10px,2.5vw,16px);
+    margin-bottom: 8px; text-decoration: none;
+    transition: border-color var(--t), background var(--t);
+  }
+  .att-card:hover { border-color: var(--orange-bdr); background: var(--surface-2); }
+  .att-card.expired { border-left: 3px solid var(--red); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+  .att-card.expiring { border-left: 3px solid var(--yellow); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+
+  .att-avatar-wrap { position: relative; flex-shrink: 0; }
+  .att-avatar {
+    width: clamp(34px,9vw,42px); height: clamp(34px,9vw,42px);
+    border-radius: 50%; object-fit: cover; border: 1px solid var(--border-2);
+    background: var(--surface-2); display: block;
+  }
+  .att-avatar-placeholder {
+    width: clamp(34px,9vw,42px); height: clamp(34px,9vw,42px);
+    border-radius: 50%; border: 1px solid var(--border-2);
+    background: var(--surface-3); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-lo); font-family: var(--font-d);
+    font-size: clamp(13px,3.5vw,17px); font-weight: 900;
+  }
+  .att-alert-dot { position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--surface); }
+  .att-alert-dot.dot-red { background: var(--red); }
+  .att-alert-dot.dot-yellow { background: var(--yellow); }
+  .att-alert-dot.dot-orange { background: var(--orange); }
+
+  .att-info { flex: 1; min-width: 0; }
+  .att-name {
+    color: var(--text-hi); font-family: var(--font-d);
+    font-size: clamp(13px,3.5vw,16px); font-weight: 800;
+    letter-spacing: .02em; text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .att-uid { color: var(--text-lo); font-family: var(--font-d); font-size: clamp(9px,2.5vw,11px); letter-spacing: .18em; font-weight: 700; margin-top: 2px; }
+  .att-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .att-tag {
+    font-family: var(--font-d); font-size: clamp(7.5px,1.8vw,9px);
+    font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: var(--radius-pill); white-space: nowrap; line-height: 1.5;
+  }
+  .att-tag.tag-expired { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-bdr); }
+  .att-tag.tag-expiring { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow-bdr); }
+  .att-tag.tag-pending { background: var(--orange-dim); color: var(--orange); border: 1px solid var(--orange-bdr); }
+
+  .att-meta { text-align: right; flex-shrink: 0; min-width: clamp(60px,16vw,80px); }
+  .att-pending { font-family: var(--font-d); font-size: clamp(12px,3vw,15px); font-weight: 900; color: var(--text-lo); }
+  .att-pending.has-pending { color: var(--orange); }
+  .att-due { font-family: var(--font-d); font-size: clamp(8px,2vw,10px); color: var(--text-lo); letter-spacing: .1em; margin-top: 3px; font-weight: 700; text-transform: uppercase; }
+  .att-due.expired-tag { color: var(--red); }
+  .att-due.expiring-tag { color: var(--yellow); }
+  .att-chevron { color: var(--text-lo); font-size: .85rem; flex-shrink: 0; transition: color var(--t), transform var(--t); }
+  .att-card:hover .att-chevron { color: var(--orange); transform: translateX(2px); }
+
+  .na-empty { font-family: var(--font-d); color: var(--green); font-size: .8rem; letter-spacing: .18em; text-align: center; padding: 40px 0; font-weight: 700; text-transform: uppercase; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <a href="{% url 'today_attendance' %}" class="db-back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+      Back to Dashboard
+    </a>
+    <h1 class="db-page-title">Needs Attention</h1>
+    <p class="db-page-sub">{{ alerts_count }} member{{ alerts_count|pluralize }} with an expired plan, a plan expiring soon, or a pending payment.</p>
+  </div>
+</div>
+
+<div class="na-page">
+  {% if alerts %}
+    {% for r in alerts %}
+    <a href="{% url 'member_detail' r.id %}" class="att-card {% if r.is_expired %}expired{% elif r.is_expiring_soon %}expiring{% endif %}">
+
+      <div class="att-avatar-wrap">
+        {% if r.image_url %}
+          <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy" />
+        {% else %}
+          <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
+        {% endif %}
+        {% if r.is_expired %}
+          <span class="att-alert-dot dot-red"></span>
+        {% elif r.is_expiring_soon %}
+          <span class="att-alert-dot dot-yellow"></span>
+        {% elif r.has_pending %}
+          <span class="att-alert-dot dot-orange"></span>
+        {% endif %}
+      </div>
+
+      <div class="att-info">
+        <div class="att-name">{{ r.name }}</div>
+        <div class="att-uid">UID · {{ r.unique_id }}</div>
+        <div class="att-tags">
+          {% if r.is_expired %}
+            <span class="att-tag tag-expired"><i class="bi bi-x-circle"></i> Expired</span>
+          {% elif r.is_expiring_soon %}
+            <span class="att-tag tag-expiring"><i class="bi bi-hourglass-split"></i>
+              {% if r.days_remaining == 0 %}Expires Today{% elif r.days_remaining == 1 %}1 Day Left{% else %}{{ r.days_remaining }} Days Left{% endif %}
+            </span>
+          {% endif %}
+          {% if r.has_pending %}
+            <span class="att-tag tag-pending"><i class="bi bi-cash-coin"></i> Pending</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="att-meta">
+        {% if r.pending_amount > 0 %}
+          <div class="att-pending has-pending">₹{{ r.pending_amount|floatformat:0 }}</div>
+        {% else %}
+          <div class="att-pending"></div>
+        {% endif %}
+        <div class="att-due {% if r.is_expired %}expired-tag{% elif r.is_expiring_soon %}expiring-tag{% endif %}">
+          {% if r.is_expired %}EXPIRED{% else %}{{ r.due_date }}{% endif %}
+        </div>
+      </div>
+
+      <i class="bi bi-chevron-right att-chevron"></i>
+    </a>
+    {% endfor %}
+
+    {% include "dashboard/members/components/_pagination.html" %}
+  {% else %}
+    <div class="na-empty">🎉 Nothing needs attention right now</div>
+  {% endif %}
+</div>
+{% endblock %}

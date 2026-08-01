@@ -439,6 +439,7 @@
   }
   .scan-field:focus { border-color: var(--orange); }
   .scan-field.uid { width: 78px; flex-shrink: 0; }
+  .scan-field.time { width: 78px; flex-shrink: 0; }
   .scan-field.name-display { flex: 1; background: transparent; border: none; color: var(--text-hi); font-weight: 700; padding: 6px 2px; }
 
   .scan-row-badge {
@@ -564,8 +565,9 @@
 
     /* Row 1: status icon · Unique ID · confidence · source badge · delete
        Row 2: member name / search (full width)
+       Row 3: time
        Explicit order on every child — relying on source order alone is
-       what caused the search box to overlap the badges before. */
+       what caused the search box to overlap the time/badges before. */
     .scan-row-top {
       flex-wrap: wrap;
       row-gap: 8px;
@@ -584,6 +586,12 @@
       width: 100%;
     }
     .scan-member-dropdown { left: 0; right: 0; }
+
+    .scan-field.time {
+      order: 7;
+      flex: 0 0 auto;
+      width: auto;
+    }
   }
   @media (max-width: 360px) {
     .att-time { min-width: 48px; }
@@ -639,69 +647,19 @@
   </div>
   {% endif %}
   {% endif %}
-
-  <!-- ── NEEDS ATTENTION (expired / expiring soon / pending payment) ── -->
-  {% if alerts %}
-  <div class="att-alerts-wrap">
-    <div class="att-alerts-head">
+  <!-- ── NEEDS ATTENTION (compact summary → full page) ── -->
+  {% if alerts_count %}
+  <a href="{% url 'needs_attention' %}" class="att-alerts-wrap" style="display:flex; align-items:center; justify-content:space-between; text-decoration:none; cursor:pointer;">
+    <div>
       <div class="att-alerts-title"><i class="bi bi-exclamation-triangle-fill"></i> Needs Attention</div>
+      <div class="att-alerts-sub" style="margin-bottom:0;">{{ alerts_count }} member{{ alerts_count|pluralize }} checked in today with an expired plan, a plan expiring soon, or a pending payment.</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
       <div class="att-alerts-count-badge">{{ alerts_count }}</div>
+      <i class="bi bi-chevron-right" style="color:var(--orange);"></i>
     </div>
-    <div class="att-alerts-sub">Members who checked in today with an expired plan, a plan expiring soon, or a pending payment.</div>
-
-    {% for r in alerts %}
-    <div class="att-card in-alerts {% if r.is_expired %}expired{% elif r.is_expiring_soon %}expiring{% endif %}" data-json="{{ r|data_json }}">
-
-      <div class="att-avatar-wrap">
-        {% if r.image_url %}
-          <img class="att-avatar" src="{{ r.image_url }}" alt="{{ r.name }}" loading="lazy" />
-        {% else %}
-          <div class="att-avatar-placeholder">{{ r.name|first|upper }}</div>
-        {% endif %}
-        {% if r.is_expired %}
-          <span class="att-alert-dot dot-red"></span>
-        {% elif r.is_expiring_soon %}
-          <span class="att-alert-dot dot-yellow"></span>
-        {% elif r.has_pending %}
-          <span class="att-alert-dot dot-orange"></span>
-        {% endif %}
-      </div>
-
-      <div class="att-info">
-        <div class="att-name">{{ r.name }}</div>
-        <div class="att-uid">UID · {{ r.unique_id }}</div>
-        <div class="att-tags">
-          {% if r.is_expired %}
-            <span class="att-tag tag-expired"><i class="bi bi-x-circle"></i> Expired</span>
-          {% elif r.is_expiring_soon %}
-            <span class="att-tag tag-expiring"><i class="bi bi-hourglass-split"></i>
-              {% if r.days_remaining == 0 %}Expires Today{% elif r.days_remaining == 1 %}1 Day Left{% else %}{{ r.days_remaining }} Days Left{% endif %}
-            </span>
-          {% endif %}
-          {% if r.has_pending %}
-            <span class="att-tag tag-pending"><i class="bi bi-cash-coin"></i> Pending</span>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="att-meta">
-        {% if r.pending_amount > 0 %}
-          <div class="att-pending has-pending">₹{{ r.pending_amount|floatformat:0 }}</div>
-        {% else %}
-          <div class="att-pending"></div>
-        {% endif %}
-        <div class="att-due {% if r.is_expired %}expired-tag{% elif r.is_expiring_soon %}expiring-tag{% endif %}">
-          {% if r.is_expired %}EXPIRED{% else %}{{ r.due_date }}{% endif %}
-        </div>
-      </div>
-
-      <i class="bi bi-chevron-right att-chevron"></i>
-
-    </div>
-    {% endfor %}
-  </div>
+  </a>
   {% endif %}
-
   <!-- ── SECTION TABS (Morning / Evening / etc.) ── -->
   <div class="att-tabs" id="attTabs">
     {% for section_name, section_icon, records in sections %}
@@ -900,7 +858,7 @@
       <i class="bi bi-x"></i>
     </button>
     <div class="att-panel-name" style="font-size:1.3rem;">Scan Attendance Register</div>
-    <div class="att-alerts-sub" style="margin-top:6px;">Take one photo of today's register page. AI reads Unique IDs — you confirm before anything is saved.</div>
+    <div class="att-alerts-sub" style="margin-top:6px;">Take one photo of today's register page. AI reads Unique IDs and times — you confirm before anything is saved.</div>
     <div class="att-panel-accent"></div>
   </div>
 
@@ -982,6 +940,7 @@
   </div>
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script nonce="{{ request.csp_nonce }}">
 (function () {
@@ -1216,11 +1175,6 @@ bindTabGroup('#attTabs .att-tab');
    Photo → AI Vision → Editable Preview → Validation → existing
    attendance service (mark_attendance, via /register-scan/save/).
    No parallel attendance-writing logic lives in this file.
-
-   NOTE: "time" has been removed from this flow end-to-end — rows
-   only carry unique_id (+ match info + confidence). Attendance is
-   stamped "now" server-side. This cuts what the AI has to read per
-   row, which speeds up the scan.
    ══════════════════════════════════════════════════════════════ */
 (function () {
   const openBtn = document.getElementById('btnOpenScanPanel');
@@ -1347,7 +1301,32 @@ bindTabGroup('#attTabs .att-tab');
       stateUpload.style.display = 'block';
     }
   });
+  // ── STATE 1b: confirm the photo before it's ever uploaded ───
+  async function showImagePreview(file) {
+    selectedFile = file;
+    qualityWarnWrap.innerHTML = '';
+    stateUpload.style.display = 'none';
 
+    // Show a lightweight loading state while we preprocess, since this can
+    // take a moment on large phone photos.
+    previewImg.src = '';
+    previewImg.alt = 'Processing photo…';
+    stateImgPreview.style.display = 'block';
+
+    try {
+      processedBlob = await preprocessImage(file);
+      previewImg.src = URL.createObjectURL(processedBlob);
+      previewImg.alt = 'Selected register photo preview (preprocessed)';
+    } catch (err) {
+      console.error('Preprocess failed, falling back to raw photo for preview', err);
+      processedBlob = null;  // upload step will fall back to the original file
+      previewImg.src = URL.createObjectURL(file);
+      previewImg.alt = 'Selected register photo preview';
+    }
+
+    btnConfirm.focus();
+
+  }
   // ── STATE 1b: confirm the photo before it's ever uploaded ───
   const btnRotate = document.getElementById('btnRotatePhoto');
   let rotationDegrees = 0;  // user-controlled, 0/90/180/270
@@ -1379,7 +1358,6 @@ bindTabGroup('#attTabs .att-tab');
     await refreshPreview();
     btnConfirm.focus();
   }
-
   // ── Client-side preprocessing: EXIF-safe rotate, resize, compress,
   //    grayscale + contrast + sharpen ──
   // Runs entirely in-browser before the photo ever leaves the device —
@@ -1388,7 +1366,7 @@ bindTabGroup('#attTabs .att-tab');
   // ambiguous stroke (a badly-formed 5 can still read as 9 to a human too),
   // but grayscale + real edge sharpening measurably cuts down misreads
   // versus the flat photo the camera hands us.
-  async function preprocessImage(file, extraRotationDeg = 0) {
+async function preprocessImage(file, extraRotationDeg = 0) {
     const MAX_DIMENSION = 1800;
     const JPEG_QUALITY = 0.9;
 
@@ -1503,6 +1481,7 @@ bindTabGroup('#attTabs .att-tab');
       client_id: r.client_id || ('ai-' + (rowIdCounter++)),
       source: 'ai',
       unique_id: r.unique_id,
+      time: r.time || '',
       member_name: r.member_name || '',
       matched: !!r.matched,
       confidence: r.confidence != null ? r.confidence : null,
@@ -1576,6 +1555,7 @@ bindTabGroup('#attTabs .att-tab');
       client_id: 'manual-' + (rowIdCounter++),
       source: 'manual',
       unique_id: '',
+      time: '',
       member_name: '',
       matched: false,
       confidence: null,
@@ -1743,6 +1723,22 @@ bindTabGroup('#attTabs .att-tab');
       top.appendChild(searchWrap);
     }
 
+    // time field
+    const timeInput = document.createElement('input');
+    timeInput.type = 'text';
+    timeInput.className = 'scan-field time';
+    timeInput.id = 'scan-time-' + row.client_id;
+    timeInput.name = 'scan-time-' + row.client_id;
+    timeInput.placeholder = 'HH:MM';
+    timeInput.setAttribute('aria-label', 'Attendance time, 24 hour format');
+    timeInput.autocomplete = 'off';
+    timeInput.value = row.time;
+    timeInput.addEventListener('input', () => {
+      row.time = timeInput.value.trim();
+      debounceRevalidate();
+    });
+    top.appendChild(timeInput);
+
     // confidence badge (AI rows only)
     if (row.source === 'ai' && row.confidence != null) {
       const conf = document.createElement('span');
@@ -1865,7 +1861,7 @@ bindTabGroup('#attTabs .att-tab');
   }
 
   function serializeRow(r) {
-    return { client_id: r.client_id, unique_id: r.unique_id, source: r.source };
+    return { client_id: r.client_id, unique_id: r.unique_id, time: r.time, source: r.source };
   }
 
   // ── Save ──────────────────────────────────────────────────────
