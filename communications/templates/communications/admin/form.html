@@ -80,13 +80,18 @@
       <div class="card-body">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="{{ form.publish_at.id_for_label }}">Publish At</label>
-            {{ form.publish_at }}
-            {% if form.expires_at.errors %}<div class="form-errors">{{ form.expires_at.errors|striptags }}</div>{% endif %}
+            <label class="form-label" for="{{ form.publish_date.id_for_label }}">Publish Date</label>
+            {{ form.publish_date }}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.publish_time.id_for_label }}">Publish Time Slot</label>
+            {{ form.publish_time }}
+            <div class="form-help">Slot times align with the server cron run.</div>
           </div>
           <div class="form-group">
             <label class="form-label" for="{{ form.expires_at.id_for_label }}">Expires At</label>
             {{ form.expires_at }}
+            {% if form.expires_at.errors %}<div class="form-errors">{{ form.expires_at.errors|striptags }}</div>{% endif %}
           </div>
         </div>
         <div class="form-check">

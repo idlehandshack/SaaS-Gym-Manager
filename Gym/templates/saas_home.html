@@ -1277,7 +1277,9 @@
                 {% for review in verified_reviews %}
                 <div class="testi-card{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.counter0 }}">
                   <span class="testi-verified-badge">✔ Verified Gym</span>
-                  <div class="testi-stars">{% for i in "12345" %}{% if forloop.counter <= review.overall_rating %}★{% else %}☆{% endif %}{% endfor %}</div>
+                  <div class="testi-stars">
+                    {% for i in "12345" %}{% if forloop.counter <= review.overall_rating %}<span class="ts-star">★</span>{% else %}<span class="ts-star">☆</span>{% endif %}{% endfor %}
+                  </div>
                   <p class="testi-quote">{{ review.final_review }}</p>
                   <div class="testi-author">
                     <div class="avatar" style="background:#5b5fff20;color:#5b5fff;width:40px;height:40px;font-size:0.78rem;">

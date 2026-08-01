@@ -12,7 +12,6 @@ urlpatterns = [
     path('accounts/password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
     path('accounts/reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
-    path('', include('reviews.urls_owner')),
     path('', include('demoRequest.urls')),
     path('', include('Gym.urls')),
     path('', include('announcements.urls')),
@@ -20,4 +19,5 @@ urlpatterns = [
     path('expenses/', include(('expenses.urls', 'expenses'), namespace='expenses')),
     path("communications/",include("communications.urls")),
     path('notifications/', include('notification_center.urls')),
+    path("reviews/", include("reviews.urls")),
 ]

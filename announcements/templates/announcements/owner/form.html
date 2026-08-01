@@ -141,9 +141,14 @@
       <label class="db-form-label">External Link</label>
       {{ form.external_link }}
     </div>
-    <div class="col-md-3">
-      <label class="db-form-label">Publish At</label>
-      {{ form.publish_at }}
+    <div class="col-md-2">
+      <label class="db-form-label">Publish Date</label>
+      {{ form.publish_date }}
+    </div>
+    <div class="col-md-2">
+      <label class="db-form-label">Publish Time</label>
+      {{ form.publish_time }}
+      <div class="db-form-hint">Slot times align with the server cron run.</div>
     </div>
     <div class="col-md-3">
       <label class="db-form-label">Expires At</label>

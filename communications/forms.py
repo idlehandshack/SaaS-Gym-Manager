@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+import datetime
 
 from AuthFit.models import MembershipPlan
 from Gym.models import Gym, SubscriptionPlan
@@ -11,15 +12,22 @@ from .models import (
 )
 from .utils import sanitize_rich_text
 
-# ── Upload validation (security.requirements: "Validate uploaded files") ──
-MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024   # 5 MB
-MAX_ATTACHMENT_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB
+# ── Upload validation (unchanged) ──
+MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+MAX_ATTACHMENT_SIZE_BYTES = 15 * 1024 * 1024
 ALLOWED_IMAGE_CONTENT_TYPES = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}
 ALLOWED_ATTACHMENT_CONTENT_TYPES = {
     'application/pdf', 'image/jpeg', 'image/png',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 }
+
+# Keep in sync with the cron schedule in publish_scheduled_communications.
+PUBLISH_TIME_SLOTS = [
+    ('07:00', '7:00 AM'),
+    ('13:00', '1:00 PM'),
+    ('19:00', '7:00 PM'),
+]
 
 
 def _validate_upload(f, *, max_bytes, allowed_types, label):
@@ -34,23 +42,29 @@ def _validate_upload(f, *, max_bytes, allowed_types, label):
 
 
 class CommunicationForm(forms.ModelForm):
-    """Super Admin create/edit form for the Communication content itself.
-    Audience is a separate form (CommunicationAudienceForm) so the two
-    concerns — "what" and "who" — stay decoupled, matching the
-    architecture's separate Audience Resolver stage."""
+
+    publish_date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label='Publish Date',
+    )
+    publish_time = forms.ChoiceField(
+        choices=PUBLISH_TIME_SLOTS,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Publish Time Slot',
+    )
 
     class Meta:
         model = Communication
         fields = [
             'title', 'description', 'type', 'priority',
             'image', 'attachment', 'external_link', 'deep_link_type',
-            'publish_at', 'expires_at', 'is_active',
+            'expires_at', 'is_active',
             'channel_push', 'channel_web_push', 'channel_pwa',
             'channel_email', 'channel_whatsapp', 'channel_sms',
             'show_popup', 'require_read', 'show_banner', 'banner_placement',
             'show_notification_center',
             'campaign',
-        ]
+        ]  # publish_at intentionally excluded — built from publish_date + publish_time
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 150}),
             'description': forms.Textarea(attrs={'class': 'form-control rich-text-editor', 'rows': 6}),
@@ -60,7 +74,6 @@ class CommunicationForm(forms.ModelForm):
             'attachment': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'external_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://...'}),
             'deep_link_type': forms.Select(attrs={'class': 'form-select'}),
-            'publish_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'expires_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'banner_placement': forms.Select(attrs={'class': 'form-select'}),
             'campaign': forms.Select(attrs={'class': 'form-select'}),
@@ -70,13 +83,18 @@ class CommunicationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['campaign'].queryset = CommunicationCampaign.objects.all()
         self.fields['campaign'].required = False
-        if not self.instance.pk:
-            self.fields['publish_at'].initial = timezone.now()
+
+        if self.instance.pk and self.instance.publish_at:
+            local_dt = timezone.localtime(self.instance.publish_at)
+            self.fields['publish_date'].initial = local_dt.date()
+            hhmm = local_dt.strftime('%H:%M')
+            valid = {v for v, _ in PUBLISH_TIME_SLOTS}
+            self.fields['publish_time'].initial = hhmm if hhmm in valid else PUBLISH_TIME_SLOTS[0][0]
+        else:
+            self.fields['publish_date'].initial = timezone.localdate()
+            self.fields['publish_time'].initial = PUBLISH_TIME_SLOTS[0][0]
 
     def clean_description(self):
-        # security.requirements: "HTML sanitization" / "Prevent XSS" — same
-        # allow-list sanitizer announcements/utils.py already uses, reused
-        # (not reimplemented) via communications/utils.py.
         return sanitize_rich_text(self.cleaned_data.get('description', ''))
 
     def clean_image(self):
@@ -94,13 +112,30 @@ class CommunicationForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        publish_at = cleaned.get('publish_at')
+        publish_date = cleaned.get('publish_date')
+        publish_time = cleaned.get('publish_time')
         expires_at = cleaned.get('expires_at')
-        if publish_at and expires_at and expires_at <= publish_at:
-            self.add_error('expires_at', "Expiry must be after the publish date.")
+
+        if publish_date and publish_time:
+            hh, mm = map(int, publish_time.split(':'))
+            naive = datetime.datetime.combine(publish_date, datetime.time(hh, mm))
+            publish_at = timezone.make_aware(naive, timezone.get_current_timezone())
+            cleaned['publish_at'] = publish_at
+
+            if expires_at and expires_at <= publish_at:
+                self.add_error('expires_at', "Expiry must be after the publish date.")
+
         return cleaned
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.publish_at = self.cleaned_data['publish_at']
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
+    
 class CommaSeparatedField(forms.CharField):
     """Renders/parses a JSONField-backed list (cities/states/countries) as
     a plain comma-separated text input."""

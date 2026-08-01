@@ -48,6 +48,17 @@
             <i class="bi bi-chat-dots"></i>
             <span>Messages</span>
           </a>
+          {% if gym.review.is_published %}
+            <a href="{% url "reviews:owner_review_page" %}" class="db-notif-action db-notif-verified">
+              <i class="bi bi-patch-check-fill"></i>
+              <span>Verified Review</span>
+            </a>
+          {% else %}
+            <a href="{% url "reviews:owner_review_page" %}" class="db-notif-action">
+              <i class="bi bi-chat-dots"></i>
+              <span>Share Your Review</span>
+            </a>
+          {% endif %}
           {% if request.staff_role == "gym_owner" or request.staff_role == "receptionist" %}
             {% if VAPID_PUBLIC_KEY %}
               <a href="#" class="db-notif-action owner-notif-btn">
