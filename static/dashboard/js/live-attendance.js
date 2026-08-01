@@ -29,6 +29,14 @@
   let intentionalClose = false;
   let soundUnlocked = false;
 
+  // ── ADDED: heartbeat + connection-guard state ─────────────────────────
+  const HEARTBEAT_INTERVAL_MS = 30000;
+  const HEARTBEAT_TIMEOUT_MS = 70000; // ── ADDED: stale-connection threshold
+  let heartbeatTimer = null;
+  let lastPongAt = null; // ── ADDED: tracks last pong receipt time
+  let connectGeneration = 0; // guards against races between reconnect
+                              // timer / visibility recovery / network recovery
+
   const container = document.getElementById('lacContainer');
   const soundEl = document.getElementById('lacSound');
 
@@ -42,31 +50,105 @@
   document.addEventListener('click', unlockSoundOnce, { once: true });
   document.addEventListener('keydown', unlockSoundOnce, { once: true });
 
+  // ── ADDED: structured logging helper — auto-disables outside of
+  // dev/localhost/debug so production consoles don't get spammed. ───────
+  const LAC_DEBUG =
+    (typeof window !== 'undefined') &&
+    (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.LAC_DEBUG === true
+    );
+
+  function lacLog(event, detail) {
+    if (!LAC_DEBUG) return;
+    try {
+      console.log('[lac-ws]', event, detail || '');
+    } catch (e) { /* ignore */ }
+  }
+
+  // ── ADDED: heartbeat lifecycle, with stale-connection detection ───────
+  function startHeartbeat() {
+    stopHeartbeat();
+    lastPongAt = Date.now(); // treat connect-time as a fresh baseline
+    heartbeatTimer = setInterval(function () {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+      // ── ADDED: stale connection detection — 70s+ since last pong.
+      // We only close the socket here; we never call connect() or
+      // scheduleReconnect() directly. The existing 'close' handler below
+      // is solely responsible for triggering reconnection, so this can't
+      // race with or duplicate the normal reconnect flow.
+      if (lastPongAt && (Date.now() - lastPongAt) > HEARTBEAT_TIMEOUT_MS) {
+        lacLog('heartbeat:stale', { since: Date.now() - lastPongAt });
+        try { socket.close(); } catch (e) { /* ignore */ }
+        return;
+      }
+
+      try {
+        socket.send(JSON.stringify({ type: 'ping' }));
+        lacLog('heartbeat:ping');
+      } catch (e) { /* ignore */ }
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  function stopHeartbeat() {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+  }
+
   function connect() {
+    // ── MODIFIED: duplicate-connection guard (unchanged condition,
+    // now also cancels any pending reconnect timer to avoid races) ──────
     if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
       return; // prevent duplicate connections
     }
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+
+    connectGeneration++;
+    const myGeneration = connectGeneration;
+
     intentionalClose = false;
     socket = new WebSocket(window.LAC_WS_URL);
+    lacLog('connect:start');
 
     socket.addEventListener('open', function () {
+      if (myGeneration !== connectGeneration) return; // stale socket, ignore
       reconnectDelay = RECONNECT_BASE_MS; // reset backoff on success
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+      startHeartbeat();
+      lacLog('connect:open');
     });
 
     socket.addEventListener('message', function (event) {
       try {
         const payload = JSON.parse(event.data);
+        // ── ADDED: heartbeat pong is swallowed here, never reaches
+        // handleAttendancePayload, never touches toasts/counters/burst.
+        if (payload && payload.type === 'pong') {
+          lastPongAt = Date.now(); // refresh staleness baseline
+          lacLog('heartbeat:pong');
+          return;
+        }
         handleAttendancePayload(payload);
       } catch (err) {
         console.error('live-attendance: bad message payload', err);
       }
     });
 
-    socket.addEventListener('close', function () {
+    socket.addEventListener('close', function (event) {
+      stopHeartbeat();
+      lacLog('disconnect', { code: event.code, intentional: intentionalClose });
       if (!intentionalClose) scheduleReconnect();
     });
 
     socket.addEventListener('error', function () {
+      lacLog('error');
       socket.close();
     });
   }
@@ -76,16 +158,52 @@
     reconnectTimer = setTimeout(function () {
       reconnectTimer = null;
       reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX_MS);
+      lacLog('reconnect:attempt', { delay: reconnectDelay });
       connect();
     }, reconnectDelay);
   }
 
-  window.addEventListener('beforeunload', function () {
-    intentionalClose = true;
-    if (socket) socket.close();
+  // ── ADDED: foreground recovery ────────────────────────────────────────
+  document.addEventListener('visibilitychange', function () {
+    if (
+      document.visibilityState === 'visible' &&
+      (
+        !socket ||
+        socket.readyState === WebSocket.CLOSED ||
+        socket.readyState === WebSocket.CLOSING
+      )
+    ) {
+      lacLog('reconnect:visibility');
+      connect();
+    }
   });
 
-  // ── Rendering ─────────────────────────────────────────────────────────
+  // ── MODIFIED: network recovery — exposed hook for React Native to call
+  // after connectivity returns. Now also handles CLOSING and a null socket,
+  // in addition to CLOSED. Never touches OPEN or CONNECTING sockets, so it
+  // can never create a duplicate connection. Never reloads the page/WebView.
+  window.__lacNetworkRecovered = function () {
+    const state = socket ? socket.readyState : null;
+    const isRecoverable =
+      state === null ||
+      state === WebSocket.CLOSED ||
+      state === WebSocket.CLOSING;
+
+    if (isRecoverable) {
+      lacLog('reconnect:network', { fromState: state });
+      connect(); // reuses existing connect(), including its OPEN/CONNECTING guard
+    }
+  };
+
+  window.addEventListener('beforeunload', function () {
+    intentionalClose = true;
+    stopHeartbeat();
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    if (socket) socket.close();
+    lacLog('shutdown');
+  });
+
+  // ── Rendering (unchanged below this line) ──────────────────────────────
   function handleAttendancePayload(p) {
     if (p.type === 'register_scan_completed') {
       renderRegisterScanSummaryToast(p);
@@ -147,11 +265,13 @@
       burstTimestamps = [];
     }, AUTO_HIDE_MS);
   }
+
   function avatarFallback(gender) {
     if (gender === 'M') return '/static/dashboard/images/avatar-male.png';
     if (gender === 'F') return '/static/dashboard/images/avatar-female.png';
     return '/static/dashboard/images/avatar-placeholder.png';
   }
+
   function renderRegisterScanSummaryToast(p) {
     const toast = document.createElement('div');
     toast.className = 'lac-toast lac-toast-register-scan';
@@ -185,29 +305,30 @@
 
     setTimeout(function () { removeToast(toast); }, AUTO_HIDE_MS);
   }
+
   function renderToast(p) {
-  const toast = document.createElement('div');
-  toast.className = 'lac-toast';
-  toast.innerHTML = `
-    <div class="lac-toast-header">
-      <i class="bi bi-check-circle-fill"></i>
-      <span class="lac-toast-title">Attendance Marked</span>
-      <button class="lac-toast-close" aria-label="Dismiss">&times;</button>
-    </div>
-    <div class="lac-toast-body">
-      <img class="lac-toast-photo" src="${p.photo || avatarFallback(p.gender)}" alt="">
-      <div class="lac-toast-info">
-        <div class="lac-toast-name">${escapeHtml(p.name)}</div>
-        <div class="lac-toast-meta">${escapeHtml(p.phone)} · ${escapeHtml(p.plan)}</div>
-        <div class="lac-toast-meta">${escapeHtml(p.attendance_time)} · ${escapeHtml(p.payment_status)}</div>
-        <div class="lac-toast-badges">
-          <span class="lac-badge lac-badge-${p.method_color}">${escapeHtml(p.method_label)}</span>
-          <span class="lac-badge lac-badge-${p.days_remaining_color}">${escapeHtml(p.days_remaining_label)}</span>
+    const toast = document.createElement('div');
+    toast.className = 'lac-toast';
+    toast.innerHTML = `
+      <div class="lac-toast-header">
+        <i class="bi bi-check-circle-fill"></i>
+        <span class="lac-toast-title">Attendance Marked</span>
+        <button class="lac-toast-close" aria-label="Dismiss">&times;</button>
+      </div>
+      <div class="lac-toast-body">
+        <img class="lac-toast-photo" src="${p.photo || avatarFallback(p.gender)}" alt="">
+        <div class="lac-toast-info">
+          <div class="lac-toast-name">${escapeHtml(p.name)}</div>
+          <div class="lac-toast-meta">${escapeHtml(p.phone)} · ${escapeHtml(p.plan)}</div>
+          <div class="lac-toast-meta">${escapeHtml(p.attendance_time)} · ${escapeHtml(p.payment_status)}</div>
+          <div class="lac-toast-badges">
+            <span class="lac-badge lac-badge-${p.method_color}">${escapeHtml(p.method_label)}</span>
+            <span class="lac-badge lac-badge-${p.days_remaining_color}">${escapeHtml(p.days_remaining_label)}</span>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="lac-toast-footer">View Attendance →</div>
-  `;
+      <div class="lac-toast-footer">View Attendance →</div>
+    `;
 
     toast.addEventListener('click', function (e) {
       if (e.target.closest('.lac-toast-close')) {

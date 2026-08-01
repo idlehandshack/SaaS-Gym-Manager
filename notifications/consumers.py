@@ -8,18 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class AttendanceConsumer(AsyncWebsocketConsumer):
-    """
-    Per-gym attendance broadcast channel.
-
-    Group name: attendance_gym_<gym_id>
-
-    Multi-tenant safety: a connecting user is validated as an active
-    gym_owner/receptionist StaffProfile for THIS specific gym_id BEFORE
-    accept() is ever called. There is no fallback path and no shared
-    group — a gym's owner can never join another gym's group even if
-    they guess the URL.
-    """
-
     async def connect(self):
         self.gym_id = self.scope['url_route']['kwargs']['gym_id']
         user = self.scope.get('user')
@@ -51,11 +39,25 @@ class AttendanceConsumer(AsyncWebsocketConsumer):
         if hasattr(self, 'group_name'):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
+    # ── MODIFIED: added heartbeat ping/pong handling ────────────────────
+    # This is the ONLY change to receive(). It intercepts a lightweight
+    # {"type": "ping"} client message and answers with {"type": "pong"}.
+    # - No DB queries, no group_send, no channel layer interaction.
+    # - O(1): single json.loads + a string compare + a direct self.send().
+    # - Anything that isn't the heartbeat shape falls through and is
+    #   ignored exactly as before (original behavior was `pass`).
     async def receive(self, text_data=None, bytes_data=None):
-        # Client is push-only; nothing meaningful to receive. Ignore.
-        pass
+        if text_data:
+            try:
+                data = json.loads(text_data)
+            except (ValueError, TypeError):
+                return  # not JSON — ignored, same as before
 
-    # Dispatch target for group_send({"type": "attendance.notification", ...})
+            if isinstance(data, dict) and data.get('type') == 'ping':
+                await self.send(text_data=json.dumps({'type': 'pong'}))
+            # anything else: ignored, same as original `pass` behavior
+        # bytes_data path intentionally left as no-op, unchanged.
+
     async def attendance_notification(self, event):
         await self.send(text_data=json.dumps(event['payload']))
 
