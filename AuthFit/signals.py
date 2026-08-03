@@ -2,11 +2,10 @@
 
 import logging
 from django.core.cache import cache
-from django.db import transaction
 from django.db.models import F
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
- 
+from AuthFit.models import MembershipPlan
 logger = logging.getLogger(__name__)
  
 # Cache TTL for the version key (seconds).
@@ -140,4 +139,8 @@ def _on_enrollment_deleted(sender, instance, **kwargs):
     """A deleted member always changes the recognition universe."""
     _bump_gym_version(instance.gym_id, reason="enrollment_deleted")
  
- 
+
+@receiver([post_save, post_delete], sender=MembershipPlan)
+def clear_membership_plans_cache(sender, instance, **kwargs):
+    cache.delete(f"membership_plans_all_{instance.gym_id}")
+    cache.delete(f"membership_plans_home_{instance.gym_id}")

@@ -115,7 +115,7 @@ def member_list(request):
 def member_detail(request, member_id):
     gym = request.gym
     member = get_object_or_404(get_member_detail_queryset(gym), pk=member_id)
-    plans_key = f"membership_plans_{gym.pk}"
+    plans_key = f"membership_plans_all_{gym.pk}"
     plans = cache.get(plans_key)
     if plans is None:
         plans = list(MembershipPlan.objects.filter(gym=gym).values(

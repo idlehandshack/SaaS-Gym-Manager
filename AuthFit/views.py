@@ -476,7 +476,8 @@ def gym_extras(request):
             cache.delete(f"gym_services_{request.gym.pk}")
             cache.delete(f"gym_equipment_brands_{request.gym.pk}")
             cache.delete(f"gym_social_links_{request.gym.pk}")
-            cache.delete(f"membership_plans_{request.gym.pk}")
+            cache.delete(f"membership_plans_all_{request.gym.pk}")
+            cache.delete(f"membership_plans_home_{request.gym.pk}")
             messages.success(request, "Your selections were saved successfully.")
             return redirect('gym_extras')
     else:
@@ -959,7 +960,7 @@ def homePage(request):
             context['gyms'] = Gym.objects.all().order_by('gym_name')
 
         return render(request, 'saas_home.html', context)
-    plans_key = f"membership_plans_{gym.pk}"
+    plans_key = f"membership_plans_home_{gym.pk}"
     plans     = cache.get(plans_key)
     if plans is None:
         plans = list(
@@ -1124,7 +1125,8 @@ def membership_plans(request):
                 )
                 return redirect('/membership-plans/')
             plan.delete()
-            cache.delete(f"membership_plans_{gym.pk}")
+            cache.delete(f"membership_plans_all_{gym.pk}")
+            cache.delete(f"membership_plans_home_{gym.pk}")
             messages.success(request, "Plan deleted.")
             return redirect('/membership-plans/')
 
@@ -1456,11 +1458,11 @@ def Profile(request):
     gym = getattr(request, 'gym', None)
     enrollment = request.enrollment
 
-    plans_key = f"membership_plans_{gym.pk}" if gym else f"membership_plans_user_{request.user.id}"
+    plans_key = f"membership_plans_all_{gym.pk}" if gym else f"membership_plans_all_user_{request.user.id}"
     plans     = cache.get(plans_key)
     if plans is None:
         qs    = MembershipPlan.objects.filter(gym=gym) if gym else MembershipPlan.objects.none()
-        plans = list(qs.values("id", "plan", "price", "duration_days"))
+        plans = list(qs.order_by("duration_days").values("id", "plan", "price", "duration_days"))
         cache.set(plans_key, plans, timeout=3600)
 
     image_url = None
