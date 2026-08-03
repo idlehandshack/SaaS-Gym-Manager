@@ -363,7 +363,7 @@ class GymExtrasForm(forms.Form):
             self.initial.setdefault('contact_email', gym.contact_email)
             self.initial.setdefault(
                 'plans',
-                MembershipPlan.objects.filter(gym=gym, show_on_home=True).values_list('pk', flat=True)
+                MembershipPlan.objects.filter(gym=gym, show_on_home=True).order_by('price').values_list('pk', flat=True)
             )
 
     # ── Per-field cleaning: trim, strip leading @, validate charset ──────

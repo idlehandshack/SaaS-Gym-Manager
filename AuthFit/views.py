@@ -495,9 +495,15 @@ def gym_extras(request):
          'selected': b.id in selected_brand_ids}
         for b in form.fields['brands'].queryset
     ]
+    home_plan_ids = set(
+        MembershipPlan.objects
+        .filter(gym=request.gym, show_on_home=True)
+        .order_by('price')
+        .values_list('pk', flat=True)[:GymExtrasForm.MAX_HOME_PLANS]
+    )
     plan_catalog = [
         {'id': p.id, 'plan': p.plan, 'price': p.price, 'duration_days': p.duration_days,
-         'selected': p.show_on_home}
+        'selected': p.id in home_plan_ids}
         for p in form.fields['plans'].queryset
     ]
 

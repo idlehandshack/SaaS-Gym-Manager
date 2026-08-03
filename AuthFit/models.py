@@ -58,7 +58,7 @@ class MembershipPlan(models.Model):
     price = models.IntegerField()
     duration_days = models.IntegerField(default=30)
     show_on_home = models.BooleanField(
-        default=True,
+        default=False,
         help_text="Show this plan in the pricing section of your gym's public homepage."
     )
     objects = GymManager()
