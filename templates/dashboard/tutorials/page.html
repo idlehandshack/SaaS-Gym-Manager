@@ -1,0 +1,314 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tutorials — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
+  {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    <link rel="shortcut icon" href="{{ favicon_url }}">
+  {% else %}
+    <link rel="icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+  {% endif %}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+  <style>
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #181818;
+      --surface-3:   #1e1e1e;
+      --border:      rgba(255,255,255,.06);
+      --border-2:    rgba(255,255,255,.11);
+      --orange:      #ff5a00;
+      --orange-dim:  rgba(255,90,0,.10);
+      --orange-bdr:  rgba(255,90,0,.28);
+      --green:       #5de87c;
+      --green-dim:   rgba(93,232,124,.10);
+      --green-bdr:   rgba(93,232,124,.28);
+      --red:         #ef5350;
+      --red-dim:     rgba(239,83,80,.10);
+      --red-bdr:     rgba(239,83,80,.28);
+      --text-hi:     #f5f5f5;
+      --text-mid:    #888;
+      --text-lo:     #444;
+      --font-d:      "Barlow Condensed", sans-serif;
+      --font-b:      "Barlow", sans-serif;
+      --ease:        cubic-bezier(.4,0,.2,1);
+      --t:           .22s;
+      --radius-lg:   18px;
+      --radius-md:   12px;
+      --radius-sm:   8px;
+      --radius-pill: 40px;
+      --nav-h:       60px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    .hero-animate {
+      opacity: 0;
+      transform: translateY(30px);
+      animation: smoothFade 0.5s ease-out forwards;
+    }
+    .card-animate {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: smoothFade 0.5s ease-out forwards;
+    }
+    @keyframes smoothFade {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── STICKY NAV ── */
+    .store-nav {
+      position: sticky; top: 0; z-index: 200;
+      height: var(--nav-h);
+      background: rgba(8,8,8,.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .nav-inner {
+      width: 100%; padding: 0 clamp(16px,4vw,40px);
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .nav-brand {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.1rem,3vw,1.5rem);
+      text-transform: uppercase; text-decoration: none;
+      color: var(--text-hi); letter-spacing: -.01em;
+      white-space: nowrap; display: flex; align-items: center; gap: 8px;
+      transition: color var(--t);
+      min-width: 0;
+    }
+    .nav-brand .acc { color: var(--orange); }
+    .nav-logo {
+      height: 26px;
+      width: auto;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 6px rgba(255,90,0,.35));
+    }
+    .nav-brand:hover { color: var(--text-hi); }
+    .nav-badge {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      background: var(--orange-dim); color: var(--orange);
+      border: 1px solid var(--orange-bdr);
+      padding: 5px 14px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      position: relative;
+      padding: clamp(40px,7vw,72px) 0 clamp(28px,5vw,48px);
+      text-align: center; overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: clamp(24px,4vw,40px);
+    }
+    .page-header::before {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .header-inner {
+      position: relative; z-index: 1;
+      padding: 0 clamp(16px,4vw,40px);
+    }
+    .header-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
+      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 10px;
+      padding: 5px 14px;
+      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
+      background: var(--orange-dim);
+    }
+    .page-header h1 {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(2rem,7vw,3.8rem); line-height: .92;
+      letter-spacing: -.01em; text-transform: uppercase;
+      margin-bottom: 8px; color: var(--text-hi);
+    }
+    .page-header h1 .accent { color: var(--orange); }
+    .header-sub {
+      font-family: var(--font-b);
+      font-size: clamp(.85rem,2.2vw,.98rem);
+      color: var(--text-mid);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── MAIN ── */
+    .tutorials-page {
+      max-width: 1200px; margin: 0 auto;
+      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
+    }
+
+    .tutorial-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: clamp(18px, 3vw, 26px);
+    }
+
+    .tutorial-card {
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: border-color var(--t), transform var(--t);
+    }
+    .tutorial-card:hover {
+      border-color: var(--orange-bdr);
+      transform: translateY(-3px);
+    }
+
+    .video-wrapper {
+      position: relative;
+      padding-bottom: 56.25%; /* 16:9 */
+      height: 0;
+      overflow: hidden;
+      background: #000;
+    }
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: 0;
+      display: block;
+    }
+
+    .tutorial-body {
+      padding: 18px 20px 20px;
+    }
+    .tutorial-index {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-d); font-size: .66rem;
+      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--orange);
+      background: var(--orange-dim);
+      border: 1px solid var(--orange-bdr);
+      padding: 3px 10px; border-radius: var(--radius-pill);
+      margin-bottom: 10px;
+    }
+    .tutorial-title {
+      font-family: var(--font-d);
+      font-weight: 800;
+      font-size: 1.15rem;
+      text-transform: uppercase;
+      letter-spacing: -.01em;
+      color: var(--text-hi);
+      margin-bottom: 6px;
+      line-height: 1.15;
+    }
+    .tutorial-desc {
+      font-family: var(--font-b);
+      font-size: 13px;
+      color: rgba(255,255,255,.55);
+      line-height: 1.55;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-mid);
+      font-family: var(--font-b);
+      font-size: 14px;
+      border: 1px dashed var(--border-2);
+      border-radius: var(--radius-lg);
+    }
+
+    @supports (padding: env(safe-area-inset-left)) {
+      .nav-inner {
+        padding-left:  max(clamp(16px,4vw,40px), env(safe-area-inset-left));
+        padding-right: max(clamp(16px,4vw,40px), env(safe-area-inset-right));
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ STICKY NAV ══ -->
+  <nav class="store-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="/">
+        {% if gym and gym.logo %}
+          <img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }} logo" class="nav-logo" />
+        {% else %}
+          <img src="{% static 'images/Logo1s.png' %}" alt="EnterGYM Logo" class="nav-logo" />
+        {% endif %}
+        <span>{% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</span>
+        <span class="acc">Tutorials</span>
+      </a>
+      <div class="nav-badge">Help Center</div>
+    </div>
+  </nav>
+
+  <!-- ══ PAGE HEADER ══ -->
+  <header class="page-header hero-animate">
+    <div class="header-inner">
+      <div class="header-eyebrow">
+        <i class="bi bi-play-circle"></i> Tutorial Videos
+      </div>
+      <h1>Learn The <span class="accent">Basics</span></h1>
+      <div class="header-sub">
+        Short walkthroughs to help you get the most out of your dashboard.
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="tutorials-page">
+    <div class="tutorial-grid">
+      {% for video in videos %}
+        <div class="tutorial-card card-animate" style="animation-delay: {{ forloop.counter0|add:'1' }}0ms;">
+          <div class="video-wrapper">
+            <iframe
+              src="https://www.youtube.com/embed/{{ video.video_id }}"
+              title="{{ video.title }}"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen>
+            </iframe>
+          </div>
+          <div class="tutorial-body">
+            <div class="tutorial-index">Video {{ forloop.counter }}</div>
+            <div class="tutorial-title">{{ video.title }}</div>
+            {% if video.description %}
+              <div class="tutorial-desc">{{ video.description }}</div>
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="empty-state">
+          <i class="bi bi-camera-reels" style="font-size: 1.6rem; color: var(--text-lo); display:block; margin-bottom: 10px;"></i>
+          No tutorial videos added yet.
+        </div>
+      {% endfor %}
+    </div>
+  </main>
+
+  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+
+</body>
+</html>

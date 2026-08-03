@@ -108,7 +108,7 @@ class SecurityHeadersMiddleware:
 
             f"worker-src 'self' blob:; "
 
-            f"frame-src https://www.google.com; "
+            f"frame-src https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com; "
 
             f"object-src 'none'; "
             f"base-uri 'self'; "

@@ -28,7 +28,7 @@ from Gym.views import (
 from Gym.views_members import (
     member_list, member_detail, staff_mark_attendance, check_member_notifications,
 )
-from Gym.dashboard_views import dashboard_home, ai_credit_analysis
+from Gym.dashboard_views import dashboard_home, ai_credit_analysis ,tutorial_page
 
 
 class StaticViewSitemap(Sitemap):
@@ -99,6 +99,7 @@ profile_patterns = [
     path('gstproile/', gst_profile_edit, name='gst_profile_edit'),
     path('workout/', views.workout, name='workout'),
     path('needs-attention/', views.needs_attention, name='needs_attention'),
+    path('tutorials/', tutorial_page, name='tutorial_page'),
 ]
 
 

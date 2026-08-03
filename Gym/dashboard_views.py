@@ -5,19 +5,36 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import render
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
-from django.db.models.functions import TruncDay, TruncMonth
+from django.db.models.functions import TruncMonth
 from django.urls import reverse
 from urllib.parse import urlencode
 import functools
 from AuthFit.views import _gym_staff_required  
-from AuthFit.models import Enrollment, Attendence as Attendence_model, Trainer
-from Gym.models import StaffProfile
+from AuthFit.models import Enrollment, Attendence as Attendence_model
 from billing.services import revenue_service
 from Gym.ai_credit_service import get_or_create_wallet
 from django.db.models.functions import TruncDate
 from AuthFit.models import RegisterScanImport
 from Gym.models import AICreditTransaction
 from django.http import JsonResponse
+from Gym.services.member_service import _renewals_today_queryset
+from Gym import tutorial_videos
+from Gym.video import extract_youtube_id
+
+@_gym_staff_required
+def tutorial_page(request):
+    videos = []
+    for v in getattr(tutorial_videos,"TUTORIAL_VIDEOS", []):
+        videos.append({
+            "title": v["title"],
+            "description": v.get("description", ""),
+            "video_id": extract_youtube_id(v["url"]),
+        })
+    return render(request, "dashboard/tutorials/page.html", {
+        "gym": getattr(request, 'gym', None),
+        "active": "tutorials",
+        "videos": videos,
+    })
 
 def _member_list_url(filter_key, sort_key):
     base = reverse('member_list')
@@ -80,7 +97,7 @@ def _build_dashboard_context(request):
     notifications = _build_notifications(request, gym)
     
     new_members_month = enroll_qs.filter(doj__gte=month_start, doj__lte=today).count()
-    renewals_today = enroll_qs.filter(paymentDate=today, paymentStatus='Done').count()
+    renewals_today = _renewals_today_queryset(enroll_qs, today).count()
     hidden_cards = set(gym.hidden_stat_cards or []) if gym else set()
     today_rev_f = float(today_figures['revenue'])
     yesterday_rev_f = float(yesterday_revenue)

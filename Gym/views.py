@@ -38,7 +38,12 @@ from AuthFit.views import _get_gym
 QR_TEMPLATE_PATH = os.path.join(settings.BASE_DIR, "static", "images", "Attendance template.png")
  
 # Region inside the template where the white QR panel sits (measured from the template)
-QR_BOX = {"left": 365, "top": 400, "right": 1424, "bottom": 1499}
+QR_BOX = {
+    "left": 820,
+    "top": 1480,
+    "right": 1865,
+    "bottom": 2560,
+}
 QR_BOX_PADDING = 40 
 
 def _qr_payload(qr_obj):
@@ -59,30 +64,32 @@ def _build_qr_poster(payload: str, template_path: str = QR_TEMPLATE_PATH) -> byt
     qr.add_data(payload)
     qr.make(fit=True)
     qr_img = qr.make_image(fill_color="#080808", back_color="#ffffff").convert("RGB")
- 
+
     template = Image.open(template_path).convert("RGB")
- 
+
     box_w = QR_BOX["right"] - QR_BOX["left"]
     box_h = QR_BOX["bottom"] - QR_BOX["top"]
-    target_w = box_w - (QR_BOX_PADDING * 2)
-    target_h = box_h - (QR_BOX_PADDING * 2)
- 
-    qr_img = qr_img.resize((target_w, target_h), Image.NEAREST)
-    paste_x = QR_BOX["left"] + QR_BOX_PADDING
-    paste_y = QR_BOX["top"] + QR_BOX_PADDING
+    target_size = min(box_w, box_h) - (QR_BOX_PADDING * 2)  # keep QR square
+
+    qr_img = qr_img.resize((target_size, target_size), Image.NEAREST)
+
+    # center the QR square inside the box (handles box not being perfectly square)
+    paste_x = QR_BOX["left"] + (box_w - target_size) // 2
+    paste_y = QR_BOX["top"] + (box_h - target_size) // 2
     template.paste(qr_img, (paste_x, paste_y))
- 
+
     buf = io.BytesIO()
     template.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
+
 
 def gym_qr_download(request):
     gym = getattr(request, 'gym', None)
     qr_obj, _ = GymQRCode.objects.get_or_create(gym=gym)
     payload = _qr_payload(qr_obj)
- 
+
     png_bytes = _build_qr_poster(payload)
- 
+
     filename = f"{(gym.gym_name if gym else 'entergym')}-attendance-qr.png".replace(" ", "_")
     response = HttpResponse(png_bytes, content_type="image/png")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'

@@ -176,7 +176,7 @@ def _apply_filter(qs: QuerySet, filter_key: Optional[str], today) -> QuerySet:
         return qs.filter(DueDate__lt=today)
 
     if filter_key == "renewals_today":
-        return qs.filter(paymentDate=today, paymentStatus="Done")
+        return _renewals_today_queryset(qs, today)
 
     if filter_key == "attendance_today":
        return qs.filter(attendance_logs__date=today).distinct()
@@ -257,6 +257,23 @@ def _apply_sort(qs: QuerySet, sort_key: Optional[str]) -> QuerySet:
     order_fields = _SORT_MAP.get(sort_key, _SORT_MAP[_DEFAULT_SORT])
     return qs.order_by(*order_fields)
 
+def _renewals_today_queryset(qs: QuerySet, today) -> QuerySet:
+    """
+    A renewal = a payment was made today AND at least one earlier
+    payment exists for that same enrollment. A brand-new member's
+    first-ever payment (also dated today) has no earlier payment,
+    so they are correctly excluded here.
+    """
+    from billing.models import Payment
+    from django.db.models import Exists, OuterRef
+
+    paid_today = Payment.objects.filter(
+        enrollment=OuterRef('pk'), payment_date=today
+    )
+    paid_before = Payment.objects.filter(
+        enrollment=OuterRef('pk'), payment_date__lt=today
+    )
+    return qs.filter(Exists(paid_today), Exists(paid_before))
 
 def _apply_performance_hints(qs: QuerySet) -> QuerySet:
     """
