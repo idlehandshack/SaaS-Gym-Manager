@@ -1,60 +1,238 @@
-{% extends "superadmin/base.html" %}
-
-{% block title %}Communications Dashboard — EnterGYM{% endblock %}
-{% block breadcrumb %}Communications Dashboard{% endblock %}
-
-{% block content %}
+{% extends "saas_dashboard/base.html" %} {% block title %}Communications
+Dashboard — EnterGYM{% endblock %} {% block breadcrumb %}Communications
+Dashboard{% endblock %} {% block content %}
 
 <div class="section-header">
   <div>
     <div class="section-title">Communications Dashboard</div>
-    <div class="section-sub">Everything at a glance — drafts, scheduled, delivery health, campaigns &amp; sponsors</div>
+    <div class="section-sub">
+      Everything at a glance — drafts, scheduled, delivery health, campaigns
+      &amp; sponsors
+    </div>
   </div>
   <a class="btn-sm primary" href="{% url 'communication_create' %}">
-    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <svg
+      width="13"
+      height="13"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
     New Communication
   </a>
 </div>
 
 <div class="kpi-grid">
-  <div class="kpi-card" style="--kpi-accent:#ff7a0010;--kpi-bg:var(--orange-dim);--kpi-color:var(--orange)">
-    <div class="kpi-header"><div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div></div>
+  <div
+    class="kpi-card"
+    style="
+      --kpi-accent: #ff7a0010;
+      --kpi-bg: var(--orange-dim);
+      --kpi-color: var(--orange);
+    "
+  >
+    <div class="kpi-header">
+      <div class="kpi-icon">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+      </div>
+    </div>
     <div class="kpi-value">{{ draft_count }}</div>
     <div class="kpi-label">Drafts</div>
   </div>
-  <div class="kpi-card" style="--kpi-accent:#3b82f610;--kpi-bg:var(--blue-dim);--kpi-color:var(--blue)">
-    <div class="kpi-header"><div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div>
+  <div
+    class="kpi-card"
+    style="
+      --kpi-accent: #3b82f610;
+      --kpi-bg: var(--blue-dim);
+      --kpi-color: var(--blue);
+    "
+  >
+    <div class="kpi-header">
+      <div class="kpi-icon">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      </div>
+    </div>
     <div class="kpi-value">{{ scheduled_count }}</div>
     <div class="kpi-label">Scheduled</div>
   </div>
-  <div class="kpi-card" style="--kpi-accent:#22c55e10;--kpi-bg:var(--green-dim);--kpi-color:var(--green)">
-    <div class="kpi-header"><div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg></div></div>
-    <div class="kpi-value" style="color:var(--green)">{{ published_count }}</div>
+  <div
+    class="kpi-card"
+    style="
+      --kpi-accent: #22c55e10;
+      --kpi-bg: var(--green-dim);
+      --kpi-color: var(--green);
+    "
+  >
+    <div class="kpi-header">
+      <div class="kpi-icon">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path d="M3 11l18-8-8 18-2-8-8-2z" />
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value" style="color: var(--green)">
+      {{ published_count }}
+    </div>
     <div class="kpi-label">Published</div>
   </div>
-  <div class="kpi-card" style="--kpi-accent:#ef444410;--kpi-bg:var(--red-dim);--kpi-color:var(--red)">
-    <div class="kpi-header"><div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div></div>
-    <div class="kpi-value" style="color:var(--red)">{{ expired_count }}</div>
+  <div
+    class="kpi-card"
+    style="
+      --kpi-accent: #ef444410;
+      --kpi-bg: var(--red-dim);
+      --kpi-color: var(--red);
+    "
+  >
+    <div class="kpi-header">
+      <div class="kpi-icon">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+          <line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value" style="color: var(--red)">{{ expired_count }}</div>
     <div class="kpi-label">Expired</div>
   </div>
-  <div class="kpi-card" style="--kpi-accent:#22c55e10;--kpi-bg:var(--green-dim);--kpi-color:var(--green)">
-    <div class="kpi-header"><div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div></div>
-    <div class="kpi-value" style="color:var(--green)">{{ push_delivered }}</div>
+  <div
+    class="kpi-card"
+    style="
+      --kpi-accent: #22c55e10;
+      --kpi-bg: var(--green-dim);
+      --kpi-color: var(--green);
+    "
+  >
+    <div class="kpi-header">
+      <div class="kpi-icon">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value" style="color: var(--green)">
+      {{ push_delivered }}
+    </div>
     <div class="kpi-label">Push Delivered</div>
   </div>
-  <div class="kpi-card" style="--kpi-accent:#ef444410;--kpi-bg:var(--red-dim);--kpi-color:var(--red)">
-    <div class="kpi-header"><div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div></div>
-    <div class="kpi-value" style="color:var(--red)">{{ push_failed }}</div>
+  <div
+    class="kpi-card"
+    style="
+      --kpi-accent: #ef444410;
+      --kpi-bg: var(--red-dim);
+      --kpi-color: var(--red);
+    "
+  >
+    <div class="kpi-header">
+      <div class="kpi-icon">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value" style="color: var(--red)">{{ push_failed }}</div>
     <div class="kpi-label">Push Failed</div>
   </div>
-  <div class="kpi-card" style="--kpi-accent:#a855f710;--kpi-bg:#a855f718;--kpi-color:var(--purple)">
-    <div class="kpi-header"><div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.24 12.24a6 6 0 00-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/></svg></div></div>
-    <div class="kpi-value">{{ campaign_active }} <span class="text-muted" style="font-size:1rem">/ {{ campaign_total }}</span></div>
+  <div
+    class="kpi-card"
+    style="
+      --kpi-accent: #a855f710;
+      --kpi-bg: #a855f718;
+      --kpi-color: var(--purple);
+    "
+  >
+    <div class="kpi-header">
+      <div class="kpi-icon">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path d="M20.24 12.24a6 6 0 00-8.49-8.49L5 10.5V19h8.5z" />
+          <line x1="16" y1="8" x2="2" y2="22" />
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value">
+      {{ campaign_active }}
+      <span class="text-muted" style="font-size: 1rem"
+        >/ {{ campaign_total }}</span
+      >
+    </div>
     <div class="kpi-label">Active Campaigns</div>
   </div>
-  <div class="kpi-card" style="--kpi-accent:#f59e0b10;--kpi-bg:var(--yellow-dim);--kpi-color:var(--yellow)">
-    <div class="kpi-header"><div class="kpi-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.4 2.3 7.2L12 16.4 5.7 20.8 8 13.6l-6-4.4h7.6z"/></svg></div></div>
-    <div class="kpi-value">{{ sponsor_active }} <span class="text-muted" style="font-size:1rem">/ {{ sponsor_total }}</span></div>
+  <div
+    class="kpi-card"
+    style="
+      --kpi-accent: #f59e0b10;
+      --kpi-bg: var(--yellow-dim);
+      --kpi-color: var(--yellow);
+    "
+  >
+    <div class="kpi-header">
+      <div class="kpi-icon">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12 2l2.4 7.2H22l-6 4.4 2.3 7.2L12 16.4 5.7 20.8 8 13.6l-6-4.4h7.6z"
+          />
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value">
+      {{ sponsor_active }}
+      <span class="text-muted" style="font-size: 1rem"
+        >/ {{ sponsor_total }}</span
+      >
+    </div>
     <div class="kpi-label">Active Sponsors</div>
   </div>
 </div>
@@ -62,32 +240,62 @@
 <div class="card">
   <div class="card-header">
     <span class="card-title">Recent Communications</span>
-    <a class="section-action" href="{% url 'communication_list' %}">View all →</a>
+    <a class="section-action" href="{% url 'communication_list' %}"
+      >View all →</a
+    >
   </div>
   <div class="table-wrap">
     <table class="data-table">
       <thead>
-        <tr><th>Title</th><th>Type</th><th>Status</th><th>Publish At</th><th>Campaign</th></tr>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Publish At</th>
+          <th>Campaign</th>
+        </tr>
       </thead>
       <tbody>
-      {% for c in recent_communications %}
+        {% for c in recent_communications %}
         <tr>
-          <td style="color:var(--text-primary);font-weight:600"><a href="{% url 'communication_edit' c.pk %}">{{ c.title }}</a></td>
+          <td style="color: var(--text-primary); font-weight: 600">
+            <a href="{% url 'communication_edit' c.pk %}">{{ c.title }}</a>
+          </td>
           <td>{{ c.get_type_display }}</td>
           <td>
             {% if c.status == 'draft' %}<span class="badge neutral">Draft</span>
-            {% elif c.status == 'scheduled' %}<span class="badge info">Scheduled</span>
-            {% elif c.status == 'published' and c.is_live %}<span class="badge active">Live</span>
-            {% elif c.status == 'published' %}<span class="badge expired">Published (expired)</span>
-            {% elif c.status == 'expired' %}<span class="badge expired">Expired</span>
+            {% elif c.status == 'scheduled' %}<span class="badge info"
+              >Scheduled</span
+            >
+            {% elif c.status == 'published' and c.is_live %}<span
+              class="badge active"
+              >Live</span
+            >
+            {% elif c.status == 'published' %}<span class="badge expired"
+              >Published (expired)</span
+            >
+            {% elif c.status == 'expired' %}<span class="badge expired"
+              >Expired</span
+            >
             {% else %}<span class="badge inactive">Cancelled</span>{% endif %}
           </td>
-          <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem">{{ c.publish_at|date:"d M Y, H:i" }}</td>
+          <td
+            style="
+              font-family: &quot;JetBrains Mono&quot;, monospace;
+              font-size: 0.72rem;
+            "
+          >
+            {{ c.publish_at|date:"d M Y, H:i" }}
+          </td>
           <td>{{ c.campaign.name|default:"—" }}</td>
         </tr>
-      {% empty %}
-        <tr><td colspan="5"><div class="empty-state">No communications yet.</div></td></tr>
-      {% endfor %}
+        {% empty %}
+        <tr>
+          <td colspan="5">
+            <div class="empty-state">No communications yet.</div>
+          </td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>

@@ -1,245 +1,127 @@
-<!DOCTYPE html>
+{% extends "saas_dashboard/base.html" %}
 {% load static %}
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plans — EnterGYM</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="icon" href="{% static 'images/favicon.ico' %}">
-  <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --bg:        #080b12;
-      --surface:   #0f141d;
-      --surface-2: #131a26;
-      --border:    rgba(94,150,255,0.14);
-      --border-2:  rgba(94,150,255,0.28);
-      --blue:      #4c8dff;
-      --blue-light:#7db0ff;
-      --blue-dim:  rgba(76,141,255,0.09);
-      --text:      #e8edf5;
-      --muted:     #7c8aa0;
-      --soft:      #a9b6c9;
-      --green:     #34d399;
-      --mono:      'JetBrains Mono', monospace;
-      --display:   'Sora', sans-serif;
-      --body:      'Manrope', sans-serif;
-      --nav-h:     60px;
-      --ease:      cubic-bezier(.22,.9,.32,1);
-    }
+{% block title %}EnterGYM — Plans{% endblock %}
 
-    html { scroll-behavior: smooth; }
+{% block extra_style %}
+/* ══════════════════════════════════════════════════════════
+   PAGE-SPECIFIC STYLES — Plans (public ledger view, admin theme)
+   ══════════════════════════════════════════════════════════ */
 
-    body {
-      background: var(--bg);
-      background-image:
-        radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.14), transparent 60%),
-        radial-gradient(ellipse 700px 400px at 90% 10%, rgba(76,141,255,0.08), transparent 55%);
-      color: var(--text);
-      font-family: var(--body);
-      font-size: 15px;
-      line-height: 1.65;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+.plans-lead{max-width:520px;margin-bottom:24px}
+.plans-lead p{font-size:.78rem;color:var(--text-muted)}
 
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { transition: none !important; animation: none !important; }
-    }
+.plans-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:16px;
+  align-items:start;
+}
 
-    nav {
-      position: sticky; top: 0; z-index: 200;
-      background: rgba(8,11,18,0.85);
-      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px; height: var(--nav-h);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .nav-logo { font-family: var(--display); font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
-    .nav-logo span { color: var(--blue); }
-    .nav-back {
-      font-size: 12px; font-weight: 600; color: var(--muted);
-      text-decoration: none; display: flex; align-items: center; gap: 6px;
-      transition: color .2s var(--ease);
-    }
-    .nav-back:hover { color: var(--blue-light); }
-    .nav-back svg { width: 14px; height: 14px; flex-shrink: 0; }
+.plan-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  cursor:pointer;
+  transition:var(--transition);
+  grid-column:span 1;
+}
+.plan-card:hover{border-color:#3a3a4a;transform:translateY(-1px)}
+.plan-card.active{
+  border-color:var(--orange);
+  box-shadow:0 0 0 1px var(--orange), 0 30px 70px -30px #5B5FFF50;
+  grid-column:1 / -1;
+}
+@media (max-width:720px){ .plan-card.active{grid-column:span 1} }
 
-    .hero { text-align: center; padding: 76px 24px 48px; position: relative; }
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 7px;
-      background: var(--blue-dim); border: 1px solid var(--border-2);
-      border-radius: 100px; padding: 5px 14px; font-family: var(--mono);
-      font-size: 11px; font-weight: 500; color: var(--blue-light);
-      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 26px;
-    }
-    .hero h1 {
-      font-family: var(--display); font-size: clamp(30px, 5.5vw, 52px);
-      font-weight: 700; letter-spacing: -1.4px; line-height: 1.1;
-      color: #fff; margin-bottom: 16px;
-    }
-    .hero h1 span {
-      background: linear-gradient(100deg, var(--blue-light), var(--blue));
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .hero-sub { max-width: 520px; margin: 0 auto; color: var(--soft); font-size: clamp(13.5px, 2vw, 15.5px); }
+.plan-head{padding:22px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.plan-head-left{display:flex;align-items:center;gap:13px;min-width:0}
+.plan-icon{
+  width:38px;height:38px;min-width:38px;border-radius:var(--radius-sm);
+  background:var(--orange-dim);border:1px solid #5B5FFF30;
+  display:flex;align-items:center;justify-content:center;
+  transition:var(--transition);
+}
+.plan-card.active .plan-icon{background:var(--orange);transform:scale(1.05)}
+.plan-icon svg{width:17px;height:17px;color:var(--orange);transition:var(--transition)}
+.plan-card.active .plan-icon svg{color:#000}
 
-    .layout { max-width: 1080px; margin: 0 auto; padding: 40px 32px 110px; }
+.plan-name-wrap{min-width:0}
+.plan-name{font-size:.95rem;font-weight:700;color:var(--text-primary);letter-spacing:-.2px}
+.plan-count{font-size:.68rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
 
-    .section-lead { text-align: center; max-width: 480px; margin: 0 auto 40px; }
-    .section-lead p { font-size: 13px; color: var(--muted); }
+.plan-from{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.plan-from .label{font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em}
+.plan-from .amount{font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:600;color:var(--text-primary)}
 
-    .plans-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 18px;
-      align-items: start;
-    }
+.plan-chevron{width:14px;height:14px;color:var(--text-muted);flex-shrink:0;transition:transform .35s var(--ease,cubic-bezier(.22,.9,.32,1)),color .3s}
+.plan-card.active .plan-chevron{transform:rotate(180deg);color:var(--orange)}
 
-    .plan-card {
-      background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: border-color .3s var(--ease), box-shadow .3s var(--ease), transform .3s var(--ease);
-      grid-column: span 1;
-    }
-    .plan-card:hover { border-color: var(--border-2); transform: translateY(-2px); }
-    .plan-card.active {
-      border-color: rgba(76,141,255,0.55);
-      box-shadow: 0 0 0 1px rgba(76,141,255,0.2), 0 30px 70px -30px rgba(76,141,255,0.5);
-      grid-column: 1 / -1;
-    }
-    @media (max-width: 720px) { .plan-card.active { grid-column: span 1; } }
+.plan-body{max-height:0;overflow:hidden;transition:max-height .45s cubic-bezier(.22,.9,.32,1)}
+.plan-card.active .plan-body{max-height:900px}
+.plan-body-inner{padding:4px 22px 24px;border-top:1px solid var(--border);margin:0 22px}
 
-    .plan-head { padding: 26px 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-    .plan-head-left { display: flex; align-items: center; gap: 13px; min-width: 0; }
-    .plan-icon {
-      width: 40px; height: 40px; min-width: 40px; border-radius: 11px;
-      background: var(--blue-dim); border: 1px solid var(--border-2);
-      display: flex; align-items: center; justify-content: center;
-      transition: background .3s var(--ease), transform .3s var(--ease);
-    }
-    .plan-card.active .plan-icon { background: var(--blue); transform: scale(1.05); }
-    .plan-icon svg { width: 18px; height: 18px; color: var(--blue-light); transition: color .3s var(--ease); }
-    .plan-card.active .plan-icon svg { color: #fff; }
+.plan-limits{display:flex;gap:26px;padding:16px 0 18px;font-size:.72rem;color:var(--text-muted)}
+.plan-limits b{display:block;font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--text-primary);font-weight:600;margin-top:3px}
 
-    .plan-name-wrap { min-width: 0; }
-    .plan-name { font-family: var(--display); font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.2px; }
-    .plan-count { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+.ledger-label{font-size:.63rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;font-family:'JetBrains Mono',monospace}
 
-    .plan-from { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .plan-from .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-    .plan-from .amount { font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--text); }
+.ledger{display:flex;flex-direction:column;gap:0;border-top:1px dashed var(--border)}
+.ledger-row{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;border-bottom:1px dashed var(--border);gap:12px}
+.ledger-left{display:flex;align-items:baseline;gap:10px;min-width:0}
+.ledger-duration{font-size:.83rem;font-weight:700;color:var(--text-primary);white-space:nowrap}
+.ledger-save{
+  font-size:.62rem;font-family:'JetBrains Mono',monospace;color:var(--green);
+  background:var(--green-dim);border:1px solid #22c55e30;
+  padding:2px 7px;border-radius:20px;white-space:nowrap;
+}
+.ledger-best{
+  font-size:.62rem;font-family:'JetBrains Mono',monospace;color:var(--orange);
+  background:var(--orange-dim);border:1px solid #5B5FFF30;
+  padding:2px 7px;border-radius:20px;white-space:nowrap;
+}
+.ledger-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.ledger-price{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:600;color:var(--text-primary);white-space:nowrap}
+.ledger-select{
+  font-size:.72rem;font-weight:700;color:#000;background:var(--orange);border:none;
+  padding:7px 14px;border-radius:var(--radius-sm);text-decoration:none;
+  transition:var(--transition);white-space:nowrap;
+}
+.ledger-select:hover{background:#e06d00;transform:translateY(-1px)}
+.ledger-row.trial .ledger-select{background:transparent;border:1px solid var(--border);color:var(--text-primary)}
+.ledger-row.trial .ledger-select:hover{border-color:var(--orange);color:var(--orange)}
 
-    .plan-chevron {
-      width: 15px; height: 15px; color: var(--muted); flex-shrink: 0;
-      transition: transform .35s var(--ease), color .3s var(--ease);
-    }
-    .plan-card.active .plan-chevron { transform: rotate(180deg); color: var(--blue-light); }
+.feature-row{margin-top:18px;display:flex;flex-wrap:wrap;gap:6px}
+.feature-chip{
+  font-size:.68rem;line-height:1;padding:5px 10px;border-radius:20px;
+  background:transparent;border:1px solid var(--border);
+  color:var(--text-secondary);white-space:nowrap;font-weight:500;
+}
+.feature-chip.off{opacity:.35;text-decoration:line-through;border-color:var(--border-subtle)}
 
-    .plan-body { max-height: 0; overflow: hidden; transition: max-height .45s var(--ease); }
-    .plan-card.active .plan-body { max-height: 900px; }
-    .plan-body-inner { padding: 4px 24px 26px; border-top: 1px solid var(--border); margin: 0 24px; }
+@media (max-width:600px){
+  .plan-head{padding:18px 16px}
+  .plan-body-inner{margin:0 16px;padding:4px 0 20px}
+  .plan-from .label{display:none}
+  .ledger-right{gap:8px}
+}
+{% endblock %}
 
-    .plan-limits { display: flex; gap: 28px; padding: 18px 0 20px; font-size: 12px; color: var(--muted); }
-    .plan-limits b { display: block; font-family: var(--mono); font-size: 15px; color: var(--text); font-weight: 600; margin-top: 3px; }
+{% block content %}
 
-    .ledger-label { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; font-family: var(--mono); }
-
-    .ledger { display: flex; flex-direction: column; gap: 0; border-top: 1px dashed var(--border-2); }
-    .ledger-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 4px; border-bottom: 1px dashed var(--border-2); gap: 12px; }
-    .ledger-left { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-    .ledger-duration { font-family: var(--display); font-size: 14.5px; font-weight: 700; color: #fff; white-space: nowrap; }
-    .ledger-save {
-      font-size: 10px; font-family: var(--mono); color: var(--green);
-      background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3);
-      padding: 2px 7px; border-radius: 20px; white-space: nowrap;
-    }
-    .ledger-best {
-      font-size: 10px; font-family: var(--mono); color: var(--blue-light);
-      background: var(--blue-dim); border: 1px solid var(--border-2);
-      padding: 2px 7px; border-radius: 20px; white-space: nowrap;
-    }
-    .ledger-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-    .ledger-price { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; }
-    .ledger-select {
-      font-family: var(--body); font-size: 12px; font-weight: 700;
-      color: #fff; background: var(--blue); border: none;
-      padding: 8px 16px; border-radius: 8px; text-decoration: none;
-      transition: background .2s var(--ease), transform .15s var(--ease);
-      white-space: nowrap;
-    }
-    .ledger-select:hover { background: var(--blue-light); transform: translateY(-1px); }
-    .ledger-row.trial .ledger-select { background: transparent; border: 1px solid var(--border-2); color: var(--text); }
-    .ledger-row.trial .ledger-select:hover { border-color: var(--blue); color: var(--blue-light); }
-
-    .feature-row { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 6px; }
-    .feature-chip {
-      font-size: 11px; line-height: 1; padding: 5px 10px; border-radius: 20px;
-      background: transparent; border: 1px solid var(--border-2);
-      color: var(--soft); white-space: nowrap; font-family: var(--body); font-weight: 500;
-    }
-    .feature-chip.off { opacity: 0.35; text-decoration: line-through; border-color: var(--border); }
-
-    footer {
-      border-top: 1px solid var(--border); padding: 24px 32px;
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-      max-width: 1080px; margin: 0 auto;
-    }
-    .footer-logo { font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--muted); }
-    .footer-logo span { color: var(--blue); }
-    .footer-note { font-size: 11px; color: var(--muted); font-family: var(--mono); }
-
-    @media (max-width: 600px) {
-      nav { padding: 0 16px; }
-      .nav-back .back-label { display: none; }
-      .hero { padding: 52px 16px 36px; }
-      .layout { padding: 32px 16px 80px; }
-      .plan-head { padding: 22px 18px; }
-      .plan-body-inner { margin: 0 18px; padding: 4px 0 22px; }
-      .plan-from .label { display: none; }
-      .ledger-right { gap: 8px; }
-      footer { flex-direction: column; align-items: flex-start; gap: 6px; padding: 20px 16px; }
-    }
-  </style>
-</head>
-<body>
-
-<nav>
-  <div class="nav-logo">Enter<span>GYM</span></div>
-  <a class="nav-back" href="/">
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-      <path d="M10 3L5 8l5 5"/>
-    </svg>
-    <span class="back-label">Back to Home</span>
-  </a>
-</nav>
-
-<header class="hero">
-  <div class="hero-badge">Membership Ledger</div>
-  <h1>Pick the plan that <span>fits your gym.</span></h1>
-  <p class="hero-sub">Every plan runs the full EnterGYM stack — attendance, billing, staff, and member management. Tap a plan to open its ledger.</p>
-</header>
-
-<div class="layout">
-  <div class="section-lead">
-    <p>All prices in ₹, billed for the selected term. No setup fees, cancel anytime.</p>
+<div class="section-header">
+  <div>
+    <div class="section-title">Subscription Plans</div>
+    <div class="section-sub">All prices in ₹, billed for the selected term. No setup fees.</div>
   </div>
-
-  <div class="plans-grid" id="plansGrid"></div>
 </div>
 
-<footer>
-  <div class="footer-logo">Enter<span>GYM</span> · Arrow SoftTech</div>
-  <div class="footer-note">© 2026 Arrow SoftTech · Prices in INR.</div>
-</footer>
+<div class="plans-grid" id="plansGrid"></div>
+
+{% endblock %}
+
+{% block extra_scripts %}
 <script nonce="{{ request.csp_nonce }}" id="plans-data" type="application/json">
 {
   {% for group_name, group_plans in plan_groups.items %}
@@ -263,7 +145,7 @@
 }
 </script>
 
-<script nonce="{{ request.csp_nonce }}" >
+<script nonce="{{ request.csp_nonce }}">
 (function () {
   var raw = document.getElementById('plans-data').textContent;
   var groups = {};
@@ -299,7 +181,6 @@
 
   order.forEach(function (key) {
     var members = groups[key].slice();
-    // sort by duration ascending, trial (0) first
     members.sort(function (a, b) { return parseDuration(a.name_str) - parseDuration(b.name_str); });
 
     var isTrial = /free/i.test(key);
@@ -407,6 +288,4 @@
   });
 })();
 </script>
-
-</body>
-</html>
+{% endblock %}

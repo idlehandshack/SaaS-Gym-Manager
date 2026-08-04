@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 from .forms import UPISettingsForm, GymCreateForm, StaffProfileCreateForm, GymGSTProfileForm
 from django.http import HttpResponseForbidden
-from .models import Gym, SubscriptionPlan, StaffProfile ,PlatformSettings ,PlatformSubscriptionPayment ,GymGSTProfile
+from .models import Gym, SubscriptionPlan, StaffProfile ,PlatformSettings,GymGSTProfile ,SubscriptionPayment
 from AuthFit.models import Enrollment ,GymQRCode, AttendanceAttempt
 from .services import platform_insights as pi
 import calendar
@@ -34,6 +34,7 @@ from qrcode.constants import ERROR_CORRECT_H
 from PIL import Image
 from AuthFit.views import _gym_staff_required
 from AuthFit.views import _get_gym
+from Gym.services.platform_insights import invalidate_platform_insights_cache
 
 QR_TEMPLATE_PATH = os.path.join(settings.BASE_DIR, "static", "images", "Attendance template.png")
  
@@ -403,27 +404,16 @@ def saas_dashboard(request):
             output_field=DecimalField(max_digits=10, decimal_places=2)
         )
     )["mrr"] or 0
-
-    software_total_revenue = PlatformSubscriptionPayment.objects.aggregate(
-        total=Coalesce(Sum("amount"), 0, output_field=DecimalField(max_digits=14, decimal_places=2))
+    total_subscription_revenue = SubscriptionPayment.objects.aggregate(
+        total=Coalesce(Sum("amount_paid"), 0, output_field=DecimalField(max_digits=14, decimal_places=2))
     )["total"] or 0
-
-    software_month_revenue = PlatformSubscriptionPayment.objects.filter(
-        paid_on__gte=month_start
-    ).aggregate(
-        total=Coalesce(Sum("amount"), 0, output_field=DecimalField(max_digits=12, decimal_places=2))
-    )["total"] or 0
-
-    
-    days_in_month = calendar.monthrange(today.year, today.month)[1]
-    software_revenue_per_day = round(software_month_revenue / days_in_month, 2) if days_in_month else 0
 
     plan_stats = [
         {"name": p.name, "count": gyms.filter(plan=p).count(), "monthly": p.price_monthly}
         for p in SubscriptionPlan.objects.all()
     ]
 
-    return render(request, "saas_dashboard.html", {
+    return render(request, "saas_dashboard/saas_dashboard.html", {
         "gyms": gyms,
         "total_gyms": total_gyms,
         "active_gyms": active_gyms,
@@ -440,8 +430,7 @@ def saas_dashboard(request):
         "total_members": total_members,
         "total_member_limit": total_member_limit,
         "total_revenue": total_revenue,
-        "software_total_revenue": software_total_revenue,
-        "software_revenue_per_day": software_revenue_per_day,
+        "total_subscription_revenue": total_subscription_revenue,
         "estimated_mrr": estimated_mrr,
         "plan_stats": plan_stats,
         "top_gyms": gyms.order_by("-revenue")[:5],
@@ -654,20 +643,22 @@ def _serialize_plan(plan, gyms_qs, today):
     gyms_data = []
     for g in gyms_on_plan:
         gyms_data.append({
-            "id": str(g.id),
-            "gym_name": g.gym_name,
-            "gym_code": g.gym_code,
-            "owner_name": g.owner.get_full_name() or g.owner.username,
-            "member_count": g.member_count,
-            "member_limit": g.member_limit,
-            "trainer_count": g.trainer_count,
-            "trainer_limit": g.trainer_limit,
-            "active": g.active,
-            "is_subscription_active": g.is_subscription_active,
-            "days_until_expiry": g.days_until_expiry,
-            "subscription_end": g.subscription_end.isoformat() if g.subscription_end else None,
-            "logo_url": g.logo.url if g.logo else None,
-        })
+        "id": str(g.id),
+        "gym_name": g.gym_name,
+        "gym_code": g.gym_code,
+        "owner_name": g.owner.get_full_name() or g.owner.username,
+        "member_count": g.member_count,
+        "member_limit": g.member_limit,
+        "trainer_count": g.trainer_count,
+        "trainer_limit": g.trainer_limit,
+        "active": g.active,
+        "is_subscription_active": g.is_subscription_active,
+        "days_until_expiry": g.days_until_expiry,
+        "subscription_end": g.subscription_end.isoformat() if g.subscription_end else None,
+        "logo_url": g.logo.url if g.logo else None,
+        "pending_amount": str(g.pending_amount),  
+        "plan_id": str(g.plan_id) if g.plan_id else None,  
+    })
     return {
         "id": plan.id,
         "name": plan.name,
@@ -1086,3 +1077,82 @@ def orphan_user_bulk_delete(request):
 
 def data_deletion(request):
     return render(request,'data_deletion.html')
+
+@superuser_required
+@require_POST
+def renew_subscription(request, gym_id):
+    gym = get_object_or_404(Gym, pk=gym_id)
+    payment_status = request.POST.get("payment_status")
+    plan_id = request.POST.get("plan_id")
+
+    if payment_status in ("yes", "no"):
+        amount_raw = request.POST.get("amount")
+    else:
+        return JsonResponse(
+            {"success": False, "errors": {"payment_status": ["Invalid status."]}}, status=400
+        )
+
+    try:
+        amount = float(amount_raw)
+        if amount < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return JsonResponse(
+            {"success": False, "errors": {"amount": ["Enter a valid amount."]}}, status=400
+        )
+
+    if payment_status == "yes":
+        plan = get_object_or_404(SubscriptionPlan, pk=plan_id) if plan_id else gym.plan
+        if plan is None:
+            return JsonResponse(
+                {"success": False, "errors": {"plan_id": ["Select a plan."]}}, status=400
+            )
+
+        payment_date_raw = request.POST.get("payment_date")
+        try:
+            from datetime import timedelta, datetime as dt
+            payment_date = dt.strptime(payment_date_raw, "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            return JsonResponse(
+                {"success": False, "errors": {"payment_date": ["Enter a valid date."]}}, status=400
+            )
+
+        SubscriptionPayment.objects.create(
+            gym=gym, plan=plan, amount_paid=amount,
+            payment_date=payment_date, recorded_by=request.user,
+        )
+
+        gym.plan = plan
+        gym.subscription_start = payment_date
+        gym.subscription_end = payment_date + timedelta(days=30)
+        gym.active = True
+        gym.pending_amount = 0
+        gym.show_subscription_payment = False
+        gym.save(update_fields=[
+            "plan", "subscription_start", "subscription_end",
+            "active", "pending_amount", "show_subscription_payment", "updated_at",
+        ])
+
+        invalidate_platform_insights_cache()
+        messages.success(
+            request,
+            f"Renewal recorded for '{gym.gym_name}'. Active until "
+            f"{gym.subscription_end.strftime('%d %b %Y')}."
+        )
+        return JsonResponse({
+            "success": True,
+            "status": "paid",
+            "subscription_end": gym.subscription_end.isoformat(),
+            "pending_amount": "0.00",
+        })
+
+    else:  # payment_status == "no"
+        gym.pending_amount = amount
+        gym.save(update_fields=["pending_amount", "updated_at"])
+        invalidate_platform_insights_cache()
+        messages.warning(request, f"'{gym.gym_name}' marked pending ₹{amount:.2f}.")
+        return JsonResponse({
+            "success": True,
+            "status": "pending",
+            "pending_amount": f"{amount:.2f}",
+        })

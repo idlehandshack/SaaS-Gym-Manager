@@ -1,51 +1,108 @@
-{% extends "superadmin/base.html" %}
-{% load static %}
-
-{% block title %}Communications — EnterGYM{% endblock %}
-{% block breadcrumb %}Communications{% endblock %}
-
-{% block content %}
+{% extends "saas_dashboard/base.html" %} {% load static %} 
+{% block title%}Communications — EnterGYM{% endblock %} {% block breadcrumb %}Communications{% endblock %} {% block content %}
 
 <div class="section-header">
   <div>
     <div class="section-title">Communications</div>
-    <div class="section-sub">Platform-wide announcements, promotions, campaigns &amp; notifications</div>
+    <div class="section-sub">
+      Platform-wide announcements, promotions, campaigns &amp; notifications
+    </div>
   </div>
   <a class="btn-sm primary" href="{% url 'communication_create' %}">
-    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <svg
+      width="13"
+      height="13"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
     New Communication
   </a>
 </div>
 
 <div class="card">
-
-  <form id="bulk-form" method="post" action="{% url 'communication_bulk_action' %}"
-        onsubmit="return document.querySelectorAll('input[name=selected]:checked').length > 0
-                   && confirm('Apply this action to ' + document.querySelectorAll('input[name=selected]:checked').length + ' selected communication(s)?');">
+  <form
+    id="bulk-form"
+    method="post"
+    action="{% url 'communication_bulk_action' %}"
+    onsubmit="
+      return (
+        document.querySelectorAll('input[name=selected]:checked').length > 0 &&
+        confirm(
+          'Apply this action to ' +
+            document.querySelectorAll('input[name=selected]:checked').length +
+            ' selected communication(s)?',
+        )
+      );
+    "
+  >
     {% csrf_token %}
   </form>
 
   <form class="table-controls" method="get">
-    <input class="search-input" type="text" name="q" value="{{ filters.q }}" placeholder="Search title, description, campaign, sponsor, creator…"/>
+    <input
+      class="search-input"
+      type="text"
+      name="q"
+      value="{{ filters.q }}"
+      placeholder="Search title, description, campaign, sponsor, creator…"
+    />
 
     <select class="filter-select" name="type" onchange="this.form.submit()">
       <option value="">All Types</option>
       {% for value, label in types %}
-      <option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ label }}</option>
+      <option
+        value="{{ value }}"
+        {%
+        if
+        filters.type=""
+        ="value"
+        %}selected{%
+        endif
+        %}
+      >
+        {{ label }}
+      </option>
       {% endfor %}
     </select>
 
     <select class="filter-select" name="priority" onchange="this.form.submit()">
       <option value="">All Priorities</option>
       {% for value, label in priorities %}
-      <option value="{{ value }}" {% if filters.priority == value %}selected{% endif %}>{{ label }}</option>
+      <option
+        value="{{ value }}"
+        {%
+        if
+        filters.priority=""
+        ="value"
+        %}selected{%
+        endif
+        %}
+      >
+        {{ label }}
+      </option>
       {% endfor %}
     </select>
 
     <select class="filter-select" name="status" onchange="this.form.submit()">
       <option value="">All Statuses</option>
       {% for value, label in statuses %}
-      <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+      <option
+        value="{{ value }}"
+        {%
+        if
+        filters.status=""
+        ="value"
+        %}selected{%
+        endif
+        %}
+      >
+        {{ label }}
+      </option>
       {% endfor %}
     </select>
 
@@ -53,7 +110,7 @@
     <span class="table-count">{{ page_obj.paginator.count }} total</span>
   </form>
 
-  <div class="table-controls" style="border-top:1px solid var(--border)">
+  <div class="table-controls" style="border-top: 1px solid var(--border)">
     <select class="filter-select" name="bulk_action" form="bulk-form">
       <option value="">Bulk action…</option>
       <option value="publish">Publish Now</option>
@@ -69,7 +126,7 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th><input type="checkbox" id="select-all"></th>
+          <th><input type="checkbox" id="select-all" /></th>
           <th>Title</th>
           <th>Type</th>
           <th>Priority</th>
@@ -82,31 +139,78 @@
         </tr>
       </thead>
       <tbody>
-      {% for c in page_obj %}
+        {% for c in page_obj %}
         <tr>
-          <td><input type="checkbox" class="row-checkbox" name="selected" value="{{ c.pk }}" form="bulk-form"></td>
-          <td style="color:var(--text-primary);font-weight:600">{{ c.title }}</td>
+          <td>
+            <input
+              type="checkbox"
+              class="row-checkbox"
+              name="selected"
+              value="{{ c.pk }}"
+              form="bulk-form"
+            />
+          </td>
+          <td style="color: var(--text-primary); font-weight: 600">
+            {{ c.title }}
+          </td>
           <td>{{ c.get_type_display }}</td>
           <td>
-            {% if c.priority == 'critical' %}<span class="badge expired">Critical</span>
-            {% elif c.priority == 'high' %}<span class="badge expiring">High</span>
-            {% elif c.priority == 'medium' %}<span class="badge info">Medium</span>
+            {% if c.priority == 'critical' %}<span class="badge expired"
+              >Critical</span
+            >
+            {% elif c.priority == 'high' %}<span class="badge expiring"
+              >High</span
+            >
+            {% elif c.priority == 'medium' %}<span class="badge info"
+              >Medium</span
+            >
             {% else %}<span class="badge neutral">Low</span>{% endif %}
           </td>
           <td>
             {% if c.status == 'draft' %}<span class="badge neutral">Draft</span>
-            {% elif c.status == 'scheduled' %}<span class="badge info">Scheduled</span>
-            {% elif c.status == 'published' and c.is_live %}<span class="badge active">Live</span>
-            {% elif c.status == 'published' %}<span class="badge expired">Published (expired)</span>
-            {% elif c.status == 'expired' %}<span class="badge expired">Expired</span>
+            {% elif c.status == 'scheduled' %}<span class="badge info"
+              >Scheduled</span
+            >
+            {% elif c.status == 'published' and c.is_live %}<span
+              class="badge active"
+              >Live</span
+            >
+            {% elif c.status == 'published' %}<span class="badge expired"
+              >Published (expired)</span
+            >
+            {% elif c.status == 'expired' %}<span class="badge expired"
+              >Expired</span
+            >
             {% else %}<span class="badge inactive">Cancelled</span>{% endif %}
           </td>
-          <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem">{{ c.publish_at|date:"d M Y, H:i" }}</td>
-          <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem">{{ c.expires_at|date:"d M Y, H:i"|default:"—" }}</td>
-          <td style="font-size:.7rem">
-            {% if c.channel_push %}<span class="badge neutral" title="FCM">FCM</span>{% endif %}
-            {% if c.channel_web_push %}<span class="badge neutral" title="Web Push">Web</span>{% endif %}
-            {% if c.channel_pwa %}<span class="badge neutral" title="PWA">PWA</span>{% endif %}
+          <td
+            style="
+              font-family: &quot;JetBrains Mono&quot;, monospace;
+              font-size: 0.72rem;
+            "
+          >
+            {{ c.publish_at|date:"d M Y, H:i" }}
+          </td>
+          <td
+            style="
+              font-family: &quot;JetBrains Mono&quot;, monospace;
+              font-size: 0.72rem;
+            "
+          >
+            {{ c.expires_at|date:"d M Y, H:i"|default:"—" }}
+          </td>
+          <td style="font-size: 0.7rem">
+            {% if c.channel_push %}<span class="badge neutral" title="FCM"
+              >FCM</span
+            >{% endif %} {% if c.channel_web_push %}<span
+              class="badge neutral"
+              title="Web Push"
+              >Web</span
+            >{% endif %} {% if c.channel_pwa %}<span
+              class="badge neutral"
+              title="PWA"
+              >PWA</span
+            >{% endif %}
           </td>
           <td>
             <span class="text-green">{{ c.dispatch_success_count }}</span> /
@@ -114,33 +218,96 @@
           </td>
           <td>
             <div class="action-btns">
-              <a class="btn-icon warn" title="Edit" href="{% url 'communication_edit' c.pk %}">
-                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <a
+                class="btn-icon warn"
+                title="Edit"
+                href="{% url 'communication_edit' c.pk %}"
+              >
+                <svg
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"
+                  />
+                  <path
+                    d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
+                  />
+                </svg>
               </a>
-              <form method="post" action="{% url 'communication_publish_now' c.pk %}" onsubmit="return confirm('Dispatch \'{{ c.title|escapejs }}\' now to its configured audience?');">
+              <form
+                method="post"
+                action="{% url 'communication_publish_now' c.pk %}"
+                onsubmit="return confirm('Dispatch \'{{ c.title|escapejs }}\' now to its configured audience?');"
+              >
                 {% csrf_token %}
-                <button class="btn-icon success" type="submit" title="Publish Now">
-                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>
+                <button
+                  class="btn-icon success"
+                  type="submit"
+                  title="Publish Now"
+                >
+                  <svg
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M3 11l18-8-8 18-2-8-8-2z" />
+                  </svg>
                 </button>
               </form>
-              <form method="post" action="{% url 'communication_cancel' c.pk %}" onsubmit="return confirm('Cancel \'{{ c.title|escapejs }}\'? It will no longer be dispatched.');">
+              <form
+                method="post"
+                action="{% url 'communication_cancel' c.pk %}"
+                onsubmit="return confirm('Cancel \'{{ c.title|escapejs }}\'? It will no longer be dispatched.');"
+              >
                 {% csrf_token %}
                 <button class="btn-icon danger" type="submit" title="Cancel">
-                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                  <svg
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                  </svg>
                 </button>
               </form>
-              <form method="post" action="{% url 'communication_delete' c.pk %}" onsubmit="return confirm('Delete \'{{ c.title|escapejs }}\'? This can be restored from Django Admin (all_objects).');">
+              <form
+                method="post"
+                action="{% url 'communication_delete' c.pk %}"
+                onsubmit="return confirm('Delete \'{{ c.title|escapejs }}\'? This can be restored from Django Admin (all_objects).');"
+              >
                 {% csrf_token %}
                 <button class="btn-icon danger" type="submit" title="Delete">
-                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  <svg
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                  </svg>
                 </button>
               </form>
             </div>
           </td>
         </tr>
-      {% empty %}
-        <tr><td colspan="10"><div class="empty-state">No communications yet — create your first one above.</div></td></tr>
-      {% endfor %}
+        {% empty %}
+        <tr>
+          <td colspan="10">
+            <div class="empty-state">
+              No communications yet — create your first one above.
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
@@ -148,40 +315,53 @@
   {% if page_obj.paginator.num_pages > 1 %}
   <div class="pagination">
     {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.priority %}&priority={{ filters.priority }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.q %}&q={{ filters.q }}{% endif %}">← Prev</a>
+    <a
+      href="?page={{ page_obj.previous_page_number }}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.priority %}&priority={{ filters.priority }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.q %}&q={{ filters.q }}{% endif %}"
+      >← Prev</a
+    >
     {% endif %}
-    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    <span class="current"
+      >{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span
+    >
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.priority %}&priority={{ filters.priority }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.q %}&q={{ filters.q }}{% endif %}">Next →</a>
+    <a
+      href="?page={{ page_obj.next_page_number }}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.priority %}&priority={{ filters.priority }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.q %}&q={{ filters.q }}{% endif %}"
+      >Next →</a
+    >
     {% endif %}
   </div>
   {% endif %}
-
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script nonce="{{ request.csp_nonce }}">
-(function(){
-  var selectAll = document.getElementById('select-all');
-  var countEl = document.getElementById('selected-count');
+  (function () {
+    var selectAll = document.getElementById("select-all");
+    var countEl = document.getElementById("selected-count");
 
-  function rowCheckboxes(){ return Array.prototype.slice.call(document.querySelectorAll('.row-checkbox')); }
+    function rowCheckboxes() {
+      return Array.prototype.slice.call(
+        document.querySelectorAll(".row-checkbox"),
+      );
+    }
 
-  function updateCount(){
-    var checked = rowCheckboxes().filter(function(cb){ return cb.checked; }).length;
-    countEl.textContent = checked + ' selected';
-  }
+    function updateCount() {
+      var checked = rowCheckboxes().filter(function (cb) {
+        return cb.checked;
+      }).length;
+      countEl.textContent = checked + " selected";
+    }
 
-  selectAll.addEventListener('change', function(){
-    rowCheckboxes().forEach(function(cb){ cb.checked = selectAll.checked; });
-    updateCount();
-  });
+    selectAll.addEventListener("change", function () {
+      rowCheckboxes().forEach(function (cb) {
+        cb.checked = selectAll.checked;
+      });
+      updateCount();
+    });
 
-  rowCheckboxes().forEach(function(cb){
-    cb.addEventListener('change', updateCount);
-  });
-})();
+    rowCheckboxes().forEach(function (cb) {
+      cb.addEventListener("change", updateCount);
+    });
+  })();
 </script>
 {% endblock %}

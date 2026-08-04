@@ -1,162 +1,20 @@
+{% extends "saas_dashboard/base.html" %}
 {% load static %}
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Merge Duplicate Products — EnterGYM Admin</title>
-<link rel="icon" href="{% static 'images/favicons.ico' %}">
-<link rel="shortcut icon" href="{% static 'images/favicons.ico' %}">
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px;-webkit-font-smoothing:antialiased}
-body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0c;color:#e2e2e6;min-height:100vh;overflow-x:hidden}
-a{color:inherit;text-decoration:none}
-button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
-img{display:block;max-width:100%}
 
-:root{
-  --bg-base:#0a0a0c;
-  --bg-surface:#111115;
-  --bg-elevated:#18181e;
-  --bg-card:#1c1c24;
-  --border:#2a2a38;
-  --border-subtle:#1f1f2b;
-  --orange:#ff7a00;
-  --orange-dim:#ff7a0018;
-  --green:#22c55e;
-  --green-dim:#22c55e18;
-  --red:#ef4444;
-  --red-dim:#ef444418;
-  --yellow:#f59e0b;
-  --yellow-dim:#f59e0b18;
-  --blue:#3b82f6;
-  --blue-dim:#3b82f618;
-  --text-primary:#f0f0f4;
-  --text-secondary:#8b8b9e;
-  --text-muted:#4a4a5e;
-  --radius-sm:6px;
-  --radius-md:10px;
-  --radius-lg:14px;
-  --radius-xl:18px;
-  --transition:all .18s cubic-bezier(.4,0,.2,1);
-}
+{% block title %}Merge Duplicate Products — EnterGYM Admin{% endblock %}
 
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:#111115}
-::-webkit-scrollbar-thumb{background:#2a2a38;border-radius:2px}
+{% block breadcrumb %}Merge Duplicates{% endblock %}
 
-.layout{display:flex;min-height:100vh}
-
-.sidebar{
-  width:220px;min-width:220px;
-  background:var(--bg-surface);
-  border-right:1px solid var(--border);
-  display:flex;flex-direction:column;
-  position:sticky;top:0;height:100vh;
-  overflow-y:auto;z-index:100;
-  transition:var(--transition);
-}
-.sidebar-logo{
-  padding:20px 20px 16px;
-  border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:10px;
-}
-.sidebar-logo svg{flex-shrink:0}
-.logo-name{font-size:.85rem;font-weight:700;letter-spacing:.04em;color:var(--text-primary)}
-.logo-badge{font-size:.6rem;background:var(--orange);color:#000;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.05em;margin-left:auto}
-
-.nav-section{padding:16px 12px 8px}
-.nav-label{font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:0 8px 8px}
-.nav-item{
-  display:flex;align-items:center;gap:9px;
-  padding:8px 10px;border-radius:var(--radius-sm);
-  font-size:.82rem;font-weight:500;color:var(--text-secondary);
-  cursor:pointer;transition:var(--transition);
-  border:1px solid transparent;
-}
-.nav-item:hover{background:var(--bg-elevated);color:var(--text-primary)}
-.nav-item.active{background:var(--orange-dim);color:var(--orange);border-color:#ff7a0025}
-.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
-.nav-item.active svg{opacity:1}
-
-.sidebar-footer{
-  margin-top:auto;padding:16px;border-top:1px solid var(--border);
-  font-size:.75rem;color:var(--text-muted);
-}
-.sidebar-user{display:flex;align-items:center;gap:8px}
-.user-avatar{
-  width:28px;height:28px;border-radius:50%;
-  background:var(--orange-dim);border:1px solid var(--orange);
-  display:flex;align-items:center;justify-content:center;
-  font-size:.65rem;font-weight:700;color:var(--orange);flex-shrink:0
-}
-
-.main{flex:1;overflow-x:hidden;min-width:0}
-.topbar{
-  background:var(--bg-surface);border-bottom:1px solid var(--border);
-  padding:0 28px;height:56px;
-  display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:90;
-}
-.topbar-left{display:flex;align-items:center;gap:14px}
-.hamburger{display:none;flex-direction:column;gap:4px;padding:6px;cursor:pointer}
-.hamburger span{display:block;width:18px;height:2px;background:var(--text-secondary);border-radius:2px;transition:var(--transition)}
-.breadcrumb{font-size:.8rem;color:var(--text-muted)}
-.breadcrumb b{color:var(--text-primary)}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.topbar-time{font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted)}
-.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease infinite}
-@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
-
-.content{padding:28px;max-width:1600px}
-
-.section-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px}
-.section-title{font-size:1rem;font-weight:600;color:var(--text-primary)}
-.section-sub{font-size:.75rem;color:var(--text-muted);margin-top:2px}
-
+{% block extra_style %}
 .tabs-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
 .tab-link{padding:8px 14px;border-radius:8px;color:var(--text-secondary);text-decoration:none;font-size:.8rem;border:1px solid var(--border);transition:var(--transition)}
 .tab-link:hover{background:var(--bg-elevated);color:var(--text-primary)}
 .tab-link.active{background:var(--orange);color:#000;border-color:var(--orange);font-weight:600}
 
-.card{
-  background:var(--bg-card);
-  border:1px solid var(--border);
-  border-radius:var(--radius-lg);
-  overflow:hidden;
-}
-.card-header{
-  padding:16px 20px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
-}
-.card-title{font-size:.85rem;font-weight:600;color:var(--text-primary)}
-
-.table-controls{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.search-input{
-  flex:1;min-width:200px;max-width:340px;
-  background:var(--bg-elevated);border:1px solid var(--border);
-  border-radius:var(--radius-sm);padding:8px 12px;
-  font:inherit;font-size:.78rem;color:var(--text-primary);
-  outline:none;transition:var(--transition);
-}
-.search-input::placeholder{color:var(--text-muted)}
-.search-input:focus{border-color:#3a3a4a;background:var(--bg-card)}
 .search-btn{padding:8px 16px;background:var(--orange);border:1px solid var(--orange);border-radius:var(--radius-sm);color:#000;font-weight:600;font-size:.78rem;cursor:pointer;transition:var(--transition)}
 .search-btn:hover{background:#e06d00}
-.table-count{font-size:.72rem;color:var(--text-muted);margin-left:auto}
 
-.empty-state{padding:60px 20px;text-align:center;color:var(--text-muted);font-size:.85rem}
-
-/* ── Alerts ── */
-.shop-alert{padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:18px;font-size:.85rem;border:1px solid transparent}
-.shop-alert-success{background:var(--green-dim);color:var(--green);border-color:#22c55e30}
-.shop-alert-error{background:var(--red-dim);color:var(--red);border-color:#ef444430}
-
-/* ── Merge grid (right-side content) ── */
+/* ── Merge grid ── */
 .merge-grid{
   display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
   gap:14px;padding:20px;
@@ -194,227 +52,87 @@ img{display:block;max-width:100%}
 }
 .merge-submit:hover{background:#e06d00}
 
+.shop-alert{padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:18px;font-size:.85rem;border:1px solid transparent}
+.shop-alert-success{background:var(--green-dim);color:var(--green);border-color:#22c55e30}
+.shop-alert-error{background:var(--red-dim);color:var(--red);border-color:#ef444430}
+
 @media (max-width:768px){
-  .sidebar{
-    position:fixed;left:-220px;top:0;bottom:0;z-index:200;
-    transition:left .25s cubic-bezier(.4,0,.2,1);
-  }
-  .sidebar.mobile-open{left:0}
-  .sidebar-overlay{position:fixed;inset:0;background:#00000060;z-index:190;display:none}
-  .sidebar-overlay.open{display:block}
-  .hamburger{display:flex}
-  .topbar{padding:0 16px}
-  .content{padding:16px}
   .table-controls{flex-direction:column;align-items:stretch}
   .search-input{max-width:none}
 }
-</style>
-</head>
-<body>
+{% endblock %}
 
-<div class="layout">
+{% block content %}
 
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo">
-    <img
-        src="{% static 'images/Logo1s.png' %}"
-        alt="EnterGYM Logo"
-        class="brand-logo"
-        width="40"
-        height="40"
-    />
-    <span class="logo-name">EnterGYM</span>
-    <span class="logo-badge">SAAS</span>
+<div class="section-header">
+  <div>
+    <div class="section-title">Merge Duplicate Products</div>
+    <div class="section-sub">Search, compare, and consolidate duplicate catalog entries</div>
   </div>
-
-  <div class="nav-section">
-    <p class="nav-label">Platform</p>
-    <a class="nav-item" href="{% url 'saas_dashboard' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Overview
-    </a>
-    <a class="nav-item" href="{% url 'all_gyms' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-      All Gyms
-    </a>
-    <a class="nav-item" href="{% url 'subscriptions_page' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      Subscriptions
-    </a>
-    <a class="nav-item" href="{% url 'platform_insights' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Insights
-    </a>
-    <a class="nav-item" href="{% url 'login_support_tickets' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-      Support Tickets
-    </a>
-    <a class="nav-item" href="{% url 'orphan_users_page' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-          <path d="M14 4l6 6"/>
-          <path d="M10 8l6 6"/>
-          <path d="M9 9L4 20"/>
-          <path d="M3 20h10"/>
-          <path d="M18 3v2"/>
-          <path d="M17 4h2"/>
-          <path d="M20 8v2"/>
-          <path d="M19 9h2"/>
-      </svg>
-      User Cleanup
-    </a>
-  </div>
-
-  <div class="nav-section">
-    <p class="nav-label">Catalog</p>
-    <a class="nav-item" href="{% url 'admin_catalog_home' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      All Approved
-    </a>
-    <a class="nav-item" href="{% url 'admin_approved_products' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      Approved
-    </a>
-    <a class="nav-item" href="{% url 'admin_pending_products' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      Pending
-    </a>
-    <a class="nav-item" href="{% url 'admin_rejected_products' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-      Rejected
-    </a>
-    <a class="nav-item active" href="{% url 'admin_merge_products' %}">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3l4 4-4 4"/><path d="M21 7H9a4 4 0 00-4 4v1"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12a4 4 0 004-4v-1"/></svg>
-      Merge Duplicates
-    </a>
-  </div>
-
-  <div class="nav-section">
-    <p class="nav-label">System</p>
-    <a class="nav-item" href="/admin/">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      Django Admin
-    </a>
-  </div>
-
-  <div class="sidebar-footer">
-    <div class="sidebar-user">
-      <div class="user-avatar">SA</div>
-      <div>
-        <div style="font-size:.73rem;color:var(--text-primary);font-weight:500">{{ request.user.username }}</div>
-        <div style="font-size:.65rem;margin-top:1px;color:var(--green)">● Super Admin</div>
-      </div>
-    </div>
-  </div>
-</aside>
-
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<main class="main">
-
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="hamburger" id="hamburger">
-        <span></span><span></span><span></span>
-      </div>
-      <div class="breadcrumb">EnterGYM <span style="color:var(--border)">·</span> <b>Merge Duplicates</b></div>
-    </div>
-    <div class="topbar-right">
-      <div class="status-dot"></div>
-      <span class="topbar-time" id="liveTime">--:--:--</span>
-    </div>
-  </div>
-
-  <div class="content">
-
-    <div class="section-header">
-      <div>
-        <div class="section-title">Merge Duplicate Products</div>
-        <div class="section-sub">Search, compare, and consolidate duplicate catalog entries</div>
-      </div>
-    </div>
-
-    <div class="tabs-row">
-      <a href="{% url 'admin_catalog_home' %}" class="tab-link">All Approved</a>
-      <a href="{% url 'admin_pending_products' %}" class="tab-link">Pending</a>
-      <a href="{% url 'admin_rejected_products' %}" class="tab-link">Rejected</a>
-      <a href="{% url 'admin_merge_products' %}" class="tab-link active">Merge Duplicates</a>
-    </div>
-
-    {% if messages %}
-      {% for message in messages %}
-        <div class="shop-alert shop-alert-{{ message.tags }}">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Compare Products</span>
-        {% if candidates %}<span style="font-size:.72rem;color:var(--text-muted)">{{ candidates|length }} match{{ candidates|length|pluralize:"es" }}</span>{% endif %}
-      </div>
-
-      <form method="get" class="table-controls">
-        <input type="text" name="q" value="{{ query }}" placeholder="Search products to compare..." class="search-input">
-        <button type="submit" class="search-btn">Search</button>
-      </form>
-
-      {% if candidates %}
-      <form method="post" id="merge-form">
-        {% csrf_token %}
-        <div class="merge-grid">
-          {% for candidate in candidates %}
-          <div class="merge-card" data-product-id="{{ candidate.id }}">
-            <div class="merge-card-header">
-              <span class="merge-card-name">{{ candidate.name }}</span>
-              {% if candidate.brand %}<span class="muted">— {{ candidate.brand }}</span>{% endif %}
-              <span class="status-badge status-{{ candidate.approval_status|lower }}">{{ candidate.approval_status }}</span>
-            </div>
-            <p class="merge-card-meta">{{ candidate.flavors.count }} variant{{ candidate.flavors.count|pluralize }} · id #{{ candidate.id }}</p>
-            <div class="merge-card-actions">
-              <label class="merge-radio-label">
-                <input type="radio" name="winner_id" value="{{ candidate.id }}" required> Keep as canonical (winner)
-              </label>
-              <label class="merge-radio-label">
-                <input type="radio" name="loser_id" value="{{ candidate.id }}"> Merge away (duplicate)
-              </label>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        <div class="merge-submit-wrap">
-          <button type="submit" class="merge-submit">Merge Selected</button>
-        </div>
-      </form>
-      {% elif query %}
-      <div class="empty-state">No products found for "{{ query }}".</div>
-      {% else %}
-      <div class="empty-state">Search for a product name or brand to find and merge duplicates.</div>
-      {% endif %}
-    </div>
-
-  </div>
-</main>
 </div>
 
+<div class="tabs-row">
+  <a href="{% url 'admin_catalog_home' %}" class="tab-link">All Approved</a>
+  <a href="{% url 'admin_pending_products' %}" class="tab-link">Pending</a>
+  <a href="{% url 'admin_rejected_products' %}" class="tab-link">Rejected</a>
+  <a href="{% url 'admin_merge_products' %}" class="tab-link active">Merge Duplicates</a>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="shop-alert shop-alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Compare Products</span>
+    {% if candidates %}<span style="font-size:.72rem;color:var(--text-muted)">{{ candidates|length }} match{{ candidates|length|pluralize:"es" }}</span>{% endif %}
+  </div>
+
+  <form method="get" class="table-controls">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search products to compare..." class="search-input">
+    <button type="submit" class="search-btn">Search</button>
+  </form>
+
+  {% if candidates %}
+  <form method="post" id="merge-form">
+    {% csrf_token %}
+    <div class="merge-grid">
+      {% for candidate in candidates %}
+      <div class="merge-card" data-product-id="{{ candidate.id }}">
+        <div class="merge-card-header">
+          <span class="merge-card-name">{{ candidate.name }}</span>
+          {% if candidate.brand %}<span class="muted">— {{ candidate.brand }}</span>{% endif %}
+          <span class="status-badge status-{{ candidate.approval_status|lower }}">{{ candidate.approval_status }}</span>
+        </div>
+        <p class="merge-card-meta">{{ candidate.flavors.count }} variant{{ candidate.flavors.count|pluralize }} · id #{{ candidate.id }}</p>
+        <div class="merge-card-actions">
+          <label class="merge-radio-label">
+            <input type="radio" name="winner_id" value="{{ candidate.id }}" required> Keep as canonical (winner)
+          </label>
+          <label class="merge-radio-label">
+            <input type="radio" name="loser_id" value="{{ candidate.id }}"> Merge away (duplicate)
+          </label>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="merge-submit-wrap">
+      <button type="submit" class="merge-submit">Merge Selected</button>
+    </div>
+  </form>
+  {% elif query %}
+  <div class="empty-state">No products found for "{{ query }}".</div>
+  {% else %}
+  <div class="empty-state">Search for a product name or brand to find and merge duplicates.</div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
 <script nonce="{{ request.csp_nonce }}">
-(function(){
-  const timeEl = document.getElementById('liveTime');
-  function tick(){
-    const n=new Date();
-    timeEl.textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
-  }
-  tick();setInterval(tick,1000);
-
-  const sidebar=document.getElementById('sidebar');
-  const sidebarOverlay=document.getElementById('sidebarOverlay');
-  const hamburger=document.getElementById('hamburger');
-  function toggleSidebar(){
-    sidebar.classList.toggle('mobile-open');
-    sidebarOverlay.classList.toggle('open');
-  }
-  hamburger.addEventListener('click', toggleSidebar);
-  sidebarOverlay.addEventListener('click', toggleSidebar);
-})();
-
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('merge-form');
     if (!form) return;
@@ -471,5 +189,4 @@ document.addEventListener('DOMContentLoaded', function () {
     syncDisabledStates();
 });
 </script>
-</body>
-</html>
+{% endblock %}

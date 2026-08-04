@@ -23,7 +23,7 @@ from Gym.views import (
     confirm_subscription_payment, gym_payment_page, api_public_live_stats,
     plans_page, orphan_users_page, orphan_user_delete, orphan_user_bulk_delete,
     gym_qr_settings, gym_qr_regenerate, gym_qr_download, send_renewal_reminder,
-    gst_profile_edit,data_deletion
+    gst_profile_edit,data_deletion,renew_subscription
 )
 from Gym.views_members import (
     member_list, member_detail, staff_mark_attendance, check_member_notifications,
@@ -141,7 +141,7 @@ superadmin_patterns = [
     path('superadmin/gym/<uuid:gym_id>/record-payment/', record_platform_payment, name='record_platform_payment'),
     path('super-admin/support-tickets/', views.login_support_tickets, name='login_support_tickets'),
     path('super-admin/support-tickets/<int:ticket_id>/resolve/', views.login_support_ticket_resolve, name='login_support_ticket_resolve'),
-
+    path("gyms/<uuid:gym_id>/renew/",renew_subscription, name="renew_subscription"),
     # ── Platform Insights APIs ──
     path('api/platform-insights/dashboard/', api_dashboard, name='api_pi_dashboard'),
     path('api/platform-insights/system-health/', api_system_health, name='api_pi_health'),

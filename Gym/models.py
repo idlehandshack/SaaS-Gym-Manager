@@ -242,6 +242,10 @@ class Gym(models.Model):
                    "their local midnight from the server's perspective.",
     )
     hidden_stat_cards = models.JSONField(default=list, blank=True)
+    pending_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="Amount still owed if Super Admin marked a renewal as 'not paid yet'."
+    )
     # ── Helpers ───────────────────────────────────────────────────────────
     @property
     def is_subscription_active(self):
@@ -285,6 +289,18 @@ class Gym(models.Model):
         verbose_name        = 'Gym'
         verbose_name_plural = 'Gyms'
 
+class SubscriptionPayment(models.Model):
+    gym = models.ForeignKey(
+        Gym, on_delete=models.CASCADE, related_name="subscription_payments"
+    )
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_date = models.DateField()
+    recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-payment_date"]
 
 @receiver([post_save, post_delete], sender=Gym)
 def clear_gym_logo_cache(sender, instance, **kwargs):

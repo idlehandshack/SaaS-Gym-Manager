@@ -1,76 +1,99 @@
-{% extends "superadmin/base.html" %}
-
-{% block title %}{% if is_edit %}Edit{% else %}New{% endif %} Communication — EnterGYM{% endblock %}
-{% block breadcrumb %}{% if is_edit %}Edit Communication{% else %}New Communication{% endif %}{% endblock %}
-
-{% block content %}
+{% extends "saas_dashboard/base.html" %} {% block title %}{% if is_edit %}Edit
+{% else %}New{% endif %} Communication — EnterGYM{% endblock %} 
+{% block breadcrumb %}{% if is_edit %}Edit Communication{% else %}New Communication
+{% endif %}{% endblock %} {% block content %}
 
 <div class="section-header">
   <div>
-    <div class="section-title">{% if is_edit %}Edit '{{ communication.title }}'{% else %}New Communication{% endif %}</div>
-    <div class="section-sub">Configure content, channels, and who it reaches — then Publish Now from the list, or let the scheduler pick it up at Publish At.</div>
+    <div class="section-title">
+      {% if is_edit %}Edit '{{ communication.title }}'{% else %}New
+      Communication{% endif %}
+    </div>
+    <div class="section-sub">
+      Configure content, channels, and who it reaches — then Publish Now from
+      the list, or let the scheduler pick it up at Publish At.
+    </div>
   </div>
   <a class="btn-sm" href="{% url 'communication_list' %}">← Back to list</a>
 </div>
 
 <form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
+  {% csrf_token %} {% if form.non_field_errors %}
+  <div class="form-errors">{{ form.non_field_errors }}</div>
+  {% endif %} {% if audience_form.non_field_errors %}
+  <div class="form-errors">{{ audience_form.non_field_errors }}</div>
+  {% endif %}
 
-  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
-  {% if audience_form.non_field_errors %}<div class="form-errors">{{ audience_form.non_field_errors }}</div>{% endif %}
-
-  <div class="two-col" style="align-items:start">
-
+  <div class="two-col" style="align-items: start">
     <!-- ── Content ─────────────────────────────────────────── -->
     <div class="card">
       <div class="card-header"><span class="card-title">Content</span></div>
       <div class="card-body">
-
         <div class="form-group">
-          <label class="form-label" for="{{ form.title.id_for_label }}">Title</label>
-          {{ form.title }}
-          {% if form.title.errors %}<div class="form-errors">{{ form.title.errors|striptags }}</div>{% endif %}
+          <label class="form-label" for="{{ form.title.id_for_label }}"
+            >Title</label
+          >
+          {{ form.title }} {% if form.title.errors %}
+          <div class="form-errors">{{ form.title.errors|striptags }}</div>
+          {% endif %}
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
-          {{ form.description }}
-          {% if form.description.errors %}<div class="form-errors">{{ form.description.errors|striptags }}</div>{% endif %}
+          <label class="form-label" for="{{ form.description.id_for_label }}"
+            >Description</label
+          >
+          {{ form.description }} {% if form.description.errors %}
+          <div class="form-errors">{{ form.description.errors|striptags }}</div>
+          {% endif %}
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="{{ form.type.id_for_label }}">Type</label>
+            <label class="form-label" for="{{ form.type.id_for_label }}"
+              >Type</label
+            >
             {{ form.type }}
           </div>
           <div class="form-group">
-            <label class="form-label" for="{{ form.priority.id_for_label }}">Priority</label>
+            <label class="form-label" for="{{ form.priority.id_for_label }}"
+              >Priority</label
+            >
             {{ form.priority }}
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="{{ form.image.id_for_label }}">Image</label>
+            <label class="form-label" for="{{ form.image.id_for_label }}"
+              >Image</label
+            >
             {{ form.image }}
           </div>
           <div class="form-group">
-            <label class="form-label" for="{{ form.attachment.id_for_label }}">Attachment</label>
+            <label class="form-label" for="{{ form.attachment.id_for_label }}"
+              >Attachment</label
+            >
             {{ form.attachment }}
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="{{ form.external_link.id_for_label }}">External Link</label>
+          <label class="form-label" for="{{ form.external_link.id_for_label }}"
+            >External Link</label
+          >
           {{ form.external_link }}
-          <div class="form-help">Used as the tap-through URL for web push and as the deep link for FCM.</div>
+          <div class="form-help">
+            Used as the tap-through URL for web push and as the deep link for
+            FCM.
+          </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="{{ form.campaign.id_for_label }}">Sponsor Campaign (optional)</label>
+          <label class="form-label" for="{{ form.campaign.id_for_label }}"
+            >Sponsor Campaign (optional)</label
+          >
           {{ form.campaign }}
         </div>
-
       </div>
     </div>
 
@@ -80,18 +103,29 @@
       <div class="card-body">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="{{ form.publish_date.id_for_label }}">Publish Date</label>
+            <label class="form-label" for="{{ form.publish_date.id_for_label }}"
+              >Publish Date</label
+            >
             {{ form.publish_date }}
           </div>
           <div class="form-group">
-            <label class="form-label" for="{{ form.publish_time.id_for_label }}">Publish Time Slot</label>
+            <label class="form-label" for="{{ form.publish_time.id_for_label }}"
+              >Publish Time Slot</label
+            >
             {{ form.publish_time }}
-            <div class="form-help">Slot times align with the server cron run.</div>
+            <div class="form-help">
+              Slot times align with the server cron run.
+            </div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="{{ form.expires_at.id_for_label }}">Expires At</label>
-            {{ form.expires_at }}
-            {% if form.expires_at.errors %}<div class="form-errors">{{ form.expires_at.errors|striptags }}</div>{% endif %}
+            <label class="form-label" for="{{ form.expires_at.id_for_label }}"
+              >Expires At</label
+            >
+            {{ form.expires_at }} {% if form.expires_at.errors %}
+            <div class="form-errors">
+              {{ form.expires_at.errors|striptags }}
+            </div>
+            {% endif %}
           </div>
         </div>
         <div class="form-check">
@@ -102,119 +136,222 @@
 
       <div class="card-header"><span class="card-title">Channels</span></div>
       <div class="card-body">
-        <div class="form-check">{{ form.channel_push }}<label for="{{ form.channel_push.id_for_label }}">FCM (Mobile App)</label></div>
-        <div class="form-check">{{ form.channel_web_push }}<label for="{{ form.channel_web_push.id_for_label }}">Web Push (Browser)</label></div>
-        <div class="form-check">{{ form.channel_pwa }}<label for="{{ form.channel_pwa.id_for_label }}">PWA Notification Center</label></div>
-        <div class="form-check">{{ form.channel_email }}<label for="{{ form.channel_email.id_for_label }}">Email <span class="text-muted">(future — no sender yet, safe to enable now)</span></label></div>
-        <div class="form-check">{{ form.channel_whatsapp }}<label for="{{ form.channel_whatsapp.id_for_label }}">WhatsApp <span class="text-muted">(future — no sender yet)</span></label></div>
-        <div class="form-check">{{ form.channel_sms }}<label for="{{ form.channel_sms.id_for_label }}">SMS <span class="text-muted">(future — no sender yet)</span></label></div>
+        <div class="form-check">
+          {{ form.channel_push }}<label
+            for="{{ form.channel_push.id_for_label }}"
+            >FCM (Mobile App)</label
+          >
+        </div>
+        <div class="form-check">
+          {{ form.channel_web_push }}<label
+            for="{{ form.channel_web_push.id_for_label }}"
+            >Web Push (Browser)</label
+          >
+        </div>
+        <div class="form-check">
+          {{ form.channel_pwa }}<label for="{{ form.channel_pwa.id_for_label }}"
+            >PWA Notification Center</label
+          >
+        </div>
+        <div class="form-check">
+          {{ form.channel_email }}<label
+            for="{{ form.channel_email.id_for_label }}"
+            >Email
+            <span class="text-muted"
+              >(future — no sender yet, safe to enable now)</span
+            ></label
+          >
+        </div>
+        <div class="form-check">
+          {{ form.channel_whatsapp }}<label
+            for="{{ form.channel_whatsapp.id_for_label }}"
+            >WhatsApp
+            <span class="text-muted">(future — no sender yet)</span></label
+          >
+        </div>
+        <div class="form-check">
+          {{ form.channel_sms }}<label for="{{ form.channel_sms.id_for_label }}"
+            >SMS <span class="text-muted">(future — no sender yet)</span></label
+          >
+        </div>
       </div>
 
       <div class="card-header"><span class="card-title">Display</span></div>
       <div class="card-body">
-        <div class="form-check">{{ form.show_popup }}<label for="{{ form.show_popup.id_for_label }}">Show as popup</label></div>
-        <div class="form-check">{{ form.show_banner }}<label for="{{ form.show_banner.id_for_label }}">Show as banner</label></div>
-        <div class="form-check">{{ form.show_notification_center }}<label for="{{ form.show_notification_center.id_for_label }}">Show in notification center</label></div>
+        <div class="form-check">
+          {{ form.show_popup }}<label for="{{ form.show_popup.id_for_label }}"
+            >Show as popup</label
+          >
+        </div>
+        <div class="form-check">
+          {{ form.show_banner }}<label for="{{ form.show_banner.id_for_label }}"
+            >Show as banner</label
+          >
+        </div>
+        <div class="form-check">
+          {{ form.show_notification_center }}<label
+            for="{{ form.show_notification_center.id_for_label }}"
+            >Show in notification center</label
+          >
+        </div>
       </div>
     </div>
-
   </div>
 
   <!-- ── Audience ──────────────────────────────────────────── -->
-  <div class="card" style="margin-bottom:28px">
+  <div class="card" style="margin-bottom: 28px">
     <div class="card-header"><span class="card-title">Audience</span></div>
     <div class="card-body">
-
       <div class="form-group">
-        <label class="form-label" for="{{ audience_form.scope.id_for_label }}">Who should receive this</label>
+        <label class="form-label" for="{{ audience_form.scope.id_for_label }}"
+          >Who should receive this</label
+        >
         {{ audience_form.scope }}
       </div>
 
-      <div class="form-group scope-field" data-scopes="everyone,all_members,all_staff,all_owners,all_receptionists,all_trainers,specific_gym,active_members,expired_members,expiring_members,specific_plan,specific_city,specific_state,specific_country">
-        <label class="form-label" for="{{ audience_form.gyms.id_for_label }}">Narrow to specific gym(s) <span class="text-muted">(optional — leave empty for platform-wide)</span></label>
+      <div
+        class="form-group scope-field"
+        data-scopes="everyone,all_members,all_staff,all_owners,all_receptionists,all_trainers,specific_gym,active_members,expired_members,expiring_members,specific_plan,specific_city,specific_state,specific_country"
+      >
+        <label class="form-label" for="{{ audience_form.gyms.id_for_label }}"
+          >Narrow to specific gym(s)
+          <span class="text-muted"
+            >(optional — leave empty for platform-wide)</span
+          ></label
+        >
         {{ audience_form.gyms }}
       </div>
 
       <div class="form-group scope-field" data-scopes="specific_plan">
-        <label class="form-label" for="{{ audience_form.plan_name_filter.id_for_label }}">Plan name contains</label>
+        <label
+          class="form-label"
+          for="{{ audience_form.plan_name_filter.id_for_label }}"
+          >Plan name contains</label
+        >
         {{ audience_form.plan_name_filter }}
-        <div class="form-help">{{ audience_form.plan_name_filter.help_text }}</div>
-        {% if audience_form.plan_name_filter.errors %}<div class="form-errors">{{ audience_form.plan_name_filter.errors|striptags }}</div>{% endif %}
+        <div class="form-help">
+          {{ audience_form.plan_name_filter.help_text }}
+        </div>
+        {% if audience_form.plan_name_filter.errors %}
+        <div class="form-errors">
+          {{ audience_form.plan_name_filter.errors|striptags }}
+        </div>
+        {% endif %}
       </div>
       <div class="form-group scope-field" data-scopes="specific_plan">
-        <label class="form-label" for="{{ audience_form.plans.id_for_label }}">…or pick specific plan rows</label>
+        <label class="form-label" for="{{ audience_form.plans.id_for_label }}"
+          >…or pick specific plan rows</label
+        >
         {{ audience_form.plans }}
       </div>
 
       <div class="form-group scope-field" data-scopes="subscription_plan">
-        <label class="form-label" for="{{ audience_form.subscription_plans.id_for_label }}">SaaS Subscription Plan(s)</label>
-        {{ audience_form.subscription_plans }}
-        {% if audience_form.subscription_plans.errors %}<div class="form-errors">{{ audience_form.subscription_plans.errors|striptags }}</div>{% endif %}
+        <label
+          class="form-label"
+          for="{{ audience_form.subscription_plans.id_for_label }}"
+          >SaaS Subscription Plan(s)</label
+        >
+        {{ audience_form.subscription_plans }} 
+        {% if audience_form.subscription_plans.errors %}
+        <div class="form-errors">
+          {{ audience_form.subscription_plans.errors|striptags }}
+        </div>
+        {% endif %}
       </div>
 
       <div class="form-group scope-field" data-scopes="specific_city">
-        <label class="form-label" for="{{ audience_form.cities.id_for_label }}">Cities</label>
+        <label class="form-label" for="{{ audience_form.cities.id_for_label }}"
+          >Cities</label
+        >
         {{ audience_form.cities }}
         <div class="form-help">{{ audience_form.cities.help_text }}</div>
-        {% if audience_form.cities.errors %}<div class="form-errors">{{ audience_form.cities.errors|striptags }}</div>{% endif %}
+        {% if audience_form.cities.errors %}
+        <div class="form-errors">
+          {{ audience_form.cities.errors|striptags }}
+        </div>
+        {% endif %}
       </div>
       <div class="form-group scope-field" data-scopes="specific_state">
-        <label class="form-label" for="{{ audience_form.states.id_for_label }}">States</label>
+        <label class="form-label" for="{{ audience_form.states.id_for_label }}"
+          >States</label
+        >
         {{ audience_form.states }}
         <div class="form-help">{{ audience_form.states.help_text }}</div>
       </div>
       <div class="form-group scope-field" data-scopes="specific_country">
-        <label class="form-label" for="{{ audience_form.countries.id_for_label }}">Countries</label>
+        <label
+          class="form-label"
+          for="{{ audience_form.countries.id_for_label }}"
+          >Countries</label
+        >
         {{ audience_form.countries }}
         <div class="form-help">{{ audience_form.countries.help_text }}</div>
       </div>
 
       <div class="form-group scope-field" data-scopes="specific_members">
-        <label class="form-label" for="{{ audience_form.specific_members.id_for_label }}">Specific Members</label>
-        {{ audience_form.specific_members }}
-        {% if audience_form.specific_members.errors %}<div class="form-errors">{{ audience_form.specific_members.errors|striptags }}</div>{% endif %}
+        <label
+          class="form-label"
+          for="{{ audience_form.specific_members.id_for_label }}"
+          >Specific Members</label
+        >
+        {{ audience_form.specific_members }} 
+        {% if audience_form.specific_members.errors %}
+        <div class="form-errors">
+          {{ audience_form.specific_members.errors|striptags }}
+        </div>
+        {% endif %}
       </div>
 
       <div class="form-group scope-field" data-scopes="specific_staff">
-        <label class="form-label" for="{{ audience_form.specific_staff.id_for_label }}">Specific Staff</label>
-        {{ audience_form.specific_staff }}
-        {% if audience_form.specific_staff.errors %}<div class="form-errors">{{ audience_form.specific_staff.errors|striptags }}</div>{% endif %}
+        <label
+          class="form-label"
+          for="{{ audience_form.specific_staff.id_for_label }}"
+          >Specific Staff</label
+        >
+        {{ audience_form.specific_staff }} 
+        {% if audience_form.specific_staff.errors %}
+        <div class="form-errors">
+          {{ audience_form.specific_staff.errors|striptags }}
+        </div>
+        {% endif %}
       </div>
-
     </div>
   </div>
 
   <div class="form-actions">
-    <button type="submit" class="btn-sm primary">{% if is_edit %}Save Changes{% else %}Create Draft{% endif %}</button>
+    <button type="submit" class="btn-sm primary">
+      {% if is_edit %}Save Changes{% else %}Create Draft{% endif %}
+    </button>
     <a class="btn-sm" href="{% url 'communication_list' %}">Cancel</a>
   </div>
-
 </form>
 
-{% endblock %}
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script nonce="{{ request.csp_nonce }}">
-(function(){
-  var scopeSelect = document.getElementById('{{ audience_form.scope.id_for_label }}');
-  var groups = Array.prototype.slice.call(document.querySelectorAll('.scope-field[data-scopes]'));
+  (function () {
+    var scopeSelect = document.getElementById(
+      "{{ audience_form.scope.id_for_label }}",
+    );
+    var groups = Array.prototype.slice.call(
+      document.querySelectorAll(".scope-field[data-scopes]"),
+    );
 
-  function applyVisibility(){
-    var current = scopeSelect.value;
-    groups.forEach(function(group){
-      var scopes = group.getAttribute('data-scopes').split(',');
-      if (scopes.indexOf(current) !== -1) {
-        group.removeAttribute('hidden');
-      } else {
-        group.setAttribute('hidden', 'hidden');
-      }
-    });
-  }
+    function applyVisibility() {
+      var current = scopeSelect.value;
+      groups.forEach(function (group) {
+        var scopes = group.getAttribute("data-scopes").split(",");
+        if (scopes.indexOf(current) !== -1) {
+          group.removeAttribute("hidden");
+        } else {
+          group.setAttribute("hidden", "hidden");
+        }
+      });
+    }
 
-  if (scopeSelect) {
-    scopeSelect.addEventListener('change', applyVisibility);
-    applyVisibility();
-  }
-})();
+    if (scopeSelect) {
+      scopeSelect.addEventListener("change", applyVisibility);
+      applyVisibility();
+    }
+  })();
 </script>
 {% endblock %}
