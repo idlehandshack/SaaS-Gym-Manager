@@ -1156,3 +1156,52 @@ def renew_subscription(request, gym_id):
             "status": "pending",
             "pending_amount": f"{amount:.2f}",
         })
+@superuser_required
+@require_POST
+def toggle_gym_status(request, gym_id):
+    try:
+        gym = Gym.objects.get(pk=gym_id)
+    except Gym.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Gym not found."}, status=404)
+
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid request."}, status=400)
+
+    gym.active = bool(payload.get("active", not gym.active))
+    gym.save(update_fields=["active", "updated_at"])
+    return JsonResponse({"success": True, "active": gym.active})
+
+
+@superuser_required
+@require_POST
+def gym_quick_edit(request, gym_id):
+    try:
+        gym = Gym.objects.get(pk=gym_id)
+    except Gym.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Gym not found."}, status=404)
+
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid request."}, status=400)
+
+    member_limit = payload.get("member_limit")
+    if member_limit is None or int(member_limit) < 0:
+        return JsonResponse({"success": False, "error": "Member limit must be a positive number."}, status=400)
+
+    gym.member_limit = int(member_limit)
+    gym.app_download_url = (payload.get("app_download_url") or "").strip()
+    gym.enable_store = bool(payload.get("enable_store"))
+    gym.enable_attendance = bool(payload.get("enable_attendance"))
+    gym.enable_face_recognition = bool(payload.get("enable_face_recognition"))
+    gym.enable_trainers = bool(payload.get("enable_trainers"))
+
+    gym.save(update_fields=[
+        "member_limit", "app_download_url",
+        "enable_store", "enable_attendance",
+        "enable_face_recognition", "enable_trainers",
+        "updated_at",
+    ])
+    return JsonResponse({"success": True})

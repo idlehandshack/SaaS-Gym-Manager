@@ -23,7 +23,7 @@ from Gym.views import (
     confirm_subscription_payment, gym_payment_page, api_public_live_stats,
     plans_page, orphan_users_page, orphan_user_delete, orphan_user_bulk_delete,
     gym_qr_settings, gym_qr_regenerate, gym_qr_download, send_renewal_reminder,
-    gst_profile_edit,data_deletion,renew_subscription
+    gst_profile_edit,data_deletion,renew_subscription ,toggle_gym_status,gym_quick_edit
 )
 from Gym.views_members import (
     member_list, member_detail, staff_mark_attendance, check_member_notifications,
@@ -65,7 +65,9 @@ core_patterns = [
     path('manifest.json', views.manifest, name='manifest'),
     path('sw.js', serve_sw, name='sw'),
     path('sitemap.xml', sitemap, {'sitemaps': {'static': StaticViewSitemap}}, name='django.contrib.sitemaps.views.sitemap'),
-    path('data-deletion/',data_deletion , name = "data-deletion")
+    path('data-deletion/',data_deletion , name = "data-deletion"),
+    path("superadmin/gym/<uuid:gym_id>/toggle-status/", toggle_gym_status, name="toggle_gym_status"),
+    path("superadmin/gym/<uuid:gym_id>/quick-edit/", gym_quick_edit, name="gym_quick_edit"),
 ]
 
 
