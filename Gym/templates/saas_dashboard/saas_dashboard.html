@@ -10,43 +10,68 @@
    expiry cards, insights, gym table cells)
    ══════════════════════════════════════════════════════════ */
 
+/* ---- Compact KPI cards (small, icon-left, stat-right) ---- */
 .kpi-grid{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:14px;
+  gap:16px;
   margin-bottom:28px;
 }
 .kpi-card{
   background:var(--bg-card);
   border:1px solid var(--border);
-  border-radius:var(--radius-lg);
-  padding:18px 20px;
+  border-radius:22px;
+  padding:20px;
+  display:flex;
+  align-items:center;
+  gap:16px;
   position:relative;overflow:hidden;
-  transition:var(--transition);
+  min-height:90px;
+  box-shadow:0 1px 2px rgba(0,0,0,.16), 0 10px 28px -14px rgba(0,0,0,.4);
+  transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease;
 }
 .kpi-card::before{
   content:'';position:absolute;inset:0;
   background:radial-gradient(ellipse at 100% 0%,var(--kpi-accent,#ff7a0008) 0%,transparent 65%);
   pointer-events:none;
 }
-.kpi-card:hover{border-color:#3a3a4a;transform:translateY(-1px)}
-.kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.kpi-card:hover{
+  border-color:#3a3a4a;
+  transform:translateY(-4px);
+  box-shadow:0 6px 12px rgba(0,0,0,.2), 0 20px 36px -16px rgba(0,0,0,.5);
+}
 .kpi-icon{
-  width:34px;height:34px;border-radius:var(--radius-sm);
+  width:46px;height:46px;border-radius:14px;
   background:var(--kpi-bg,var(--orange-dim));
   display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
 }
-.kpi-icon svg{width:16px;height:16px;color:var(--kpi-color,var(--orange))}
+.kpi-icon svg{width:20px;height:20px;color:var(--kpi-color,var(--orange))}
+.kpi-body{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.kpi-value{font-size:1.55rem;font-weight:700;color:var(--text-primary);line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi-label{font-size:.72rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi-trend{
-  display:flex;align-items:center;gap:4px;
-  font-size:.7rem;font-weight:600;
-  padding:3px 7px;border-radius:20px;
+  display:flex;align-items:center;gap:3px;flex-shrink:0;
+  font-size:.62rem;font-weight:600;
+  padding:2px 6px;border-radius:20px;
+  align-self:flex-start;margin-top:2px;
 }
 .kpi-trend.up{background:var(--green-dim);color:var(--green)}
 .kpi-trend.down{background:var(--red-dim);color:var(--red)}
 .kpi-trend.neutral{background:var(--bg-elevated);color:var(--text-muted)}
-.kpi-value{font-size:1.9rem;font-weight:700;color:var(--text-primary);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
-.kpi-label{font-size:.73rem;color:var(--text-muted)}
+
+@media (max-width:1100px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:768px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .kpi-card{padding:16px;gap:12px;min-height:auto}
+  .kpi-icon{width:40px;height:40px;border-radius:12px}
+  .kpi-value{font-size:1.3rem}
+}
+@media (max-width:480px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+}
 
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px}
 .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:28px}
@@ -58,7 +83,7 @@
 
 .gym-logo-cell{display:flex;align-items:center;gap:10px}
 .gym-logo-thumb{
-  width:30px;height:30px;border-radius:var(--radius-sm);
+  width:26px;height:26px;border-radius:var(--radius-sm);
   object-fit:cover;background:var(--bg-elevated);flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   font-size:.65rem;font-weight:700;color:var(--text-secondary);border:1px solid var(--border);
@@ -67,13 +92,14 @@
 .gym-code{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-muted)}
 .gym-owner-name{color:var(--text-primary)}
 
-.usage-cell{min-width:120px}
+.usage-cell{min-width:100px}
 .usage-nums{display:flex;justify-content:space-between;font-size:.68rem;color:var(--text-muted);margin-bottom:4px}
 .usage-nums b{color:var(--text-secondary)}
 .usage-bar{height:3px;background:var(--bg-elevated);border-radius:2px;overflow:hidden}
 .usage-bar .fill{height:100%;border-radius:2px}
 
-.action-btns{display:flex;gap:6px}
+.action-btns{display:flex;gap:4px}
+.btn-icon{width:26px;height:26px}
 
 .expiry-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
 .expiry-card{
@@ -158,10 +184,12 @@
 .growth-stat-val.positive{color:var(--green)}
 .growth-stat-label{font-size:.65rem;color:var(--text-muted);margin-top:1px}
 
-.revenue-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+/* ---- Compact revenue cards (same small style as KPI) ---- */
+.revenue-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
 .rev-card{
   background:var(--bg-card);border:1px solid var(--border);
-  border-radius:var(--radius-lg);padding:18px 20px;
+  border-radius:var(--radius-md);padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
   position:relative;overflow:hidden;
 }
 .rev-card::after{
@@ -171,9 +199,27 @@
   background:radial-gradient(var(--orange-dim),transparent 70%);
   pointer-events:none;
 }
-.rev-label{font-size:.7rem;color:var(--text-muted);margin-bottom:8px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
-.rev-value{font-size:1.6rem;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;line-height:1}
-.rev-sub{font-size:.72rem;color:var(--text-muted);margin-top:6px}
+.rev-icon{
+  width:38px;height:38px;border-radius:var(--radius-sm);
+  background:var(--orange-dim);color:var(--orange);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.rev-icon svg{width:17px;height:17px}
+.rev-body{min-width:0;flex:1}
+.rev-label{font-size:.66rem;color:var(--text-muted);margin-bottom:2px;font-weight:500;letter-spacing:.03em;text-transform:uppercase}
+.rev-value{font-size:1.3rem;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;line-height:1.1}
+.rev-sub{font-size:.65rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---- Compact table rows (desktop) ---- */
+#gymTable th, #gymTable td{
+  padding:9px 12px;
+  font-size:.76rem;
+  line-height:1.3;
+}
+#gymTable thead th{
+  padding:10px 12px;
+  font-size:.68rem;
+}
 
 @media (max-width:1100px){
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
@@ -187,9 +233,72 @@
   .revenue-grid{grid-template-columns:1fr 1fr}
   .growth-grid{grid-template-columns:1fr}
   .leader-row{grid-template-columns:30px 1fr 80px}
+
+  /* ---- Responsive: stacked card rows for gym table ---- */
+  .table-wrap{overflow-x:visible}
+  #gymTable{width:100%}
+  #gymTable thead{display:none}
+  #gymTable, #gymTable tbody{display:block;width:100%}
+
+  #gymTableBody tr{
+    display:flex;
+    flex-direction:column;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    margin-bottom:12px;
+    padding:12px 14px;
+    position:relative;
+  }
+
+  #gymTableBody td{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:7px 0;
+    border-bottom:1px solid var(--border-subtle);
+    font-size:.75rem;
+  }
+  #gymTableBody td:last-child{border-bottom:none}
+
+  #gymTableBody td::before{
+    content:attr(data-label);
+    font-size:.63rem;
+    color:var(--text-muted);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin-right:10px;
+    flex-shrink:0;
+  }
+
+  /* # badge sits in the top-right corner, no label */
+  #gymTableBody td[data-label="#"]{
+    position:absolute;
+    top:12px;right:14px;
+    border:none;padding:0;
+    font-size:.68rem;color:var(--text-muted);
+  }
+  #gymTableBody td[data-label="#"]::before{content:''}
+
+  /* gym name acts as the card header */
+  #gymTableBody td[data-label="Gym"]{
+    border-bottom:1px solid var(--border);
+    padding:0 0 10px 0;
+    margin-bottom:6px;
+  }
+  #gymTableBody td[data-label="Gym"]::before{content:''}
+  #gymTableBody td[data-label="Gym"] .gym-logo-cell{width:100%}
+
+  /* actions row right-aligned, no label */
+  #gymTableBody td[data-label="Actions"]{
+    padding-top:10px;
+    justify-content:flex-end;
+  }
+  #gymTableBody td[data-label="Actions"]::before{content:''}
 }
 @media (max-width:480px){
-  .kpi-grid{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
   .expiry-grid{grid-template-columns:1fr}
   .revenue-grid{grid-template-columns:1fr}
   .modal-grid{grid-template-columns:1fr}
@@ -211,91 +320,83 @@
   <div class="kpi-grid">
 
     <div class="kpi-card" style="--kpi-accent:#ff7a0010;--kpi-bg:var(--orange-dim);--kpi-color:var(--orange)">
-      <div class="kpi-header">
-        <div class="kpi-icon">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-        </div>
-        <span class="kpi-trend up">↑ All time</span>
+      <div class="kpi-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
       </div>
-      <div class="kpi-value">{{ total_gyms }}</div>
-      <div class="kpi-label">Total Gyms on Platform</div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ total_gyms }}</div>
+        <div class="kpi-label">Total Gyms on Platform</div>
+      </div>
     </div>
 
     <div class="kpi-card" style="--kpi-accent:#22c55e10;--kpi-bg:var(--green-dim);--kpi-color:var(--green)">
-      <div class="kpi-header">
-        <div class="kpi-icon">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </div>
-        <span class="kpi-trend up">{{ active_pct|default:"0" }}% rate</span>
+      <div class="kpi-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       </div>
-      <div class="kpi-value" style="color:var(--green)">{{ active_gyms }}</div>
-      <div class="kpi-label">Active & Subscribed</div>
+      <div class="kpi-body">
+        <div class="kpi-value" style="color:var(--green)">{{ active_gyms }}</div>
+        <div class="kpi-label">Active & Subscribed</div>
+      </div>
     </div>
 
     <div class="kpi-card" style="--kpi-accent:#ef444410;--kpi-bg:var(--red-dim);--kpi-color:var(--red)">
-      <div class="kpi-header">
-        <div class="kpi-icon">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-        </div>
-        {% if inactive_gyms > 0 %}<span class="kpi-trend down">Needs attention</span>{% else %}<span class="kpi-trend neutral">All clear</span>{% endif %}
+      <div class="kpi-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
       </div>
-      <div class="kpi-value" style="color:var(--red)">{{ inactive_gyms }}</div>
-      <div class="kpi-label">Inactive / Expired</div>
+      <div class="kpi-body">
+        <div class="kpi-value" style="color:var(--red)">{{ inactive_gyms }}</div>
+        <div class="kpi-label">Inactive / Expired</div>
+      </div>
     </div>
 
     <div class="kpi-card" style="--kpi-accent:#f59e0b10;--kpi-bg:var(--yellow-dim);--kpi-color:var(--yellow)">
-      <div class="kpi-header">
-        <div class="kpi-icon">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
-        {% if expiring_7 > 0 %}<span class="kpi-trend down">Act now</span>{% else %}<span class="kpi-trend neutral">All good</span>{% endif %}
+      <div class="kpi-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
-      <div class="kpi-value" style="color:var(--yellow)">{{ expiring_7 }}</div>
-      <div class="kpi-label">Expiring in 7 Days</div>
+      <div class="kpi-body">
+        <div class="kpi-value" style="color:var(--yellow)">{{ expiring_7 }}</div>
+        <div class="kpi-label">Expiring in 7 Days</div>
+      </div>
     </div>
 
     <div class="kpi-card" style="--kpi-accent:#3b82f610;--kpi-bg:var(--blue-dim);--kpi-color:var(--blue)">
-      <div class="kpi-header">
-        <div class="kpi-icon">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-        </div>
-        <span class="kpi-trend up">Across all gyms</span>
+      <div class="kpi-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
       </div>
-      <div class="kpi-value">{{ total_members|default:"0" }}</div>
-      <div class="kpi-label">Total Members Platform-wide</div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ total_members|default:"0" }}</div>
+        <div class="kpi-label">Total Members Platform-wide</div>
+      </div>
     </div>
 
     <div class="kpi-card" style="--kpi-accent:#ff7a0010;--kpi-bg:var(--orange-dim);--kpi-color:var(--orange)">
-      <div class="kpi-header">
-        <div class="kpi-icon">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-        </div>
-        <span class="kpi-trend up">Lifetime</span>
+      <div class="kpi-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       </div>
-      <div class="kpi-value">₹{{ total_revenue|default:"0" }}</div>
-      <div class="kpi-label">Total Revenue Generated</div>
+      <div class="kpi-body">
+        <div class="kpi-value">₹{{ total_revenue|default:"0" }}</div>
+        <div class="kpi-label">Total Revenue Generated</div>
+      </div>
     </div>
 
     <div class="kpi-card" style="--kpi-accent:#a855f710;--kpi-bg:#a855f718;--kpi-color:var(--purple)">
-      <div class="kpi-header">
-        <div class="kpi-icon">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        </div>
-        <span class="kpi-trend up">Confirmed payments</span>
+      <div class="kpi-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       </div>
-      <div class="kpi-value">₹{{ total_subscription_revenue|default:"0" }}</div>
-      <div class="kpi-label">Total Revenue Generated by Software</div>
+      <div class="kpi-body">
+        <div class="kpi-value">₹{{ total_subscription_revenue|default:"0" }}</div>
+        <div class="kpi-label">Revenue by Software</div>
+      </div>
     </div>
 
     <div class="kpi-card" style="--kpi-accent:#10b98110;--kpi-bg:#10b98118;--kpi-color:#10b981">
-      <div class="kpi-header">
-        <div class="kpi-icon">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </div>
-        <span class="kpi-trend neutral">Registered owners</span>
+      <div class="kpi-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
-      <div class="kpi-value">{{ total_owners|default:total_gyms }}</div>
-      <div class="kpi-label">Total Gym Owners</div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ total_owners|default:total_gyms }}</div>
+        <div class="kpi-label">Total Gym Owners</div>
+      </div>
     </div>
 
   </div>
@@ -371,19 +472,34 @@
   </div>
   <div class="revenue-grid">
     <div class="rev-card">
-      <div class="rev-label">Total Revenue</div>
-      <div class="rev-value">₹{{ total_revenue|default:"0" }}</div>
-      <div class="rev-sub">All-time enrollment payments</div>
+      <div class="rev-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      </div>
+      <div class="rev-body">
+        <div class="rev-label">Total Revenue</div>
+        <div class="rev-value">₹{{ total_revenue|default:"0" }}</div>
+        <div class="rev-sub">All-time enrollment payments</div>
+      </div>
     </div>
     <div class="rev-card">
-      <div class="rev-label">Software Revenue</div>
-      <div class="rev-value">₹{{ total_subscription_revenue|default:"0" }}</div>
-      <div class="rev-sub">Total earned from gym subscriptions</div>
+      <div class="rev-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      </div>
+      <div class="rev-body">
+        <div class="rev-label">Software Revenue</div>
+        <div class="rev-value">₹{{ total_subscription_revenue|default:"0" }}</div>
+        <div class="rev-sub">Total earned from subscriptions</div>
+      </div>
     </div>
     <div class="rev-card">
-      <div class="rev-label">Estimated MRR</div>
-      <div class="rev-value">₹{{ estimated_mrr|default:"0" }}</div>
-      <div class="rev-sub">Based on active subscriptions</div>
+      <div class="rev-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div class="rev-body">
+        <div class="rev-label">Estimated MRR</div>
+        <div class="rev-value">₹{{ estimated_mrr|default:"0" }}</div>
+        <div class="rev-sub">Based on active subscriptions</div>
+      </div>
     </div>
   </div>
 </div>
@@ -464,8 +580,8 @@
         data-updated="{{ gym.updated_at|date:'d M Y' }}"
         data-active="{{ gym.active }}"
       >
-        <td style="color:var(--text-muted);font-size:.7rem">{{ forloop.counter }}</td>
-        <td>
+        <td data-label="#" style="color:var(--text-muted);font-size:.7rem">{{ forloop.counter }}</td>
+        <td data-label="Gym">
           <div class="gym-logo-cell">
             {% if gym.logo %}
             <img src="{{ gym.logo.url }}" alt="" class="gym-logo-thumb"/>
@@ -475,10 +591,10 @@
             <span class="gym-name-cell">{{ gym.gym_name }}</span>
           </div>
         </td>
-        <td><span class="gym-code">{{ gym.gym_code }}</span></td>
-        <td><span class="gym-owner-name">{{ gym.owner.get_full_name|default:gym.owner.username }}</span></td>
-        <td style="color:var(--text-muted)">{{ gym.plan.name|default:"—" }}</td>
-        <td>
+        <td data-label="Code"><span class="gym-code">{{ gym.gym_code }}</span></td>
+        <td data-label="Owner"><span class="gym-owner-name">{{ gym.owner.get_full_name|default:gym.owner.username }}</span></td>
+        <td data-label="Plan" style="color:var(--text-muted)">{{ gym.plan.name|default:"—" }}</td>
+        <td data-label="Status">
           {% if gym.active and gym.is_subscription_active %}
             <span class="badge active">Active</span>
           {% elif days != None and days >= 0 and days <= 7 %}
@@ -489,7 +605,7 @@
             <span class="badge inactive">Inactive</span>
           {% endif %}
         </td>
-        <td>
+        <td data-label="Members">
           <div class="usage-cell">
             <div class="usage-nums"><b>{{ gym.member_count|default:0 }}</b> / {{ gym.member_limit }}</div>
             <div class="usage-bar">
@@ -504,17 +620,17 @@
             </div>
           </div>
         </td>
-        <td>
+        <td data-label="Usage">
           {% with pct=gym.member_count|default:0 %}
           {% if gym.member_limit %}{% widthratio pct gym.member_limit 100 as fill_pct %}
           <span style="font-size:.72rem;color:{% if fill_pct >= 90 %}var(--red){% elif fill_pct >= 70 %}var(--yellow){% else %}var(--green){% endif %}">{{ fill_pct }}%</span>
           {% else %}<span class="text-muted">—</span>{% endif %}
           {% endwith %}
         </td>
-        <td style="font-weight:600;color:var(--text-primary)">₹{{ gym.revenue|default:0 }}</td>
-        <td style="color:var(--text-muted)">{{ gym.trainer_count|default:0 }} / {{ gym.trainer_limit }}</td>
-        <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-muted)">{{ gym.subscription_end|default:"—" }}</td>
-        <td>
+        <td data-label="Revenue" style="font-weight:600;color:var(--text-primary)">₹{{ gym.revenue|default:0 }}</td>
+        <td data-label="Trainers" style="color:var(--text-muted)">{{ gym.trainer_count|default:0 }} / {{ gym.trainer_limit }}</td>
+        <td data-label="Expiry" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-muted)">{{ gym.subscription_end|default:"—" }}</td>
+        <td data-label="Days Left">
           {% if days != None %}
             <span style="font-weight:600;font-size:.78rem;color:{% if days < 0 %}var(--red){% elif days <= 7 %}var(--yellow){% elif days <= 30 %}var(--orange){% else %}var(--green){% endif %}">
               {% if days < 0 %}Expired{% else %}{{ days }}d{% endif %}
@@ -523,7 +639,7 @@
             <span class="text-muted">—</span>
           {% endif %}
         </td>
-        <td class="action-cell">
+        <td data-label="Actions" class="action-cell">
           <div class="action-btns">
             <button class="btn-icon" title="View Gym" data-action="view-gym" data-code="{{ gym.gym_code }}">
               <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>

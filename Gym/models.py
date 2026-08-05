@@ -246,7 +246,6 @@ class Gym(models.Model):
         max_digits=10, decimal_places=2, default=0,
         help_text="Amount still owed if Super Admin marked a renewal as 'not paid yet'."
     )
-    # ── Helpers ───────────────────────────────────────────────────────────
     @property
     def is_subscription_active(self):
         if not self.active:
