@@ -513,7 +513,6 @@ def all_gyms_view(request):
 
 @superuser_required
 def gym_detail_json(request, gym_id):
-    """Returns everything the detail modal needs: gym info, staff list, gst profile."""
     gym = get_object_or_404(Gym.objects.select_related("plan", "owner"), pk=gym_id)
 
     staff_qs = StaffProfile.objects.filter(gym=gym).select_related("user").order_by("role")
@@ -559,6 +558,9 @@ def gym_detail_json(request, gym_id):
             "active": gym.active,
             "contact_email": gym.contact_email,
             "contact_phone": gym.contact_phone,
+            "show_subscription_payment": gym.show_subscription_payment,
+            "subscription_start": gym.subscription_start.isoformat() if gym.subscription_start else None,
+            "subscription_end": gym.subscription_end.isoformat() if gym.subscription_end else None,
         },
         "staff": staff_data,
         "gst_profile": gst_data,
@@ -841,24 +843,29 @@ def change_gym_plan(request, gym_id):
 @superuser_required
 @require_POST
 def enable_subscription_payment(request, gym_id):
-    """
-    Turns ON the 'Pay Subscription' button for exactly this gym's
-    Owner/Receptionist. Does not touch any other gym's state.
-    """
     gym = get_object_or_404(Gym, pk=gym_id)
     gym.show_subscription_payment = True
-    gym.save(update_fields=["show_subscription_payment", "updated_at"])
+    today = timezone.now().date()
+    gym.subscription_start = today
+    gym.subscription_end = today + timedelta(days=30)
+    gym.save(update_fields=[
+        "show_subscription_payment",
+        "subscription_start",
+        "subscription_end",
+        "updated_at",
+    ])
     messages.success(request, f"Payment button enabled for '{gym.gym_name}'.")
-    return JsonResponse({"success": True, "show_subscription_payment": True})
+    return JsonResponse({
+        "success": True,
+        "show_subscription_payment": True,
+        "subscription_start": gym.subscription_start.isoformat(),
+        "subscription_end": gym.subscription_end.isoformat(),
+    })
 
 
 @superuser_required
 @require_POST
 def disable_subscription_payment(request, gym_id):
-    """
-    Turns OFF the 'Pay Subscription' button for this gym without changing
-    anything else (no subscription dates touched).
-    """
     gym = get_object_or_404(Gym, pk=gym_id)
     gym.show_subscription_payment = False
     gym.save(update_fields=["show_subscription_payment", "updated_at"])
@@ -869,21 +876,12 @@ def disable_subscription_payment(request, gym_id):
 @superuser_required
 @require_POST
 def confirm_subscription_payment(request, gym_id):
-    """
-    Called by Super Admin AFTER manually confirming the bank credit.
-    - Extends the subscription by 30 days from today
-    - Re-activates the gym
-    - Hides the payment button again (cycle resets)
-    """
     gym = get_object_or_404(Gym, pk=gym_id)
-    today = timezone.now().date()
-
-    gym.subscription_start = today
-    gym.subscription_end = today + timedelta(days=30)
+    gym.subscription_end = gym.subscription_start + timedelta(days=30)
     gym.show_subscription_payment = False
     gym.active = True
     gym.save(update_fields=[
-        "subscription_start", "subscription_end",
+        "subscription_end",
         "show_subscription_payment", "active", "updated_at",
     ])
 

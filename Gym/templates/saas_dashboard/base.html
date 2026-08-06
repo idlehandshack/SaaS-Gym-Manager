@@ -530,15 +530,6 @@ select[multiple].form-select{min-height:150px}
   </div>
 
   <div class="content">
-
-    {% if messages %}
-    <div class="django-messages">
-      {% for message in messages %}
-      <div class="django-message {{ message.tags }}">{{ message }}</div>
-      {% endfor %}
-    </div>
-    {% endif %}
-
     {% block content %}{% endblock %}
 
   </div>

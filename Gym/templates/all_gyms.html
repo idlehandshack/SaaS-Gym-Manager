@@ -5,41 +5,70 @@
 
 {% block extra_style %}
 /* ══════════════════════════════════════════════════════════
-   PAGE-SPECIFIC STYLES — All Gyms directory + Gym Detail Modal
+   PAGE-SPECIFIC STYLES — All Gyms card grid + Gym Detail Modal
    ══════════════════════════════════════════════════════════ */
 
 .btn-add{display:flex;align-items:center;gap:6px;background:var(--orange);color:#000;font-weight:700;font-size:.8rem;padding:9px 16px;border-radius:var(--radius-sm);transition:var(--transition)}
 .btn-add:hover{background:#e06d00}
 .btn-add svg{width:15px;height:15px}
 
-.table-wrap{
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:thin;
+/* ── Gym Card Grid (styled like Platform Overview stat cards) ── */
+.gym-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,340px));
+  gap:16px;
+  justify-content:start;
+}
+.gym-card{
   position:relative;
+  background:var(--bg-elevated);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg,14px);
+  padding:20px;
+  cursor:pointer;
+  transition:var(--transition);
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  overflow:hidden;
 }
-.table-wrap::-webkit-scrollbar{height:8px}
-.table-wrap::-webkit-scrollbar-thumb{background:var(--orange);border-radius:4px}
-.table-wrap::-webkit-scrollbar-track{background:var(--bg-elevated)}
-
-.data-table th:last-child,
-.data-table td:last-child{
-  position:sticky;right:0;background:var(--bg-card);z-index:5;
-  box-shadow:-8px 0 8px -8px rgba(0,0,0,.4);
+.gym-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  opacity:.06;
+  pointer-events:none;
 }
-.data-table thead th:last-child{background:var(--bg-elevated)}
-.data-table td.payment-actions-cell{min-width:230px}
+.gym-card.row-healthy::before{background:var(--green)}
+.gym-card.row-warning::before{background:var(--yellow)}
+.gym-card.row-danger::before{background:var(--red)}
 
-.gym-logo-cell{display:flex;align-items:center;gap:10px}
-.gym-logo-thumb{width:30px;height:30px;border-radius:var(--radius-sm);object-fit:cover;background:var(--bg-elevated);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:var(--text-secondary);border:1px solid var(--border)}
-.gym-name-cell{font-weight:600;color:var(--text-primary)}
-.gym-code{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-muted)}
+.gym-card:hover{border-color:var(--orange);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.4)}
 
-.contact-cell{display:flex;flex-direction:column;gap:2px}
-.contact-cell .phone{color:var(--text-primary);font-weight:500}
-.contact-cell .email{font-size:.7rem;color:var(--text-muted)}
+.gym-card-top{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+.gym-logo-thumb{
+  width:44px;height:44px;border-radius:12px;object-fit:cover;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.82rem;font-weight:700;color:var(--text-secondary);
+  background:var(--bg-card);border:1px solid var(--border);
+}
+.gym-card.row-healthy .gym-logo-thumb{background:var(--green-dim);color:var(--green);border-color:transparent}
+.gym-card.row-warning .gym-logo-thumb{background:var(--yellow-dim);color:var(--yellow);border-color:transparent}
+.gym-card.row-danger .gym-logo-thumb{background:var(--red-dim);color:var(--red);border-color:transparent}
+
+.gym-card-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.gym-card-name{font-weight:700;color:var(--text-primary);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gym-card-code{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--text-muted)}
+
+.gym-card-mid{display:flex;align-items:baseline;justify-content:space-between;gap:8px;position:relative;z-index:1}
+.gym-card-days{font-weight:700;font-size:1.6rem;line-height:1;color:var(--text-primary)}
+.gym-card-members{font-size:.72rem;color:var(--text-muted)}
+
+.gym-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;z-index:1}
 .badge.payment-visible{background:var(--yellow-dim);color:var(--yellow)}
 .badge.payment-hidden{background:var(--green-dim);color:var(--green)}
+
+.table-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
 
 /* Gym Detail Modal specifics (base.html supplies the generic modal chrome) */
 .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -51,12 +80,17 @@
 .gdm-tab-btn{padding:10px 14px;font-size:.78rem;font-weight:600;color:var(--text-secondary);border-bottom:2px solid transparent;background:none}
 .gdm-tab-btn.active{color:var(--orange);border-bottom-color:var(--orange)}
 
+/* Detail modal payment section */
+.gdm-payment-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:16px}
+.gdm-payment-actions{display:flex;gap:8px;flex-wrap:wrap}
+
 .alert{padding:12px 16px;border-radius:var(--radius-md);font-size:.8rem;margin-bottom:18px;border:1px solid}
 .alert.success{background:var(--green-dim);border-color:var(--green);color:var(--green)}
 .alert.error{background:var(--red-dim);border-color:var(--red);color:var(--red)}
 
 @media (max-width:768px){
   .modal-grid{grid-template-columns:1fr}
+  .gym-grid{grid-template-columns:1fr}
 }
 {% endblock %}
 
@@ -84,92 +118,53 @@
     <span class="card-title">Gym Directory</span>
   </div>
   <div class="table-controls">
-    <input class="search-input" type="text" id="gymSearch" placeholder="Search gym, owner, code, phone…"/>
+    <input class="search-input" type="text" id="gymSearch" name="gymSearch" autocomplete="off" placeholder="Search gym, owner, code, phone…"/>
     <span class="table-count" id="tableCount"></span>
   </div>
-  <div class="table-wrap">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Gym</th>
-          <th>Owner</th>
-          <th>Owner Phone</th>
-          <th>Plan</th>
-          <th>Status</th>
-          <th>Members</th>
-          <th>Expiry Date</th>
-          <th>Days Left</th>
-          <th>Payment Button</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="gymTableBody">
-      {% for gym in gyms %}
-      {% with days=gym.days_until_expiry %}
-      <tr
-        data-gym-id="{{ gym.id }}"
-        class="{% if gym.active and gym.is_subscription_active %}row-healthy{% elif days != None and days >= 0 and days <= 7 %}row-warning{% else %}row-danger{% endif %}"
-        data-search="{{ gym.gym_name|lower }} {{ gym.gym_code|lower }} {{ gym.owner.get_full_name|lower }} {{ gym.owner.username|lower }} {{ gym.contact_phone }}"
-        style="cursor:pointer"
-        >
-        <td>
-          <div class="gym-logo-cell">
-            {% if gym.logo %}<img src="{{ gym.logo.url }}" alt="" class="gym-logo-thumb"/>
-            {% else %}<div class="gym-logo-thumb">{{ gym.gym_name|slice:":2"|upper }}</div>{% endif %}
-            <span class="gym-name-cell">{{ gym.gym_name }}</span>
-          </div>
-        </td>
-        <td>{{ gym.owner.get_full_name|default:gym.owner.username }}</td>
-        <td>
-          <div class="contact-cell">
-            <span class="phone">{{ gym.contact_phone|default:gym.whatsapp_number|default:"—" }}</span>
-          </div>
-        </td>
-        <td style="color:var(--text-muted)">{{ gym.plan.name|default:"—" }}</td>
-        <td>
-          {% if gym.active and gym.is_subscription_active %}<span class="badge active">Active</span>
-          {% elif days != None and days >= 0 and days <= 7 %}<span class="badge expiring">Expiring</span>
-          {% elif not gym.is_subscription_active %}<span class="badge expired">Expired</span>
-          {% else %}<span class="badge inactive">Inactive</span>{% endif %}
-        </td>
-        <td>{{ gym.member_count|default:0 }} / {{ gym.member_limit }}</td>
-        <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem">{{ gym.subscription_end|default:"—" }}</td>
-        <td>
-          {% if days != None %}
-            <span style="font-weight:600;font-size:.78rem;color:{% if days < 0 %}var(--red){% elif days <= 7 %}var(--yellow){% elif days <= 30 %}var(--orange){% else %}var(--green){% endif %}">
-              {% if days < 0 %}Expired{% else %}{{ days }}d{% endif %}
-            </span>
-          {% else %}<span class="text-muted">—</span>{% endif %}
-        </td>
-        <td>
-          {% if gym.show_subscription_payment %}
-            <span class="badge payment-visible">Visible</span>
-          {% else %}
-            <span class="badge payment-hidden">Hidden</span>
-          {% endif %}
-        </td>
-        <td class="payment-actions-cell">
-          {% if gym.show_subscription_payment %}
-            <button type="button" class="btn-sm primary payment-confirm-btn" data-gym-id="{{ gym.id }}">
-              Confirm Payment
-            </button>
-            <button type="button" class="btn-sm payment-disable-btn" data-gym-id="{{ gym.id }}">
-              Disable Payment
-            </button>
-          {% else %}
-            <button type="button" class="btn-sm primary payment-enable-btn" data-gym-id="{{ gym.id }}">
-              Enable Payment
-            </button>
-          {% endif %}
-        </td>
-      </tr>
 
-      {% endwith %}
-      {% empty %}
-      <tr><td colspan="10"><div class="empty-state">No gyms registered yet. Click "Add New Gym" to create one.</div></td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+  <div class="gym-grid" id="gymGrid">
+  {% for gym in gyms %}
+  {% with days=gym.days_until_expiry %}
+    <div
+      class="gym-card {% if gym.active and gym.is_subscription_active %}row-healthy{% elif days != None and days >= 0 and days <= 7 %}row-warning{% else %}row-danger{% endif %}"
+      data-gym-id="{{ gym.id }}"
+      data-search="{{ gym.gym_name|lower }} {{ gym.gym_code|lower }} {{ gym.owner.get_full_name|lower }} {{ gym.owner.username|lower }} {{ gym.contact_phone }}"
+      >
+      <div class="gym-card-top">
+        {% if gym.logo %}<img src="{{ gym.logo.url }}" alt="{{ gym.gym_name }} logo" class="gym-logo-thumb"/>
+        {% else %}<div class="gym-logo-thumb">{{ gym.gym_name|slice:":2"|upper }}</div>{% endif %}
+        <div class="gym-card-title">
+          <span class="gym-card-name">{{ gym.gym_name }}</span>
+          <span class="gym-card-code">{{ gym.gym_code }}</span>
+        </div>
+      </div>
+
+      <div class="gym-card-mid">
+        {% if days != None %}
+          <span class="gym-card-days" style="color:{% if days < 0 %}var(--red){% elif days <= 7 %}var(--yellow){% elif days <= 30 %}var(--orange){% else %}var(--green){% endif %}">
+            {% if days < 0 %}Expired{% else %}{{ days }}d left{% endif %}
+          </span>
+        {% else %}<span class="gym-card-days text-muted">—</span>{% endif %}
+        <span class="gym-card-members">{{ gym.member_count|default:0 }} / {{ gym.member_limit }} members</span>
+      </div>
+
+      <div class="gym-card-bottom">
+        {% if gym.active and gym.is_subscription_active %}<span class="badge active">Active</span>
+        {% elif days != None and days >= 0 and days <= 7 %}<span class="badge expiring">Expiring</span>
+        {% elif not gym.is_subscription_active %}<span class="badge expired">Expired</span>
+        {% else %}<span class="badge inactive">Inactive</span>{% endif %}
+
+        {% if gym.show_subscription_payment %}
+          <span class="badge payment-visible">Payment Visible</span>
+        {% else %}
+          <span class="badge payment-hidden">Payment Hidden</span>
+        {% endif %}
+      </div>
+    </div>
+  {% endwith %}
+  {% empty %}
+    <div class="empty-state">No gyms registered yet. Click "Add New Gym" to create one.</div>
+  {% endfor %}
   </div>
 </div>
 
@@ -178,7 +173,7 @@
   <div class="modal" id="gymDetailModalBox" style="max-width:720px">
     <div class="modal-header">
       <div class="modal-title" id="gdmTitle">Gym</div>
-      <button type="button" class="modal-close" id="gdmClose">
+      <button type="button" class="modal-close" id="gdmClose" aria-label="Close">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -191,6 +186,16 @@
 
     <div class="modal-body">
       <div class="gdm-pane" data-pane="overview">
+
+        <!-- ── Subscription / Payment control block ── -->
+        <div class="gdm-payment-row">
+          <div>
+            <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Subscription Payment</div>
+            <div id="gdmPaymentStatus" style="font-size:.82rem;font-weight:600"></div>
+          </div>
+          <div class="gdm-payment-actions" id="gdmPaymentActions"></div>
+        </div>
+
         <div class="modal-grid" id="gdmOverviewGrid" style="font-size:.82rem;color:var(--text-secondary)"></div>
       </div>
 
@@ -203,20 +208,20 @@
         <form id="gdmStaffForm">
           <div class="modal-grid">
             <div class="form-field" style="grid-column:1/-1">
-              <label>Staff Phone Number</label>
-              <input name="phone" required placeholder="Existing user's phone / username">
+              <label for="gdmStaffPhone">Staff Phone Number</label>
+              <input id="gdmStaffPhone" name="phone" autocomplete="tel" required placeholder="Existing user's phone / username">
             </div>
             <div class="form-field">
-              <label>Role</label>
-              <select name="role">
+              <label for="gdmStaffRole">Role</label>
+              <select id="gdmStaffRole" name="role" autocomplete="off">
                 <option value="gym_owner">Gym Owner</option>
                 <option value="trainer" selected>Trainer</option>
                 <option value="receptionist">Receptionist</option>
               </select>
             </div>
             <div class="form-field" style="justify-content:flex-end;flex-direction:row;align-items:center;gap:8px">
-              <input type="checkbox" name="active" checked style="width:auto">
-              <label style="text-transform:none;font-size:.78rem">Active</label>
+              <input type="checkbox" id="gdmStaffActive" name="active" checked style="width:auto">
+              <label for="gdmStaffActive" style="text-transform:none;font-size:.78rem">Active</label>
             </div>
           </div>
           <div class="form-errors" id="gdmStaffErrors"></div>
@@ -229,18 +234,56 @@
       <div class="gdm-pane" data-pane="gst" style="display:none">
         <form id="gdmGstForm">
           <div class="modal-grid">
-            <div class="form-field" style="grid-column:1/-1"><label>Legal Business Name</label><input name="legal_business_name" required></div>
-            <div class="form-field"><label>GSTIN</label><input name="gstin"></div>
-            <div class="form-field"><label>State</label><input name="state" required></div>
-            <div class="form-field"><label>State Code</label><input name="state_code" required maxlength="2"></div>
-            <div class="form-field"><label>City</label><input name="city" required></div>
-            <div class="form-field"><label>Pincode</label><input name="pincode" required maxlength="6"></div>
-            <div class="form-field" style="grid-column:1/-1"><label>Address Line 1</label><input name="address_line1" required></div>
-            <div class="form-field" style="grid-column:1/-1"><label>Address Line 2</label><input name="address_line2"></div>
-            <div class="form-field"><label>Invoice Prefix</label><input name="invoice_series_prefix" value="INV"></div>
-            <div class="form-field"><label>SAC Code</label><input name="default_sac_membership" value="999652"></div>
-            <div class="form-field"><label style="display:flex;align-items:center;gap:8px;text-transform:none"><input type="checkbox" name="is_gst_registered" style="width:auto"> GST Registered</label></div>
-            <div class="form-field"><label style="display:flex;align-items:center;gap:8px;text-transform:none"><input type="checkbox" name="composition_scheme" style="width:auto"> Composition Scheme</label></div>
+            <div class="form-field" style="grid-column:1/-1">
+              <label for="gstLegalName">Legal Business Name</label>
+              <input id="gstLegalName" name="legal_business_name" autocomplete="organization" required>
+            </div>
+            <div class="form-field">
+              <label for="gstin">GSTIN</label>
+              <input id="gstin" name="gstin" autocomplete="off">
+            </div>
+            <div class="form-field">
+              <label for="gstState">State</label>
+              <input id="gstState" name="state" autocomplete="address-level1" required>
+            </div>
+            <div class="form-field">
+              <label for="gstStateCode">State Code</label>
+              <input id="gstStateCode" name="state_code" autocomplete="off" required maxlength="2">
+            </div>
+            <div class="form-field">
+              <label for="gstCity">City</label>
+              <input id="gstCity" name="city" autocomplete="address-level2" required>
+            </div>
+            <div class="form-field">
+              <label for="gstPincode">Pincode</label>
+              <input id="gstPincode" name="pincode" autocomplete="postal-code" required maxlength="6">
+            </div>
+            <div class="form-field" style="grid-column:1/-1">
+              <label for="gstAddress1">Address Line 1</label>
+              <input id="gstAddress1" name="address_line1" autocomplete="address-line1" required>
+            </div>
+            <div class="form-field" style="grid-column:1/-1">
+              <label for="gstAddress2">Address Line 2</label>
+              <input id="gstAddress2" name="address_line2" autocomplete="address-line2">
+            </div>
+            <div class="form-field">
+              <label for="gstInvoicePrefix">Invoice Prefix</label>
+              <input id="gstInvoicePrefix" name="invoice_series_prefix" autocomplete="off" value="INV">
+            </div>
+            <div class="form-field">
+              <label for="gstSacCode">SAC Code</label>
+              <input id="gstSacCode" name="default_sac_membership" autocomplete="off" value="999652">
+            </div>
+            <div class="form-field">
+              <label for="gstRegistered" style="display:flex;align-items:center;gap:8px;text-transform:none">
+                <input type="checkbox" id="gstRegistered" name="is_gst_registered" style="width:auto"> GST Registered
+              </label>
+            </div>
+            <div class="form-field">
+              <label for="gstComposition" style="display:flex;align-items:center;gap:8px;text-transform:none">
+                <input type="checkbox" id="gstComposition" name="composition_scheme" style="width:auto"> Composition Scheme
+              </label>
+            </div>
           </div>
           <div class="form-errors" id="gdmGstErrors"></div>
           <div style="margin-top:14px;text-align:right">
@@ -258,24 +301,25 @@
 (function(){
 
   const gymSearch=document.getElementById('gymSearch');
-  function filterTable(){
+  function filterGrid(){
     const q=gymSearch.value.toLowerCase();
-    const rows=document.querySelectorAll('#gymTableBody tr[data-search]');
+    const cards=document.querySelectorAll('#gymGrid .gym-card[data-search]');
     let vis=0;
-    rows.forEach(r=>{
-      const show=!q||r.dataset.search.includes(q);
-      r.style.display=show?'':'none';
+    cards.forEach(c=>{
+      const show=!q||c.dataset.search.includes(q);
+      c.style.display=show?'':'none';
       if(show)vis++;
     });
     document.getElementById('tableCount').textContent=vis+' gym'+(vis===1?'':'s')+' shown';
   }
-  gymSearch.addEventListener('input', filterTable);
-  filterTable();
+  gymSearch.addEventListener('input', filterGrid);
+  filterGrid();
 
   // ── Gym Detail Modal ──────────────────────────────────────────────
   const gdm = document.getElementById('gymDetailModal');
   const gdmBox = document.getElementById('gymDetailModalBox');
   let currentGymId = null;
+  let currentShowPayment = false;
 
   function getCookie(name) {
     const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
@@ -298,7 +342,7 @@
 
   function confirmSubscriptionPayment(gymId) {
     if (!confirm('Confirm you have verified this payment in your bank account? '
-      + 'This will extend the subscription by 30 days from today.')) return;
+      + 'This will extend the subscription to the current cycle end date.')) return;
 
     fetch(`/gyms/${gymId}/payment/confirm/`, {
       method: 'POST',
@@ -311,19 +355,25 @@
       });
   }
 
-  document.querySelectorAll('.payment-actions-cell').forEach(cell => {
-    cell.addEventListener('click', e => e.stopPropagation());
-  });
+  function renderPaymentBlock(gymId, showPayment) {
+    currentShowPayment = showPayment;
+    const statusEl = document.getElementById('gdmPaymentStatus');
+    const actionsEl = document.getElementById('gdmPaymentActions');
 
-  document.querySelectorAll('.payment-enable-btn').forEach(btn => {
-    btn.addEventListener('click', () => toggleSubscriptionPayment(btn.dataset.gymId, 'enable'));
-  });
-  document.querySelectorAll('.payment-disable-btn').forEach(btn => {
-    btn.addEventListener('click', () => toggleSubscriptionPayment(btn.dataset.gymId, 'disable'));
-  });
-  document.querySelectorAll('.payment-confirm-btn').forEach(btn => {
-    btn.addEventListener('click', () => confirmSubscriptionPayment(btn.dataset.gymId));
-  });
+    if (showPayment) {
+      statusEl.innerHTML = '<span class="badge payment-visible">Visible to gym</span>';
+      actionsEl.innerHTML = `
+        <button type="button" class="btn-sm primary" id="gdmConfirmBtn">Confirm Payment</button>
+        <button type="button" class="btn-sm" id="gdmDisableBtn">Disable</button>
+      `;
+      document.getElementById('gdmConfirmBtn').addEventListener('click', () => confirmSubscriptionPayment(gymId));
+      document.getElementById('gdmDisableBtn').addEventListener('click', () => toggleSubscriptionPayment(gymId, 'disable'));
+    } else {
+      statusEl.innerHTML = '<span class="badge payment-hidden">Hidden from gym</span>';
+      actionsEl.innerHTML = `<button type="button" class="btn-sm primary" id="gdmEnableBtn">Enable Payment</button>`;
+      document.getElementById('gdmEnableBtn').addEventListener('click', () => toggleSubscriptionPayment(gymId, 'enable'));
+    }
+  }
 
   function openGdm(gymId) {
     currentGymId = gymId;
@@ -331,6 +381,8 @@
       .then(r => r.json())
       .then(data => {
         document.getElementById('gdmTitle').textContent = data.gym.gym_name;
+
+        renderPaymentBlock(gymId, !!data.gym.show_subscription_payment);
 
         const ov = document.getElementById('gdmOverviewGrid');
         ov.innerHTML = `
@@ -340,6 +392,8 @@
           <div><b style="color:var(--text-primary)">Owner Email:</b> ${data.gym.owner_email || '—'}</div>
           <div><b style="color:var(--text-primary)">Contact Email:</b> ${data.gym.contact_email || '—'}</div>
           <div><b style="color:var(--text-primary)">Contact Phone:</b> ${data.gym.contact_phone || '—'}</div>
+          <div><b style="color:var(--text-primary)">Subscription Start:</b> ${data.gym.subscription_start || '—'}</div>
+          <div><b style="color:var(--text-primary)">Subscription End:</b> ${data.gym.subscription_end || '—'}</div>
         `;
 
         const staffList = document.getElementById('gdmStaffList');
@@ -378,8 +432,8 @@
     document.getElementById('gdmGstErrors').textContent = '';
   }
 
-  document.querySelectorAll('#gymTableBody tr[data-gym-id]').forEach(row => {
-    row.addEventListener('click', () => openGdm(row.dataset.gymId));
+  document.querySelectorAll('#gymGrid .gym-card[data-gym-id]').forEach(card => {
+    card.addEventListener('click', () => openGdm(card.dataset.gymId));
   });
   document.getElementById('gdmClose').addEventListener('click', closeGdm);
   gdm.addEventListener('click', e => { if (e.target === gdm) closeGdm(); });
