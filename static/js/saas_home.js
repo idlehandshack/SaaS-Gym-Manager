@@ -598,3 +598,138 @@ document.addEventListener('DOMContentLoaded', function () {
     }, { threshold: 0.25 }).observe(video);
   }
 })();
+
+/* -----------------------------------------------------------------------------
+   9. PROBLEM SECTION — STACKED COMPARISON CARDS
+   Append this as a new numbered section in saas_home.js (after section 8).
+   Swaps which card ("before" / "after") is on top of the deck. Only the
+   back card is clickable; front card is display-only (pointer-events:none
+   is toggled via the CSS [data-state] rules based on data-state below).
+----------------------------------------------------------------------------- */
+(function () {
+  var stack = document.querySelector(".problem-stack");
+  if (!stack) return;
+
+  var beforeCard = stack.querySelector('[data-card="before"]');
+  var afterCard  = stack.querySelector('[data-card="after"]');
+  if (!beforeCard || !afterCard) return;
+
+  var swapped = false; // false = before in front, true = after in front
+
+  function sync() {
+    stack.classList.toggle("is-swapped", swapped);
+
+    var frontCard = swapped ? afterCard : beforeCard;
+    var backCard  = swapped ? beforeCard : afterCard;
+
+    frontCard.setAttribute("data-state", "front");
+    frontCard.setAttribute("aria-pressed", "true");
+
+    backCard.setAttribute("data-state", "back");
+    backCard.setAttribute("aria-pressed", "false");
+  }
+
+  function swap() {
+    swapped = !swapped;
+    sync();
+  }
+
+  function handleActivate(e) {
+    var card = e.currentTarget;
+    // Only the back card responds — CSS already blocks pointer events on
+    // the front card, but guard here too for keyboard/programmatic focus.
+    if (card.getAttribute("data-state") !== "back") return;
+    swap();
+  }
+
+  [beforeCard, afterCard].forEach(function (card) {
+    card.addEventListener("click", handleActivate);
+    card.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        handleActivate(e);
+      }
+    });
+  });
+
+  sync();
+})();
+(function () {
+  var marquee = document.querySelector(".hero-logo-marquee");
+  var track   = document.querySelector(".hero-logo-track");
+  if (!marquee || !track) return;
+
+  // Treat the FIRST half of the rendered images as the canonical
+  // "one set" unit — capture its markup once, then rebuild the track
+  // with however many copies are needed to fully cover the container
+  // (plus one extra unit of buffer), so the belt never runs out of
+  // content mid-loop no matter how few logos there are.
+  var allImgs = Array.from(track.querySelectorAll("img"));
+  if (allImgs.length === 0) return;
+  var half = Math.floor(allImgs.length / 2) || allImgs.length;
+  var baseSetHTML = allImgs.slice(0, half).map(function (img) {
+    return img.outerHTML;
+  }).join("");
+
+  function rebuildAndMeasure() {
+    var containerWidth = marquee.getBoundingClientRect().width;
+    if (!containerWidth) return false;
+
+    // Render TWO copies of one set so we can measure the true repeat
+    // period (content width + the gap before the next copy) — measuring
+    // only inside a single set misses that trailing gap and causes a
+    // small snap at every loop restart.
+    track.innerHTML = baseSetHTML + baseSetHTML;
+    var imgs = Array.from(track.querySelectorAll("img"));
+    var half = imgs.length / 2;
+    var setWidth = imgs.length
+      ? imgs[half].getBoundingClientRect().left - imgs[0].getBoundingClientRect().left
+      : 0;
+    if (!setWidth) return false;
+
+    var copies = Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
+    track.innerHTML = baseSetHTML.repeat(copies);
+
+    track.style.setProperty("--marquee-distance", setWidth + "px");
+    return true;
+  }
+
+  function start() {
+    if (rebuildAndMeasure()) {
+      track.classList.add("is-ready");
+    }
+  }
+
+  // Wait for images (of the ORIGINAL single set) to load so measured
+  // widths are accurate, then build.
+  var imgs = allImgs.slice(0, half);
+  var pending = imgs.length;
+  function onOneSettled() {
+    pending -= 1;
+    if (pending <= 0) start();
+  }
+  if (pending === 0) {
+    start();
+  } else {
+    imgs.forEach(function (img) {
+      if (img.complete) {
+        onOneSettled();
+      } else {
+        img.addEventListener("load", onOneSettled, { once: true });
+        img.addEventListener("error", onOneSettled, { once: true });
+      }
+    });
+  }
+
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      track.classList.remove("is-ready");
+      void track.offsetWidth;
+      if (rebuildAndMeasure()) {
+        track.classList.add("is-ready");
+      }
+    }, 150);
+  });
+})();

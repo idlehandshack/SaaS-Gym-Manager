@@ -960,7 +960,31 @@ def homePage(request):
             .order_by('-approved_at')[:9]
         )
 
-        context = {'verified_reviews': verified_reviews}
+        # ── Trusted-by logo strip (saas_home marquee) ──
+        # Adjust the filter/field names below to match your actual Gym
+        # model — this assumes a `logo` field (Cloudinary) and a way to
+        # tell "real, live gyms worth showing off" apart from test/demo
+        # accounts. Swap `is_active=True` / `logo__isnull=False` for
+        # whatever your model actually uses.
+        trusted_logos_key = "trusted_gym_logos_home"
+        trusted_gym_logos = cache.get(trusted_logos_key)
+        if trusted_gym_logos is None:
+            trusted_gym_logos = [
+                {
+                    'name': g.gym_name,
+                    'logo_url': cloudinary_thumb(g.logo, width=112, height=112, crop="fit", effect="trim"),
+                }
+                for g in Gym.objects
+                    .filter(active=True, logo__isnull=False)
+                    .exclude(logo='')
+                    .order_by('gym_name')[:12]
+            ]
+            cache.set(trusted_logos_key, trusted_gym_logos, timeout=3600)
+
+        context = {
+            'verified_reviews': verified_reviews,
+            'trusted_gym_logos': trusted_gym_logos,
+        }
 
         if request.user.is_superuser:
             context['gyms'] = Gym.objects.all().order_by('gym_name')

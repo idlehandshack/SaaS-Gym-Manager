@@ -122,53 +122,37 @@
     </header>
     <section class="hero-section">
       <div class="hero-inner">
-        <div class="hero-left">
-          <p class="hero-eyebrow">Infrastructure for serious gyms</p>
-          <h1 class="hero-heading">
-            Gym Management <br /> Software<br /><em>India</em>
+        <div class="hero-left ">
+          <p class="hero-eyebrow hero-animate d1">Infrastructure for serious gyms</p>
+          <h1 class="hero-heading hero-animate d2">
+          Gym Management <br /> Software<br /><em>India</em>
           </h1>
-          <p class="hero-body ">
-            India's Most Affordable Gym Management Software
-            <em>14 Day's</em> Free Trails for<em> New Gyms</em>. <br>
-            Manage memberships, attendance, billing, payments, and more with our all-in-one Gym Management Software. Includes an Admin Dashboard, Member App, and Gym Website. After your free trial, pay only <em>₹4.99 per active member </em>.
+          <p class="hero-body hero-animate d3">
+            Replace your register with a system that tracks enrollments, payments, and check-ins automatically — so you spend less time chasing dues and more time growing your gym.
           </p>
-          <div class="hero-cta">
-            {% if request.user.is_superuser %}
-            <button class="hero-cta-pill hero-cta-pill--orange" id="enable-home-notification">
-                Enable Notifications
-            </button>
-            {% else %}
-            <a
-            href="https://wa.me/917000032565"
-            class="btn-secondary"
-            target="_blank"
-            rel="noopener"
-            >Talk to us on WhatsApp</a
-            >
-            {% endif %}
-            <div class="hero-cta-row2">
-              <a href="#pricing" class="hero-cta-pill hero-cta-pill--orange">
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M2 4.5h12M5 2v2M11 2v2M2 8h5M2 11h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                  <circle cx="11.5" cy="10.5" r="3" stroke="currentColor" stroke-width="1.3"/>
-                  <path d="M11.5 9.5v1l.7.7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                </svg>
-                View Pricing
-              </a>
-              <a href="#calculator" class="hero-cta-pill hero-cta-pill--ghost">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 640 640"
-                aria-hidden="true">
-                <path fill="currentColor" d="M192 64C156.7 64 128 92.7 128 128L128 512C128 547.3 156.7 576 192 576L448 576C483.3 576 512 547.3 512 512L512 128C512 92.7 483.3 64 448 64L192 64zM224 128L416 128C433.7 128 448 142.3 448 160L448 192C448 209.7 433.7 224 416 224L224 224C206.3 224 192 209.7 192 192L192 160C192 142.3 206.3 128 224 128zM240 296C240 309.3 229.3 320 216 320C202.7 320 192 309.3 192 296C192 282.7 202.7 272 216 272C229.3 272 240 282.7 240 296zM320 320C306.7 320 296 309.3 296 296C296 282.7 306.7 272 320 272C333.3 272 344 282.7 344 296C344 309.3 333.3 320 320 320zM448 296C448 309.3 437.3 320 424 320C410.7 320 400 309.3 400 296C400 282.7 410.7 272 424 272C437.3 272 448 282.7 448 296zM216 416C202.7 416 192 405.3 192 392C192 378.7 202.7 368 216 368C229.3 368 240 378.7 240 392C240 405.3 229.3 416 216 416zM344 392C344 405.3 333.3 416 320 416C306.7 416 296 405.3 296 392C296 378.7 306.7 368 320 368C333.3 368 344 378.7 344 392zM424 416C410.7 416 400 405.3 400 392C400 378.7 410.7 368 424 368C437.3 368 448 378.7 448 392C448 405.3 437.3 416 424 416zM192 488C192 474.7 202.7 464 216 464L328 464C341.3 464 352 474.7 352 488C352 501.3 341.3 512 328 512L216 512C202.7 512 192 501.3 192 488zM424 464C437.3 464 448 474.7 448 488C448 501.3 437.3 512 424 512C410.7 512 400 501.3 400 488C400 474.7 410.7 464 424 464z"/>
-              </svg>
-              Cost Calculator
-            </a>
+          {% if trusted_gym_logos %}
+          <div class="hero-trusted hero-animate d4">
+            <p class="hero-trusted-label">Trusted by gyms across India</p>
+          
+            <div class="hero-logo-marquee">
+              <div class="hero-logo-track">
+          
+                {% for logo in trusted_gym_logos %}
+                  <img class="hero-logo-item" src="{{ logo.logo_url }}" alt="{{ logo.name }} logo" loading="lazy" />
+                {% endfor %}
+          
+                {# Set B — exact duplicate of Set A, required for the seamless loop #}
+                {% for logo in trusted_gym_logos %}
+                  <img class="hero-logo-item" src="{{ logo.logo_url }}" alt="" aria-hidden="true" loading="lazy" />
+                {% endfor %}
+          
+              </div>
             </div>
           </div>
+          {% endif %}
         </div>
 
-        <div class="hero-right" aria-hidden="true">
+        <div class="hero-right hero-animate d5" aria-hidden="true">
           <div class="globe-wrap" role="region" aria-label="EnterGYM live network activity">
             <div class="g-header">
               <div class="g-dots" aria-hidden="true">
@@ -217,172 +201,147 @@
   
     <section class="problem-section">
       <div class="problem-inner">
-        <div class="problem-header">
-          <p class="section-eyebrow">The reality check</p>
-          <h2>
-            Running a gym on<br />WhatsApp and Excel<br />is holding you back.
-          </h2>
-        </div>
-        <div class="problem-grid">
-          <div class="problem-col problem-col--before">
-            <div class="pcol-header">
-              <span class="pcol-badge pcol-badge--before">Before EnterGYM</span>
-            </div>
-            <ul class="problem-list">
-              <li class="problem-item problem-item--pain">
-                <span class="pitem-icon">✕</span>
-                <div>
-                  <strong>Chasing payments on WhatsApp</strong>
-                  <span
-                    >Sending "bhai renewal ho gaya?" to 200 members every
-                    month.</span
-                  >
-                </div>
-              </li>
-              <li class="problem-item problem-item--pain">
-                <span class="pitem-icon">✕</span>
-                <div>
-                  <strong>Expired members still walking in</strong>
-                  <span
-                    >No system catches it. Staff can't check every face at the
-                    door.</span
-                  >
-                </div>
-              </li>
-              <li class="problem-item problem-item--pain">
-                <span class="pitem-icon">✕</span>
-                <div>
-                  <strong>Attendance register you can't find</strong>
-                  <span
-                    >Paper log, shared Google Sheet, or a spreadsheet nobody
-                    updates.</span
-                  >
-                </div>
-              </li>
-              <li class="problem-item problem-item--pain">
-                <span class="pitem-icon">✕</span>
-                <div>
-                  <strong>Staff with no system</strong>
-                  <span
-                    >Every person does things differently. Nothing is
-                    consistent.</span
-                  >
-                </div>
-              </li>
-              <li class="problem-item problem-item--pain">
-                <span class="pitem-icon">✕</span>
-                <div>
-                  <strong>No idea what last month's revenue was</strong>
-                  <span
-                    >You guess. The number lives inside your UPI app
-                    history.</span
-                  >
-                </div>
-              </li>
-            </ul>
-            <div class="wa-mockup">
-              <div class="wa-header">
-                <span class="wa-avatar">👥</span>
-                <div>
-                  <span class="wa-name">GYM MEMBERS 🏋️</span>
-                  <span class="wa-sub">312 members</span>
-                </div>
-              </div>
-              <div class="wa-body">
-                <div class="wa-msg wa-msg--out">
-                  Ravi bhai renewal kab karoge? 🙏
-                </div>
-                <div class="wa-msg wa-msg--in">Kal karta hoon bhaiya</div>
-                <div class="wa-msg wa-msg--out">
-                  Priya ji 3 mahine se pending hai payment
-                </div>
-                <div class="wa-msg wa-msg--system">
-                  You sent this message to 14 people
-                </div>
-              </div>
-            </div>
+        <div class="problem-layout">
+
+          <div class="problem-header">
+            <p class="section-eyebrow">The reality check</p>
+            <h2>
+              Running a gym on<br />Register<br />is holding you back.
+            </h2>
           </div>
 
-          <div class="problem-col problem-col--after">
-            <div class="pcol-header">
-              <span class="pcol-badge pcol-badge--after">After EnterGYM</span>
-            </div>
-            <ul class="problem-list">
-              <li class="problem-item problem-item--solved">
-                <span class="pitem-icon">✓</span>
-                <div>
-                  <strong>Automated renewal reminders</strong>
-                  <span
-                    >Push notifications go out 7 days, 3 days, and 1 day before
-                    expiry. Automatically.</span
-                  >
+          <div class="problem-stack" role="group" aria-label="Before and after EnterGYM comparison">
+
+            <!-- BEFORE CARD -->
+            <article
+              class="stack-card stack-card--before"
+              data-card="before"
+              tabindex="0"
+              role="button"
+              aria-pressed="false"
+              aria-label="Before EnterGYM. Press Enter or Space to bring the After EnterGYM card to the front."
+            >
+              <div class="stack-card-inner">
+                <div class="stack-card-header">
+                  <span class="stack-badge stack-badge--before">Before EnterGYM</span>
                 </div>
-              </li>
-              <li class="problem-item problem-item--solved">
-                <span class="pitem-icon">✓</span>
-                <div>
-                  <strong>Face recognition blocks expired members</strong>
-                  <span
-                    >Camera doesn't match — no entry. Zero manual checking
-                    needed.</span
-                  >
-                </div>
-              </li>
-              <li class="problem-item problem-item--solved">
-                <span class="pitem-icon">✓</span>
-                <div>
-                  <strong>Every check-in logged with timestamp</strong>
-                  <span
-                    >Face ID, GPS, or manual — all synced in real time,
-                    forever.</span
-                  >
-                </div>
-              </li>
-              <li class="problem-item problem-item--solved">
-                <span class="pitem-icon">✓</span>
-                <div>
-                  <strong>Staff dashboard with clear workflows</strong>
-                  <span
-                    >Enroll, renew, check in — every action is guided and
-                    auditable.</span
-                  >
-                </div>
-              </li>
-              <li class="problem-item problem-item--solved">
-                <span class="pitem-icon">✓</span>
-                <div>
-                  <strong>Live revenue dashboard, always current</strong>
-                  <span
-                    >MTD collections, pending dues, and plan-wise breakdown —
-                    one screen.</span
-                  >
-                </div>
-              </li>
-            </ul>
-            <div class="dash-mockup">
-              <div class="dash-row">
-                <span class="dm-label">Revenue — June</span>
-                <span class="dm-val dm-val--green">₹2,40,000</span>
+                <ul class="stack-list">
+                  <li class="stack-item stack-item--pain">
+                    <span class="stack-icon stack-icon--pain">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </span>
+                    <div>
+                      <strong>New members enrolled on paper</strong>
+                      <span>Name, number, plan — written in a register that lives on the front desk and nowhere else.</span>
+                    </div>
+                  </li>
+                  <li class="stack-item stack-item--pain">
+                    <span class="stack-icon stack-icon--pain">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </span>
+                    <div>
+                      <strong>Payment status is a guessing game</strong>
+                      <span>Flipping through pages to check if this month's fee was paid or not.</span>
+                    </div>
+                  </li>
+                  <li class="stack-item stack-item--pain">
+                    <span class="stack-icon stack-icon--pain">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </span>
+                    <div>
+                      <strong>One register, one desk, one point of failure</strong>
+                      <span>Lost, damaged, or misplaced — and years of member and payment history goes with it.</span>
+                    </div>
+                  </li>
+                  <li class="stack-item stack-item--pain">
+                    <span class="stack-icon stack-icon--pain">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </span>
+                    <div>
+                      <strong>No way to check dues remotely</strong>
+                      <span>Owner has to be physically present at the desk to know who owes what.</span>
+                    </div>
+                  </li>
+                  <li class="stack-item stack-item--pain">
+                    <span class="stack-icon stack-icon--pain">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </span>
+                    <div>
+                      <strong>Handwriting errors, crossed-out entries</strong>
+                      <span>Illegible names, wrong amounts, no audit trail — disputes are impossible to settle.</span>
+                    </div>
+                  </li>
+                </ul>
               </div>
-              <div class="dash-divider"></div>
-              <div class="dash-row">
-                <span class="dm-label">Pending dues</span>
-                <span class="dm-val dm-val--yellow">₹18,400</span>
-              </div>
-              <div class="dash-divider"></div>
-              <div class="dash-row">
-                <span class="dm-label">Expiring this week</span>
-                <div class="dm-pill-row">
-                  <span class="dm-pill">14 members</span>
+              <span class="stack-hint">Click to compare</span>
+            </article>
+
+            <!-- AFTER CARD -->
+            <article
+              class="stack-card stack-card--after"
+              data-card="after"
+              tabindex="0"
+              role="button"
+              aria-pressed="false"
+              aria-label="After EnterGYM. Press Enter or Space to bring the Before EnterGYM card to the front."
+            >
+              <div class="stack-card-inner">
+                <div class="stack-card-header">
+                  <span class="stack-badge stack-badge--after">After EnterGYM</span>
                 </div>
+                <ul class="stack-list">
+                  <li class="stack-item stack-item--solved">
+                    <span class="stack-icon stack-icon--solved">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    <div>
+                      <strong>Digital enrollment in under a minute</strong>
+                      <span>Name, plan, photo, and payment — captured once, stored forever, searchable instantly.</span>
+                    </div>
+                  </li>
+                  <li class="stack-item stack-item--solved">
+                    <span class="stack-icon stack-icon--solved">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    <div>
+                      <strong>Payment status at a glance</strong>
+                      <span>Paid, pending, or overdue — colour-coded and visible the moment you open the app.</span>
+                    </div>
+                  </li>
+                  <li class="stack-item stack-item--solved">
+                    <span class="stack-icon stack-icon--solved">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    <div>
+                      <strong>Member and payment records backed up in the cloud</strong>
+                      <span>Nothing lives on one desk. Nothing gets lost, torn, or misplaced.</span>
+                    </div>
+                  </li>
+                  <li class="stack-item stack-item--solved">
+                    <span class="stack-icon stack-icon--solved">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    <div>
+                      <strong>Check dues from anywhere</strong>
+                      <span>Owner sees every pending payment from their phone — no desk visit required.</span>
+                    </div>
+                  </li>
+                  <li class="stack-item stack-item--solved">
+                    <span class="stack-icon stack-icon--solved">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    <div>
+                      <strong>Every payment logged with a timestamp</strong>
+                      <span>Clear, disputable-free records — who paid, how much, and when.</span>
+                    </div>
+                  </li>
+                </ul>
               </div>
-              <div class="dash-divider"></div>
-              <div class="dash-row">
-                <span class="dm-label">Today's check-ins</span>
-                <span class="dm-val">247</span>
-              </div>
-            </div>
+              <span class="stack-hint">Click to compare</span>
+            </article>
+
           </div>
+
         </div>
       </div>
     </section>
@@ -2549,216 +2508,123 @@
     </script>
     <script src="{% static 'js/saas_home.js' %}" defer></script>
     <script nonce="{{ request.csp_nonce }}">
-      (function () {
-        /* Nav scroll */
-        const nav = document.getElementById("siteNav");
-        if (nav) {
-          window.addEventListener(
-            "scroll",
-            () => {
-              nav.classList.toggle("is-scrolled", window.scrollY > 8);
-            },
-            { passive: true },
-          );
-        }
- 
-        /* Animated counters */
-        const nums = document.querySelectorAll(".proof-num");
-        if (nums.length && "IntersectionObserver" in window) {
-          const fmt = (n) =>
-            n >= 1000
-              ? n >= 100000
-                ? (n / 1000).toFixed(0) + "K"
-                : (n / 1000).toFixed(0) + "K"
-              : String(n);
-          const animate = (el) => {
-            const target = +el.dataset.target;
-            const dur = 1600;
-            const start = performance.now();
-            const step = (now) => {
-              const t = Math.min((now - start) / dur, 1);
-              const ease = 1 - Math.pow(1 - t, 3);
-              el.textContent = fmt(Math.round(ease * target));
-              if (t < 1) requestAnimationFrame(step);
-              else el.textContent = fmt(target);
-            };
-            requestAnimationFrame(step);
-          };
-          const obs = new IntersectionObserver(
-            (entries) => {
-              entries.forEach((e) => {
-                if (e.isIntersecting) {
-                  animate(e.target);
-                  obs.unobserve(e.target);
-                }
-              });
-            },
-            { threshold: 0.5 },
-          );
-          nums.forEach((n) => obs.observe(n));
-        }
- 
-        /* Live feed simulation */
-        const feed = document.getElementById("activityFeed");
-        if (feed) {
-          const events = [
-            {
-              tag: "checkin",
-              label: "CHECK-IN",
-              msg: "Sunita K. · Alpha Fitness",
-            },
-            { tag: "payment", label: "PAYMENT", msg: "₹4,500 · FitZone Elite" },
-            {
-              tag: "enroll",
-              label: "ENROLL",
-              msg: "New member · 3-month plan",
-            },
-            {
-              tag: "checkin",
-              label: "CHECK-IN",
-              msg: "Mohit R. · GPS verified",
-            },
-            { tag: "order", label: "ORDER", msg: "Creatine 500g · MuscleHub" },
-            {
-              tag: "checkin",
-              label: "CHECK-IN",
-              msg: "Deepa V. · FaceID verified",
-            },
-            {
-              tag: "payment",
-              label: "PAYMENT",
-              msg: "₹2,100 · CoreFit Studio",
-            },
-          ];
-          let ei = 0;
-          setInterval(() => {
-            const ev = events[ei % events.length];
-            ei++;
-            const now = new Date();
-            const hh = String(now.getHours()).padStart(2, "0");
-            const mm = String(now.getMinutes()).padStart(2, "0");
-            const row = document.createElement("div");
-            row.className = "feed-row feed-row--new";
-            row.innerHTML = `<span class="feed-time">${hh}:${mm}</span><span class="feed-tag ${ev.tag}">${ev.label}</span><span class="feed-msg">${ev.msg}</span>`;
-            feed.insertBefore(row, feed.firstChild);
-            setTimeout(() => row.classList.remove("feed-row--new"), 50);
-            const rows = feed.querySelectorAll(".feed-row");
-            if (rows.length > 8) {
-              const last = rows[rows.length - 1];
-              last.classList.add("faded");
-              setTimeout(() => last.remove(), 600);
-            }
-          }, 3200);
-        }
-      })();
-      document
-        .getElementById("enable-home-notification")
-        .addEventListener("click", async () => {
-            await window.EnterGYMPush.requestAndSubscribe();
+    (function () {
+      /* Nav scroll */
+      const nav = document.getElementById("siteNav");
+      if (nav) {
+        window.addEventListener(
+          "scroll",
+          () => {
+            nav.classList.toggle("is-scrolled", window.scrollY > 8);
+          },
+          { passive: true },
+        );
+      }
+    })();
+
+    /* ── FAQ accordion ── */
+    document.querySelectorAll('.faq-q').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        const answer   = btn.nextElementSibling;
+
+        /* close all others in same column */
+        btn.closest('.faq-col').querySelectorAll('.faq-q').forEach(b => {
+          b.setAttribute('aria-expanded', 'false');
+          b.nextElementSibling.hidden = true;
         });
-      /* ── FAQ accordion ── */
-      document.querySelectorAll('.faq-q').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const expanded = btn.getAttribute('aria-expanded') === 'true';
-          const answer   = btn.nextElementSibling;
- 
-          /* close all others in same column */
-          btn.closest('.faq-col').querySelectorAll('.faq-q').forEach(b => {
-            b.setAttribute('aria-expanded', 'false');
-            b.nextElementSibling.hidden = true;
-          });
- 
-          /* toggle current */
-          btn.setAttribute('aria-expanded', String(!expanded));
-          answer.hidden = expanded;
-        });
+
+        /* toggle current */
+        btn.setAttribute('aria-expanded', String(!expanded));
+        answer.hidden = expanded;
       });
- 
-      /* ── FAQ load-more (mobile / single-column only) ──
-         Desktop keeps its 2-column "show everything" behaviour
-         untouched. The 860px breakpoint matches the CSS rule
-         that collapses .faq-layout from 2 columns to 1. */
-      (function () {
-        const layout   = document.getElementById('faqLayout');
-        const wrap     = document.getElementById('faqLoadMoreWrap');
-        const btn      = document.getElementById('faqLoadMoreBtn');
-        const label    = document.getElementById('faqLoadMoreLabel');
-        if (!layout || !wrap || !btn || !label) return;
- 
-        const mq = window.matchMedia('(max-width: 860px)');
- 
-        const INITIAL_COUNT = 5;
-        const STEP_COUNT    = 3;
- 
-        // All FAQ items, ordered by their intended reading order
-        // (data-faq-index), regardless of which column they live in.
-        const items = Array.from(layout.querySelectorAll('.faq-item'))
-          .sort((a, b) => (+a.dataset.faqIndex) - (+b.dataset.faqIndex));
- 
-        let visibleCount = INITIAL_COUNT;
- 
-        function closeAnswer(item) {
-          const q = item.querySelector('.faq-q');
-          const a = item.querySelector('.faq-a');
-          if (q && q.getAttribute('aria-expanded') === 'true') {
-            q.setAttribute('aria-expanded', 'false');
-          }
-          if (a) a.hidden = true;
+    });
+
+    /* ── FAQ load-more (mobile / single-column only) ──
+      Desktop keeps its 2-column "show everything" behaviour
+      untouched. The 860px breakpoint matches the CSS rule
+      that collapses .faq-layout from 2 columns to 1. */
+    (function () {
+      const layout   = document.getElementById('faqLayout');
+      const wrap     = document.getElementById('faqLoadMoreWrap');
+      const btn      = document.getElementById('faqLoadMoreBtn');
+      const label    = document.getElementById('faqLoadMoreLabel');
+      if (!layout || !wrap || !btn || !label) return;
+
+      const mq = window.matchMedia('(max-width: 860px)');
+
+      const INITIAL_COUNT = 5;
+      const STEP_COUNT    = 3;
+
+      // All FAQ items, ordered by their intended reading order
+      // (data-faq-index), regardless of which column they live in.
+      const items = Array.from(layout.querySelectorAll('.faq-item'))
+        .sort((a, b) => (+a.dataset.faqIndex) - (+b.dataset.faqIndex));
+
+      let visibleCount = INITIAL_COUNT;
+
+      function closeAnswer(item) {
+        const q = item.querySelector('.faq-q');
+        const a = item.querySelector('.faq-a');
+        if (q && q.getAttribute('aria-expanded') === 'true') {
+          q.setAttribute('aria-expanded', 'false');
         }
- 
-        function render() {
-          items.forEach((item, i) => {
-            const shouldShow = i < visibleCount;
-            item.classList.toggle('faq-item--more-hidden', !shouldShow);
-            if (!shouldShow) closeAnswer(item);
-          });
- 
-          const remaining = items.length - visibleCount;
-          if (remaining <= 0) {
-            wrap.hidden = true;
-          } else {
-            wrap.hidden = false;
-            const next = Math.min(STEP_COUNT, remaining);
-            label.textContent = `Load ${next} more question${next > 1 ? 's' : ''}`;
-          }
-        }
- 
-        function enableMobileMode() {
-          visibleCount = INITIAL_COUNT;
-          render();
-        }
- 
-        function disableMobileMode() {
-          // Desktop: show every item, hide the button, leave the
-          // 2-column grid completely as-is.
-          items.forEach((item) => item.classList.remove('faq-item--more-hidden'));
-          wrap.hidden = true;
-        }
- 
-        function applyModeForViewport() {
-          if (mq.matches) {
-            enableMobileMode();
-          } else {
-            disableMobileMode();
-          }
-        }
- 
-        btn.addEventListener('click', () => {
-          visibleCount += STEP_COUNT;
-          render();
+        if (a) a.hidden = true;
+      }
+
+      function render() {
+        items.forEach((item, i) => {
+          const shouldShow = i < visibleCount;
+          item.classList.toggle('faq-item--more-hidden', !shouldShow);
+          if (!shouldShow) closeAnswer(item);
         });
- 
-        // Re-evaluate on breakpoint cross (resize, device rotation, etc.)
-        if (typeof mq.addEventListener === 'function') {
-          mq.addEventListener('change', applyModeForViewport);
-        } else if (typeof mq.addListener === 'function') {
-          // Safari/older browser fallback
-          mq.addListener(applyModeForViewport);
+
+        const remaining = items.length - visibleCount;
+        if (remaining <= 0) {
+          wrap.hidden = true;
+        } else {
+          wrap.hidden = false;
+          const next = Math.min(STEP_COUNT, remaining);
+          label.textContent = `Load ${next} more question${next > 1 ? 's' : ''}`;
         }
- 
-        applyModeForViewport();
-      })();
-    </script>
+      }
+
+      function enableMobileMode() {
+        visibleCount = INITIAL_COUNT;
+        render();
+      }
+
+      function disableMobileMode() {
+        // Desktop: show every item, hide the button, leave the
+        // 2-column grid completely as-is.
+        items.forEach((item) => item.classList.remove('faq-item--more-hidden'));
+        wrap.hidden = true;
+      }
+
+      function applyModeForViewport() {
+        if (mq.matches) {
+          enableMobileMode();
+        } else {
+          disableMobileMode();
+        }
+      }
+
+      btn.addEventListener('click', () => {
+        visibleCount += STEP_COUNT;
+        render();
+      });
+
+      // Re-evaluate on breakpoint cross (resize, device rotation, etc.)
+      if (typeof mq.addEventListener === 'function') {
+        mq.addEventListener('change', applyModeForViewport);
+      } else if (typeof mq.addListener === 'function') {
+        // Safari/older browser fallback
+        mq.addListener(applyModeForViewport);
+      }
+
+      applyModeForViewport();
+    })();
+  </script>
     {% if request.user.is_authenticated %}
       {% if VAPID_PUBLIC_KEY %}
         <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
