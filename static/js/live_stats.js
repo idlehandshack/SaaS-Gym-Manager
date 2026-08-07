@@ -1,6 +1,6 @@
 (function () {
   const ENDPOINT = "/api/public/live-stats/";
-  const REFRESH_MS = 120000;
+  const REFRESH_MS = 3600000;
 
   const els = {
     members: document.getElementById("statMembers"),

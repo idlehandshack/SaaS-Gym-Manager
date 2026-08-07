@@ -733,3 +733,376 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 150);
   });
 })();
+/* -----------------------------------------------------------------------------
+   10. FEATURE CARDS → DETAIL MODAL
+----------------------------------------------------------------------------- */
+(function () {
+  var grid  = document.getElementById("featGrid");
+  var modal = document.getElementById("featModal");
+  if (!grid || !modal) return;
+
+  var overlay   = document.getElementById("featModalOverlay");
+  var closeBtn  = document.getElementById("featModalClose");
+  var indexEl   = document.getElementById("featModalIndex");
+  var titleEl   = document.getElementById("featModalTitle");
+  var bodyEl    = document.getElementById("featModalBody");
+  var lastFocus = null;
+
+  function openModal(card) {
+    var index  = card.querySelector(".feat-index");
+    var title  = card.querySelector("h3");
+    var detail = card.querySelector(".feat-detail");
+    if (!title || !detail) return;
+
+    indexEl.textContent = index ? index.textContent : "";
+    titleEl.innerHTML    = title.innerHTML;
+    bodyEl.innerHTML     = detail.innerHTML;
+
+    lastFocus = document.activeElement;
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+    closeBtn.focus();
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    document.body.style.overflow = "";
+    if (lastFocus) lastFocus.focus();
+  }
+
+  Array.from(grid.querySelectorAll(".feat-card")).forEach(function (card) {
+    card.addEventListener("click", function () { openModal(card); });
+  });
+
+  overlay.addEventListener("click", closeModal);
+  closeBtn.addEventListener("click", closeModal);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !modal.hidden) closeModal();
+  });
+})();
+/* =============================================================================
+   MEMBER PORTAL — interactive phone showcase
+   Hotspot → connector line → floating label, anatomy-diagram style.
+   Legend is hidden but stays in the DOM for JS wiring / a11y fallback.
+   Phone elements (data-target) are the primary interaction surface on
+   both desktop (hover) and mobile (tap). Idle-cycles through every
+   hotspot until the user engages.
+============================================================================= */
+(function () {
+  var section = document.getElementById("member-portal");
+  if (!section) return;
+
+  var stage  = document.getElementById("mpStage");
+  var svg    = document.getElementById("mpLines");
+  var path   = document.getElementById("mpLinePath");
+  var legend = document.getElementById("mpLegend");
+  if (!stage || !svg || !path || !legend) return;
+
+  var HOTSPOTS = ["plan", "phone", "payment", "status", "trainer"];
+
+  var SLOTS = {
+    plan:    { x: 0.02, y: 0.20, align: "left"  },
+    phone:   { x: 0.02, y: 0.44, align: "left"  },
+    payment: { x: 0.02, y: 0.80, align: "left"  },
+    status:  { x: 0.98, y: 0.30, align: "right" },
+    trainer: { x: 0.98, y: 0.60, align: "right" }
+  };
+
+  var isTouch      = window.matchMedia("(hover: none)").matches;
+  var isMobileSize = window.matchMedia("(max-width: 640px)").matches;
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var dot = document.createElement("div");
+  dot.className = "mp-dot";
+  stage.appendChild(dot);
+
+  var tooltip = document.createElement("div");
+  tooltip.className = "mp-tooltip";
+  tooltip.setAttribute("role", "status");
+  stage.appendChild(tooltip);
+
+  var COPY = {
+    plan:    { title: "Membership Plan",   sub: "Duration & price" },
+    phone:   { title: "Phone Number",      sub: "Contact on file" },
+    payment: { title: "Payment Status",    sub: "Pending & paid, at a glance" },
+    status:  { title: "Membership Status", sub: "Days remaining, live" },
+    trainer: { title: "Pending Amount",    sub: "Outstanding balance" }
+  };
+
+  var labels = {}, legendItems = {}, targets = {};
+
+  HOTSPOTS.forEach(function (id) {
+    labels[id] = document.getElementById("mpLabel-" + id);
+    var t = section.querySelector('[data-target="' + id + '"]');
+    if (t) targets[id] = t;
+  });
+  Array.from(legend.querySelectorAll(".mp-legend-item")).forEach(function (el) {
+    legendItems[el.dataset.hotspot] = el;
+  });
+
+  var active = null;
+
+  function stageRect() { return stage.getBoundingClientRect(); }
+
+  function positionLabel(id) {
+    var slot = SLOTS[id];
+    var label = labels[id];
+    if (!slot || !label) return;
+    var rect = stageRect();
+    var y = slot.y * rect.height;
+
+    label.style.top = y + "px";
+    if (slot.align === "left") {
+      label.style.left = (slot.x * rect.width) + "px";
+      label.style.right = "auto";
+    } else {
+      label.style.left = "auto";
+      label.style.right = ((1 - slot.x) * rect.width) + "px";
+    }
+  }
+
+  // Cubic Bézier from the hotspot (on the phone) to its label anchor —
+  // control points pulled horizontally so the curve reads as a deliberate
+  // sweep. Each hotspot owns a unique y-slot so lines never collide.
+  function drawLine(id) {
+    var target = targets[id];
+    var label = labels[id];
+    if (!target || !label) return;
+
+    var sRect = stageRect();
+    var tRect = target.getBoundingClientRect();
+    var lRect = label.getBoundingClientRect();
+
+    var dotX = tRect.left + tRect.width / 2 - sRect.left;
+    var dotY = tRect.top + tRect.height / 2 - sRect.top;
+
+    var slot = SLOTS[id];
+    var labelAnchorX = slot.align === "left" ? lRect.right - sRect.left : lRect.left - sRect.left;
+    var labelAnchorY = lRect.top + lRect.height / 2 - sRect.top;
+
+    var pull = Math.max(40, Math.abs(dotX - labelAnchorX) * 0.45);
+    var c1x = dotX + (slot.align === "left" ? -pull : pull);
+    var c1y = dotY;
+    var c2x = labelAnchorX + (slot.align === "left" ? pull * 0.4 : -pull * 0.4);
+    var c2y = labelAnchorY;
+
+    dot.style.left = dotX + "px";
+    dot.style.top  = dotY + "px";
+
+    var d = "M" + dotX + "," + dotY +
+            " C" + c1x + "," + c1y + " " + c2x + "," + c2y + " " + labelAnchorX + "," + labelAnchorY;
+    path.setAttribute("d", d);
+
+    if (!reduceMotion) {
+      var len = path.getTotalLength();
+      path.style.strokeDasharray = len;
+      path.style.strokeDashoffset = len;
+      path.classList.remove("is-visible");
+      // eslint-disable-next-line no-unused-expressions
+      path.getBoundingClientRect();
+      path.classList.add("is-visible");
+      requestAnimationFrame(function () {
+        path.style.strokeDashoffset = 0;
+      });
+    } else {
+      path.style.strokeDasharray = "none";
+      path.style.strokeDashoffset = 0;
+      path.classList.add("is-visible");
+    }
+
+    dot.classList.add("is-visible");
+  }
+
+  function positionTooltip(id) {
+  var target = targets[id];
+  if (!target) return;
+  var sRect = stageRect();
+  var tRect = target.getBoundingClientRect();
+  var copy = COPY[id];
+
+  tooltip.innerHTML = copy
+    ? '<span class="mp-tooltip-title">' + copy.title + '</span>' +
+      (copy.sub ? '<span class="mp-tooltip-sub">' + copy.sub + '</span>' : '')
+    : "";
+
+  var dotX = tRect.left + tRect.width / 2 - sRect.left;
+  var dotY = tRect.top + tRect.height / 2 - sRect.top;
+
+  // Position tooltip above the row first so we can measure its real size
+  tooltip.style.left = dotX + "px";
+  tooltip.style.top  = dotY + "px";
+  tooltip.classList.add("is-visible");
+
+  dot.style.left = dotX + "px";
+  dot.style.top  = dotY + "px";
+  dot.classList.add("is-visible");
+
+  requestAnimationFrame(function () {
+    var ttRect = tooltip.getBoundingClientRect();
+    var labelAnchorX = ttRect.left + ttRect.width / 2 - sRect.left;
+    var labelAnchorY = ttRect.bottom - sRect.top;
+
+    var d = "M" + dotX + "," + dotY + " L" + labelAnchorX + "," + labelAnchorY;
+    path.setAttribute("d", d);
+
+    if (!reduceMotion) {
+      var len = path.getTotalLength();
+      path.style.strokeDasharray = len;
+      path.style.strokeDashoffset = len;
+      path.classList.remove("is-visible");
+      // eslint-disable-next-line no-unused-expressions
+      path.getBoundingClientRect();
+      path.classList.add("is-visible");
+      requestAnimationFrame(function () {
+        path.style.strokeDashoffset = 0;
+      });
+    } else {
+      path.style.strokeDasharray = "none";
+      path.style.strokeDashoffset = 0;
+      path.classList.add("is-visible");
+    }
+  });
+}
+
+  function setLegendState(id) {
+    Object.keys(legendItems).forEach(function (k) {
+      legendItems[k].classList.toggle("is-active", k === id);
+      legendItems[k].setAttribute("aria-pressed", k === id ? "true" : "false");
+    });
+  }
+
+  function deactivateVisuals(id) {
+  var label = labels[id];
+  if (label) label.classList.remove("is-visible");
+  var target = targets[id];
+  if (target) target.classList.remove("mp-target-active");
+  tooltip.classList.remove("is-visible");
+  dot.classList.remove("is-visible");
+  path.classList.remove("is-visible");
+}
+
+  function activate(id) {
+    if (!targets[id]) return;
+    if (active === id) return;
+    if (active) deactivateVisuals(active);
+
+    active = id;
+    targets[id].classList.add("mp-target-active");
+    setLegendState(id);
+
+    if (isMobileSize) {
+      positionTooltip(id);
+    } else {
+      positionLabel(id);
+      var label = labels[id];
+      if (label) label.classList.add("is-visible");
+      requestAnimationFrame(function () { drawLine(id); });
+    }
+  }
+
+  // ── Idle autoplay: cycles every hotspot until the user interacts ──────
+  var AUTOPLAY_MS = 2400;
+  var RESUME_AFTER_MS = 5000;
+  var autoplayTimer = null;
+  var resumeTimer = null;
+  var autoplayIndex = 0;
+
+  function autoplayStep() {
+    activate(HOTSPOTS[autoplayIndex % HOTSPOTS.length]);
+    autoplayIndex += 1;
+  }
+
+  function startAutoplay() {
+    stopAutoplay();
+    if (reduceMotion) return;
+    autoplayStep();
+    autoplayTimer = setInterval(autoplayStep, AUTOPLAY_MS);
+  }
+  function stopAutoplay() {
+    if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null; }
+  }
+
+  function onUserInteract(id) {
+    stopAutoplay();
+    if (id) activate(id);
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(startAutoplay, RESUME_AFTER_MS);
+  }
+
+  // ── Wiring ──────────────────────────────────────────────────────────
+  // Phone elements are the primary surface: hover (desktop) / tap (touch)
+  // on the phone itself drives activation first.
+  HOTSPOTS.forEach(function (id) {
+    var target = targets[id];
+    var legendItem = legendItems[id];
+
+    if (target) {
+      if (!isTouch) {
+        target.addEventListener("mouseenter", function () { onUserInteract(id); });
+      }
+      target.addEventListener("click", function (e) {
+        e.stopPropagation();
+        onUserInteract(id);
+      });
+      target.addEventListener("focus", function () { onUserInteract(id); });
+    }
+
+    if (legendItem) {
+      if (!isTouch) {
+        legendItem.addEventListener("mouseenter", function () { onUserInteract(id); });
+      }
+      legendItem.addEventListener("click", function () { onUserInteract(id); });
+      legendItem.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onUserInteract(id); }
+      });
+    }
+  });
+
+  if (!isTouch) {
+    stage.addEventListener("mouseleave", function () {
+      // Don't fully deactivate — resume the idle cycle so the showcase
+      // keeps demonstrating itself once the pointer moves away.
+      clearTimeout(resumeTimer);
+      resumeTimer = setTimeout(startAutoplay, 600);
+    });
+  }
+
+  // Pause autoplay the instant the user touches the stage on mobile too.
+  stage.addEventListener("touchstart", function () { stopAutoplay(); }, { passive: true });
+
+  // ── Resize: throttled, recomputes geometry only (no layout thrash) ───
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      isMobileSize = window.matchMedia("(max-width: 640px)").matches;
+      if (active) {
+        if (isMobileSize) { positionTooltip(active); }
+        else { positionLabel(active); drawLine(active); }
+      }
+    }, 120);
+  }, { passive: true });
+
+  // ── First-load progress bar animation ─────────────────────────────────
+  var barFill = document.getElementById("mcBarFill");
+  if (barFill) {
+    var barTarget = barFill.dataset.fill || "0";
+    if ("IntersectionObserver" in window) {
+      var barObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            requestAnimationFrame(function () { barFill.style.width = barTarget + "%"; });
+            barObserver.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.4 });
+      barObserver.observe(barFill);
+    } else {
+      barFill.style.width = barTarget + "%";
+    }
+  }
+
+  // Kick off the idle demo so the interaction pattern is discoverable
+  // before the user does anything.
+  startAutoplay();
+})();
