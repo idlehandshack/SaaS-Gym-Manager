@@ -457,94 +457,52 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
 })();
-
-
-/* -----------------------------------------------------------------------------
-   7. TESTIMONIALS CAROUSEL
------------------------------------------------------------------------------ */
 (function () {
-  var carousel = document.getElementById("testiCarousel");
-  var stage    = document.getElementById("testiStage");
-  var prevBtn  = document.getElementById("testiPrev");
-  var nextBtn  = document.getElementById("testiNext");
-  var dotsWrap = document.getElementById("testiDots");
-  if (!carousel || !stage) return;
+  function isMobile() { return window.matchMedia('(max-width: 760px)').matches; }
 
-  var cards = Array.from(stage.children);
-  if (!cards.length) return;
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-see-more]');
+    if (!btn) return;
 
-  var AUTOPLAY_MS   = 5000;
-  var autoplayTimer = null;
-  var current       = cards.findIndex(function (c) { return c.classList.contains("is-active"); });
-  if (current < 0) current = 0;
+    var textEl = btn.previousElementSibling;
+    if (!textEl || !textEl.classList.contains('testi-quote-text')) return;
 
-  function buildDots() {
-    if (!dotsWrap) return;
-    dotsWrap.innerHTML = "";
-    cards.forEach(function (_, i) {
-      var dot = document.createElement("button");
-      /* FIX: reset browser-default button styles so dots render as clean
-         circles. Without this, browser UA stylesheet padding/border
-         distorts the width/height set by .testi-dot in CSS. */
-      dot.style.padding    = "0";
-      dot.style.border     = "none";
-      dot.style.background = "transparent";
-      dot.style.cursor     = "pointer";
-      dot.className = "testi-dot";
-      dot.setAttribute("aria-label", "Go to testimonial " + (i + 1));
-      dot.addEventListener("click", function () { goTo(i); restartAutoplay(); });
-      dotsWrap.appendChild(dot);
+    var expanded = textEl.classList.toggle('is-expanded');
+    btn.textContent = expanded ? 'See less' : 'See more';
+
+    // Keep the carousel stage height in sync with the now-taller/shorter card.
+    var stage = document.getElementById('testiStage');
+    var card  = btn.closest('.testi-card');
+    if (stage && card && card.classList.contains('is-active')) {
+      stage.style.minHeight = card.offsetHeight + 'px';
+    }
+  });
+
+  // Hide "See more" entirely if the text doesn't actually overflow 5 lines,
+  // and hide it outright on desktop widths.
+  function refreshToggles() {
+    document.querySelectorAll('.testi-quote-text').forEach(function (textEl) {
+      var btn = textEl.nextElementSibling;
+      if (!btn || !btn.hasAttribute('data-see-more')) return;
+
+      if (!isMobile()) {
+        btn.style.display = 'none';
+        return;
+      }
+      btn.style.display = '';
+      textEl.classList.remove('is-expanded');
+      btn.textContent = 'See more';
+
+      // If content fits within 5 lines already, no need for the button.
+      var overflowing = textEl.scrollHeight > textEl.clientHeight + 2;
+      btn.style.visibility = overflowing ? 'visible' : 'hidden';
     });
-    updateDots();
   }
 
-  function updateDots() {
-    if (!dotsWrap) return;
-    Array.from(dotsWrap.children).forEach(function (d, i) {
-      d.classList.toggle("is-active", i === current);
-    });
-  }
-
-  function goTo(index) {
-    var next = ((index % cards.length) + cards.length) % cards.length;
-    if (next === current) return;
-    cards[current].classList.remove("is-active");
-    cards[next].classList.add("is-active");
-    current = next;
-    updateDots();
-  }
-
-  function goNext() { goTo(current + 1); }
-  function goPrev() { goTo(current - 1); }
-
-  if (prevBtn) prevBtn.addEventListener("click", function () { goPrev(); restartAutoplay(); });
-  if (nextBtn) nextBtn.addEventListener("click", function () { goNext(); restartAutoplay(); });
-
-  function startAutoplay()   { stopAutoplay(); autoplayTimer = setInterval(goNext, AUTOPLAY_MS); }
-  function stopAutoplay()    { if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null; } }
-  function restartAutoplay() { stopAutoplay(); startAutoplay(); }
-
-  carousel.addEventListener("mouseenter", stopAutoplay);
-  carousel.addEventListener("mouseleave", startAutoplay);
-  carousel.addEventListener("touchstart",  stopAutoplay,  { passive: true });
-  carousel.addEventListener("focusin",     stopAutoplay);
-  carousel.addEventListener("focusout",    startAutoplay);
-
-  if ("IntersectionObserver" in window) {
-    new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting) startAutoplay();
-        else stopAutoplay();
-      });
-    }, { threshold: 0.2 }).observe(carousel);
-  } else {
-    startAutoplay();
-  }
-
-  buildDots();
+  window.addEventListener('resize', refreshToggles);
+  window.addEventListener('load', refreshToggles);
+  document.addEventListener('DOMContentLoaded', refreshToggles);
 })();
-
-
 /* -----------------------------------------------------------------------------
    8. HERO VIDEO — robust autoplay & resume
 ----------------------------------------------------------------------------- */
