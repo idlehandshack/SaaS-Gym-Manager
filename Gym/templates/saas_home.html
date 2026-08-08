@@ -994,771 +994,112 @@
       </div>
     </section>
     
-  
-    <section class="s5-pricing" id="pricing">
-      <div class="s5-pricing__inner">
-        <div class="s5-head">
-          <p class="s5-eyebrow">Pricing</p>
-          <h2 class="s5-heading">Choose Your <span>Plan</span></h2>
-          <p class="s5-body">
-            Every plan includes full Premium+ features. No feature lock-ins, no
-            surprises. Pick what fits your gym best.
-          </p>
+    <section class="pricing" id="pricing">
+      <div class="pricing__grid"></div>
+      <div class="pricing__inner">
+    
+        <div class="p-head">
+          <p class="p-eyebrow">Pricing</p>
+          <h2 class="p-heading">Choose Your <span>Plan</span></h2>
+          <p class="p-body">Every plan includes full Premium+ features. No feature lock-ins, no surprises — pick what fits your gym's rep count.</p>
         </div>
-        <!-- ============ TAB SWITCHER ============ -->
-        <div class="s5-tabs" role="tablist" aria-label="Pricing plans">
-          <button
-            class="s5-tab"
-            type="button"
-            role="tab"
-            data-panel="s5-panel-launchpad"
-          >
-            <span class="s5-tab__icon">
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                <path
-                  d="M9 2.5l1.6 3.4 3.7.5-2.7 2.6.7 3.7L9 10.9l-3.3 1.8.7-3.7-2.7-2.6 3.7-.5L9 2.5z"
-                  stroke="#8b8fff"
-                  stroke-width="1.3"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-            <span class="s5-tab__name">Launchpad</span>
-            <span class="s5-tab__sub">Free Tier</span>
+    
+        <div class="p-tabs" role="tablist" aria-label="Pricing plans">
+          <div class="p-tab-indicator" id="tabIndicator"></div>
+          <button class="p-tab" type="button" role="tab" data-panel="panel-launchpad">
+            <span class="p-tab__name">Launchpad</span>
+            <span class="p-tab__sub">Free Tier</span>
           </button>
-          <button
-            class="s5-tab "
-            type="button"
-            role="tab"
-            data-panel="s5-panel-payg"
-          >
-            <span class="s5-tab__icon">
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                <path
-                  d="M3 12.5a6 6 0 1112 0"
-                  stroke="#8b8fff"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M9 9.5L11.3 7"
-                  stroke="#8b8fff"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                />
-                <circle cx="9" cy="9.5" r="1" fill="#8b8fff" />
-              </svg>
-            </span>
-            <span class="s5-tab__name">Pay-as-you-Go</span>
-            <span class="s5-tab__sub">Postpaid</span>
+          <button class="p-tab is-active" type="button" role="tab" data-panel="panel-fixed">
+            <span class="p-tab__name">Fixed Subscription</span>
+            <span class="p-tab__sub">Prepaid</span>
           </button>
-          <button
-            class="s5-tab is-active"
-            type="button"
-            role="tab"
-            data-panel="s5-panel-fixed"
-          >
-            <span class="s5-tab__icon">
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                <path
-                  d="M9 2.5l5.5 2.6v3.4c0 3.7-2.4 6-5.5 7-3.1-1-5.5-3.3-5.5-7V5.1L9 2.5z"
-                  stroke="#8b8fff"
-                  stroke-width="1.3"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-            <span class="s5-tab__name">Fixed Subscription</span>
-            <span class="s5-tab__sub">Prepaid</span>
-          </button>
-          <button
-            class="s5-tab "
-            type="button"
-            role="tab"
-            data-panel="s5-panel-chain"
-          >
-            <span class="s5-tab__icon">
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                <rect
-                  x="3"
-                  y="7"
-                  width="4.5"
-                  height="7.5"
-                  rx="1"
-                  stroke="#8b8fff"
-                  stroke-width="1.3"
-                />
-                <rect
-                  x="10.5"
-                  y="3.5"
-                  width="4.5"
-                  height="11"
-                  rx="1"
-                  stroke="#8b8fff"
-                  stroke-width="1.3"
-                />
-              </svg>
-            </span>
-            <span class="s5-tab__name">Chain Pro</span>
-            <span class="s5-tab__sub">Enterprise</span>
+          <button class="p-tab" type="button" role="tab" data-panel="panel-chain">
+            <span class="p-tab__name">Chain Pro</span>
+            <span class="p-tab__sub">Enterprise</span>
           </button>
         </div>
-        <!-- ============ PANEL: LAUNCHPAD ============ -->
-        <div class="s5-panel" id="s5-panel-launchpad">
-          <div class="s5-card">
-            <span class="s5-badge">New Gym</span>
-            <h3 class="s5-card__title">Trail</h3>
-            <div class="s5-card__price">
-              <span class="s5-card__price-amount">₹0</span>
-              <span class="s5-card__price-unit">/month</span>
+    
+        <!-- LAUNCHPAD -->
+        <div class="p-panel" id="panel-launchpad">
+          <div class="p-card">
+            <span class="p-badge">New Gym</span>
+            <h3 class="p-card__title">Trial</h3>
+            <div class="p-card__price">
+              <span class="p-card__price-amount" data-count="0">₹0</span>
+              <span class="p-card__price-unit">/7 Day</span>
             </div>
-            <p class="s5-card__price-note">
-              Up to 40 members &mdash; perfect for new gyms testing the waters.
-            </p>
-            <ul class="s5-checklist">
-              <li class="s5-check-item">
-                <span class="s5-check-icon">
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.8 7.2l2.6 2.6L11.2 4"
-                      stroke="#10b981"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                All Premium+ features
-              </li>
+            <p class="p-card__note">Up to 40 members — perfect for new gyms testing the waters.</p>
+            <ul class="p-checklist">
+              <li class="p-check-item"><span class="p-check-icon">✓</span>All Premium+ features</li>
+              <li class="p-check-item"><span class="p-check-icon">✓</span>Up to 40 members included</li>
+              <li class="p-check-item"><span class="p-check-icon">✓</span>No card required to start</li>
             </ul>
-            <a href="/login/" class="s5-btn s5-btn--primary">Start for free</a>
-            <p class="s5-foot-note">Upgrade anytime as your gym grows</p>
+            <a href="https://wa.me/917000032565" class="p-btn p-btn--primary">Start for free</a>
+            <p class="p-foot-note">Upgrade anytime as your gym grows</p>
           </div>
         </div>
-        <!-- ============ PANEL: PAY-AS-YOU-GO ============ -->
-        <div class="s5-panel" id="s5-panel-payg">
-          <div class="s5-card">
-            <span class="s5-badge">Most Flexible</span>
-            <h3 class="s5-card__title">Pay-as-you-Go</h3>
-            <div class="s5-card__price">
-              <span class="s5-card__price-amount">₹4.99</span>
-              <span class="s5-card__price-unit"
-                >&ndash; ₹6.99 /member/month</span
-              >
+    
+        <!-- FIXED SUBSCRIPTION -->
+        <div class="p-panel is-active" id="panel-fixed">
+          <div class="p-grid">
+            <div class="p-grid-card">
+              <span class="p-badge">Starter</span>
+              <p class="p-grid-card__period">1 Month</p>
+              <div class="p-grid-card__price" data-count="399">₹399</div>
+              <ul class="p-checklist">
+                <li class="p-check-item"><span class="p-check-icon">✓</span>Up to 75 members</li>
+                <li class="p-check-item"><span class="p-check-icon">✓</span>All Premium+ features</li>
+              </ul>
+              <a href="https://wa.me/917000032565" class="p-btn p-btn--primary">Subscribe</a>
+              <a href="/termandcondition/" class="p-btn p-btn--ghost">Terms &amp; Details</a>
             </div>
-            <p class="s5-card__price-note">
-              Flat rate per member &mdash; growing your gym always lowers your
-              rate.
-            </p>
-            <div class="s5-tier-list">
-              <div class="s5-tier-row">
-                <span>Up to 100 members</span>
-                <span class="s5-tier-rate">₹6.99/member</span>
-              </div>
-              <div class="s5-tier-row">
-                <span>101&ndash;300 members</span>
-                <span class="s5-tier-rate">₹5.99/member</span>
-              </div>
-              <div class="s5-tier-row">
-                <span>301+ members</span>
-                <span class="s5-tier-rate">₹4.99/member</span>
-              </div>
+    
+            <div class="p-grid-card p-grid-card--popular">
+              <span class="p-badge">Growth</span>
+              <p class="p-grid-card__period">1 Month</p>
+              <div class="p-grid-card__price" data-count="549">₹549</div>
+              <ul class="p-checklist">
+                <li class="p-check-item"><span class="p-check-icon">✓</span>Up to 120 members</li>
+                <li class="p-check-item"><span class="p-check-icon">✓</span>All Premium+ features</li>
+              </ul>
+              <a href="https://wa.me/917000032565" class="p-btn p-btn--primary">Subscribe</a>
+              <a href="/termandcondition/" class="p-btn p-btn--ghost">Terms &amp; Details</a>
             </div>
-            <ul class="s5-checklist">
-              <li class="s5-check-item">
-                <span class="s5-check-icon">
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.8 7.2l2.6 2.6L11.2 4"
-                      stroke="#10b981"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                1-month free trial on first signup
-              </li>
-              <li class="s5-check-item">
-                <span class="s5-check-icon">
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.8 7.2l2.6 2.6L11.2 4"
-                      stroke="#10b981"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                No contract &mdash; cancel or switch anytime
-              </li>
-              <li class="s5-check-item">
-                <span class="s5-check-icon">
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.8 7.2l2.6 2.6L11.2 4"
-                      stroke="#10b981"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                Per-branch independent billing
-              </li>
-              <li class="s5-check-item">
-                <span class="s5-check-icon">
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.8 7.2l2.6 2.6L11.2 4"
-                      stroke="#10b981"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                Free data migration
-              </li>
+    
+            <div class="p-grid-card">
+              <span class="p-badge">Professional</span>
+              <p class="p-grid-card__period">1 Month</p>
+              <div class="p-grid-card__price" data-count="899">₹899</div>
+              <ul class="p-checklist">
+                <li class="p-check-item"><span class="p-check-icon">✓</span>Up to 250 members</li>
+                <li class="p-check-item"><span class="p-check-icon">✓</span>All Premium+ features</li>
+              </ul>
+              <a href="https://wa.me/917000032565" class="p-btn p-btn--primary">Subscribe</a>
+              <a href="/termandcondition/" class="p-btn p-btn--ghost">Terms &amp; Details</a>
+            </div>
+          </div>
+        </div>
+    
+        <!-- CHAIN PRO -->
+        <div class="p-panel" id="panel-chain">
+          <div class="p-card">
+            <span class="p-badge">Enterprise</span>
+            <h3 class="p-card__title">Chain Pro</h3>
+            <div class="p-card__price">
+              <span class="p-card__price-amount">Custom</span>
+              <span class="p-card__price-unit">pricing</span>
+            </div>
+            <p class="p-card__note">Built for multi-branch chains with centralized reporting and dedicated support.</p>
+            <ul class="p-checklist">
+              <li class="p-check-item"><span class="p-check-icon">✓</span>Unlimited branches, unified dashboard</li>
+              <li class="p-check-item"><span class="p-check-icon">✓</span>Dedicated account manager</li>
+              <li class="p-check-item"><span class="p-check-icon">✓</span>Custom integrations &amp; SLA</li>
             </ul>
-            <a href="https://wa.me/917000032565" class="s5-btn s5-btn--primary">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M8 2.7a5.3 5.3 0 00-4.5 8.1L3 13.3l2.6-.5A5.3 5.3 0 108 2.7z"
-                  stroke="currentColor"
-                  stroke-width="1.3"
-                />
-              </svg>
-              Contact Sales
-            </a>
-            <div class="s5-terms-wrap">
-              <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
-            </div>
+            <a href="https://wa.me/917000032565" class="p-btn p-btn--primary">Contact Sales</a>
           </div>
         </div>
-        <!-- ============ PANEL: FIXED SUBSCRIPTION ============ -->
-        <div class="s5-panel is-active" id="s5-panel-fixed">
-          <div class="s5-grid">
-            <div class="s5-grid-card">
-              <span class="s5-badge">Starter</span>
-              <h4 class="s5-grid-card__title">1 Months</h4>
-              <div class="s5-grid-card__price">₹499</div>
-              <ul class="s5-checklist">
-                <li class="s5-check-item">
-                  <span class="s5-check-icon">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.8 7.2l2.6 2.6L11.2 4"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  Member Up to 75
-                </li>
-                <li class="s5-check-item">
-                  <span class="s5-check-icon">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.8 7.2l2.6 2.6L11.2 4"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  All Premium+ features
-                </li>
-              </ul>
-              <a href="/login/" class="s5-btn s5-btn--primary">Subscribe</a>
-              <div class="s5-terms-wrap">
-                <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
-              </div>
-            </div>
-            <div class="s5-grid-card s5-grid-card--popular">
-              <span class="s5-badge">Growth</span>
-              <h4 class="s5-grid-card__title">1 Months</h4>
-              <div class="s5-grid-card__price">₹849</div>
-              <ul class="s5-checklist">
-                <li class="s5-check-item">
-                  <span class="s5-check-icon">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.8 7.2l2.6 2.6L11.2 4"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  Member Up to 120
-                </li>
-                <li class="s5-check-item">
-                  <span class="s5-check-icon">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.8 7.2l2.6 2.6L11.2 4"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  All Premium+ features
-                </li>
-              </ul>
-              <a href="/login/" class="s5-btn s5-btn--primary">Subscribe</a>
-              <div class="s5-terms-wrap">
-                <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
-              </div>
-            </div>
-            <div class="s5-grid-card">
-              <span class="s5-badge">Professional</span>
-              <h4 class="s5-grid-card__title">1 Months</h4>
-              <div class="s5-grid-card__price">₹1,599</div>
-              <ul class="s5-checklist">
-                <li class="s5-check-item">
-                  <span class="s5-check-icon">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.8 7.2l2.6 2.6L11.2 4"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  Member Up to 250
-                </li>
-                <li class="s5-check-item">
-                  <span class="s5-check-icon">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.8 7.2l2.6 2.6L11.2 4"
-                        stroke="#10b981"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  All Premium+ features
-                </li>
-              </ul>
-              <a href="/login/" class="s5-btn s5-btn--primary">Subscribe</a>
-              <div class="s5-terms-wrap">
-                <a href="#" class="s5-btn s5-btn--ghost">Terms &amp; Details</a>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- ============ PANEL: CHAIN PRO ============ -->
-        <div class="s5-panel" id="s5-panel-chain">
-          <div class="s5-card">
-            <span class="s5-badge">Enterprise</span>
-            <h3 class="s5-card__title">Chain Pro</h3>
-            <div class="s5-card__price">
-              <span class="s5-card__price-amount">Custom</span>
-              <span class="s5-card__price-unit">pricing</span>
-            </div>
-            <p class="s5-card__price-note">
-              Built for multi-branch chains with centralized reporting and
-              dedicated support.
-            </p>
-            <ul class="s5-checklist">
-              <li class="s5-check-item">
-                <span class="s5-check-icon">
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.8 7.2l2.6 2.6L11.2 4"
-                      stroke="#10b981"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                Unlimited branches, unified dashboard
-              </li>
-              <li class="s5-check-item">
-                <span class="s5-check-icon">
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.8 7.2l2.6 2.6L11.2 4"
-                      stroke="#10b981"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                Dedicated account manager
-              </li>
-              <li class="s5-check-item">
-                <span class="s5-check-icon">
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.8 7.2l2.6 2.6L11.2 4"
-                      stroke="#10b981"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                Custom integrations &amp; SLA
-              </li>
-            </ul>
-            <a href="https://wa.me/917000032565" class="s5-btn s5-btn--primary">
-              Contact Sales
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-    <section class="s6-calc" id="calculator">
-      <div class="s6-calc__inner">
-        <div class="s6-head">
-          <p class="s6-eyebrow">Plan Calculator</p>
-          <h2 class="s6-heading">Find your <span>perfect plan</span></h2>
-          <p class="s6-subhead">
-            Enter your gym details to get a personalised cost comparison and
-            plan recommendation.
-          </p>
-        </div>
-        <div class="s6-layout reveal">
-          <!-- ====== INPUT PANEL ====== -->
-          <div class="s6-input-panel">
-            <div class="s6-panel-title">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
-                fill="none"
-                aria-hidden="true"
-              >
-                <rect
-                  x="3"
-                  y="3"
-                  width="12"
-                  height="12"
-                  rx="2.5"
-                  stroke="#8b8fff"
-                  stroke-width="1.4"
-                />
-                <path
-                  d="M6 9h6M6 6.5h6M6 11.5h3.5"
-                  stroke="#8b8fff"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                />
-              </svg>
-              Gym Details
-            </div>
-            <div class="s6-field">
-              <label class="s6-label" for="calc-gym-name">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <rect
-                    x="2"
-                    y="2"
-                    width="10"
-                    height="10"
-                    rx="2"
-                    stroke="#9898b0"
-                    stroke-width="1.3"
-                  />
-                  <path
-                    d="M5 7h4"
-                    stroke="#9898b0"
-                    stroke-width="1.3"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                Gym Name
-              </label>
-              <input
-                class="s6-input"
-                id="calc-gym-name"
-                type="text"
-                placeholder="e.g. Muscle Garage Gym"
-                autocomplete="off"
-              />
-            </div>
-            <div class="s6-field">
-              <label class="s6-label" for="calc-branches">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="7"
-                    cy="7"
-                    r="5"
-                    stroke="#9898b0"
-                    stroke-width="1.3"
-                  />
-                  <path
-                    d="M7 4.5v2.5l2 1"
-                    stroke="#9898b0"
-                    stroke-width="1.3"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                Number of Branches
-              </label>
-              <div class="s6-slider-row">
-                <input
-                  class="s6-slider"
-                  id="calc-branches"
-                  type="range"
-                  min="1"
-                  max="10"
-                  value="1"
-                  step="1"
-                />
-                <div class="s6-slider-val" id="calc-branches-display">1</div>
-              </div>
-              <div class="s6-slider-marks">
-                <span class="s6-slider-mark">1</span>
-                <span class="s6-slider-mark">5</span>
-                <span class="s6-slider-mark">10</span>
-                <span class="s6-slider-mark">10+</span>
-              </div>
-            </div>
-            <div class="s6-field">
-              <label class="s6-label">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="6"
-                    cy="5.5"
-                    r="2"
-                    stroke="#9898b0"
-                    stroke-width="1.3"
-                  />
-                  <path
-                    d="M3 11.5c0-2 1.3-3 3-3s3 1 3 3"
-                    stroke="#9898b0"
-                    stroke-width="1.3"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M9 4c.7.3 1.2 1 1.2 1.8s-.5 1.5-1.2 1.7"
-                    stroke="#9898b0"
-                    stroke-width="1.2"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M10.5 11.5c0-1.8-1-2.8-2-3"
-                    stroke="#9898b0"
-                    stroke-width="1.2"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                Active Members per Branch
-              </label>
-              <div class="s6-branches-grid" id="calc-branches-grid">
-                <div class="s6-branch-row">
-                  <span class="s6-branch-label">Branch 1</span>
-                  <input
-                    class="s6-branch-input"
-                    type="number"
-                    min="1"
-                    max="2000"
-                    value=""
-                    placeholder="Approx. active members"
-                    data-branch="0"
-                  />
-                </div>
-              </div>
-            </div>
-            <button class="s6-calc-btn" id="calc-run-btn" type="button">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
-                <rect
-                  x="2"
-                  y="2"
-                  width="12"
-                  height="12"
-                  rx="2.5"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                />
-                <path
-                  d="M5 8h6M8 5v6"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  stroke-linecap="round"
-                />
-              </svg>
-              Calculate &amp; Recommend
-            </button>
-          </div>
-          <!-- ====== RESULT PANEL ====== -->
-          <div class="s6-result-panel">
-            <!-- Empty state -->
-            <div class="s6-result-empty" id="calc-empty">
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                <rect
-                  x="6"
-                  y="6"
-                  width="28"
-                  height="28"
-                  rx="6"
-                  stroke="#5b5fff"
-                  stroke-width="1.6"
-                />
-                <path
-                  d="M13 20h14M20 13v14"
-                  stroke="#5b5fff"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                />
-              </svg>
-              <p>Enter your gym details and hit Calculate</p>
-            </div>
-            <!-- Result card -->
-            <div class="s6-result-card" id="calc-result">
-              <div id="calc-gym-display" class="s6-result-gym"></div>
-              <div class="s6-result-sub" id="calc-result-sub"></div>
-              <div id="calc-recommend-badge" class="s6-recommend">
-                <span class="s6-recommend-dot"></span>
-                <span id="calc-recommend-text">Recommended plan</span>
-              </div>
-              <!-- Plan tabs -->
-              <div class="s6-plan-tabs" role="tablist">
-                <button
-                  class="s6-plan-tab"
-                  data-plan="payg"
-                  role="tab"
-                  type="button"
-                >
-                  Pay-as-you-Go
-                </button>
-                <button
-                  class="s6-plan-tab"
-                  data-plan="fixed3"
-                  role="tab"
-                  type="button"
-                >
-                  3 Months
-                </button>
-                <button
-                  class="s6-plan-tab"
-                  data-plan="fixed6"
-                  role="tab"
-                  type="button"
-                >
-                  6 Months
-                </button>
-                <button
-                  class="s6-plan-tab"
-                  data-plan="fixed12"
-                  role="tab"
-                  type="button"
-                >
-                  12 Months
-                </button>
-              </div>
-              <!-- PAYG detail -->
-              <div class="s6-plan-detail" id="detail-payg">
-                <div id="payg-rows"></div>
-                <div class="s6-cost-total">
-                  <span class="s6-cost-total-label">Est. monthly cost</span>
-                  <span class="s6-cost-total-val" id="payg-total"></span>
-                </div>
-              </div>
-              <!-- Fixed 3m detail -->
-              <div class="s6-plan-detail" id="detail-fixed3">
-                <div id="fixed3-rows"></div>
-                <div class="s6-cost-total">
-                  <span class="s6-cost-total-label">Total for 3 months</span>
-                  <span class="s6-cost-total-val" id="fixed3-total"></span>
-                </div>
-              </div>
-              <!-- Fixed 6m detail -->
-              <div class="s6-plan-detail" id="detail-fixed6">
-                <div id="fixed6-rows"></div>
-                <div class="s6-cost-total">
-                  <span class="s6-cost-total-label">Total for 6 months</span>
-                  <span class="s6-cost-total-val" id="fixed6-total"></span>
-                </div>
-              </div>
-              <!-- Fixed 12m detail -->
-              <div class="s6-plan-detail" id="detail-fixed12">
-                <div id="fixed12-rows"></div>
-                <div class="s6-cost-total">
-                  <span class="s6-cost-total-label">Total for 12 months</span>
-                  <span class="s6-cost-total-val" id="fixed12-total"></span>
-                </div>
-              </div>
-            </div>
-            <!-- Savings comparison -->
-            <div class="s6-savings-card" id="calc-savings">
-              <div class="s6-savings-head">Cost Comparison — all plans</div>
-              <div class="s6-savings-grid" id="savings-grid"></div>
-            </div>
-            <!-- CTAs -->
-            <div class="s6-result-cta" id="calc-cta">
-              <a href="/login/" class="s6-cta-btn s6-cta-btn--primary">
-                Start Free Trial
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3.5 8h9M8.5 3.5L13 8l-4.5 4.5"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </a>
-              <a
-                href="https://wa.me/917000032565"
-                class="s6-cta-btn s6-cta-btn--ghost"
-              >
-                Talk to Sales
-              </a>
-            </div>
-          </div>
-        </div>
+    
       </div>
     </section>
     <!-- ═══════════════════════════════════════════════════════════════
@@ -1773,181 +1114,155 @@
             Frequently Asked<br /><em>Questions</em>
           </h2>
           <p class="faq-sub">Got questions? We've got answers. Everything you need to know about EnterGYM.</p>
-        </div>
 
-        <div class="faq-layout" id="faqLayout">
-
-          <!-- ── Column 1 ── -->
-          <div class="faq-col">
-
-            <div class="faq-item" data-faq-index="0">
-              <button class="faq-q" aria-expanded="false">
-                <span>What is the best gym management software in India?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>EnterGYM is India's most affordable and feature-rich gym management software. It offers member management, GPS attendance, face recognition, push notifications, automated payment reminders, and a branded member app — all starting at just ₹4.99 per active member per month.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="2">
-              <button class="faq-q" aria-expanded="false">
-                <span>What is the (free) plan?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>This plan is completely free — forever. It supports up to 40 active members and includes core member management and manual attendance. No credit card required. It's perfect for new gyms testing the platform before scaling up.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="4">
-              <button class="faq-q" aria-expanded="false">
-                <span>How does Pay-as-you-Go billing work?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>With Pay-as-you-Go, you pay only for active members each month — no flat subscription fee. Rates are tiered: ₹6.99/member for up to 100 members, ₹5.99/member for 101–300 members, and ₹4.99/member for 301+ members. Your first month is free.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="6">
-              <button class="faq-q" aria-expanded="false">
-                <span>Can I switch between plans anytime?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>Yes, absolutely. You can switch between Trail, Pay-as-you-Go, and Fixed Subscription plans at any time with no penalty. There are no lock-in contracts. If you upgrade mid-cycle, the change takes effect from your next billing period.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="8">
-              <button class="faq-q" aria-expanded="false">
-                <span>Is there a free trial period?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>Yes. Every new gym gets a 14-day free trial with full access to all Premium+ features — no credit card needed. Pay-as-you-Go and Fixed Subscription plans also include 1 month free on your first signup. You get to experience the full platform before paying anything.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="10">
-              <button class="faq-q" aria-expanded="false">
-                <span>How does gym attendance tracking work?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>EnterGYM offers three attendance methods: GPS geo-fencing (member checks in only when physically inside the gym), Face Recognition (camera identifies members automatically), and manual check-in via the staff dashboard. All methods log a timestamped entry that syncs in real time.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="12">
-              <button class="faq-q" aria-expanded="false">
-                <span>Does EnterGYM support multiple gym branches?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>Yes. EnterGYM is built as a multi-tenant SaaS platform. Each branch operates with fully isolated data — separate members, attendance, payments, and reports. Gym owners can switch between branches instantly from one login without any risk of data overlap.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── Column 2 ── -->
-          <div class="faq-col">
-
-            <div class="faq-item" data-faq-index="1">
-              <button class="faq-q" aria-expanded="false">
-                <span>What is gym management software and why do I need it?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>Gym management software automates the day-to-day operations of running a gym — tracking member memberships, collecting payments, marking attendance, sending renewal reminders, and generating revenue reports. Without it, gym owners rely on WhatsApp groups, paper registers, and Excel sheets, which leads to missed payments, expired members walking in, and no visibility into revenue.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="3">
-              <button class="faq-q" aria-expanded="false">
-                <span>How does the automated payment reminder system work?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>EnterGYM automatically sends push notifications to members 7, 4, 2, and 1 day before their membership expires — across PWA, browser, and the mobile app. Each reminder includes the due amount, expiry date, and membership details. Gyms using this feature report up to 22% improvement in on-time renewals.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="5">
-              <button class="faq-q" aria-expanded="false">
-                <span>Does every gym get its own website and mobile app?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>Yes. Every gym on EnterGYM automatically gets a professional website and a branded Android mobile app — generated from your admin dashboard data. No developer is required. The iOS app is currently in development and will be available soon. The website shows your plans, working hours, location, and member count live.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="7">
-              <button class="faq-q" aria-expanded="false">
-                <span>What can gym members do in the Member Portal?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>Members get their own portal (web PWA + Android app) where they can view their active membership and validity, download payment receipts, apply for membership freeze, track attendance history, see workout plans and diet recommendations from their trainer, and receive renewal push notifications.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="9">
-              <button class="faq-q" aria-expanded="false">
-                <span>How does WhatsApp billing and contact work?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>EnterGYM is sold and supported entirely via WhatsApp for simplicity. You contact us on +91 70000 32565, we understand your gym's needs, configure your platform, migrate your data, and have you live within 24 hours. Billing details and plan changes are also handled over WhatsApp by our team.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="11">
-              <button class="faq-q" aria-expanded="false">
-                <span>What staff roles and permissions does EnterGYM support?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>EnterGYM has a four-role RBAC system: Super Admin (full platform control), Gym Owner (full gym control), Trainer (member and workout management), and Receptionist (member enrollment and check-in). Each role sees only what it needs to — preventing unauthorized access and keeping data secure.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="13">
-              <button class="faq-q" aria-expanded="false">
-                <span>Is my gym data secure on EnterGYM?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>Yes. EnterGYM uses a fully isolated multi-tenant architecture — your gym's data is completely separate from every other gym on the platform. We prevent IDOR attacks by deriving gym context from the authenticated user, not from URL parameters. The platform runs at 99.8% uptime with regular backups.</p>
-              </div>
-            </div>
-
-            <div class="faq-item" data-faq-index="15">
-              <button class="faq-q" aria-expanded="false">
-                <span>How much does gym management software cost in India?</span>
-                <span class="faq-icon" aria-hidden="true">+</span>
-              </button>
-              <div class="faq-a" hidden>
-                <p>EnterGYM is the most affordable gym management software in India. It starts completely free (Trail plan, up to 40 members). For growing gyms, Pay-as-you-Go starts at ₹4.99 per active member per month. Fixed subscriptions start at ₹499 for 1 months with unlimited members. No hidden fees, no feature lock-ins.</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- Load more — shown only when columns collapse to 1 (mobile/tablet) -->
-        <div class="faq-load-more-wrap" id="faqLoadMoreWrap" hidden>
-          <button class="faq-load-more" id="faqLoadMoreBtn" type="button">
-            <span id="faqLoadMoreLabel">Load more questions</span>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M3.5 6L8 10.5L12.5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <div class="faq-search">
+            <svg class="faq-search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M11 11L14.5 14.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
             </svg>
-          </button>
+            <input type="text" id="faqSearchInput" class="faq-search-input" placeholder="Search a question…" autocomplete="off" aria-label="Search FAQs">
+            <button type="button" id="faqSearchClear" class="faq-search-clear" hidden aria-label="Clear search">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <!-- Still have questions CTA -->
+        <div class="faq-grid" id="faqGrid">
+
+          <div class="faq-item" data-faq-index="0">
+            <button class="faq-q" aria-expanded="false">
+              <span>What is EnterGYM?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>EnterGYM is an all-in-one gym management software designed for gyms and fitness centers. It helps you manage members, memberships, attendance, payments, invoices, trainers, expenses, notifications, and everyday gym operations from one platform.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="1">
+            <button class="faq-q" aria-expanded="false">
+              <span>Why does my gym need management software?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Managing a gym using paper registers, spreadsheets, and separate payment records can make it difficult to track members, attendance, pending payments, and membership expiry. EnterGYM brings these operations together in one dashboard so you can spend less time on administration and more time growing your gym.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="2">
+            <button class="faq-q" aria-expanded="false">
+              <span>What features are included in EnterGYM?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>EnterGYM includes member management, membership plans, attendance tracking, payment and invoice management, trainer management, expense tracking, announcements, automated membership expiry notifications, member portals, QR attendance, and AI face attendance support. All Premium+ features are included in the subscription.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="3">
+            <button class="faq-q" aria-expanded="false">
+              <span>Does EnterGYM send membership expiry reminders?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM can send membership expiry notifications to members through supported push notification channels. This helps members stay informed about their membership validity and upcoming renewal dates, reducing the chance of missed renewals.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="4">
+            <button class="faq-q" aria-expanded="false">
+              <span>What subscription plans are available?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>EnterGYM currently offers fixed subscription plans based on your gym's active member capacity. The Starter plan is ₹399/month for up to 75 members, Growth is ₹549/month for up to 120 members, and Professional is ₹899/month for up to 250 members. Multi-branch gyms can contact us for custom Chain Pro pricing.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="5">
+            <button class="faq-q" aria-expanded="false">
+              <span>Can members use EnterGYM from their phone?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM provides a mobile-friendly member experience along with an Android app experience. Members can access their gym information, membership details, attendance features, and other available member services directly from their phone.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="6">
+            <button class="faq-q" aria-expanded="false">
+              <span>Can I change my subscription plan as my gym grows?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. You can move to a higher subscription plan when your gym grows and requires a larger member capacity. Contact our team through WhatsApp and we will help you upgrade your plan.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="7">
+            <button class="faq-q" aria-expanded="false">
+              <span>What can members do from the Member Portal?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Members can view their membership information, check attendance history, access payment and receipt information, receive membership notifications, and use the attendance features provided by their gym. The available features depend on the services enabled by the gym.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="8">
+            <button class="faq-q" aria-expanded="false">
+              <span>Does EnterGYM offer a free trial?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. New gyms can start with a 7-day free trial with access to Premium+ features for up to 40 members. No payment card is required to start the trial. You can upgrade to a paid subscription whenever you are ready.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="9">
+            <button class="faq-q" aria-expanded="false">
+              <span>Can EnterGYM send notifications to members?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM supports member notifications for important gym updates such as membership expiry reminders and announcements. Gyms can use the notification system to keep members informed without relying entirely on manual communication.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="10">
+            <button class="faq-q" aria-expanded="false">
+              <span>How does attendance tracking work?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>EnterGYM supports multiple attendance methods, including QR code attendance, GPS-based attendance, manual staff check-in, and AI-powered face recognition attendance. Attendance records are timestamped and connected to the member's profile so gym staff can easily review attendance history.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="11">
+            <button class="faq-q" aria-expanded="false">
+              <span>What staff roles are supported?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>EnterGYM supports role-based access for Super Admin, Gym Owner, Trainer, and Receptionist. Each role can be given access to the functions required for their responsibilities, helping gym owners keep operational data organized and controlled.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="12">
+            <button class="faq-q" aria-expanded="false">
+              <span>Can EnterGYM manage multiple gym branches?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM is built as a multi-tenant platform and supports multi-branch gym operations. Each gym or branch can have its own members, staff, attendance, payments, settings, and operational data while owners can manage their business from a centralized platform.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="13">
+            <button class="faq-q" aria-expanded="false">
+              <span>Can I manage payments, invoices, and expenses in EnterGYM?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM provides payment and invoice management for member transactions and also supports gym expense tracking. This gives gym owners better visibility into their collections, expenses, and overall financial performance.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="14">
+            <button class="faq-q" aria-expanded="false">
+              <span>How can I get started with EnterGYM?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Getting started is simple. Start the 7-day free trial, configure your gym information, add your staff and members, and begin managing your gym from the EnterGYM dashboard. If you need help choosing a plan or setting up your gym, contact our team on WhatsApp.</p></div></div>
+          </div>
+
+          <div class="faq-item" data-faq-index="15">
+            <button class="faq-q" aria-expanded="false">
+              <span>Is my gym data separated from other gyms?</span>
+              <span class="faq-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM uses a multi-tenant architecture where each gym's operational data is scoped to its own gym account. Members, attendance, payments, staff, settings, and other gym information are kept within the appropriate gym context.</p></div></div>
+          </div>
+
+        </div>
+
+        <p class="faq-no-results" id="faqNoResults" hidden>No questions match "<span id="faqNoResultsTerm"></span>". Try a different search, or ask us directly on WhatsApp.</p>
+
         <div class="faq-cta">
           <div class="faq-cta-inner">
             <div class="faq-cta-icon">
@@ -2189,6 +1504,8 @@
       ]
     }
     </script>
+    <script src="{% static 'vendor/bootstrap/gsap.min.js' %}" defer></script>
+    <script src="{% static 'vendor/bootstrap/ScrollTrigger.min.js' %}" defer></script>
     <script src="{% static 'js/saas_home.js' %}" defer></script>
     <script nonce="{{ request.csp_nonce }}">
       (function () {
@@ -2313,122 +1630,151 @@
       })();
       </script>
     <script nonce="{{ request.csp_nonce }}">
-    (function () {
-      /* Nav scroll */
-      const nav = document.getElementById("siteNav");
-      if (nav) {
-        window.addEventListener(
-          "scroll",
-          () => {
-            nav.classList.toggle("is-scrolled", window.scrollY > 8);
-          },
-          { passive: true },
-        );
-      }
-    })();
+      (function () {
+        /* Nav scroll */
+        const nav = document.getElementById("siteNav");
+        if (nav) {
+          window.addEventListener(
+            "scroll",
+            () => {
+              nav.classList.toggle("is-scrolled", window.scrollY > 8);
+            },
+            { passive: true },
+          );
+        }
+      })();
 
-    /* ── FAQ accordion ── */
-    document.querySelectorAll('.faq-q').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const expanded = btn.getAttribute('aria-expanded') === 'true';
-        const answer   = btn.nextElementSibling;
+      /* -----------------------------------------------------------------------------
+        FAQ — accordion + live search + mobile load-more
+      ----------------------------------------------------------------------------- */
+      (function () {
+        const grid      = document.getElementById("faqGrid");
+        const items     = grid
+          ? Array.from(grid.querySelectorAll(".faq-item"))
+              .sort((a, b) => (+a.dataset.faqIndex) - (+b.dataset.faqIndex))
+          : [];
+        const searchIn  = document.getElementById("faqSearchInput");
+        const clearBtn  = document.getElementById("faqSearchClear");
+        const noResults = document.getElementById("faqNoResults");
+        const noResTerm = document.getElementById("faqNoResultsTerm");
+        const wrap      = document.getElementById("faqLoadMoreWrap");
+        const loadBtn   = document.getElementById("faqLoadMoreBtn");
+        const loadLabel = document.getElementById("faqLoadMoreLabel");
+        if (!items.length) return;
 
-        /* close all others in same column */
-        btn.closest('.faq-col').querySelectorAll('.faq-q').forEach(b => {
-          b.setAttribute('aria-expanded', 'false');
-          b.nextElementSibling.hidden = true;
+        const mq = window.matchMedia("(max-width: 860px)");
+        const INITIAL_COUNT = 5;
+        const STEP_COUNT    = 3;
+        let visibleCount    = INITIAL_COUNT;
+
+        /* ── accordion open/close ── */
+        items.forEach((item) => {
+          const btn = item.querySelector(".faq-q");
+          btn.addEventListener("click", () => {
+            const isOpen = btn.getAttribute("aria-expanded") === "true";
+            btn.setAttribute("aria-expanded", isOpen ? "false" : "true");
+          });
         });
 
-        /* toggle current */
-        btn.setAttribute('aria-expanded', String(!expanded));
-        answer.hidden = expanded;
-      });
-    });
-
-    /* ── FAQ load-more (mobile / single-column only) ──
-      Desktop keeps its 2-column "show everything" behaviour
-      untouched. The 860px breakpoint matches the CSS rule
-      that collapses .faq-layout from 2 columns to 1. */
-    (function () {
-      const layout   = document.getElementById('faqLayout');
-      const wrap     = document.getElementById('faqLoadMoreWrap');
-      const btn      = document.getElementById('faqLoadMoreBtn');
-      const label    = document.getElementById('faqLoadMoreLabel');
-      if (!layout || !wrap || !btn || !label) return;
-
-      const mq = window.matchMedia('(max-width: 860px)');
-
-      const INITIAL_COUNT = 5;
-      const STEP_COUNT    = 3;
-
-      // All FAQ items, ordered by their intended reading order
-      // (data-faq-index), regardless of which column they live in.
-      const items = Array.from(layout.querySelectorAll('.faq-item'))
-        .sort((a, b) => (+a.dataset.faqIndex) - (+b.dataset.faqIndex));
-
-      let visibleCount = INITIAL_COUNT;
-
-      function closeAnswer(item) {
-        const q = item.querySelector('.faq-q');
-        const a = item.querySelector('.faq-a');
-        if (q && q.getAttribute('aria-expanded') === 'true') {
-          q.setAttribute('aria-expanded', 'false');
+        function closeAnswer(item) {
+          const q = item.querySelector(".faq-q");
+          if (q && q.getAttribute("aria-expanded") === "true") {
+            q.setAttribute("aria-expanded", "false");
+          }
         }
-        if (a) a.hidden = true;
-      }
 
-      function render() {
-        items.forEach((item, i) => {
-          const shouldShow = i < visibleCount;
-          item.classList.toggle('faq-item--more-hidden', !shouldShow);
-          if (!shouldShow) closeAnswer(item);
-        });
-
-        const remaining = items.length - visibleCount;
-        if (remaining <= 0) {
-          wrap.hidden = true;
-        } else {
-          wrap.hidden = false;
-          const next = Math.min(STEP_COUNT, remaining);
-          label.textContent = `Load ${next} more question${next > 1 ? 's' : ''}`;
+        /* ── search highlight ── */
+        function escapeRegExp(str) {
+          return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         }
-      }
+        function highlight(item, term) {
+          const span = item.querySelector(".faq-q span");
+          const original = span.dataset.original || span.textContent;
+          span.dataset.original = original;
+          if (!term) {
+            span.textContent = original;
+            return;
+          }
+          const re = new RegExp(`(${escapeRegExp(term)})`, "ig");
+          span.innerHTML = original.replace(re, "<mark>$1</mark>");
+        }
 
-      function enableMobileMode() {
-        visibleCount = INITIAL_COUNT;
+        /* ── combined render: search filter + mobile load-more gate ── */
+        function render() {
+          const term = searchIn ? searchIn.value.trim() : "";
+          const isSearching = term.length > 0;
+          if (clearBtn) clearBtn.hidden = !isSearching;
+
+          const matched = [];
+          items.forEach((item) => {
+            const qText = item.querySelector(".faq-q span").dataset.original
+              || item.querySelector(".faq-q span").textContent;
+            const aText = item.querySelector(".faq-a p").textContent;
+            const haystack = (qText + " " + aText).toLowerCase();
+            const isMatch = !term || haystack.indexOf(term.toLowerCase()) !== -1;
+            if (isMatch) matched.push(item);
+            highlight(item, isMatch ? term : "");
+          });
+
+          // Gate to visibleCount only on mobile with an empty search box.
+          // Any active search, on any width, shows every match at once.
+          const gated = !isSearching && mq.matches;
+
+          items.forEach((item, idx) => {
+            const isMatch = matched.includes(item);
+            const withinLimit = !gated || idx < visibleCount;
+            const show = isMatch && withinLimit;
+            item.classList.toggle("faq-item--hidden", !show);
+            if (!show) closeAnswer(item);
+          });
+
+          if (noResults) {
+            noResults.hidden = matched.length !== 0;
+            if (noResTerm) noResTerm.textContent = term;
+          }
+
+          if (wrap && loadBtn && loadLabel) {
+            if (!gated) {
+              wrap.hidden = true;
+            } else {
+              const remaining = matched.length - visibleCount;
+              if (remaining <= 0) {
+                wrap.hidden = true;
+              } else {
+                wrap.hidden = false;
+                const next = Math.min(STEP_COUNT, remaining);
+                loadLabel.textContent = `Load ${next} more question${next > 1 ? "s" : ""}`;
+              }
+            }
+          }
+        }
+
+        if (searchIn) {
+          searchIn.addEventListener("input", () => {
+            visibleCount = INITIAL_COUNT; // reset the gate whenever the term changes
+            render();
+          });
+        }
+        if (clearBtn) {
+          clearBtn.addEventListener("click", () => {
+            searchIn.value = "";
+            searchIn.focus();
+            visibleCount = INITIAL_COUNT;
+            render();
+          });
+        }
+        if (loadBtn) {
+          loadBtn.addEventListener("click", () => {
+            visibleCount += STEP_COUNT;
+            render();
+          });
+        }
+
+        if (typeof mq.addEventListener === "function") mq.addEventListener("change", render);
+        else if (typeof mq.addListener === "function") mq.addListener(render);
+
         render();
-      }
-
-      function disableMobileMode() {
-        // Desktop: show every item, hide the button, leave the
-        // 2-column grid completely as-is.
-        items.forEach((item) => item.classList.remove('faq-item--more-hidden'));
-        wrap.hidden = true;
-      }
-
-      function applyModeForViewport() {
-        if (mq.matches) {
-          enableMobileMode();
-        } else {
-          disableMobileMode();
-        }
-      }
-
-      btn.addEventListener('click', () => {
-        visibleCount += STEP_COUNT;
-        render();
-      });
-
-      // Re-evaluate on breakpoint cross (resize, device rotation, etc.)
-      if (typeof mq.addEventListener === 'function') {
-        mq.addEventListener('change', applyModeForViewport);
-      } else if (typeof mq.addListener === 'function') {
-        // Safari/older browser fallback
-        mq.addListener(applyModeForViewport);
-      }
-
-      applyModeForViewport();
-    })();
+      })();
   </script>
 <script nonce="{{ request.csp_nonce }}">
 (function () {

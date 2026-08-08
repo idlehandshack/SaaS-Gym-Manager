@@ -121,341 +121,255 @@ function onEnter(elements, callback, options) {
    5. PRICING TAB SWITCHER
 ----------------------------------------------------------------------------- */
 (function () {
-  var tabs   = Array.from(document.querySelectorAll(".s5-tabs .s5-tab"));
-  var panels = Array.from(document.querySelectorAll(".s5-panel"));
+  var tabs      = Array.from(document.querySelectorAll(".p-tabs .p-tab"));
+  var panels    = Array.from(document.querySelectorAll(".p-panel"));
+  var indicator = document.getElementById("tabIndicator");
   if (!tabs.length) return;
 
+  var hasGSAP = typeof window.gsap !== "undefined";
+  if (hasGSAP && window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
+
+  /* ---- count-up price animation ---- */
+  function countUp(el) {
+    var target = parseFloat(el.dataset.count);
+    if (isNaN(target)) return;
+
+    if (!hasGSAP) {
+      el.textContent = fmtRupee(target);
+      return;
+    }
+    var obj = { val: 0 };
+    gsap.to(obj, {
+      val: target,
+      duration: 1.1,
+      ease: "power2.out",
+      onUpdate: function () { el.textContent = fmtRupee(obj.val); }
+    });
+  }
+
+  /* ---- sliding tab indicator ---- */
+  function moveIndicator(tab) {
+    if (!indicator || !tab) return;
+    var tabsRect = tab.parentElement.getBoundingClientRect();
+    var rect     = tab.getBoundingClientRect();
+    var x = rect.left - tabsRect.left - 6;
+
+    if (hasGSAP) {
+      gsap.to(indicator, { x: x, duration: 0.45, ease: "power3.out" });
+    } else {
+      indicator.style.transform = "translateX(" + x + "px)";
+    }
+  }
+
+  /* ---- entrance animation for cards inside a panel ---- */
+  function animatePanelIn(panel) {
+    var cards = panel.querySelectorAll(".p-card, .p-grid-card");
+    if (!cards.length) return;
+
+    if (hasGSAP) {
+      gsap.fromTo(cards, { y: 28, opacity: 0 }, {
+        y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: "power3.out"
+      });
+    } else {
+      cards.forEach(function (c) { c.style.opacity = 1; });
+    }
+  }
+
+  /* ---- hover tilt on cards ---- */
+  function wireTilt(card) {
+    if (!hasGSAP) return;
+    card.addEventListener("mousemove", function (e) {
+      var r = card.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width - 0.5;
+      var y = (e.clientY - r.top) / r.height - 0.5;
+      gsap.to(card, {
+        rotateY: x * 4, rotateX: -y * 4,
+        transformPerspective: 800, duration: 0.4, ease: "power2.out"
+      });
+    });
+    card.addEventListener("mouseleave", function () {
+      gsap.to(card, { rotateY: 0, rotateX: 0, duration: 0.5, ease: "power3.out" });
+    });
+  }
+  document.querySelectorAll(".p-card, .p-grid-card").forEach(wireTilt);
+
+  /* ---- tab click handling ---- */
   tabs.forEach(function (tab) {
     tab.addEventListener("click", function () {
-      tabs.forEach(function (t)   { t.classList.remove("is-active"); });
-      panels.forEach(function (p) { p.classList.remove("is-active"); });
+      if (tab.classList.contains("is-active")) return;
 
+      tabs.forEach(function (t) { t.classList.remove("is-active"); });
       tab.classList.add("is-active");
+      moveIndicator(tab);
 
-      var target = document.getElementById(tab.dataset.panel);
-      if (target) target.classList.add("is-active");
+      var targetId = tab.dataset.panel;
+      var current  = document.querySelector(".p-panel.is-active");
+      var next     = document.getElementById(targetId);
+      if (!next || next === current) return;
+
+      if (hasGSAP) {
+        gsap.to(current, {
+          opacity: 0, y: -12, duration: 0.25, ease: "power2.in",
+          onComplete: function () {
+            current.classList.remove("is-active");
+            next.classList.add("is-active");
+            gsap.set(next, { opacity: 0, y: 16 });
+            gsap.to(next, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" });
+            animatePanelIn(next);
+            next.querySelectorAll("[data-count]").forEach(countUp);
+          }
+        });
+      } else {
+        current.classList.remove("is-active");
+        next.classList.add("is-active");
+        next.querySelectorAll("[data-count]").forEach(countUp);
+      }
     });
+  });
+
+  /* ---- scroll-triggered entrance for the section head + tabs ---- */
+  if (hasGSAP && window.ScrollTrigger) {
+    var pricingSection = document.querySelector(".pricing");
+    if (pricingSection) {
+      gsap.from(".p-eyebrow, .p-heading, .p-body", {
+        scrollTrigger: { trigger: ".pricing", start: "top 75%" },
+        y: 24, opacity: 0, duration: 0.7, stagger: 0.08, ease: "power3.out"
+      });
+      gsap.from(".p-tabs", {
+        scrollTrigger: { trigger: ".p-tabs", start: "top 80%" },
+        y: 20, opacity: 0, duration: 0.7, delay: 0.15, ease: "power3.out"
+      });
+    }
+  }
+
+  /* ---- init ---- */
+  var initialTab = document.querySelector(".p-tab.is-active") || tabs[0];
+  animatePanelIn(document.querySelector(".p-panel.is-active") || panels[0]);
+  document.querySelectorAll("#panel-launchpad [data-count]").forEach(countUp);
+
+  window.addEventListener("load", function () { moveIndicator(initialTab); });
+  window.addEventListener("resize", function () {
+    moveIndicator(document.querySelector(".p-tab.is-active"));
   });
 })();
 
-/* ═══════════════════════════════════════════════════════════════
-   PREMIUM SCREENSHOT CAROUSEL — vanilla JS, no dependencies
-   Handles: infinite loop, autoplay, arrows, dots, keyboard,
-   touch swipe, mouse drag, pause-on-hover.
-   ═══════════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', function () {
-  'use strict';
-
-  const root = document.getElementById('swc-browser');
-  if (!root) return; // bail safely if markup isn't present on this page
-
-  const viewport = document.getElementById('swc-viewport');
-  const track    = document.getElementById('swc-track');
-  const slides   = Array.from(track.querySelectorAll('.swc-slide'));
-  const prevBtn  = document.getElementById('swc-prev');
-  const nextBtn  = document.getElementById('swc-next');
-  const dotsWrap = document.getElementById('swc-dots');
-  const total    = slides.length;
-
-  if (total === 0) return;
-
-  let current = 0;
-  let autoplayId = null;
-  const AUTOPLAY_MS = 4000;
-
-  const dotEls = slides.map((_, i) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'swc-dot-btn';
-    btn.setAttribute('role', 'tab');
-    btn.setAttribute('aria-label', 'Go to screenshot ' + (i + 1));
-    btn.addEventListener('click', () => goTo(i, true));
-    dotsWrap.appendChild(btn);
-    return btn;
-  });
-
-  function render() {
-    slides.forEach((slide, i) => {
-      slide.classList.remove('is-active', 'is-prev', 'is-next', 'is-hidden');
-      if (i === current) slide.classList.add('is-active');
-      else if (i === mod(current - 1)) slide.classList.add('is-prev');
-      else if (i === mod(current + 1)) slide.classList.add('is-next');
-      else slide.classList.add('is-hidden');
-    });
-    dotEls.forEach((dot, i) => {
-      dot.classList.toggle('is-active', i === current);
-      dot.setAttribute('aria-selected', i === current ? 'true' : 'false');
-    });
-  }
-
-  function mod(n) { return ((n % total) + total) % total; }
-
-  function goTo(index, userTriggered) {
-    current = mod(index);
-    render();
-    if (userTriggered) restartAutoplay();
-  }
-
-  function next(userTriggered) { goTo(current + 1, userTriggered); }
-  function prev(userTriggered) { goTo(current - 1, userTriggered); }
-
-  function startAutoplay() {
-    stopAutoplay();
-    autoplayId = setInterval(() => next(false), AUTOPLAY_MS);
-  }
-  function stopAutoplay() {
-    if (autoplayId) { clearInterval(autoplayId); autoplayId = null; }
-  }
-  function restartAutoplay() { stopAutoplay(); startAutoplay(); }
-
-  root.addEventListener('mouseenter', stopAutoplay);
-  root.addEventListener('mouseleave', startAutoplay);
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stopAutoplay(); else startAutoplay();
-  });
-
-  prevBtn.addEventListener('click', () => prev(true));
-  nextBtn.addEventListener('click', () => next(true));
-
-  root.setAttribute('tabindex', '0');
-  root.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft')  { e.preventDefault(); prev(true); }
-    if (e.key === 'ArrowRight') { e.preventDefault(); next(true); }
-  });
-
-  let pointerDown = false;
-  let startX = 0;
-  let deltaX = 0;
-  const SWIPE_THRESHOLD = 50;
-
-  function onPointerDown(x) {
-    pointerDown = true;
-    startX = x;
-    deltaX = 0;
-    root.classList.add('is-dragging');
-    stopAutoplay();
-  }
-  function onPointerMove(x) {
-    if (!pointerDown) return;
-    deltaX = x - startX;
-  }
-  function onPointerUp() {
-    if (!pointerDown) return;
-    pointerDown = false;
-    root.classList.remove('is-dragging');
-    if (deltaX > SWIPE_THRESHOLD) prev(true);
-    else if (deltaX < -SWIPE_THRESHOLD) next(true);
-    else startAutoplay();
-    deltaX = 0;
-  }
-
-  viewport.addEventListener('touchstart', (e) => onPointerDown(e.touches[0].clientX), { passive: true });
-  viewport.addEventListener('touchmove',  (e) => onPointerMove(e.touches[0].clientX),  { passive: true });
-  viewport.addEventListener('touchend', onPointerUp);
-
-  viewport.addEventListener('mousedown', (e) => { e.preventDefault(); onPointerDown(e.clientX); });
-  window.addEventListener('mousemove', (e) => onPointerMove(e.clientX));
-  window.addEventListener('mouseup', onPointerUp);
-
-  render();
-  startAutoplay();
-});
-
 /* -----------------------------------------------------------------------------
-   6. PLAN CALCULATOR
+   5b. MOBILE PRICE CAROUSEL (Fixed Subscription only)
+   3 cards: center is expanded with full detail, left/right are collapsed to
+   price-only. Tap a side card, or swipe, to bring it to center — smooth,
+   circular 3-item rotation, no jank. Desktop is untouched (see the
+   `mq.matches` guard below); this only ever runs under 820px.
 ----------------------------------------------------------------------------- */
 (function () {
+  var grid = document.querySelector("#panel-fixed .p-grid");
+  if (!grid) return;
 
-  var PAYG_TIERS = [
-    { upTo: 100,      rate: 6.99 },
-    { upTo: 300,      rate: 5.99 },
-    { upTo: Infinity, rate: 4.99 },
-  ];
+  var cards = Array.from(grid.querySelectorAll(".p-grid-card"));
+  if (cards.length < 3) return;
 
-  var FIXED_PLANS = {
-    3:  { base: 3499, extraBranch: 1750 },
-    6:  { base: 5999, extraBranch: 3000 },
-    12: { base: 9999, extraBranch: 5000 },
-  };
+  var mq = window.matchMedia("(max-width: 820px)");
+  var SLOT_CLASSES = ["p-slot-left", "p-slot-center", "p-slot-right"];
 
-  function paygRateFor(members) {
-    for (var i = 0; i < PAYG_TIERS.length; i++) {
-      if (members <= PAYG_TIERS[i].upTo) return PAYG_TIERS[i].rate;
-    }
-    return PAYG_TIERS[PAYG_TIERS.length - 1].rate;
-  }
-
-  function costRow(label, value) {
-    return (
-      '<div class="s6-cost-row">' +
-        '<span class="s6-cost-label">' + label + "</span>" +
-        '<span class="s6-cost-val">'   + value + "</span>" +
-      "</div>"
-    );
-  }
-
-  function calcFixed(months, branches) {
-    var plan    = FIXED_PLANS[months];
-    var extra   = branches > 1 ? (branches - 1) * plan.extraBranch : 0;
-    var total   = plan.base + extra;
-    var monthly = total / months;
-
-    var html = costRow(months + "-month base (1 branch)", fmtRupee(plan.base));
-
-    if (extra > 0) {
-      var addlLabel = (branches - 1) + " additional branch" + (branches - 1 > 1 ? "es" : "");
-      html += costRow(addlLabel, fmtRupee(extra));
-    }
-
-    html += costRow("Effective monthly cost", fmtRupee(monthly) + "/mo");
-
-    return { html: html, total: total, monthly: monthly };
-  }
-
-  var branchSlider  = document.getElementById("calc-branches");
-  var branchDisplay = document.getElementById("calc-branches-display");
-  var branchesGrid  = document.getElementById("calc-branches-grid");
-  var runBtn        = document.getElementById("calc-run-btn");
-
-  if (!branchSlider || !runBtn) return;
-
-  function rebuildBranchInputs(count) {
-    var existing = Array.from(branchesGrid.querySelectorAll(".s6-branch-input"));
-    var saved    = existing.map(function (i) { return i.value; });
-
-    branchesGrid.innerHTML = "";
-
-    for (var i = 0; i < count; i++) {
-      var row   = document.createElement("div");
-      row.className = "s6-branch-row";
-
-      var label = document.createElement("span");
-      label.className   = "s6-branch-label";
-      label.textContent = "Branch " + (i + 1);
-
-      var input = document.createElement("input");
-      input.className   = "s6-branch-input";
-      input.type        = "number";
-      input.min         = "1";
-      input.max         = "9999";
-      input.placeholder = "Active members";
-      input.setAttribute("data-branch", i);
-      input.value       = saved[i] || "";
-
-      row.appendChild(label);
-      row.appendChild(input);
-      branchesGrid.appendChild(row);
-    }
-  }
-
-  branchSlider.addEventListener("input", function () {
-    var val = parseInt(this.value, 10);
-    branchDisplay.textContent = val >= 10 ? "10+" : val;
-    rebuildBranchInputs(val);
+  /* order[slot] = index into `cards`. slot 0 = left, 1 = center, 2 = right */
+  var defaultCenter = cards.findIndex(function (c) {
+    return c.classList.contains("p-grid-card--popular");
   });
+  if (defaultCenter === -1) defaultCenter = 1;
 
-  var planTabs    = Array.from(document.querySelectorAll(".s6-plan-tab"));
-  var planDetails = Array.from(document.querySelectorAll(".s6-plan-detail"));
+  var order = toCenterOrder(defaultCenter);
 
-  function activatePlanTab(key) {
-    planTabs.forEach(function (t) {
-      t.classList.toggle("is-active", t.dataset.plan === key);
-    });
-    planDetails.forEach(function (d) {
-      d.classList.toggle("is-active", d.id === "detail-" + key);
-    });
+  function toCenterOrder(idx) {
+    var others = cards.map(function (_, i) { return i; }).filter(function (i) { return i !== idx; });
+    return [others[0], idx, others[1]];
   }
 
-  planTabs.forEach(function (tab) {
-    tab.addEventListener("click", function () { activatePlanTab(this.dataset.plan); });
-  });
+  function clearSlotClasses(card) {
+    card.classList.remove(SLOT_CLASSES[0], SLOT_CLASSES[1], SLOT_CLASSES[2]);
+  }
 
-  runBtn.addEventListener("click", function () {
-    var gymName      = (document.getElementById("calc-gym-name").value.trim()) || "Your Gym";
-    var branches     = parseInt(branchSlider.value, 10);
-    var memberInputs = Array.from(branchesGrid.querySelectorAll(".s6-branch-input"));
-
-    var branchMembers = memberInputs.map(function (inp) {
-      return parseInt(inp.value, 10) || 0;
-    });
-
-    var totalMembers = branchMembers.reduce(function (a, b) { return a + b; }, 0);
-
-    if (totalMembers === 0) {
-      if (memberInputs[0]) memberInputs[0].focus();
+  function render() {
+    if (!mq.matches) {
+      cards.forEach(clearSlotClasses);
+      grid.style.height = "";
       return;
     }
 
-    var paygMonthly  = 0;
-    var paygRowsHTML = "";
-
-    branchMembers.forEach(function (m, i) {
-      if (m === 0) return;
-      var rate = paygRateFor(m);
-      var cost = m * rate;
-      paygMonthly += cost;
-      paygRowsHTML += costRow(
-        "Branch " + (i + 1) + " — " + m.toLocaleString("en-IN") + " members @ ₹" + rate,
-        fmtRupee(cost) + "/mo"
-      );
+    order.forEach(function (cardIdx, slot) {
+      var card = cards[cardIdx];
+      clearSlotClasses(card);
+      card.classList.add(SLOT_CLASSES[slot]);
     });
 
-    document.getElementById("payg-rows").innerHTML    = paygRowsHTML;
-    document.getElementById("payg-total").textContent = fmtRupee(paygMonthly) + "/mo";
+    var centerCard = cards[order[1]];
+    // Measure after layout settles so height is accurate, and only if the
+    // panel is actually visible (offsetParent is null when display:none).
+    requestAnimationFrame(function () {
+      if (centerCard.offsetParent === null) return;
+      grid.style.height = centerCard.offsetHeight + "px";
+    });
+  }
 
-    var f3  = calcFixed(3,  branches);
-    var f6  = calcFixed(6,  branches);
-    var f12 = calcFixed(12, branches);
+  function rotate(direction) {
+    // direction 1 = forward (right card becomes center)
+    // direction -1 = backward (left card becomes center)
+    order = direction === 1
+      ? [order[1], order[2], order[0]]
+      : [order[2], order[0], order[1]];
+    render();
+  }
 
-    document.getElementById("fixed3-rows").innerHTML     = f3.html;
-    document.getElementById("fixed3-total").textContent  = fmtRupee(f3.total);
-    document.getElementById("fixed6-rows").innerHTML     = f6.html;
-    document.getElementById("fixed6-total").textContent  = fmtRupee(f6.total);
-    document.getElementById("fixed12-rows").innerHTML    = f12.html;
-    document.getElementById("fixed12-total").textContent = fmtRupee(f12.total);
-
-    var paygAnnual = paygMonthly * 12;
-    var bestPlan   = "payg";
-
-    if (paygAnnual > f12.total && totalMembers >= 50) bestPlan = "fixed12";
-    else if (paygMonthly > f6.monthly)                bestPlan = "fixed6";
-
-    var recommendLabels = {
-      payg:    "Pay-as-you-Go is most flexible for your size",
-      fixed6:  "6-Month plan offers the best value right now",
-      fixed12: "12-Month plan saves you the most annually",
-    };
-
-    activatePlanTab(bestPlan);
-    document.getElementById("calc-recommend-text").textContent = recommendLabels[bestPlan];
-
-    var savingsHTML = [
-      { label: "PAYG / mo",  val: fmtRupee(paygMonthly), green: false },
-      { label: "6-mo / mo",  val: fmtRupee(f6.monthly),  green: f6.monthly  < paygMonthly },
-      { label: "12-mo / mo", val: fmtRupee(f12.monthly), green: true },
-    ].map(function (item) {
-      return (
-        '<div class="s6-savings-item">' +
-          '<div class="s6-savings-num' + (item.green ? " green" : "") + '">' + item.val + "</div>" +
-          '<div class="s6-savings-sub">' + item.label + "</div>"  +
-        "</div>"
-      );
-    }).join("");
-
-    document.getElementById("savings-grid").innerHTML = savingsHTML;
-
-    document.getElementById("calc-gym-display").textContent = gymName;
-    document.getElementById("calc-result-sub").textContent  =
-      branches + " branch" + (branches > 1 ? "es" : "") +
-      " · " + totalMembers.toLocaleString("en-IN") + " total members";
-
-    document.getElementById("calc-empty").style.display = "none";
-    document.getElementById("calc-result").classList.add("is-visible");
-    document.getElementById("calc-savings").classList.add("is-visible");
-    document.getElementById("calc-cta").classList.add("is-visible");
+  cards.forEach(function (card) {
+    card.addEventListener("click", function () {
+      if (!mq.matches) return;
+      if (card.classList.contains("p-slot-left"))  rotate(-1);
+      else if (card.classList.contains("p-slot-right")) rotate(1);
+    });
   });
 
+  /* ---- swipe ---- */
+  var startX = 0, deltaX = 0, dragging = false;
+  var SWIPE_THRESHOLD = 40;
+
+  grid.addEventListener("touchstart", function (e) {
+    if (!mq.matches) return;
+    dragging = true;
+    startX = e.touches[0].clientX;
+    deltaX = 0;
+  }, { passive: true });
+
+  grid.addEventListener("touchmove", function (e) {
+    if (!dragging) return;
+    deltaX = e.touches[0].clientX - startX;
+  }, { passive: true });
+
+  grid.addEventListener("touchend", function () {
+    if (!dragging) return;
+    dragging = false;
+    if (deltaX <= -SWIPE_THRESHOLD)      rotate(1);
+    else if (deltaX >= SWIPE_THRESHOLD)  rotate(-1);
+    deltaX = 0;
+  });
+
+  /* ---- re-measure whenever the Fixed Subscription tab becomes active,
+     since its panel was display:none (offsetHeight 0) until now ---- */
+  var panel = document.getElementById("panel-fixed");
+  if (panel && "MutationObserver" in window) {
+    new MutationObserver(function () {
+      if (panel.classList.contains("is-active")) render();
+    }).observe(panel, { attributes: true, attributeFilter: ["class"] });
+  }
+
+  /* ---- breakpoint crossing + resize ---- */
+  if (mq.addEventListener) mq.addEventListener("change", render);
+  else if (mq.addListener) mq.addListener(render); // Safari <14 fallback
+
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(render, 120);
+  });
+
+  render();
 })();
 (function () {
   function isMobile() { return window.matchMedia('(max-width: 760px)').matches; }
