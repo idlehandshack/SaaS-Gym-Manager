@@ -920,6 +920,59 @@
           </div>
         </div>
       </section>
+      <section class="mj-section" id="member-journey">
+
+        <div class="mj-inner">
+          <p class="section-eyebrow">The Experience</p>
+          <h2 class="gw-heading">
+            Your Member Journey,<br /><em>Start to Finish.</em>
+          </h2>
+          <p class="gw-sub">
+            Watch how a new member goes from sign-up to walking through your door.
+          </p>
+
+          <div class="mj-tabs" id="mjTabs" role="tablist">
+            <button class="mj-tab active" type="button" role="tab" data-journey="member" aria-selected="true">Member Journey</button>
+            <button class="mj-tab" type="button" role="tab" data-journey="owner" aria-selected="false">Gym Owner Journey</button>
+            <span class="mj-tab-indicator" id="mjTabIndicator"></span>
+          </div>
+        </div>
+
+        <div class="mj-stage" id="mjStage" data-journey="member">
+
+          <div class="mj-stage-bg"></div>
+          <div class="mj-grid-fx"></div>
+          <div class="mj-noise"></div>
+
+          <div class="mj-stage-head">
+            <span class="mj-progress-label" id="mjProgLabel">Step 1 of 5</span>
+            <div class="mj-progress-track"><div class="mj-progress-fill" id="mjProgFill"></div></div>
+          </div>
+
+          <div class="mj-mini-timeline" id="mjMiniTimeline"></div>
+
+          <div class="mj-scene-viewport" id="mjSceneViewport"></div>
+
+          <!-- Idle state: shown before the journey starts -->
+          <div class="mj-start-overlay" id="mjStartOverlay">
+            <button class="mj-start-btn" id="mjStartBtn" type="button">
+              Start member journey
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="mj-final-scene" id="mjFinalScene">
+            <div class="mj-final-timeline" id="mjFinalTimeline"></div>
+            <h2>Your Member Journey Starts Here.</h2>
+            <p>From first sign-up to walking through the door — every step of the EnterGYM member experience, connected into one seamless flow.</p>
+            <button class="mj-cta-btn" id="mjExploreBtn">Close</button>
+          </div>
+
+        </div>
+
+      </section>
       <section class="testimonials-section">
       <div class="testimonials-inner">
     
@@ -1506,6 +1559,8 @@
     </script>
     <script src="{% static 'vendor/bootstrap/gsap.min.js' %}" defer></script>
     <script src="{% static 'vendor/bootstrap/ScrollTrigger.min.js' %}" defer></script>
+    <script src="{% static 'vendor/bootstrap/Flip.min.js' %}" defer></script>
+    <script src="{% static 'vendor/bootstrap/lenis.min.js' %}" defer></script>
     <script src="{% static 'js/saas_home.js' %}" defer></script>
     <script nonce="{{ request.csp_nonce }}">
       (function () {

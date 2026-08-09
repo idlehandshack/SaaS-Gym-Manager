@@ -978,3 +978,640 @@ function onEnter(elements, callback, options) {
   // before the user does anything.
   startAutoplay();
 })();
+/* -----------------------------------------------------------------------------
+   11. MEMBER / OWNER JOURNEY — tabbed, click-to-start, in-place, video-driven
+----------------------------------------------------------------------------- */
+(function () {
+  var section = document.getElementById('member-journey');
+  var stage = document.getElementById('mjStage');
+  var tabsWrap = document.getElementById('mjTabs');
+  if (!section || !stage || !tabsWrap) return;
+
+  var HAS_GSAP = typeof window.gsap !== 'undefined';
+  if (!HAS_GSAP) return;
+
+  var V = window.STATIC_URL ? window.STATIC_URL + 'videos/journey/' : '/static/videos/journey/';
+
+  var viewport      = document.getElementById('mjSceneViewport');
+  var progFill      = document.getElementById('mjProgFill');
+  var progLabel     = document.getElementById('mjProgLabel');
+  var miniTimeline  = document.getElementById('mjMiniTimeline');
+  var finalScene    = document.getElementById('mjFinalScene');
+  var finalTimeline = document.getElementById('mjFinalTimeline');
+  var startOverlay  = document.getElementById('mjStartOverlay');
+  var startBtn      = document.getElementById('mjStartBtn');
+  var exploreBtn    = document.getElementById('mjExploreBtn');
+
+  var tabBtns = Array.prototype.slice.call(tabsWrap.querySelectorAll('.mj-tab'));
+  var tabIndicator = document.getElementById('mjTabIndicator');
+
+  /* ---- Per-journey config. Swap in real video files/labels/urls. ---- */
+  var JOURNEYS = {
+    member: {
+      labels:   ['Create Account', 'Enroll into Gym', 'Enable Notifications', 'Enable Location', 'Profile Activated'],
+      videos:   ['01-signup.mp4', '02-enrollment.mp4', '03-notifications.mp4', '04-location.mp4', '05-profile.mp4'],
+      urls:     ['golden-gym.entergym.in/signup/', 'golden-gym.entergym.in/enrollment/', 'golden-gym.entergym.in/profile/', 'golden-gym.entergym.in/attendence/', 'golden-gym.entergym.in/profile/'],
+      eyebrows: ['Step 01 — Getting Started', 'Step 02 — Membership', 'Step 03 — Stay Informed', 'Step 04 — Frictionless Check-in', 'Step 05 — All Set'],
+      finalTitle: 'Your Member Journey Starts Here.',
+      finalBody: 'From first sign-up to walking through the door — every step of the EnterGYM member experience, connected into one seamless flow.',
+      startLabel: 'Start member journey'
+    },
+    owner: {
+      labels:   ['Login into Gym Account', 'Set Up Plans and Trainer', 'Add Members', 'Update Payments', 'Dashboard Live'],
+      videos:   ['o1-login.mp4', 'o2-plans.mp4', 'o3-staff.mp4', 'o4-payments.mp4', 'o5-dashboard.mp4'],
+      urls:     ['golden-gym.entergym.in/login/', 'golden-gym.entergym.in/plans/trainer/', 'golden-gym.entergym.in/quickenrollment/', 'golden-gym.entergym.in/payments/', 'golden-gym.entergym.in/dashboard/'],
+      eyebrows: ['Step 01 — Get Started', 'Step 02 — Pricing', 'Step 03 — Your Team', 'Step 04 — Revenue', 'Step 05 — Live'],
+      finalTitle: 'Run Your Gym From One Dashboard.',
+      finalBody: 'From onboarding to daily operations — everything a gym owner needs to manage members, staff, and revenue in one place.',
+      startLabel: 'Start gym owner journey'
+    }
+  };
+
+  var SCROLL_LOCK_MS = 3000; // no scroll navigation for the first 3s of a step
+
+  var activeKey = stage.dataset.journey || 'member';
+  var scenes = [], mockups = [], videos = [], miniDots = [];
+  var gen = 0;
+  var current = 0;
+  var animating = false;
+  var stepStartedAt = 0;
+
+  // The single in-flight playback attempt (if any). Lets stopAllVideos()/
+  // resetAll() forcibly retire a pending playStep() Promise — pausing the
+  // video, stripping its listeners, and resolving it as a no-op — instead
+  // of leaving it dangling with nothing left to ever settle it.
+  var currentPlayback = null;
+
+  // Set for the brief window while the Start-button's own smooth
+  // scrollIntoView() is settling. The intentional scroll can itself cause
+  // the stage to momentarily read as "not intersecting" — without this
+  // guard, the IntersectionObserver below would immediately resetAll() the
+  // journey we just started. Genuinely leaving the section (user scrolls
+  // away later) still resets normally once this flag is clear.
+  var suppressIntersectionReset = false;
+
+  function bar(url) {
+    return '<div class="mj-mockup-bar"><span class="mj-mdot r"></span><span class="mj-mdot y"></span><span class="mj-mdot g"></span><span class="mj-murl">' + url + '</span></div>';
+  }
+
+  /* ---- video lifecycle state helpers ----
+     States: idle -> loading -> ready -> playing -> (failed)
+     "ended" doesn't get its own persistent state; a naturally-completed
+     video is left as "ready" so it can be replayed (e.g. goBackward) without
+     re-downloading. Stored on data-video-state so it's inspectable in
+     DevTools during manual QA. */
+  function getVState(video) { return video ? (video.dataset.videoState || 'idle') : 'idle'; }
+  function setVState(video, state) { if (video) video.dataset.videoState = state; }
+
+  /* Tears down and rebuilds the mini-timeline, final-timeline, and scene
+     DOM for whichever journey key is passed in. Videos get a data-src
+     placeholder only — no real src is assigned until loadVideo() runs
+     for that specific step, so nothing is requested on build/tab-switch. */
+  function buildJourney(key) {
+    var cfg = JOURNEYS[key];
+    if (!cfg) return;
+
+    viewport.innerHTML = '';
+    miniTimeline.innerHTML = '';
+    finalTimeline.innerHTML = '';
+    if (finalScene.querySelector('h2')) finalScene.querySelector('h2').textContent = cfg.finalTitle;
+    if (finalScene.querySelector('p')) finalScene.querySelector('p').textContent = cfg.finalBody;
+
+    scenes = []; mockups = []; videos = []; miniDots = [];
+
+    cfg.labels.forEach(function (label, i) {
+      var wrap = document.createElement('div');
+      wrap.className = 'mj-mini-dot-wrap';
+      wrap.innerHTML = '<div class="mj-mini-dot" data-i="' + (i + 1) + '"><div class="mj-core"></div></div>';
+      miniTimeline.appendChild(wrap);
+      miniDots.push(wrap.querySelector('.mj-mini-dot'));
+      if (i < cfg.labels.length - 1) {
+        var line = document.createElement('div');
+        line.className = 'mj-mini-line';
+        line.dataset.i = i + 1;
+        line.innerHTML = '<div class="mj-fill"></div><div class="mj-particle"></div>';
+        miniTimeline.appendChild(line);
+      }
+    });
+
+    cfg.labels.forEach(function (_, i) {
+      var d = document.createElement('div');
+      d.className = 'mj-ft-dot';
+      d.dataset.n = String(i + 1).padStart(2, '0');
+      finalTimeline.appendChild(d);
+      if (i < cfg.labels.length - 1) {
+        var l = document.createElement('div');
+        l.className = 'mj-ft-line';
+        l.innerHTML = '<div class="mj-p"></div>';
+        finalTimeline.appendChild(l);
+      }
+    });
+
+    cfg.labels.forEach(function (_, idx) {
+      var sc = document.createElement('div');
+      sc.className = 'mj-scene';
+      sc.id = 'mjScene' + (idx + 1);
+      sc.innerHTML =
+        '<div class="mj-mockup-wrap">' +
+          '<div class="mj-mockup-topbar">' +
+            '<button class="mj-skip-btn" type="button">Skip step <span>\u2192</span></button>' +
+            '<button class="mj-close-btn" type="button" aria-label="Close journey">\u2715</button>' +
+          '</div>' +
+          '<div class="mj-mockup">' +
+            bar(cfg.urls[idx]) +
+            '<div class="mj-mscreen">' +
+              '<video playsinline muted preload="metadata" data-src="' + V + cfg.videos[idx] + '" data-video-state="idle"></video>' +
+            '</div>' +
+          '</div>' +
+          '<div class="mj-caption"><div class="mj-eyebrow">' + cfg.eyebrows[idx] + '</div><h3>' + cfg.labels[idx] + '</h3></div>' +
+        '</div>';
+      viewport.appendChild(sc);
+      scenes.push(sc);
+      mockups.push(sc.querySelector('.mj-mockup'));
+      videos.push(sc.querySelector('video'));
+
+      var skipBtn = sc.querySelector('.mj-skip-btn');
+      skipBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        goForward();
+      });
+
+      var closeBtnEl = sc.querySelector('.mj-close-btn');
+      closeBtnEl.addEventListener('click', function (e) {
+        e.stopPropagation();
+        closeJourney();
+      });
+    });
+  }
+
+  function delay(sec) { return new Promise(function (res) { setTimeout(res, sec * 1000); }); }
+
+  function markStepStart() { stepStartedAt = Date.now(); }
+  function scrollLocked() { return (Date.now() - stepStartedAt) < SCROLL_LOCK_MS; }
+
+  // Pauses every video that has actually been loaded (never forces an
+  // unloaded one to load just to pause it), and forcibly retires whatever
+  // playback attempt is currently in flight so it can never advance the
+  // journey later — this is the single choke point every interruption
+  // (skip, scroll, close, tab switch, leaving the viewport) routes through.
+  // Loaded videos are never stripped of their src here — a previously
+  // downloaded video stays downloaded and can be resumed/replayed later.
+  function stopAllVideos() {
+    videos.forEach(function (v) {
+      if (!v) return;
+      var st = getVState(v);
+      if (st === 'ready' || st === 'playing' || st === 'loading') {
+        try { v.pause(); } catch (e) { /* ignore — element may be mid-teardown */ }
+        if (st === 'playing') setVState(v, 'ready');
+      }
+    });
+    if (currentPlayback) {
+      var cp = currentPlayback;
+      currentPlayback = null;
+      cp.cancel();
+    }
+  }
+
+  // Assigns the real src for step n's video, idempotently:
+  //   - idle    -> assign data-src to src exactly once, call load(), mark loading
+  //   - loading -> a load is already in flight; reuse the same element/attempt
+  //   - ready / playing -> already successfully loaded; reuse as-is
+  //   - failed  -> allow a controlled retry (caller explicitly re-entered this step)
+  // Loaded state is tracked via data-video-state rather than inferring it
+  // from video.src, so a video already downloaded is always reused, never
+  // re-requested — and a failed attempt is never mistaken for a success.
+  function loadVideo(n) {
+    var video = videos[n - 1];
+    if (!video) return null;
+
+    var state = getVState(video);
+    if (state === 'ready' || state === 'playing' || state === 'loading') return video;
+
+    // idle or failed: (re-)assign data-src to src exactly once and kick off
+    // load(). No listeners of any kind are attached here — playStep() owns
+    // the entire loading-to-playback lifecycle for the active video, so
+    // there's a single source of truth and no race between two listeners.
+    var src = video.dataset.src;
+    if (!src) return video;
+
+    console.log('[member-journey] loading step ' + n);
+    setVState(video, 'loading');
+    video.src = src;
+    video.load();
+    return video;
+  }
+
+  function revealMockup(mockupEl) {
+    if (!mockupEl) return Promise.resolve();
+    gsap.killTweensOf(mockupEl);
+    return new Promise(function (resolve) {
+      gsap.fromTo(mockupEl,
+        { opacity: 0, scale: 0.94 },
+        { opacity: 1, scale: 1, duration: 0.5, ease: 'power3.out', clearProps: 'transform', onComplete: resolve }
+      );
+    });
+  }
+
+  // Event-driven playback for step n. Resolves in exactly two situations:
+  //   1) the video's native `ended` event fires (normal completion), or
+  //   2) this attempt is explicitly cancelled from outside (stopAllVideos(),
+  //      called by enterStep/resetAll/goToFinal on skip, scroll, close, or
+  //      tab switch) — resolved as a no-op; the caller's generation check
+  //      (`myGen !== gen`) is what actually prevents any advance.
+  // A failed load, a playback error, or a rejected play() Promise are all
+  // logged and left "stuck" on the current scene on purpose — per spec, a
+  // failure must never silently advance the journey. The user can still
+  // move on via Skip/scroll, which cancels this attempt through the path above.
+  // playStep() always settles exactly once, with an explicit result object:
+  //   { status: 'ended' }     — video reached its native `ended` event
+  //   { status: 'cancelled' } — explicitly interrupted (Skip/scroll/Close/
+  //                             tab switch/reset/newer generation)
+  //   { status: 'failed' }    — load error, media error, aborted load, or
+  //                             a rejected play() Promise
+  // A `settled` flag guards the single internal finish() so late events
+  // (an `ended` that fires after cancel, an `error` after ended, a
+  // play()-rejection after cancel, etc.) can never settle it twice or flip
+  // an already-decided result.
+  // playStep() is the SOLE owner of the active video's loading-to-playback
+  // lifecycle: it calls loadVideo() (which only assigns src/load()s and
+  // never attaches listeners), then inspects video.readyState directly
+  // instead of blindly waiting for loadeddata/canplay — a video can already
+  // be at readyState >= 2 by the time we get here (e.g. it finished loading
+  // during the mockup-reveal animation), and waiting on an event that has
+  // already fired is exactly what previously left playback stuck after a
+  // successful download.
+  function playStep(n, myGen) {
+    var video = loadVideo(n);
+    if (!video) return Promise.resolve({ status: 'failed' });
+
+    return new Promise(function (resolve) {
+      var settled = false;
+      var cleanedUp = false;
+      var playbackStarted = false;    // guards video.play() so it fires at most once
+      var cancelRequested = false;    // distinguishes an intentional cancel from a real abort/error
+      var attemptToken = {};
+
+      function cleanupListeners() {
+        if (cleanedUp) return;
+        cleanedUp = true;
+        video.removeEventListener('loadeddata', onReady);
+        video.removeEventListener('canplay', onReady);
+        video.removeEventListener('ended', onEnded);
+        video.removeEventListener('error', onError);
+        video.removeEventListener('abort', onAbort);
+      }
+
+      function clearOwnPlayback() {
+        if (currentPlayback && currentPlayback.video === video && currentPlayback.__attempt === attemptToken) {
+          currentPlayback = null;
+        }
+      }
+
+      function finish(status) {
+        if (settled) return;
+        settled = true;
+        cleanupListeners();
+        clearOwnPlayback();
+        resolve({ status: status });
+      }
+
+      function logFailure(reason) {
+        var src = video.dataset.src || video.currentSrc || video.src || '(unknown source)';
+        console.warn('[member-journey] video failed for step ' + n + ': ' + src + (reason ? ' — ' + reason : ''));
+      }
+
+      function onReady() {
+        // Only relevant while we're still waiting to start playback; once
+        // attemptPlay() has run once, later loadeddata/canplay firings are
+        // ignored (playbackStarted guards attemptPlay itself, too).
+        if (settled || myGen !== gen) return;
+        attemptPlay();
+      }
+
+      function onEnded() {
+        // Natural completion — leave state as "ready" so a later replay
+        // (goBackward -> goForward again) doesn't need to re-download.
+        if (getVState(video) === 'playing') setVState(video, 'ready');
+        console.log('[member-journey] ended step ' + n);
+        finish('ended');
+      }
+
+      function onError() {
+        setVState(video, 'failed');
+        logFailure('media error event');
+        finish('failed');
+      }
+
+      function onAbort() {
+        // Fires both on an intentional cancel-triggered pause/reload and on
+        // a genuine media/network abort. If we already know this is an
+        // intentional cancellation (cancelRequested), let cancel()'s own
+        // finish('cancelled') be the one settlement — do nothing here.
+        if (cancelRequested) return;
+        setVState(video, 'failed');
+        logFailure('aborted');
+        finish('failed');
+      }
+
+      video.addEventListener('ended', onEnded);
+      video.addEventListener('error', onError);
+      video.addEventListener('abort', onAbort);
+
+      currentPlayback = {
+        video: video,
+        __attempt: attemptToken,
+        cancel: function () {
+          if (settled) return;
+          cancelRequested = true;
+          try { video.pause(); } catch (e) { /* ignore — element may be mid-teardown */ }
+          if (getVState(video) === 'playing') setVState(video, 'ready');
+          finish('cancelled');
+        }
+      };
+
+      function attemptPlay() {
+        if (settled || playbackStarted) return;
+        playbackStarted = true;
+        video.removeEventListener('loadeddata', onReady);
+        video.removeEventListener('canplay', onReady);
+
+        console.log('[member-journey] attempting play step ' + n);
+        video.currentTime = 0;
+        var playPromise = video.play();
+        setVState(video, 'playing');
+        if (playPromise && playPromise.then) {
+          playPromise.then(function () {
+            console.log('[member-journey] play() resolved step ' + n);
+          }, function (err) {
+            if (settled) return; // already cancelled/ended — ignore late rejection
+            console.warn('[member-journey] play failed step ' + n);
+            setVState(video, 'failed');
+            logFailure('play() rejected: ' + (err && err.message ? err.message : err));
+            finish('failed');
+          });
+        }
+      }
+
+      // readyState >= 2 (HAVE_CURRENT_DATA) means the browser already has
+      // enough of the current frame to start playback — check this FIRST,
+      // synchronously, before ever attaching a readiness listener. This is
+      // what closes the race: the video may have finished loading while we
+      // were off doing the mockup-reveal GSAP animation, in which case
+      // loadeddata/canplay already fired and nothing would ever call us again.
+      console.log('[member-journey] readyState: ' + video.readyState + ' for step ' + n);
+      if (video.readyState >= 2) {
+        attemptPlay();
+      } else {
+        var state = getVState(video);
+        if (state === 'idle' || state === 'failed') {
+          // Defensive: loadVideo() should already have moved this to
+          // "loading" and called load(), but if we somehow got here with
+          // nothing in flight, there is no readiness event coming.
+          logFailure('no playable video for this attempt (state: ' + state + ')');
+          setVState(video, 'failed');
+          finish('failed');
+          return;
+        }
+        video.addEventListener('loadeddata', onReady);
+        video.addEventListener('canplay', onReady);
+      }
+    });
+  }
+
+  function setProgress(step) {
+    var total = JOURNEYS[activeKey].labels.length;
+    var pct = Math.min(step, total) * (100 / total);
+    gsap.to(progFill, { width: pct + '%', duration: 0.5, ease: 'power2.out' });
+    progLabel.textContent = (step >= 1 && step <= total)
+      ? ('Step ' + step + ' of ' + total)
+      : (step === total + 1 ? 'Complete' : ('Step 1 of ' + total));
+    miniDots.forEach(function (d, idx) {
+      var i = idx + 1;
+      d.classList.toggle('done', i < step);
+      d.classList.toggle('now', i === step);
+    });
+    miniTimeline.querySelectorAll('.mj-mini-line').forEach(function (l) {
+      var i = +l.dataset.i;
+      gsap.to(l.querySelector('.mj-fill'), { height: i < step ? '100%' : '0%', duration: 0.5, ease: 'power2.out' });
+      l.classList.toggle('flow', i === step);
+    });
+  }
+
+  function showScene(idx) {
+    scenes.forEach(function (sc, i) { sc.classList.toggle('active', i === idx - 1); });
+  }
+
+  function resetFinalVisuals() {
+    finalScene.classList.remove('active');
+    finalTimeline.querySelectorAll('.mj-ft-dot').forEach(function (d) { gsap.set(d, { opacity: 0, scale: .3 }); });
+    if (finalScene.querySelector('h2')) gsap.set(finalScene.querySelector('h2'), { opacity: 0, y: 16 });
+    if (finalScene.querySelector('p')) gsap.set(finalScene.querySelector('p'), { opacity: 0, y: 16 });
+    if (finalScene.querySelector('.mj-cta-btn')) gsap.set(finalScene.querySelector('.mj-cta-btn'), { opacity: 0, y: 16 });
+  }
+
+  // Safe to call any number of times in a row (tab switching calls it
+  // twice back to back): stops/cancels playback, resets only videos that
+  // were actually loaded (never forces a download), and re-idles the stage.
+  function resetAll() {
+    gen++;
+    gsap.killTweensOf('#member-journey *');
+    stopAllVideos();
+    videos.forEach(function (v) {
+      if (!v) return;
+      var st = getVState(v);
+      if (st === 'ready' || st === 'playing') {
+        try { v.currentTime = 0; } catch (e) { /* ignore */ }
+        setVState(v, 'ready');
+      }
+      // idle/loading/failed videos are left alone — never forced to load,
+      // never have their src touched, just as before.
+    });
+    resetFinalVisuals();
+
+    current = 0;
+    animating = false;
+    stage.classList.remove('mj-active');
+    document.body.style.overflow = '';
+    setProgress(1);
+    showScene(1);
+    if (mockups[0]) gsap.set(mockups[0], { opacity: 1 });
+  }
+
+  // Moves the stage forward into step `n`: flips the mockup into place,
+  // then plays its video. If the video finishes on its own (i.e. nothing
+  // else interrupted this generation), it advances again automatically.
+  // Moves the stage forward into step `n`: kicks off the video's
+  // load -> readyState-check -> play lifecycle immediately (so playback
+  // starts as close to the user's gesture as possible), while the mockup's
+  // GSAP reveal animation runs concurrently rather than gating it. The two
+  // are independent: the visual reveal is purely cosmetic and must never
+  // delay video.play(), and video.play() must never wait on GSAP.
+  async function enterStep(n) {
+    gen++;
+    var myGen = gen;
+    animating = true;
+    stopAllVideos(); // retires whatever the previous step/generation was doing
+    resetFinalVisuals();
+    current = n;
+    setProgress(n);
+    showScene(n);
+    markStepStart();
+
+    var mockup = mockups[n - 1];
+    if (mockup) gsap.set(mockup, { opacity: 0 });
+
+    // Fire playback immediately — do NOT await the reveal animation first.
+    var playbackPromise = playStep(n, myGen);
+    revealMockup(mockup).then(function () {
+      if (myGen === gen) animating = false;
+    });
+
+    var result = await playbackPromise;
+    if (myGen !== gen) return; // interrupted/cancelled/tab-switched — never advance
+    if (!result || result.status !== 'ended') return; // cancelled or failed — stay put
+    goForward(); // video reached its natural `ended` event — move on
+  }
+
+  async function goToFinal() {
+    gen++;
+    var myGen = gen;
+    animating = true;
+    stopAllVideos();
+    scenes.forEach(function (sc) { sc.classList.remove('active'); });
+    var total = JOURNEYS[activeKey].labels.length;
+    setProgress(total + 1);
+    current = total + 1;
+
+    await delay(0.2); if (myGen !== gen) return;
+    finalScene.classList.add('active');
+    var dots = finalTimeline.querySelectorAll('.mj-ft-dot');
+    var tline = gsap.timeline();
+    dots.forEach(function (d, i) { tline.to(d, { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(2)' }, i * 0.14); });
+    tline.to(finalScene.querySelector('h2'), { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, '-=0.15')
+         .to(finalScene.querySelector('p'), { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, '-=0.35')
+         .to(finalScene.querySelector('.mj-cta-btn'), { opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.7)' }, '-=0.3');
+    await new Promise(function (res) { tline.eventCallback('onComplete', res); });
+    if (myGen !== gen) return;
+    animating = false;
+    markStepStart();
+  }
+
+  // Advances one step forward — used by: video-end, "Skip step", scroll-down.
+  function goForward() {
+    if (animating) return;
+    var total = JOURNEYS[activeKey].labels.length;
+    if (current >= 1 && current < total) enterStep(current + 1);
+    else if (current === total) goToFinal();
+    // current === total+1 (final): nothing further forward
+  }
+
+  // Goes back one step — used by: scroll-up only.
+  function goBackward() {
+    if (animating) return;
+    var total = JOURNEYS[activeKey].labels.length;
+    if (current === total + 1) enterStep(total);
+    else if (current > 1) enterStep(current - 1);
+    // current === 1: nothing before the first step
+  }
+
+  function closeJourney() { resetAll(); }
+
+  /* Updates only the button's leading text node, leaving the arrow <svg> child intact. */
+  function setStartLabel(key) {
+    var label = (JOURNEYS[key] && JOURNEYS[key].startLabel) || 'Start journey';
+    if (startBtn.childNodes.length && startBtn.childNodes[0].nodeType === Node.TEXT_NODE) {
+      startBtn.childNodes[0].nodeValue = label + ' ';
+    } else {
+      startBtn.insertBefore(document.createTextNode(label + ' '), startBtn.firstChild);
+    }
+  }
+
+  /* -------------------- tab switching -------------------- */
+  function moveIndicator(btn) {
+    if (!btn || !tabIndicator) return;
+    tabIndicator.style.width = btn.offsetWidth + 'px';
+    tabIndicator.style.transform = 'translateX(' + btn.offsetLeft + 'px)';
+  }
+
+  function switchJourney(key) {
+    if (key === activeKey || !JOURNEYS[key]) return;
+
+    resetAll(); // stop/cancel current journey's playback, unlock scroll, clear state
+
+    activeKey = key;
+    stage.dataset.journey = key;
+
+    buildJourney(key); // rebuild scenes/timeline for the new journey (no videos loaded yet)
+    resetAll();        // set initial progress/scene for the fresh build
+    setStartLabel(key);
+
+    tabBtns.forEach(function (b) {
+      var isActive = b.dataset.journey === key;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    var activeBtn = tabBtns.filter(function (b) { return b.dataset.journey === key; })[0];
+    moveIndicator(activeBtn);
+  }
+
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () { switchJourney(btn.dataset.journey); });
+  });
+
+  /* -------------------- entry -------------------- */
+  startBtn.addEventListener('click', function () {
+    stage.classList.add('mj-active');
+    var target = window.matchMedia('(max-width: 820px)').matches ? section : stage;
+    suppressIntersectionReset = true;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(function () { document.body.style.overflow = 'hidden'; }, 650);
+    // A smooth scrollIntoView typically settles well under a second; give
+    // it a generous window before letting IntersectionObserver matter again.
+    setTimeout(function () { suppressIntersectionReset = false; }, 1200);
+    enterStep(1);
+  });
+
+  if (exploreBtn) exploreBtn.addEventListener('click', closeJourney);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && stage.classList.contains('mj-active')) closeJourney();
+  });
+
+  // Scroll-to-navigate: only active once a journey is underway, and only
+  // while the cursor is over the stage itself (page scroll works normally
+  // everywhere else). The first 3s of every step ignore scroll entirely;
+  // after that, scrolling down moves forward and scrolling up moves back —
+  // always overriding whatever else was happening (skip behaves the same way).
+  stage.addEventListener('wheel', function (e) {
+    if (!stage.classList.contains('mj-active') || current === 0) return;
+    e.preventDefault();
+    if (scrollLocked() || animating) return;
+    if (e.deltaY > 0) goForward();
+    else if (e.deltaY < 0) goBackward();
+  }, { passive: false });
+
+  /* Leaving the section resets it — always a fresh start on return. */
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting && !suppressIntersectionReset) resetAll();
+      });
+    }, { threshold: 0 }).observe(stage);
+  }
+
+  /* -------------------- init -------------------- */
+  buildJourney(activeKey);
+  resetAll();
+  setStartLabel(activeKey);
+
+  var initialBtn = tabBtns.filter(function (b) { return b.dataset.journey === activeKey; })[0];
+  if (initialBtn) {
+    initialBtn.classList.add('active');
+    initialBtn.setAttribute('aria-selected', 'true');
+    requestAnimationFrame(function () { moveIndicator(initialBtn); });
+  }
+  window.addEventListener('resize', function () {
+    var b = tabBtns.filter(function (x) { return x.dataset.journey === activeKey; })[0];
+    moveIndicator(b);
+  });
+})();

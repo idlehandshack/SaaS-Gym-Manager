@@ -3356,6 +3356,342 @@ img, svg   { max-width: 100%; }
   .gws-orb--3 { width: 90px; height: 90px; }
 }
 /* ─────────────────────────────────────────────────────────────────
+   MEMBER JOURNEY SECTION
+   ───────────────────────────────────────────────────────────────── */
+#member-journey { position: relative; background: var(--bg); }
+.mj-tabs {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 22px auto 0;
+  padding: 5px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 999px;
+}
+.mj-tab {
+  position: relative;
+  z-index: 2;
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--text-lo);
+  cursor: pointer;
+  transition: color 0.25s ease;
+  white-space: nowrap;
+}
+.mj-tab.active { color: #fff; }
+.mj-tab-indicator {
+  position: absolute;
+  top: 5px; left: 5px;
+  height: calc(100% - 10px);
+  border-radius: 999px;
+  background: var(--indigo);
+  box-shadow: 0 8px 24px -6px rgba(91,95,255,.6);
+  z-index: 1;
+  transition: transform 0.35s cubic-bezier(.65,0,.35,1), width 0.35s cubic-bezier(.65,0,.35,1);
+}
+.mj-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 100px 40px 40px;
+  text-align: center;
+}
+.mj-inner .gw-heading { margin: 14px 0; }
+.mj-inner .gw-sub { margin: 0 auto; }
+
+/* In normal document flow — never covers the real nav, never needs
+   body-scroll locking. Scroll hijack only ever runs once expanded
+   (see JS), and body scroll is explicitly locked for that state. */
+.mj-stage {
+  position: relative;
+  width: 100%;
+  height: 105vh;
+  min-height: 560px;
+  max-height: 880px;
+  margin: 0 auto 80px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #050505;
+  border: 1px solid rgba(255,255,255,.08);
+  transition: border-radius 0.35s ease;
+}
+
+/* Backdrop shown behind the expanded stage. The stage itself no longer
+   covers the full viewport — it becomes a large centered "screen" that
+   covers ~70% of the viewport, so the dimmed page stays visible around it. */
+.mj-backdrop {
+  position: fixed; inset: 0; z-index: 899;
+  background: rgba(3,3,6,.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+.mj-backdrop.mj-show { opacity: 1; visibility: visible; pointer-events: auto; }
+
+/* Expanded state — a large 70%-of-viewport "screen", entered only on
+   explicit user click, always exitable via the close button or Escape. */
+.mj-stage.mj-expanded {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70vw;
+  height: 70vh;
+  min-width: 640px;
+  min-height: 480px;
+  max-width: 1400px;
+  max-height: none;
+  border-radius: 20px;
+  z-index: 900;
+  margin: 0;
+  box-shadow: 0 60px 140px -30px rgba(0,0,0,.85);
+}
+
+.mj-controls {
+  position: absolute; top: 20px; right: 20px; z-index: 40;
+  display: flex; align-items: center; gap: 10px;
+}
+.mj-skip-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 100px;
+  color: var(--text-lo);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, background 0.2s ease, color 0.2s ease;
+}
+.mj-stage.mj-active .mj-skip-btn { opacity: 1; pointer-events: auto; }
+.mj-skip-btn:hover { background: rgba(255,255,255,.12); color: var(--text-hi); }
+.mj-skip-btn:disabled { opacity: 0.35; pointer-events: none; }
+
+.mj-close-btn {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 50%;
+  color: var(--text-lo);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  margin-left: 10px;
+  transition: opacity 0.25s ease, background 0.2s ease, color 0.2s ease;
+}
+.mj-stage.mj-active .mj-close-btn,
+.mj-stage.mj-expanded .mj-close-btn { opacity: 1; pointer-events: auto; }
+.mj-close-btn:hover { background: rgba(255,80,80,.15); color: #ff8a8a; border-color: rgba(255,80,80,.3); }
+
+.mj-start-overlay {
+  position: absolute; inset: 0; z-index: 35;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(5,5,5,.35);
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.mj-stage.mj-active .mj-start-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.mj-start-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 30px;
+  background: var(--indigo);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 20px 50px -10px rgba(91,95,255,.6);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.mj-start-btn:hover { background: #4d51e8; transform: translateY(-2px); }
+.mj-start-btn svg { transition: transform 0.25s ease; }
+.mj-start-btn:hover svg { transform: translateX(3px); }
+
+.mj-stage-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 40%, rgba(91,95,255,.12), transparent 60%),
+    radial-gradient(ellipse 90% 90% at 50% 100%, rgba(91,95,255,.06), transparent 70%),
+    #050505;
+}
+.mj-noise {
+  position: absolute; inset: 0; opacity: .04; mix-blend-mode: overlay; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.mj-grid-fx {
+  position: absolute; inset: 0; opacity: .5;
+  background-image: linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, black 30%, transparent 85%);
+}
+
+/* Step counter + progress bar — always centered at the top of the stage,
+   independent of the close button in the corner. */
+.mj-stage-head {
+  position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+  z-index: 20;
+  display: flex; align-items: center; gap: 12px;
+}
+.mj-progress-track { width: 180px; height: 3px; background: rgba(255,255,255,.1); border-radius: 99px; overflow: hidden; }
+.mj-progress-fill { height: 100%; width: 0%; background: var(--indigo); box-shadow: 0 0 12px rgba(91,95,255,.7); }
+.mj-progress-label { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; color: var(--text-lo); text-transform: uppercase; white-space: nowrap; }
+
+.mj-mini-timeline {
+  position: absolute; right: 28px; top: 50%; transform: translateY(-50%); z-index: 20;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+}
+.mj-mini-dot-wrap { display: flex; flex-direction: column; align-items: center; }
+.mj-mini-dot {
+  width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.16); position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.mj-mini-dot .mj-core { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.25); transition: background .3s ease, box-shadow .3s ease; }
+.mj-mini-dot.done .mj-core { background: var(--indigo); box-shadow: 0 0 10px rgba(91,95,255,.8); }
+.mj-mini-dot.now { border-color: var(--indigo); box-shadow: 0 0 0 5px rgba(91,95,255,.14), 0 0 20px rgba(91,95,255,.7); }
+.mj-mini-dot.now .mj-core { background: var(--indigo); box-shadow: 0 0 12px rgba(91,95,255,.9); }
+.mj-mini-line { width: 1px; height: 24px; background: rgba(255,255,255,.14); position: relative; overflow: hidden; }
+.mj-mini-line .mj-fill { position: absolute; top: 0; left: 0; width: 100%; height: 0%; background: var(--indigo); }
+.mj-mini-line .mj-particle { position: absolute; left: -1.5px; width: 4px; height: 4px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px 2px var(--indigo); opacity: 0; }
+@keyframes mjTravel { 0%{top:-4px; opacity:0;} 10%{opacity:1;} 90%{opacity:1;} 100%{top:100%; opacity:0;} }
+.mj-mini-line.flow .mj-particle { animation: mjTravel 1.4s linear infinite; }
+
+.mj-scene-viewport { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; perspective: 1400px; }
+.mj-scene {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 74px 24px 40px;
+  box-sizing: border-box;
+  opacity: 0; pointer-events: none; visibility: hidden;
+}
+.mj-scene.active { opacity: 1; pointer-events: auto; visibility: visible; }
+
+/* Wrap holds the skip control (top, right-aligned, directly above the
+   mockup's browser bar), the mockup itself, and the caption — stacked so
+   the mockup can grow to fill the available height of the stage. */
+.mj-mockup-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: min(880px, 82%);
+  height: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+.mj-mockup-topbar { flex: none; display: flex; justify-content: flex-end; }
+.mj-mockup-topbar .mj-skip-btn { position: static; }
+
+.mj-mockup {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px; overflow: hidden;
+  background: #0d0d0d; border: 1px solid rgba(255,255,255,.09);
+  box-shadow: 0 40px 100px -20px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.02) inset;
+}
+.mj-mockup-bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #0e0e0e; border-bottom: 1px solid rgba(255,255,255,.07); }
+.mj-mdot { width: 9px; height: 9px; border-radius: 50%; }
+.mj-mdot.r { background: #ff5f57; } .mj-mdot.y { background: #febc2e; } .mj-mdot.g { background: #28c840; }
+.mj-murl { flex: 1; margin-left: 10px; background: #1b1b1b; border: 1px solid rgba(255,255,255,.08); border-radius: 999px; padding: 5px 14px; font-size: 12px; color: #9a9a9a; font-family: var(--mono); }
+
+/* Video mockup screen — fills all remaining space in the mockup and the
+   video itself is stretched/cropped to fully cover that space. */
+.mj-mscreen { position: relative; flex: 1 1 auto; min-height: 0; background: #0d0d0d; overflow: hidden; }
+.mj-mscreen video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #0d0d0d;
+}
+
+.mj-caption { flex: none; text-align: center; padding-top: 2px; }
+.mj-caption .mj-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .26em; text-transform: uppercase; color: var(--indigo); margin-bottom: 6px; }
+.mj-caption h3 { font-family: var(--display); font-size: 20px; margin: 0; font-weight: 800; color: var(--text-hi); }
+
+.mj-final-scene {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; text-align: center; visibility: hidden; padding: 20px;
+}
+.mj-final-scene.active { opacity: 1; pointer-events: auto; visibility: visible; }
+.mj-final-timeline { display: flex; align-items: center; gap: 0; margin-bottom: 40px; }
+.mj-ft-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--indigo); box-shadow: 0 0 16px rgba(91,95,255,.8); position: relative; flex: none; opacity: 0; transform: scale(.3); }
+.mj-ft-dot::after { content: attr(data-n); position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 9px; color: var(--text-lo); letter-spacing: .1em; }
+.mj-ft-line { width: 48px; height: 2px; background: var(--indigo); position: relative; overflow: hidden; }
+.mj-ft-line .mj-p { position: absolute; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px 2px var(--indigo); animation: mjFtFlow 1.8s linear infinite; }
+@keyframes mjFtFlow { 0%{left:-6px;} 100%{left:100%;} }
+
+.mj-final-scene h2 {
+  font-family: var(--display); font-size: clamp(24px,4.4vw,44px); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 14px; max-width: 640px;
+  color: var(--text-hi); opacity: 0; transform: translateY(16px);
+}
+.mj-final-scene p { font-family: var(--mono); color: var(--text-lo); font-size: 14px; max-width: 480px; margin: 0 0 26px; line-height: 1.6; opacity: 0; transform: translateY(16px); }
+.mj-cta-btn {
+  padding: 13px 30px; border-radius: 999px; background: var(--indigo);
+  color: #fff; font-family: var(--display); font-weight: 800; font-size: 14px; border: none; cursor: pointer;
+  box-shadow: 0 20px 50px -10px rgba(91,95,255,.6); opacity: 0; transform: translateY(16px);
+  transition: box-shadow .2s ease, background .2s ease;
+}
+.mj-cta-btn:hover { background: #4d51e8; box-shadow: 0 28px 60px -8px rgba(91,95,255,.75); }
+
+@media (max-width: 820px) {
+  .mj-tab { padding: 9px 15px; font-size: 12.5px; }
+  .mj-mini-timeline {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    position: absolute;
+    top: 58px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    z-index: 20;
+  }
+  .mj-mscreen video { object-fit: contain; }
+  .mj-mini-dot { width: 24px; height: 24px; border-radius: 7px; }
+  .mj-mini-dot .mj-core { width: 6px; height: 6px; }
+  .mj-mini-line { width: 20px; height: 2px; }
+  .mj-mini-line .mj-particle { left: 0; top: -1px; width: 4px; height: 4px; }
+  .mj-mini-line.flow .mj-particle { animation-name: mjTravelH; }
+  @keyframes mjTravelH { 0%{left:-4px; opacity:0;} 10%{opacity:1;} 90%{opacity:1;} 100%{left:100%; opacity:0;} }
+  .mj-stage-head { top: 16px; }
+  .mj-progress-track { width: 100px; }
+  .mj-inner { padding: 32px 20px 28px; }
+  .mj-stage { height: 62vh; min-height: 440px; max-height: 640px; border-radius: 14px; margin-bottom: 56px; }
+  .mj-scene { padding: 78px 14px 20px; }
+  .mj-mockup { flex: none; }
+  .mj-mockup-wrap { width: 92%; justify-content: center;}
+  .mj-mscreen { flex: none; aspect-ratio: 16 / 9; }
+  .mj-mockup-bar { padding: 8px 10px; }
+  .mj-murl {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .mj-caption h3 { font-size: 17px; }
+  .mj-caption .mj-eyebrow { font-size: 10px; letter-spacing: .18em; }
+  .mj-skip-btn { padding: 7px 13px; font-size: 0.68rem; }
+  .mj-close-btn { width: 30px; height: 30px; }
+}
+
+/* ─────────────────────────────────────────────────────────────────
    TESTIMONIALS — directional slide carousel
    Uses the site's existing tokens: --border --indigo --green --yellow
    --text-hi --text-mid --text-lo --text-faint --mono
