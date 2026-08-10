@@ -140,8 +140,6 @@
                 {% for logo in trusted_gym_logos %}
                   <img class="hero-logo-item" src="{{ logo.logo_url }}" alt="{{ logo.name }} logo" loading="lazy" />
                 {% endfor %}
-          
-                {# Set B — exact duplicate of Set A, required for the seamless loop #}
                 {% for logo in trusted_gym_logos %}
                   <img class="hero-logo-item" src="{{ logo.logo_url }}" alt="" aria-hidden="true" loading="lazy" />
                 {% endfor %}
@@ -995,50 +993,73 @@
     
         <div class="testi-carousel" id="testiCarousel">
           <div class="testi-stage" id="testiStage">
-            <svg class="testi-quote-icon" viewBox="0 0 48 36" fill="currentColor" aria-hidden="true">
-              <path d="M0 20c0-9 6-16 15-18l2 4c-6 2-9 6-9 11h9v13H0V20z"/>
-              <path d="M23 20c0-9 6-16 15-18l2 4c-6 2-9 6-9 11h9v13H23V20z"/>
+            <svg
+              class="testi-quote-icon"
+              viewBox="0 0 48 36"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M0 20c0-9 6-16 15-18l2 4c-6 2-9 6-9 11h9v13H0V20z" />
+              <path d="M23 20c0-9 6-16 15-18l2 4c-6 2-9 6-9 11h9v13H23V20z" />
             </svg>
-            {% if verified_reviews %}
-              {% for review in verified_reviews %}
-              <article class="testi-card{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.counter0 }}">
-    
-                <div class="testi-content">
-                  <span class="testi-verified-badge">Verified Gym</span>
-    
-                  <div class="testi-stars">
-                    {% for i in "12345" %}{% if forloop.counter <= review.overall_rating %}<span class="ts-star">★</span>{% else %}<span class="ts-star">☆</span>{% endif %}{% endfor %}
+            {% if verified_reviews %} {% for review in verified_reviews %}
+            <article
+              class="testi-card{% if forloop.first %} is-active{% endif %}"
+              data-index="{{ forloop.counter0 }}"
+            >
+              <div class="testi-content">
+                <span class="testi-verified-badge">Verified Gym</span>
+                <div class="testi-stars">
+                  {% for i in "12345" %}
+                    {% if forloop.counter <= review.overall_rating %}
+                    <span class="ts-star">★</span>
+                    {% else%}
+                    <span class="ts-star">☆</span>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                <div class="testi-quote">
+                  <span class="testi-quote-text"
+                    >{{ review.final_review|linebreaks }}</span
+                  >
+                  <button
+                    type="button"
+                    class="testi-quote-toggle"
+                    data-see-more
+                  >
+                    See more
+                  </button>
+                </div>
+              </div>
+              <div class="testi-right">
+                <div class="testi-author">
+                  <div class="testi-author-info">
+                    <strong class="testi-gymname"
+                      >{{ review.gym.gym_name }}</strong
+                    >
+                    <span class="testi-owner-tag">Gym Owner</span>
+                    {% if review.gym.city %}
+                    <span class="testi-city"
+                      >{{ review.gym.city }}{% if review.gym.state %}, {{
+                      review.gym.state }}{% endif %}</span
+                    >
+                    {% endif %}
                   </div>
-    
-                  <div class="testi-quote">
-                    <span class="testi-quote-text">{{ review.final_review|linebreaks }}</span>
-                    <button type="button" class="testi-quote-toggle" data-see-more>See more</button>
+                  <div class="testi-logo">
+                    {% if review.gym.logo %}
+                    <img
+                      src="{{ review.gym.logo.url }}"
+                      alt="{{ review.gym.gym_name }} logo"
+                    />
+                    {% else %}
+                    <span>{{ review.gym.gym_name|slice:":2"|upper }}</span>
+                    {% endif %}
                   </div>
                 </div>
-    
-                <div class="testi-right">
-                  <div class="testi-author">
-                    <div class="testi-author-info">
-                      <strong class="testi-gymname">{{ review.gym.gym_name }}</strong>
-                      <span class="testi-owner-tag">Gym Owner</span>
-                      {% if review.gym.city %}
-                        <span class="testi-city">{{ review.gym.city }}{% if review.gym.state %}, {{ review.gym.state }}{% endif %}</span>
-                      {% endif %}
-                    </div>
-                    <div class="testi-logo">
-                      {% if review.gym.logo %}
-                        <img src="{{ review.gym.logo.url }}" alt="{{ review.gym.gym_name }} logo">
-                      {% else %}
-                        <span>{{ review.gym.gym_name|slice:":2"|upper }}</span>
-                      {% endif %}
-                    </div>
-                  </div>
-                  <span class="testi-accent" aria-hidden="true"></span>
-                </div>
-    
-              </article>
-              {% endfor %}
-            {% endif %}
+                <span class="testi-accent" aria-hidden="true"></span>
+              </div>
+            </article>
+            {% endfor %} {% endif %}
           </div>
         </div>
     

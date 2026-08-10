@@ -1,13 +1,5 @@
 /* ================================================================
    EnterGYM — saas_home.css
-   Palette : #080810 base · #5B5FFF indigo · #F0EEE8 off-white
-             #1E1E2E card  · #9898B0 muted  · #10b981 green accent
-   Type    : Syne (display) · DM Sans (body) · JetBrains Mono (data)
-   Sections: 01 Reset · 02 Tokens · 03 Utilities · 04 Nav · 05 Ticker
-             06 Hero · 07 Problem · 08 Features · 09 How It Works
-             10 Face-ID · 11 Testimonials · 12 Pricing (S5)
-             13 Calculator (S6) · 14 Contact · 15 Footer
-             16 Shared Animations · 17 Responsive · 18 Globe Widget
    ================================================================ */
 
 
@@ -2778,7 +2770,12 @@ img, svg   { max-width: 100%; }
   .mp-section { padding: 90px 20px; }
   .mp-layout { grid-template-columns: 1fr; gap: 40px; }
   .mp-stage  { min-height: auto; }
-
+  .mp-tooltip-title{
+    font-size: 0.7rem;
+  }
+  .mp-tooltip-sub{
+    font-size: 0.5rem;
+  }
   /* Phone now matches desktop size instead of shrinking */
   .mp-phone { width: 300px; height: 610px; }
 
@@ -3651,6 +3648,10 @@ img, svg   { max-width: 100%; }
 .mj-cta-btn:hover { background: #4d51e8; box-shadow: 0 28px 60px -8px rgba(91,95,255,.75); }
 
 @media (max-width: 820px) {
+  .mj-start-btn{
+    padding: 14px 24px;
+    font-size: 12px;
+  }
   .mj-tab { padding: 9px 15px; font-size: 12.5px; }
   .mj-mini-timeline {
     display: flex;
@@ -3690,7 +3691,6 @@ img, svg   { max-width: 100%; }
   .mj-skip-btn { padding: 7px 13px; font-size: 0.68rem; }
   .mj-close-btn { width: 30px; height: 30px; }
 }
-
 /* ─────────────────────────────────────────────────────────────────
    TESTIMONIALS — directional slide carousel
    Uses the site's existing tokens: --border --indigo --green --yellow
@@ -5394,20 +5394,4 @@ img, svg   { max-width: 100%; }
   .hero-heading  { font-size: 1.7rem; }
   .proof-item    { min-width: 45%; }
   .feed-tag      { min-width: 0; padding: 2px 5px; }
-}
-
-/* ── Reduced motion ── */
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track,
-  .scan-line,
-  .scan-ring,
-  .pin-radius,
-  .pulse-badge,
-  .uptime-dot { animation: none; }
-
-  .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
 }

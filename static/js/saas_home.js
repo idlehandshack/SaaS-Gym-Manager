@@ -1,24 +1,9 @@
-/* =============================================================================
-   EnterGYM — saas_home.js
-   Sections:
-   1. Shared utilities
-   2. Nav scroll
-   3. Animated counters
-   4. Scroll reveal
-   5. Pricing tab switcher
-   6. Plan calculator
-   7. Testimonials carousel
-   8. Hero video — robust autoplay & resume
-============================================================================= */
-
 
 /* -----------------------------------------------------------------------------
    1. SHARED UTILITIES
 ----------------------------------------------------------------------------- */
 
 function fmtCount(n) {
-  /* FIX: explicit branch for large numbers (100K+) avoids floating-point
-     display issues and makes intent clear for future maintainers. */
   if (n >= 100000) return Math.round(n / 1000) + "K";
   if (n >= 1000)   return Math.round(n / 1000) + "K";
   return String(n);
@@ -82,14 +67,6 @@ function onEnter(elements, callback, options) {
   onEnter(Array.from(nums), animateCounter, { threshold: 0.5 });
 })();
 
-
-/* -----------------------------------------------------------------------------
-   4. SCROLL REVEAL
-   NOTE: The inline <script> in saas_home.html also had a scroll-reveal block
-   that targeted the same selectors. That block must be REMOVED from the HTML
-   to avoid a race condition where two observers compete on the same elements.
-   Only this block should run.
------------------------------------------------------------------------------ */
 (function () {
   if (!("IntersectionObserver" in window)) return;
 
@@ -106,9 +83,6 @@ function onEnter(elements, callback, options) {
 
   var els = Array.from(document.querySelectorAll(SELECTORS));
   if (!els.length) return;
-
-  /* Guard: skip elements that are already animated (prevents double-add
-     if the HTML inline script wasn't removed yet). */
   els.forEach(function (el) {
     if (!el.classList.contains("reveal")) el.classList.add("reveal");
   });
@@ -252,14 +226,6 @@ function onEnter(elements, callback, options) {
     moveIndicator(document.querySelector(".p-tab.is-active"));
   });
 })();
-
-/* -----------------------------------------------------------------------------
-   5b. MOBILE PRICE CAROUSEL (Fixed Subscription only)
-   3 cards: center is expanded with full detail, left/right are collapsed to
-   price-only. Tap a side card, or swipe, to bring it to center — smooth,
-   circular 3-item rotation, no jank. Desktop is untouched (see the
-   `mq.matches` guard below); this only ever runs under 820px.
------------------------------------------------------------------------------ */
 (function () {
   var grid = document.querySelector("#panel-fixed .p-grid");
   if (!grid) return;
@@ -301,8 +267,6 @@ function onEnter(elements, callback, options) {
     });
 
     var centerCard = cards[order[1]];
-    // Measure after layout settles so height is accurate, and only if the
-    // panel is actually visible (offsetParent is null when display:none).
     requestAnimationFrame(function () {
       if (centerCard.offsetParent === null) return;
       grid.style.height = centerCard.offsetHeight + "px";
@@ -310,8 +274,6 @@ function onEnter(elements, callback, options) {
   }
 
   function rotate(direction) {
-    // direction 1 = forward (right card becomes center)
-    // direction -1 = backward (left card becomes center)
     order = direction === 1
       ? [order[1], order[2], order[0]]
       : [order[2], order[0], order[1]];
@@ -349,17 +311,12 @@ function onEnter(elements, callback, options) {
     else if (deltaX >= SWIPE_THRESHOLD)  rotate(-1);
     deltaX = 0;
   });
-
-  /* ---- re-measure whenever the Fixed Subscription tab becomes active,
-     since its panel was display:none (offsetHeight 0) until now ---- */
   var panel = document.getElementById("panel-fixed");
   if (panel && "MutationObserver" in window) {
     new MutationObserver(function () {
       if (panel.classList.contains("is-active")) render();
     }).observe(panel, { attributes: true, attributeFilter: ["class"] });
   }
-
-  /* ---- breakpoint crossing + resize ---- */
   if (mq.addEventListener) mq.addEventListener("change", render);
   else if (mq.addListener) mq.addListener(render); // Safari <14 fallback
 
@@ -470,14 +427,6 @@ function onEnter(elements, callback, options) {
     }, { threshold: 0.25 }).observe(video);
   }
 })();
-
-/* -----------------------------------------------------------------------------
-   9. PROBLEM SECTION — STACKED COMPARISON CARDS
-   Append this as a new numbered section in saas_home.js (after section 8).
-   Swaps which card ("before" / "after") is on top of the deck. Only the
-   back card is clickable; front card is display-only (pointer-events:none
-   is toggled via the CSS [data-state] rules based on data-state below).
------------------------------------------------------------------------------ */
 (function () {
   var stack = document.querySelector(".problem-stack");
   if (!stack) return;
@@ -508,8 +457,6 @@ function onEnter(elements, callback, options) {
 
   function handleActivate(e) {
     var card = e.currentTarget;
-    // Only the back card responds — CSS already blocks pointer events on
-    // the front card, but guard here too for keyboard/programmatic focus.
     if (card.getAttribute("data-state") !== "back") return;
     swap();
   }
@@ -530,12 +477,6 @@ function onEnter(elements, callback, options) {
   var marquee = document.querySelector(".hero-logo-marquee");
   var track   = document.querySelector(".hero-logo-track");
   if (!marquee || !track) return;
-
-  // Treat the FIRST half of the rendered images as the canonical
-  // "one set" unit — capture its markup once, then rebuild the track
-  // with however many copies are needed to fully cover the container
-  // (plus one extra unit of buffer), so the belt never runs out of
-  // content mid-loop no matter how few logos there are.
   var allImgs = Array.from(track.querySelectorAll("img"));
   if (allImgs.length === 0) return;
   var half = Math.floor(allImgs.length / 2) || allImgs.length;
@@ -546,11 +487,6 @@ function onEnter(elements, callback, options) {
   function rebuildAndMeasure() {
     var containerWidth = marquee.getBoundingClientRect().width;
     if (!containerWidth) return false;
-
-    // Render TWO copies of one set so we can measure the true repeat
-    // period (content width + the gap before the next copy) — measuring
-    // only inside a single set misses that trailing gap and causes a
-    // small snap at every loop restart.
     track.innerHTML = baseSetHTML + baseSetHTML;
     var imgs = Array.from(track.querySelectorAll("img"));
     var half = imgs.length / 2;
@@ -571,9 +507,6 @@ function onEnter(elements, callback, options) {
       track.classList.add("is-ready");
     }
   }
-
-  // Wait for images (of the ORIGINAL single set) to load so measured
-  // widths are accurate, then build.
   var imgs = allImgs.slice(0, half);
   var pending = imgs.length;
   function onOneSettled() {
@@ -652,14 +585,6 @@ function onEnter(elements, callback, options) {
     if (e.key === "Escape" && !modal.hidden) closeModal();
   });
 })();
-/* =============================================================================
-   MEMBER PORTAL — interactive phone showcase
-   Hotspot → connector line → floating label, anatomy-diagram style.
-   Legend is hidden but stays in the DOM for JS wiring / a11y fallback.
-   Phone elements (data-target) are the primary interaction surface on
-   both desktop (hover) and mobile (tap). Idle-cycles through every
-   hotspot until the user engages.
-============================================================================= */
 (function () {
   var section = document.getElementById("member-portal");
   if (!section) return;
@@ -732,10 +657,6 @@ function onEnter(elements, callback, options) {
       label.style.right = ((1 - slot.x) * rect.width) + "px";
     }
   }
-
-  // Cubic Bézier from the hotspot (on the phone) to its label anchor —
-  // control points pulled horizontally so the curve reads as a deliberate
-  // sweep. Each hotspot owns a unique y-slot so lines never collide.
   function drawLine(id) {
     var target = targets[id];
     var label = labels[id];
@@ -900,10 +821,6 @@ function onEnter(elements, callback, options) {
     clearTimeout(resumeTimer);
     resumeTimer = setTimeout(startAutoplay, RESUME_AFTER_MS);
   }
-
-  // ── Wiring ──────────────────────────────────────────────────────────
-  // Phone elements are the primary surface: hover (desktop) / tap (touch)
-  // on the phone itself drives activation first.
   HOTSPOTS.forEach(function (id) {
     var target = targets[id];
     var legendItem = legendItems[id];
@@ -932,14 +849,10 @@ function onEnter(elements, callback, options) {
 
   if (!isTouch) {
     stage.addEventListener("mouseleave", function () {
-      // Don't fully deactivate — resume the idle cycle so the showcase
-      // keeps demonstrating itself once the pointer moves away.
       clearTimeout(resumeTimer);
       resumeTimer = setTimeout(startAutoplay, 600);
     });
   }
-
-  // Pause autoplay the instant the user touches the stage on mobile too.
   stage.addEventListener("touchstart", function () { stopAutoplay(); }, { passive: true });
 
   // ── Resize: throttled, recomputes geometry only (no layout thrash) ───
@@ -973,9 +886,6 @@ function onEnter(elements, callback, options) {
       barFill.style.width = barTarget + "%";
     }
   }
-
-  // Kick off the idle demo so the interaction pattern is discoverable
-  // before the user does anything.
   startAutoplay();
 })();
 /* -----------------------------------------------------------------------------
@@ -1035,38 +945,14 @@ function onEnter(elements, callback, options) {
   var current = 0;
   var animating = false;
   var stepStartedAt = 0;
-
-  // The single in-flight playback attempt (if any). Lets stopAllVideos()/
-  // resetAll() forcibly retire a pending playStep() Promise — pausing the
-  // video, stripping its listeners, and resolving it as a no-op — instead
-  // of leaving it dangling with nothing left to ever settle it.
   var currentPlayback = null;
-
-  // Set for the brief window while the Start-button's own smooth
-  // scrollIntoView() is settling. The intentional scroll can itself cause
-  // the stage to momentarily read as "not intersecting" — without this
-  // guard, the IntersectionObserver below would immediately resetAll() the
-  // journey we just started. Genuinely leaving the section (user scrolls
-  // away later) still resets normally once this flag is clear.
   var suppressIntersectionReset = false;
 
   function bar(url) {
     return '<div class="mj-mockup-bar"><span class="mj-mdot r"></span><span class="mj-mdot y"></span><span class="mj-mdot g"></span><span class="mj-murl">' + url + '</span></div>';
   }
-
-  /* ---- video lifecycle state helpers ----
-     States: idle -> loading -> ready -> playing -> (failed)
-     "ended" doesn't get its own persistent state; a naturally-completed
-     video is left as "ready" so it can be replayed (e.g. goBackward) without
-     re-downloading. Stored on data-video-state so it's inspectable in
-     DevTools during manual QA. */
   function getVState(video) { return video ? (video.dataset.videoState || 'idle') : 'idle'; }
   function setVState(video, state) { if (video) video.dataset.videoState = state; }
-
-  /* Tears down and rebuilds the mini-timeline, final-timeline, and scene
-     DOM for whichever journey key is passed in. Videos get a data-src
-     placeholder only — no real src is assigned until loadVideo() runs
-     for that specific step, so nothing is requested on build/tab-switch. */
   function buildJourney(key) {
     var cfg = JOURNEYS[key];
     if (!cfg) return;
@@ -1148,14 +1034,6 @@ function onEnter(elements, callback, options) {
 
   function markStepStart() { stepStartedAt = Date.now(); }
   function scrollLocked() { return (Date.now() - stepStartedAt) < SCROLL_LOCK_MS; }
-
-  // Pauses every video that has actually been loaded (never forces an
-  // unloaded one to load just to pause it), and forcibly retires whatever
-  // playback attempt is currently in flight so it can never advance the
-  // journey later — this is the single choke point every interruption
-  // (skip, scroll, close, tab switch, leaving the viewport) routes through.
-  // Loaded videos are never stripped of their src here — a previously
-  // downloaded video stays downloaded and can be resumed/replayed later.
   function stopAllVideos() {
     videos.forEach(function (v) {
       if (!v) return;
@@ -1171,26 +1049,12 @@ function onEnter(elements, callback, options) {
       cp.cancel();
     }
   }
-
-  // Assigns the real src for step n's video, idempotently:
-  //   - idle    -> assign data-src to src exactly once, call load(), mark loading
-  //   - loading -> a load is already in flight; reuse the same element/attempt
-  //   - ready / playing -> already successfully loaded; reuse as-is
-  //   - failed  -> allow a controlled retry (caller explicitly re-entered this step)
-  // Loaded state is tracked via data-video-state rather than inferring it
-  // from video.src, so a video already downloaded is always reused, never
-  // re-requested — and a failed attempt is never mistaken for a success.
   function loadVideo(n) {
     var video = videos[n - 1];
     if (!video) return null;
 
     var state = getVState(video);
     if (state === 'ready' || state === 'playing' || state === 'loading') return video;
-
-    // idle or failed: (re-)assign data-src to src exactly once and kick off
-    // load(). No listeners of any kind are attached here — playStep() owns
-    // the entire loading-to-playback lifecycle for the active video, so
-    // there's a single source of truth and no race between two listeners.
     var src = video.dataset.src;
     if (!src) return video;
 
@@ -1211,35 +1075,6 @@ function onEnter(elements, callback, options) {
       );
     });
   }
-
-  // Event-driven playback for step n. Resolves in exactly two situations:
-  //   1) the video's native `ended` event fires (normal completion), or
-  //   2) this attempt is explicitly cancelled from outside (stopAllVideos(),
-  //      called by enterStep/resetAll/goToFinal on skip, scroll, close, or
-  //      tab switch) — resolved as a no-op; the caller's generation check
-  //      (`myGen !== gen`) is what actually prevents any advance.
-  // A failed load, a playback error, or a rejected play() Promise are all
-  // logged and left "stuck" on the current scene on purpose — per spec, a
-  // failure must never silently advance the journey. The user can still
-  // move on via Skip/scroll, which cancels this attempt through the path above.
-  // playStep() always settles exactly once, with an explicit result object:
-  //   { status: 'ended' }     — video reached its native `ended` event
-  //   { status: 'cancelled' } — explicitly interrupted (Skip/scroll/Close/
-  //                             tab switch/reset/newer generation)
-  //   { status: 'failed' }    — load error, media error, aborted load, or
-  //                             a rejected play() Promise
-  // A `settled` flag guards the single internal finish() so late events
-  // (an `ended` that fires after cancel, an `error` after ended, a
-  // play()-rejection after cancel, etc.) can never settle it twice or flip
-  // an already-decided result.
-  // playStep() is the SOLE owner of the active video's loading-to-playback
-  // lifecycle: it calls loadVideo() (which only assigns src/load()s and
-  // never attaches listeners), then inspects video.readyState directly
-  // instead of blindly waiting for loadeddata/canplay — a video can already
-  // be at readyState >= 2 by the time we get here (e.g. it finished loading
-  // during the mockup-reveal animation), and waiting on an event that has
-  // already fired is exactly what previously left playback stuck after a
-  // successful download.
   function playStep(n, myGen) {
     var video = loadVideo(n);
     if (!video) return Promise.resolve({ status: 'failed' });
@@ -1281,16 +1116,11 @@ function onEnter(elements, callback, options) {
       }
 
       function onReady() {
-        // Only relevant while we're still waiting to start playback; once
-        // attemptPlay() has run once, later loadeddata/canplay firings are
-        // ignored (playbackStarted guards attemptPlay itself, too).
         if (settled || myGen !== gen) return;
         attemptPlay();
       }
 
       function onEnded() {
-        // Natural completion — leave state as "ready" so a later replay
-        // (goBackward -> goForward again) doesn't need to re-download.
         if (getVState(video) === 'playing') setVState(video, 'ready');
         console.log('[member-journey] ended step ' + n);
         finish('ended');
@@ -1303,10 +1133,6 @@ function onEnter(elements, callback, options) {
       }
 
       function onAbort() {
-        // Fires both on an intentional cancel-triggered pause/reload and on
-        // a genuine media/network abort. If we already know this is an
-        // intentional cancellation (cancelRequested), let cancel()'s own
-        // finish('cancelled') be the one settlement — do nothing here.
         if (cancelRequested) return;
         setVState(video, 'failed');
         logFailure('aborted');
@@ -1351,22 +1177,12 @@ function onEnter(elements, callback, options) {
           });
         }
       }
-
-      // readyState >= 2 (HAVE_CURRENT_DATA) means the browser already has
-      // enough of the current frame to start playback — check this FIRST,
-      // synchronously, before ever attaching a readiness listener. This is
-      // what closes the race: the video may have finished loading while we
-      // were off doing the mockup-reveal GSAP animation, in which case
-      // loadeddata/canplay already fired and nothing would ever call us again.
       console.log('[member-journey] readyState: ' + video.readyState + ' for step ' + n);
       if (video.readyState >= 2) {
         attemptPlay();
       } else {
         var state = getVState(video);
         if (state === 'idle' || state === 'failed') {
-          // Defensive: loadVideo() should already have moved this to
-          // "loading" and called load(), but if we somehow got here with
-          // nothing in flight, there is no readiness event coming.
           logFailure('no playable video for this attempt (state: ' + state + ')');
           setVState(video, 'failed');
           finish('failed');
@@ -1408,10 +1224,6 @@ function onEnter(elements, callback, options) {
     if (finalScene.querySelector('p')) gsap.set(finalScene.querySelector('p'), { opacity: 0, y: 16 });
     if (finalScene.querySelector('.mj-cta-btn')) gsap.set(finalScene.querySelector('.mj-cta-btn'), { opacity: 0, y: 16 });
   }
-
-  // Safe to call any number of times in a row (tab switching calls it
-  // twice back to back): stops/cancels playback, resets only videos that
-  // were actually loaded (never forces a download), and re-idles the stage.
   function resetAll() {
     gen++;
     gsap.killTweensOf('#member-journey *');
@@ -1423,8 +1235,6 @@ function onEnter(elements, callback, options) {
         try { v.currentTime = 0; } catch (e) { /* ignore */ }
         setVState(v, 'ready');
       }
-      // idle/loading/failed videos are left alone — never forced to load,
-      // never have their src touched, just as before.
     });
     resetFinalVisuals();
 
@@ -1436,21 +1246,11 @@ function onEnter(elements, callback, options) {
     showScene(1);
     if (mockups[0]) gsap.set(mockups[0], { opacity: 1 });
   }
-
-  // Moves the stage forward into step `n`: flips the mockup into place,
-  // then plays its video. If the video finishes on its own (i.e. nothing
-  // else interrupted this generation), it advances again automatically.
-  // Moves the stage forward into step `n`: kicks off the video's
-  // load -> readyState-check -> play lifecycle immediately (so playback
-  // starts as close to the user's gesture as possible), while the mockup's
-  // GSAP reveal animation runs concurrently rather than gating it. The two
-  // are independent: the visual reveal is purely cosmetic and must never
-  // delay video.play(), and video.play() must never wait on GSAP.
   async function enterStep(n) {
     gen++;
     var myGen = gen;
     animating = true;
-    stopAllVideos(); // retires whatever the previous step/generation was doing
+    stopAllVideos(); 
     resetFinalVisuals();
     current = n;
     setProgress(n);
@@ -1459,17 +1259,15 @@ function onEnter(elements, callback, options) {
 
     var mockup = mockups[n - 1];
     if (mockup) gsap.set(mockup, { opacity: 0 });
-
-    // Fire playback immediately — do NOT await the reveal animation first.
     var playbackPromise = playStep(n, myGen);
     revealMockup(mockup).then(function () {
       if (myGen === gen) animating = false;
     });
 
     var result = await playbackPromise;
-    if (myGen !== gen) return; // interrupted/cancelled/tab-switched — never advance
-    if (!result || result.status !== 'ended') return; // cancelled or failed — stay put
-    goForward(); // video reached its natural `ended` event — move on
+    if (myGen !== gen) return;
+    if (!result || result.status !== 'ended') return;
+    goForward();
   }
 
   async function goToFinal() {
@@ -1536,13 +1334,12 @@ function onEnter(elements, callback, options) {
   function switchJourney(key) {
     if (key === activeKey || !JOURNEYS[key]) return;
 
-    resetAll(); // stop/cancel current journey's playback, unlock scroll, clear state
-
+    resetAll(); 
     activeKey = key;
     stage.dataset.journey = key;
 
-    buildJourney(key); // rebuild scenes/timeline for the new journey (no videos loaded yet)
-    resetAll();        // set initial progress/scene for the fresh build
+    buildJourney(key);
+    resetAll();       
     setStartLabel(key);
 
     tabBtns.forEach(function (b) {
@@ -1576,12 +1373,6 @@ function onEnter(elements, callback, options) {
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && stage.classList.contains('mj-active')) closeJourney();
   });
-
-  // Scroll-to-navigate: only active once a journey is underway, and only
-  // while the cursor is over the stage itself (page scroll works normally
-  // everywhere else). The first 3s of every step ignore scroll entirely;
-  // after that, scrolling down moves forward and scrolling up moves back —
-  // always overriding whatever else was happening (skip behaves the same way).
   stage.addEventListener('wheel', function (e) {
     if (!stage.classList.contains('mj-active') || current === 0) return;
     e.preventDefault();
