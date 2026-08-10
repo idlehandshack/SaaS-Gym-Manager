@@ -285,7 +285,20 @@ def _meta(sheet, rows, ncols):
 def _build_detail_sheet(wb, gym, data):
     sheet = wb.active
     sheet.title = 'Invoice Detail'
-    ncols = 9
+
+    gst_profile = getattr(gym, 'gst_profile', None)
+    is_gst_registered = bool(gst_profile and gst_profile.is_gst_registered)
+
+    if is_gst_registered:
+        headers    = ['Invoice No', 'Date', 'Member ID', 'Member Name', 'Phone', 'Plan',
+                      'Taxable (₹)', 'GST (₹)', 'Grand Total (₹)', 'Status']
+        col_widths = [20, 14, 14, 26, 14, 20, 16, 12, 16, 12]
+    else:
+        headers    = ['Invoice No', 'Date', 'Member ID', 'Member Name', 'Phone', 'Plan',
+                      'Grand Total (₹)', 'Status']
+        col_widths = [20, 14, 14, 26, 14, 20, 16, 12]
+
+    ncols = len(headers)
 
     # Title
     sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=ncols)
@@ -305,28 +318,41 @@ def _build_detail_sheet(wb, gym, data):
     sheet.column_dimensions['A'].width = 18
     sheet.append([])
 
-    _hdr(sheet,
-         ['Invoice No', 'Date', 'Member Name', 'Phone', 'Plan',
-          'Taxable (₹)', 'GST (₹)', 'Grand Total (₹)', 'Status'],
-         [20, 14, 26, 14, 20, 16, 12, 16, 12])
+    _hdr(sheet, headers, col_widths)
 
     header_row = sheet.max_row
     sheet.freeze_panes = f'A{header_row + 1}'
 
     for inv in data['invoices']:
         row_num = sheet.max_row + 1
-        gst_total = inv.cgst_amount + inv.sgst_amount + inv.igst_amount
-        sheet.append([
-            inv.invoice_number,
-            inv.invoice_date.strftime('%d-%m-%Y'),
-            inv.customer_name,
-            inv.customer_phone or '—',
-            inv.member.selectPlan.plan if (inv.member and inv.member.selectPlan) else '—',
-            _inr(inv.taxable_value),   # ← string, no number_format needed
-            _inr(gst_total),
-            _inr(inv.grand_total),
-            inv.get_status_display(),
-        ])
+        member_id = inv.member.unique_id if inv.member_id else '—'
+        plan_name = inv.member.selectPlan.plan if (inv.member and inv.member.selectPlan) else '—'
+
+        if is_gst_registered:
+            gst_total = inv.cgst_amount + inv.sgst_amount + inv.igst_amount
+            sheet.append([
+                inv.invoice_number,
+                inv.invoice_date.strftime('%d-%m-%Y'),
+                member_id,
+                inv.customer_name,
+                inv.customer_phone or '—',
+                plan_name,
+                _inr(inv.taxable_value),
+                _inr(gst_total),
+                _inr(inv.grand_total),
+                inv.get_status_display(),
+            ])
+        else:
+            sheet.append([
+                inv.invoice_number,
+                inv.invoice_date.strftime('%d-%m-%Y'),
+                member_id,
+                inv.customer_name,
+                inv.customer_phone or '—',
+                plan_name,
+                _inr(inv.grand_total),
+                inv.get_status_display(),
+            ])
         _style_row(sheet, row_num, ncols)
 
     if not data['invoices']:
@@ -337,19 +363,29 @@ def _build_detail_sheet(wb, gym, data):
         c.alignment = CENTER
 
     # Totals row
-    total_gst = data['total_cgst'] + data['total_sgst'] + data['total_igst']
     sheet.append([])
     totals_row_num = sheet.max_row + 1
-    sheet.append([
-        'TOTAL', '', '', '', '',
-        _inr(data['total_taxable']),
-        _inr(total_gst),
-        _inr(data['total_grand']),
-        '',
-    ])
+    label_span = 6  # Invoice No..Plan columns get merged under 'TOTAL'
+
+    if is_gst_registered:
+        total_gst = data['total_cgst'] + data['total_sgst'] + data['total_igst']
+        sheet.append([
+            'TOTAL', '', '', '', '', '',
+            _inr(data['total_taxable']),
+            _inr(total_gst),
+            _inr(data['total_grand']),
+            '',
+        ])
+    else:
+        sheet.append([
+            'TOTAL', '', '', '', '', '',
+            _inr(data['total_grand']),
+            '',
+        ])
+
     sheet.merge_cells(
         start_row=totals_row_num, start_column=1,
-        end_row=totals_row_num,   end_column=5
+        end_row=totals_row_num,   end_column=label_span
     )
     for col in range(1, ncols + 1):
         c = sheet.cell(row=totals_row_num, column=col)

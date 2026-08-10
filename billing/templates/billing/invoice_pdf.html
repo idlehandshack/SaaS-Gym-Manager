@@ -1,5 +1,4 @@
-billing/templates/billing/invoice.html
-
+{% with brand_color=gym.theme_color|default:"#4F46E5" %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,228 +17,113 @@ body {
   print-color-adjust: exact;
 }
 
-/* ═══════════════════════════════════════════════════════
-   PAGE WRAPPER
-═══════════════════════════════════════════════════════ */
 .page {
-  padding: 32px 38px 44px;
+  padding: 32px 40px 40px;
   max-width: 800px;
   margin: 0 auto;
 }
 
 /* ═══════════════════════════════════════════════════════
-   SECTION 1 — TOP HEADER
-   Left: tagline badge + gym name + contact
-   Right: "Invoice" label + invoice number + issue date
+   SECTION 1 — HEADER
+   Left: logo + wordmark + supplier address/GSTIN
+   Right: "Invoice" label + number + issue date
 ═══════════════════════════════════════════════════════ */
-table.t-header {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 22px;
-  table-layout: fixed;
-}
+table.t-header { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
 table.t-header td { vertical-align: top; }
-table.t-header td.h-left  { width: 58%; padding-right: 12px; }
-table.t-header td.h-right { width: 42%; text-align: right; }
+table.t-header td.h-left  { width: 60%; padding-right: 14px; }
+table.t-header td.h-right { width: 40%; text-align: right; }
 
-.tagline-badge {
-  display: inline-block;
-  background: #f97316;
-  color: #fff;
-  font-size: 7.5px;
-  font-weight: 700;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  padding: 2px 7px 3px;
-  border-radius: 2px;
-  margin-bottom: 15px;
-  margin-top: -6px;
-}
-.gym-name {
-  font-size: 26px;
-  font-weight: 900;
-  color: #1a1a1a;
-  line-height: 1.1;
-  word-break: break-word;
-}
-.gym-contact {
-  font-size: 10px;
-  color: #888;
-  margin-top: 5px;
-  line-height: 1.6;
+table.t-brand { border-collapse: collapse; margin-bottom: 9px; }
+table.t-brand td { vertical-align: middle; padding: 0; }
+td.logo-cell { width: 54px; padding-right: 12px; }
+
+.gym-logo { max-height: 46px; max-width: 120px; display: block; }
+.logo-fallback {
+  width: 46px; height: 46px;
+  background: {{ brand_color }}; color: #fff;
+  font-size: 19px; font-weight: 900;
+  text-align: center; line-height: 46px;
+  border-radius: 8px;
 }
 
-.inv-label {
-  font-size: 9.5px;
-  text-transform: uppercase;
-  letter-spacing: 1.8px;
-  color: #aaa;
-  margin-bottom: 3px;
-}
-.inv-number {
-  font-size: 22px;
-  font-weight: 900;
-  color: #f97316;
-  word-break: break-all;
-  line-height: 1.2;
-}
-.inv-issued {
-  font-size: 9px;
-  color: #bbb;
-  margin-top: 5px;
-}
-.inv-type-label {
-  font-size: 9px;
-  color: #888;
-  font-style: italic;
-  margin-top: 3px;
-}
+.gym-name { font-size: 19px; font-weight: 900; color: #1a1a1a; letter-spacing: .2px; line-height: 1.2; word-break: break-word; }
+
+.supplier-detail { font-size: 9px; color: #999; line-height: 1.7; }
+
+.inv-badge  { font-size: 11px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: {{ brand_color }}; margin-bottom: 4px; }
+.inv-number { font-size: 20px; font-weight: 900; color: #1a1a1a; word-break: break-all; line-height: 1.2; }
+.inv-issued { font-size: 9px; color: #aaa; margin-top: 5px; }
 .cancelled-badge {
-  display: inline-block;
-  background: #fee2e2;
-  color: #dc2626;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  padding: 2px 8px 3px;
-  border-radius: 2px;
-  margin-top: 6px;
-}
-
-/* ═══════════════════════════════════════════════════════
-   DIVIDER
-═══════════════════════════════════════════════════════ */
-.rule-dark {
-  height: 2px;
-  background: #1a1a1a;
-  border: none;
-  margin-bottom: 22px;
-}
-.rule-light {
-  height: 1px;
-  background: #e8e8e8;
-  border: none;
-  margin: 20px 0;
+  display: inline-block; background: #fee2e2; color: #dc2626;
+  font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+  padding: 2px 8px 3px; border-radius: 2px; margin-top: 6px;
 }
 
 /* ═══════════════════════════════════════════════════════
    BILL OF SUPPLY NOTICE
 ═══════════════════════════════════════════════════════ */
 .bos-notice {
-  background: #fffbeb;
-  border-left: 3px solid #f97316;
-  padding: 8px 12px;
+  background: #EEF2FF;
+  border-left: 3px solid {{ brand_color }};
+  padding: 9px 12px;
   font-size: 10px;
-  color: #78520a;
+  color: #3730a3;
   margin-bottom: 18px;
   line-height: 1.55;
 }
 
 /* ═══════════════════════════════════════════════════════
-   SECTION 2 — META BLOCK (Bill To / From / Invoice Details)
-   Uses table-layout:fixed + explicit widths so columns
-   never collapse regardless of content length.
+   SECTION 2 — META BLOCK (Bill To / Invoice Details)
 ═══════════════════════════════════════════════════════ */
-table.t-meta {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  margin-bottom: 26px;
-}
+table.t-meta { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 24px; }
 table.t-meta td { vertical-align: top; }
-table.t-meta td.m-col   { width: 29%; padding-right: 14px; }
-table.t-meta td.m-col-r { width: 34%; padding-left: 6px; }
+table.t-meta td.m-col   { width: 48%; padding-right: 16px; }
+table.t-meta td.m-col-r { width: 52%; padding-left: 6px; }
 
 .meta-lbl {
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.3px;
-  color: #bbb;
-  padding-bottom: 5px;
-  border-bottom: 1px solid #e8e8e8;
-  margin-bottom: 8px;
+  font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.3px;
+  color: #bbb; padding-bottom: 5px; border-bottom: 1px solid #e8e8e8; margin-bottom: 8px;
 }
-.meta-name {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #1a1a1a;
-  line-height: 1.3;
-  word-break: break-word;
-  margin-bottom: 4px;
-}
-.meta-body {
-  font-size: 10px;
-  color: #555;
-  line-height: 1.75;
-  word-break: break-word;
-}
+.meta-name { font-size: 13.5px; font-weight: 700; color: #1a1a1a; line-height: 1.3; word-break: break-word; margin-bottom: 4px; }
+.meta-body { font-size: 10px; color: #555; line-height: 1.75; word-break: break-word; }
 
-/* Invoice details: use a 2-col inner table for alignment */
-table.t-inv-detail {
-  width: 100%;
-  border-collapse: collapse;
-}
-table.t-inv-detail td {
-  vertical-align: top;
-  padding: 2px 0;
-  font-size: 10px;
-  line-height: 1.6;
-}
-table.t-inv-detail td.dl { color: #aaa; width: 44%; white-space: nowrap; padding-right: 6px; }
+table.t-inv-detail { width: 100%; border-collapse: collapse; }
+table.t-inv-detail td { vertical-align: top; padding: 2px 0; font-size: 10px; line-height: 1.6; }
+table.t-inv-detail td.dl { color: #aaa; width: 46%; white-space: nowrap; padding-right: 6px; }
 table.t-inv-detail td.dv { color: #1a1a1a; font-weight: 600; word-break: break-word; }
 
 /* ═══════════════════════════════════════════════════════
    SECTION 3 — LINE ITEMS TABLE
-   Columns are fixed-width; Description gets remaining space.
-   Numeric columns are right-aligned with min-width guards.
 ═══════════════════════════════════════════════════════ */
-table.t-items {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 24px;
-  table-layout: fixed;
-}
+table.t-items { width: 100%; border-collapse: collapse; margin-bottom: 24px; table-layout: fixed; }
 
-/* Column width assignments */
-table.t-items col.c-ref  { width: 8%; }
+table.t-items col.c-no   { width: 6%; }
 table.t-items col.c-desc { /* auto — gets leftover */ }
-table.t-items col.c-hsn  { width: 9%; }
-table.t-items col.c-qty  { width: 5%; }
-table.t-items col.c-rate { width: 9%; }
-table.t-items col.c-tax  { width: 10%; }
-table.t-items col.c-cgst { width: 9%; }
-table.t-items col.c-sgst { width: 9%; }
-table.t-items col.c-igst { width: 9%; }
-table.t-items col.c-amt  { width: 10%; }
+table.t-items col.c-qty  { width: 8%; }
+table.t-items col.c-rate { width: 13%; }
+table.t-items col.c-tax  { width: 13%; }
+table.t-items col.c-cgst { width: 12%; }
+table.t-items col.c-sgst { width: 12%; }
+table.t-items col.c-igst { width: 12%; }
+table.t-items col.c-amt  { width: 14%; }
 
-/* Header row */
 table.t-items thead td {
-  background: #1a1a1a;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .7px;
-  text-transform: uppercase;
-  padding: 9px 8px;
-  vertical-align: middle;
-  overflow: hidden;
+  color: #1a1a1a;
+  font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+  padding: 0 8px 9px;
+  border-bottom: 2px solid {{ brand_color }};
+  vertical-align: bottom;
 }
 
-/* Body cells */
 table.t-items tbody td {
-  padding: 9px 8px;
+  padding: 10px 8px;
   font-size: 10.5px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px dashed #eaeaea;
   vertical-align: top;
-  overflow: hidden;
   word-break: break-word;
 }
-table.t-items tbody tr:nth-child(even) td { background: #fafafa; }
 
-/* Cell-specific styles */
-.c-ref-cell  { color: #c0c0c0; font-size: 9px; }
+.c-no-cell   { color: #c5c5cf; font-weight: 700; }
 .c-desc-cell strong { display: block; font-size: 11px; font-weight: 700; color: #1a1a1a; }
 .c-desc-cell small  { font-size: 9px; color: #aaa; display: block; margin-top: 1px; }
 .num { text-align: right; }
@@ -247,128 +131,51 @@ table.t-items tbody tr:nth-child(even) td { background: #fafafa; }
 .amt-cell { font-weight: 700; color: #1a1a1a; }
 
 /* ═══════════════════════════════════════════════════════
-   SECTION 4 — NOTES + TOTALS
-   Two-column layout: notes left (45%), totals right (55%).
-   Totals use inner table with fixed widths so amounts
-   never overflow.
+   SECTION 4 — TERMS & CONDITIONS + TOTALS
 ═══════════════════════════════════════════════════════ */
-table.t-bottom {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 28px;
-  table-layout: fixed;
-}
-table.t-bottom td.b-notes  { width: 44%; vertical-align: top; padding-right: 20px; }
-table.t-bottom td.b-totals { width: 56%; vertical-align: top; }
+table.t-bottom { width: 100%; border-collapse: collapse; margin-bottom: 22px; table-layout: fixed; }
+table.t-bottom td.b-notes  { width: 46%; vertical-align: top; padding-right: 20px; }
+table.t-bottom td.b-totals { width: 54%; vertical-align: top; }
 
 .notes-lbl {
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: #aaa;
-  margin-bottom: 7px;
+  font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;
+  color: #aaa; margin-bottom: 8px;
 }
 .notes-list { list-style: none; padding: 0; }
 .notes-list li {
-  font-size: 10px;
-  color: #777;
-  line-height: 1.65;
-  padding-left: 12px;
-  position: relative;
-  margin-bottom: 2px;
+  font-size: 10px; color: #666; line-height: 1.7;
+  padding-left: 12px; position: relative; margin-bottom: 4px;
 }
-.notes-list li::before {
-  content: "•";
-  position: absolute;
-  left: 0;
-  color: #f97316;
-}
-.cancel-note {
-  font-size: 9.5px;
-  color: #dc2626;
-  margin-top: 10px;
-  line-height: 1.5;
-}
+.notes-list li::before { content: "•"; position: absolute; left: 0; color: {{ brand_color }}; }
+.cancel-note { font-size: 9.5px; color: #dc2626; margin-top: 10px; line-height: 1.5; }
 
-/* Totals inner table */
-table.t-totals {
-  width: 100%;
-  border-collapse: collapse;
-}
-table.t-totals td {
-  padding: 5px 0;
-  font-size: 10.5px;
-  vertical-align: middle;
-}
-table.t-totals td.tl { color: #777; width: 60%; }
-table.t-totals td.tr { text-align: right; color: #2b2b2b; font-weight: 600; width: 40%; white-space: nowrap; }
-table.t-totals tr.sep td { border-top: 1px solid #e8e8e8; padding-top: 8px; }
+table.t-totals { width: 100%; border-collapse: collapse; }
+table.t-totals td { padding: 5px 0; font-size: 10.5px; vertical-align: middle; }
+table.t-totals td.tl { color: #777; width: 58%; }
+table.t-totals td.tr { text-align: right; color: #2b2b2b; font-weight: 600; width: 42%; white-space: nowrap; }
 table.t-totals tr.grand td {
   border-top: 2px solid #1a1a1a;
   padding-top: 10px;
-  padding-bottom: 4px;
+  padding-bottom: 3px;
 }
 table.t-totals tr.grand td.tl {
-  font-size: 8.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: #aaa;
-  vertical-align: bottom;
-  padding-bottom: 5px;
+  font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+  color: #aaa; vertical-align: bottom; padding-bottom: 5px;
 }
-table.t-totals tr.grand td.tr {
-  font-size: 20px;
-  font-weight: 900;
-  color: #f97316;
-  line-height: 1;
-}
+table.t-totals tr.grand td.tr { font-size: 21px; font-weight: 900; color: {{ brand_color }}; line-height: 1; }
+
+.thankyou { font-size: 9.5px; color: #999; text-align: right; margin-top: 12px; font-style: italic; }
 
 /* ═══════════════════════════════════════════════════════
-   SECTION 5 — FOOTER
-   Three columns: bank info | online info | appreciation
+   SECTION 5 — FOOTER (contact bar, no signature)
 ═══════════════════════════════════════════════════════ */
-.footer-hr {
-  height: 1px;
-  background: #e8e8e8;
-  border: none;
-  margin-bottom: 0;
-}
-table.t-footer {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-table.t-footer td {
-  vertical-align: top;
-  padding: 16px 0 0;
-}
-table.t-footer td.f-col { width: 30%; padding-right: 18px; }
-table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
+.footer-hr { height: 1px; background: #e8e8e8; border: none; margin-bottom: 0; }
+table.t-footer { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 16px; }
+table.t-footer td { vertical-align: top; padding: 14px 10px 0; text-align: center; width: 33.34%; }
+table.t-footer td.f-mid { border-left: 1px solid #ececec; border-right: 1px solid #ececec; }
 
-.f-lbl {
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: #aaa;
-  margin-bottom: 5px;
-}
-.f-body { font-size: 10px; color: #555; line-height: 1.75; }
-
-.appreciation {
-  font-size: 14px;
-  font-weight: 900;
-  color: #1a1a1a;
-  line-height: 1.35;
-  margin-top: 6px;
-}
-.appreciation .accent { color: #f97316; }
-
-.sig-block { margin-bottom: 8px; }
-.sig-block img { height: 44px; opacity: .85; }
-.sig-lbl { font-size: 8.5px; color: #aaa; margin-top: 3px; line-height: 1.5; }
+.f-lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: {{ brand_color }}; margin-bottom: 4px; }
+.f-body { font-size: 10px; color: #555; line-height: 1.6; word-break: break-word; }
 
 /* ═══════════════════════════════════════════════════════
    SYSTEM NOTE
@@ -377,7 +184,7 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
   text-align: center;
   color: #ccc;
   font-size: 8px;
-  margin-top: 24px;
+  margin-top: 20px;
   letter-spacing: .4px;
 }
 </style>
@@ -392,27 +199,42 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
   <tr>
     <!-- Left: Gym identity -->
     <td class="h-left">
-      <div class="tagline-badge">{{ gym.tagline|default:"Your Tagline" }}</div>
-      <div class="gym-name">{{ gst_profile.legal_business_name|default:gym.gym_name }}</div>
-      <div class="gym-contact">
-        {% if gym.contact_phone %}Phone: {{ gym.contact_phone }}{% endif %}
-        {% if gym.contact_email %} &nbsp;·&nbsp; {{ gym.contact_email }}{% endif %}
+      <table class="t-brand">
+        <tr>
+          <td class="logo-cell">
+            {% if gym.logo %}
+              <img src="{{ gym.logo.url }}" class="gym-logo" alt="{{ gym.gym_name }}">
+            {% else %}
+              <div class="logo-fallback">{{ gym.gym_name|slice:":1" }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <div class="gym-name">{{ gst_profile.legal_business_name|default:gym.gym_name }}</div>
+          </td>
+        </tr>
+      </table>
+      <div class="supplier-detail">
+        {% if gst_profile %}
+          {{ gst_profile.address_line1 }}{% if gst_profile.address_line2 %}, {{ gst_profile.address_line2 }}{% endif %}<br>
+          {{ gst_profile.city }}, {{ gst_profile.state }} {{ gst_profile.pincode }}
+          {% if gst_profile.is_gst_registered %}&nbsp;·&nbsp;GSTIN {{ gst_profile.gstin }}{% endif %}
+        {% else %}
+          {{ gym.address|default:"" }}
+        {% endif %}
       </div>
     </td>
 
     <!-- Right: Invoice meta -->
     <td class="h-right">
-      <div class="inv-label">Invoice</div>
+      <div class="inv-badge">Invoice</div>
       <div class="inv-number">#{{ invoice.invoice_number }}</div>
-      <div class="inv-issued">Issued {{ invoice.invoice_date|date:"Y-m-d" }}</div>
+      <div class="inv-issued">Issued {{ invoice.invoice_date|date:"d M Y" }}</div>
       {% if invoice.is_cancelled %}
         <div><span class="cancelled-badge">Cancelled</span></div>
       {% endif %}
     </td>
   </tr>
 </table>
-
-<div class="rule-dark"></div>
 
 <!-- Bill of Supply notice (only when NOT a tax invoice) -->
 {% if not invoice.is_tax_invoice %}
@@ -432,6 +254,7 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
       <div class="meta-lbl">Bill To</div>
       <div class="meta-name">{{ invoice.customer_name }}</div>
       <div class="meta-body">
+        {% if invoice.member.unique_id %}Member ID {{ invoice.member.unique_id }}<br>{% endif %}
         {% if invoice.customer_phone %}{{ invoice.customer_phone }}<br>{% endif %}
         {% if invoice.customer_address %}{{ invoice.customer_address }}<br>{% endif %}
         {% if invoice.customer_state %}{{ invoice.customer_state }}{% if invoice.customer_state_code %} ({{ invoice.customer_state_code }}){% endif %}{% endif %}
@@ -439,24 +262,7 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
       </div>
     </td>
 
-    <!-- From -->
-    <td class="m-col">
-      <div class="meta-lbl">From</div>
-      <div class="meta-name">{{ gst_profile.legal_business_name|default:gym.gym_name }}</div>
-      <div class="meta-body">
-        {% if gst_profile %}
-          {{ gst_profile.address_line1 }}{% if gst_profile.address_line2 %}, {{ gst_profile.address_line2 }}{% endif %}<br>
-          {{ gst_profile.city }}, {{ gst_profile.state }} {{ gst_profile.pincode }}<br>
-          {% if gst_profile.is_gst_registered %}GSTIN: {{ gst_profile.gstin }}{% endif %}
-        {% else %}
-          {{ gym.address|default:"" }}
-        {% endif %}
-        {% if gym.contact_phone %}<br>{{ gym.contact_phone }}{% endif %}
-        {% if gym.contact_email %}<br>{{ gym.contact_email }}{% endif %}
-      </div>
-    </td>
-
-    <!-- Invoice Details — inner 2-col table for label/value alignment -->
+    <!-- Invoice Details -->
     <td class="m-col-r">
       <div class="meta-lbl">Invoice Details</div>
       <table class="t-inv-detail">
@@ -496,13 +302,12 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
 ════════════════════════════════════════════════════════ -->
 <table class="t-items">
   <colgroup>
-    <col class="c-ref">
+    <col class="c-no">
     <col class="c-desc">
-    <col class="c-hsn">
     <col class="c-qty">
     <col class="c-rate">
-    <col class="c-tax">
     {% if invoice.is_tax_invoice %}
+      <col class="c-tax">
       {% if invoice.cgst_amount %}
         <col class="c-cgst">
         <col class="c-sgst">
@@ -514,13 +319,12 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
   </colgroup>
   <thead>
     <tr>
-      <td>Ref</td>
+      <td>No.</td>
       <td>Description</td>
-      <td>SAC/HSN</td>
       <td class="num">Qty</td>
       <td class="num">Rate (Rs.)</td>
-      <td class="num">Taxable (Rs.)</td>
       {% if invoice.is_tax_invoice %}
+        <td class="num">Taxable (Rs.)</td>
         {% if invoice.cgst_amount %}
           <td class="num">CGST</td>
           <td class="num">SGST</td>
@@ -534,16 +338,15 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
   <tbody>
     {% for item in line_items %}
     <tr>
-      <td class="c-ref-cell">{{ item.hsn_sac_code }}</td>
+      <td class="c-no-cell">{{ forloop.counter }}</td>
       <td class="c-desc-cell">
         <strong>{{ item.description }}</strong>
         {% if item.notes %}<small>{{ item.notes }}</small>{% endif %}
       </td>
-      <td>{{ item.hsn_sac_code }}</td>
       <td class="num">{{ item.quantity }}</td>
       <td class="num">{{ item.unit_price }}</td>
-      <td class="num">{{ item.taxable_value }}</td>
       {% if invoice.is_tax_invoice %}
+        <td class="num">{{ item.taxable_value }}</td>
         {% if item.cgst_amount %}
           <td class="num">
             Rs. {{ item.cgst_amount }}
@@ -567,18 +370,17 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
 </table>
 
 <!-- ════════════════════════════════════════════════════════
-     SECTION 4 — NOTES + TOTALS
+     SECTION 4 — TERMS & CONDITIONS + TOTALS
 ════════════════════════════════════════════════════════ -->
 <table class="t-bottom">
   <tr>
-    <!-- Notes -->
+    <!-- Terms & Conditions -->
     <td class="b-notes">
-      <div class="notes-lbl">Notes</div>
+      <div class="notes-lbl">Terms &amp; Conditions</div>
       <ul class="notes-list">
-        <li>Membership fees once paid are non-refundable.</li>
-        <li>This is a computer-generated invoice and does not require a physical signature.</li>
-        <li>For support: {{ gym.contact_phone }} | {{ gym.contact_email }}</li>
-        <li>Subject to jurisdiction: {{ gst_profile.city }}, {{ gst_profile.state }}.</li>
+        <li>Fees once paid are non-refundable and non-transferable to another person.</li>
+        <li>Pending dues must be cleared on or before the due date, failing which membership may be suspended.</li>
+        <li>Membership is valid only for the plan, duration, and services specified in this invoice.</li>
       </ul>
       {% if invoice.cancellation_reason %}
         <div class="cancel-note"><strong>Cancellation reason:</strong> {{ invoice.cancellation_reason }}</div>
@@ -620,43 +422,29 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
           <td class="tr">Rs. {{ invoice.grand_total }}</td>
         </tr>
       </table>
+      <div class="thankyou">Thank you for choosing {{ gym.gym_name }}.</div>
     </td>
   </tr>
 </table>
 
 <!-- ════════════════════════════════════════════════════════
-     SECTION 5 — FOOTER
+     SECTION 5 — FOOTER (no signature)
 ════════════════════════════════════════════════════════ -->
 <div class="footer-hr"></div>
 <table class="t-footer">
   <tr>
-    <td class="f-col">
-      <div class="f-lbl">Pay by transfer</div>
-      <div class="f-body">
-        Bank Name<br>
-        Routing 000-000-000<br>
-        Account 0000-0000-00
-      </div>
+    <td>
+      <div class="f-lbl">Phone</div>
+      <div class="f-body">{{ gym.contact_phone|default:"—" }}</div>
     </td>
-    <td class="f-col">
-      <div class="f-lbl">For online</div>
-      <div class="f-body">
-        {% if gym.contact_email %}{{ gym.contact_email }}<br>{% endif %}
-        {% if gst_profile %}{{ gst_profile.city }}{% endif %}
-      </div>
+    <td class="f-mid">
+      <div class="f-lbl">Email</div>
+      <div class="f-body">{{ gym.contact_email|default:"—" }}</div>
     </td>
-    <td class="f-right">
-      {% if gst_profile and gst_profile.signature_image %}
-        <div class="sig-block">
-          <img src="{{ gst_profile.signature_image }}" alt="Authorised Signatory">
-          <div class="sig-lbl">
-            Authorised Signatory<br>
-            {{ gst_profile.legal_business_name|default:gym.gym_name }}
-          </div>
-        </div>
-      {% endif %}
-      <div class="appreciation">
-        We <span class="accent">appreciate</span><br>your business
+    <td>
+      <div class="f-lbl">Address</div>
+      <div class="f-body">
+        {% if gst_profile %}{{ gst_profile.address_line1 }}, {{ gst_profile.city }}{% else %}{{ gym.address|default:"—" }}{% endif %}
       </div>
     </td>
   </tr>
@@ -666,9 +454,10 @@ table.t-footer td.f-right { width: 40%; text-align: right; padding-right: 0; }
      SYSTEM NOTE
 ════════════════════════════════════════════════════════ -->
 <div class="sys-note">
-  This is a system-generated invoice &nbsp;·&nbsp; {{ invoice.get_invoice_type_display }} &nbsp;·&nbsp; #{{ invoice.invoice_number }}
+  This is a system-generated invoice and does not require a physical signature &nbsp;·&nbsp; {{ invoice.get_invoice_type_display }} &nbsp;·&nbsp; #{{ invoice.invoice_number }}
 </div>
 
 </div><!-- /page -->
 </body>
 </html>
+{% endwith %}
