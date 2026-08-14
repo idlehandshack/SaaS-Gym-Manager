@@ -7,6 +7,10 @@
     <i class="bi bi-box-arrow-up-right"></i>
     <span class="d-none d-md-inline">Visit Website</span>
   </a>
+  <a href="{% url 'export_enrollments' gym.id %}" class="db-visit-site-btn">
+    <i class="bi bi-box-arrow-up-right"></i>
+    <span class="d-none d-md-inline">Download Excel</span>
+  </a>
 
   <div class="db-navbar-right">
     {% if gym.subscription_end %}

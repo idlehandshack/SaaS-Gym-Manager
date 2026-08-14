@@ -30,6 +30,7 @@ from Gym.views_members import (
 )
 from Gym.dashboard_views import dashboard_home, ai_credit_analysis ,tutorial_page
 
+from AuthFit.services.userexcelsheet import export_enrollments_excel
 
 class StaticViewSitemap(Sitemap):
     changefreq = 'weekly'
@@ -102,6 +103,7 @@ profile_patterns = [
     path('workout/', views.workout, name='workout'),
     path('needs-attention/', views.needs_attention, name='needs_attention'),
     path('tutorials/', tutorial_page, name='tutorial_page'),
+    path('gym/<uuid:gym_id>/enrollments/export/',export_enrollments_excel, name='export_enrollments'),
 ]
 
 
