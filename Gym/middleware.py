@@ -102,16 +102,15 @@ class GymMiddleware:
 
     def _resolve_role(self, request, gym):
         """
-        Sets request.staff_role from StaffProfile or Enrollment.
-        Called only for authenticated users with a resolved gym.
+        Sets request.staff_role from StaffProfile (scoped to this gym) or
+        Enrollment. Called only for authenticated users with a resolved gym.
+        A user can now hold a StaffProfile at multiple gyms — always look up
+        the one that matches THIS gym, never assume a single profile.
         """
-        try:
-            profile = request.user.staff_profile
-            if profile.gym_id == gym.pk and profile.active:
-                request.staff_role = profile.role
-                return
-        except Exception:
-            pass
+        profile = request.user.staff_profiles.filter(gym=gym, active=True).first()
+        if profile:
+            request.staff_role = profile.role
+            return
 
         try:
             from AuthFit.models import Enrollment  # avoid circular import

@@ -234,10 +234,8 @@ class StaffProfileAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        try:
-            return qs.filter(gym=request.user.staff_profile.gym)
-        except StaffProfile.DoesNotExist:
-            return qs.none()
+        gym_ids = request.user.staff_profiles.filter(active=True).values_list('gym_id', flat=True)
+        return qs.filter(gym_id__in=gym_ids)
         
 
 @admin.register(GymGSTProfile)

@@ -317,15 +317,15 @@ class StaffProfile(models.Model):
         ('receptionist',  'Receptionist'),
     ]
 
-    user    = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_profile')
+    user    = models.ForeignKey(User, on_delete=models.CASCADE, related_name='staff_profiles')
     gym     = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='staff', null=True, blank=True)
     role    = models.CharField(max_length=20, choices=ROLE_CHOICES, default='receptionist')
     active  = models.BooleanField(default=True)
 
-    # Trainer-specific: which members are assigned to this trainer
-    # (populated via Enrollment.trainer FK, not stored here)
-
     class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'gym'], name='unique_staffprofile_per_user_per_gym')
+        ]
         indexes = [
             models.Index(fields=['gym', 'role']),
             models.Index(fields=['user']),
@@ -352,7 +352,25 @@ class StaffProfile(models.Model):
     @property
     def is_receptionist(self):
         return self.role == 'receptionist'
-    
+
+def add_owner_to_gym(gym, user):
+    """
+    Grant `user` full gym_owner access to `gym`, without touching any
+    ownership/role they already have at other gyms.
+    """
+    profile, created = StaffProfile.objects.get_or_create(
+        user=user, gym=gym, defaults={'role': 'gym_owner'}
+    )
+    if not created and profile.role != 'gym_owner':
+        profile.role = 'gym_owner'
+        profile.save()
+        profile.permissions.apply_role_defaults('gym_owner')
+        profile.permissions.save()
+    if not profile.active:
+        profile.active = True
+        profile.save(update_fields=['active'])
+    return profile
+ 
 class GymGSTProfile(models.Model):
     """One-to-one GST/billing profile per gym tenant."""
     gym = models.OneToOneField('Gym', on_delete=models.CASCADE, related_name='gst_profile') 
