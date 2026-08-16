@@ -6,11 +6,9 @@
     <a href="{% url 'payment_management' %}" class="db-fab-item">
       <i class="bi bi-cash-stack"></i><span>New Payment</span>
     </a>
-    {% if gym.enable_store %}
-    <a href="#" class="db-fab-item">
-      <i class="bi bi-bag-check-fill"></i><span>Sell Product</span>
+    <a href="{% url 'whatsapp_pending' %}" class="db-fab-item">
+      <i class="bi bi-bell-fill"></i><span>Remainder</span>
     </a>
-    {% endif %}
     <a href="{% url 'today_attendance' %}" class="db-fab-item">
       <i class="bi bi-check2-square"></i><span>Mark Attendance</span>
     </a>

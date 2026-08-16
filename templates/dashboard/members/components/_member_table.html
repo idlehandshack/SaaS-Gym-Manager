@@ -1,6 +1,6 @@
 <div class="db-card db-members-table-card">
   {% if page_obj.object_list %}
-  <div class="table-responsive db-members-table-wrap">
+  <div class="table-responsive db-members-table-wrap d-none d-md-block">
     <table class="table db-members-table align-middle">
       <thead>
         <tr>
@@ -40,7 +40,11 @@
         </td>
         <td class="text-end">
           <div class="dropdown db-member-actions">
-            <button class="btn db-icon-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions">
+            <button class="btn db-icon-btn" 
+                    data-bs-toggle="dropdown" 
+                    data-bs-display="static"
+                    aria-expanded="false" 
+                    aria-label="Actions">
               <i class="bi bi-three-dots-vertical"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -62,6 +66,60 @@
     {% endfor %}
       </tbody>
     </table>
+  </div>
+  <div class="db-members-cards d-md-none">
+    {% for member in page_obj %}
+    <div class="db-member-card" data-href="{% url 'member_detail' member.id %}">
+      <div class="db-member-card-photo">
+        {% if member.face_image %}
+          <img src="{{ member.face_image.url }}" alt="{{ member.fullname }}" class="db-member-avatar">
+        {% else %}
+          <span class="db-member-avatar db-member-avatar-fallback">{{ member.fullname|slice:":1"|upper }}</span>
+        {% endif %}
+      </div>
+
+      <div class="db-member-card-body">
+        <div class="db-member-card-top">
+          <span class="db-member-name">{{ member.fullname }}</span>
+          {% include "dashboard/members/components/_status_badge.html" with status=member.computed_status %}
+        </div>
+        <div class="db-member-card-meta">
+          <span class="db-member-card-id">{{ member.unique_id }}</span>
+          <span class="db-member-card-dot">•</span>
+          <span class="db-member-card-phone">{{ member.phone }}</span>
+        </div>
+        <div class="db-member-card-expiry">
+          <i class="bi bi-calendar-event"></i>
+          Expires {{ member.DueDate|date:"d M Y"|default:"—" }}
+        </div>
+      </div>
+
+      <div class="db-member-card-actions">
+        <div class="dropdown db-member-actions">
+          <button class="btn db-icon-btn" 
+                  data-bs-toggle="dropdown" 
+                  data-bs-display="static"
+                  aria-expanded="false" 
+                  aria-label="Actions">
+            <i class="bi bi-three-dots-vertical"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><a class="dropdown-item" href="{% url 'member_detail' member.id %}"><i class="bi bi-person-lines-fill me-2"></i>View Profile</a></li>
+            <li><a class="dropdown-item" href="{% url 'payment_management' %}"><i class="bi bi-cash-stack me-2"></i>Collect Payment</a></li>
+            <li><a class="dropdown-item" href="{% url 'freeze_membership' %}?tab=changeplan&cmp_search={{ member.unique_id }}"><i class="bi bi-arrow-repeat me-2"></i>Renew / Change Plan</a></li>
+            <li>
+              <button type="button" class="dropdown-item db-mark-attendance-btn"
+                      data-member-id="{{ member.id }}"
+                      data-member-name="{{ member.fullname }}">
+                <i class="bi bi-check2-square me-2"></i>Mark Attendance
+              </button>
+            </li>
+            <li><a class="dropdown-item" target="_blank" rel="noopener" href="https://wa.me/91{{ member.phone }}"><i class="bi bi-whatsapp me-2"></i>WhatsApp</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
   </div>
   {% else %}
   <div class="db-members-empty">

@@ -1,16 +1,6 @@
 // dashboard/js/members.js
 
 document.addEventListener("DOMContentLoaded", function () {
-  // ── Dropdown positioning fix ─────────────────────────────────
-  // Bootstrap dropdowns inside .table-responsive get clipped by the
-  // table's own scroll container (overflow-x: auto forces overflow-y
-  // to clip too). Forcing Popper's positioning strategy to "fixed"
-  // makes the menu position relative to the viewport instead of the
-  // scroll container. That alone isn't enough though — without a
-  // flip/preventOverflow modifier, Popper still won't reposition the
-  // menu when there isn't room below it (e.g. the last row near the
-  // bottom of the viewport), so the menu ends up rendered off-screen
-  // and looks like the click did nothing. This config fixes both.
   document.querySelectorAll('.db-member-actions [data-bs-toggle="dropdown"]').forEach(function (toggleEl) {
     bootstrap.Dropdown.getOrCreateInstance(toggleEl, {
       popperConfig: function (defaultConfig) {
@@ -50,8 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // ── Row click → navigate to member detail ───────────────────────
-  document.querySelectorAll(".db-member-row").forEach(function (row) {
+  document.querySelectorAll(".db-member-row, .db-member-card").forEach(function (row) {
     row.addEventListener("click", function (e) {
       if (e.target.closest(".db-member-actions")) return;
       var href = row.getAttribute("data-href");

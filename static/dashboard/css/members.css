@@ -141,3 +141,82 @@
   .db-members-searchbar{ flex-wrap:wrap; }
   .db-members-search-btn span{ display:none; }
 }
+/* ── Mobile card list ─────────────────────────────────────────── */
+.db-members-cards{
+  display:flex; flex-direction:column;overflow: visible;
+}
+.db-member-card{
+  display:flex; align-items:flex-start; gap:.75rem;
+  padding:.85rem 1rem;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+.db-member-card:has(.dropdown-menu.show){
+  z-index: 50;
+}
+.db-member-actions .dropdown-menu{
+  min-width: 200px;
+  max-width: calc(100vw - 2rem);
+  background: var(--surface-2, #1e1e1e);
+  border: 1px solid var(--border);
+  color: var(--text-hi);
+  z-index: 1050;
+  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+.db-member-actions .dropdown-item{
+  color: var(--text-hi);
+  font-size: .87rem;
+  padding: .55rem .9rem;
+}
+.db-member-actions .dropdown-item:hover,
+.db-member-actions .dropdown-item:focus{
+  background: var(--surface-3);
+  color: var(--orange);
+}
+.db-member-actions .dropdown-item i{
+  color: var(--text-mid);
+}
+.db-member-card:last-child{ border-bottom:none; }
+.db-member-card:active{ background:var(--surface-3); }
+
+.db-member-card-photo{ flex-shrink:0; }
+.db-member-card-photo .db-member-avatar,
+.db-member-card-photo .db-member-avatar-fallback{ width:44px; height:44px; }
+
+.db-member-card-body{ flex:1; min-width:0; }
+.db-member-card-top{
+  display:flex; align-items:center; justify-content:space-between; gap:.5rem;
+  margin-bottom:.3rem;
+}
+.db-member-card-top .db-member-name{
+  font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.db-member-card-meta{
+  display:flex; align-items:center; gap:.4rem;
+  font-size:.8rem; color:var(--text-mid); margin-bottom:.3rem;
+}
+.db-member-card-dot{ color:var(--text-lo); }
+.db-member-card-expiry{
+  display:flex; align-items:center; gap:.35rem;
+  font-size:.78rem; color:var(--text-lo);
+}
+.db-member-card-expiry i{ font-size:.85rem; }
+
+.db-member-card-actions{
+  flex-shrink:0; align-self:center;
+}
+/* ── Enforce table/card mobile switch regardless of Bootstrap utilities ── */
+@media (max-width: 767.98px){
+  .db-members-table-wrap{ display:none !important; }
+  .db-members-cards{ display:flex !important; flex-direction:column; }
+}
+@media (min-width: 768px){
+  .db-members-cards{ display:none !important; }
+}
+.db-members-table-card{
+  min-height: unset;
+  height: auto;
+}
