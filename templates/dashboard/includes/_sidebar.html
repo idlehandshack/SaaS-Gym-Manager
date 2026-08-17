@@ -35,6 +35,9 @@
       <a href="{% url 'member_message_list' %}" class="db-nav-link {% if current_url == 'member_message_list' %}active{% endif %}">
        <i class="bi bi-chat-dots"></i><span>Member Messages</span>
       </a>
+      <a href="{% url 'billing:send_invoice_page' %}" class="db-nav-link {% if current_url == 'send_invoice_page' %}active{% endif %}">
+       <i class="bi bi-envelope-paper"></i><span>Send Invoice</span>
+      </a>
     </div>
 
     <div class="db-nav-group">

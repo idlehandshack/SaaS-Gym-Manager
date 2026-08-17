@@ -1,0 +1,280 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% block content %}
+<div class="db-page-header">
+  <div>
+    <h1 class="db-page-title"><i class="bi bi-whatsapp" style="color:var(--green)"></i> Send Invoice</h1>
+    <p class="db-page-sub">Share invoices with members directly over WhatsApp.</p>
+  </div>
+</div>
+
+<div class="db-card exp-filter-card mb-3">
+  <form method="get" class="d-flex gap-2 flex-wrap" style="max-width:480px">
+    <div class="exp-search-wrap flex-grow-1">
+      <i class="bi bi-search send-inv-search-icon"></i>
+      <input type="text" name="search" class="exp-input exp-search-input send-inv-search-input"
+            placeholder="Search invoice #, name, phone" value="{{ search }}">
+    </div>
+    <button class="exp-filter-btn" style="flex:none;padding:.5rem 1.1rem" type="submit">
+      <i class="bi bi-search"></i> Search
+    </button>
+  </form>
+</div>
+
+<!-- ── Desktop table (hidden on mobile) ─────────────────────────── -->
+<div class="db-card exp-table-card send-inv-table-wrap">
+  <div class="table-responsive">
+    <table class="exp-table">
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Member</th>
+          <th>Phone</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th style="min-width:220px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice in page_obj %}
+        <tr>
+          <td class="exp-title">{{ invoice.invoice_number }}</td>
+          <td>{{ invoice.customer_name }}</td>
+          <td>
+            {% if invoice.customer_phone %}
+              <span class="exp-muted">{{ invoice.customer_phone }}</span>
+            {% else %}
+              <span style="color:var(--red)">No phone on file</span>
+            {% endif %}
+          </td>
+          <td class="exp-amount">₹{{ invoice.grand_total }}</td>
+          <td><span class="exp-pay-badge exp-cat-badge">{{ invoice.get_status_display }}</span></td>
+          <td class="exp-date">{{ invoice.invoice_date }}</td>
+          <td>
+            <button class="wa-btn-primary send-invoice-btn"
+                    style="width:auto;display:inline-flex;padding:.4rem .8rem;font-size:.8rem"
+                    data-invoice-id="{{ invoice.pk }}"
+                    {% if not invoice.customer_phone %}disabled{% endif %}>
+              <i class="bi bi-whatsapp"></i> Send Invoice
+            </button>
+            <a class="db-icon-btn" style="display:inline-flex;width:auto;padding:.4rem .6rem;text-decoration:none"
+               href="{% url 'owner:invoice_pdf' invoice.pk %}" target="_blank">
+              <i class="bi bi-download"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="exp-empty">
+          <i class="bi bi-inbox"></i>
+          No shareable invoices found.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Mobile cards (hidden on desktop) ─────────────────────────── -->
+<div class="send-inv-cards">
+  {% for invoice in page_obj %}
+  <div class="inv-card">
+    <div class="inv-card-top">
+      <div class="inv-card-name">{{ invoice.customer_name }}</div>
+      <div class="inv-card-amount">₹{{ invoice.grand_total }}</div>
+    </div>
+
+    <div class="inv-card-meta">
+      <div class="inv-card-meta-row">
+        <i class="bi bi-telephone"></i>
+        {% if invoice.customer_phone %}
+          <span>{{ invoice.customer_phone }}</span>
+        {% else %}
+          <span class="no-phone">No phone on file</span>
+        {% endif %}
+      </div>
+      <div class="inv-card-meta-row">
+        <i class="bi bi-person-vcard"></i>
+        <span>{{ invoice.member.unique_id|default:"—" }}</span>
+      </div>
+    </div>
+
+    <div class="inv-card-actions">
+      <button class="wa-btn-primary send-invoice-btn inv-card-btn-send"
+              data-invoice-id="{{ invoice.pk }}"
+              {% if not invoice.customer_phone %}disabled{% endif %}>
+        <i class="bi bi-whatsapp"></i> Send Invoice
+      </button>
+      <a class="inv-card-btn-download"
+         href="{% url 'owner:invoice_pdf' invoice.pk %}" target="_blank">
+        <i class="bi bi-download"></i>
+      </a>
+    </div>
+  </div>
+  {% empty %}
+  <div class="exp-empty">
+    <i class="bi bi-inbox"></i>
+    No shareable invoices found.
+  </div>
+  {% endfor %}
+</div>
+
+{% include "dashboard/members/components/_pagination.html" with page_obj=page_obj %}
+
+<style>
+  .send-inv-cards { display: none; }
+  .send-inv-search-icon{
+    left:.85rem !important;
+    z-index:2;
+    pointer-events:none;
+  }
+  .send-inv-search-input{
+    padding-left:2.4rem !important;
+  }
+  @media (max-width: 767px) {
+    .send-inv-table-wrap { display: none; }
+    .send-inv-cards { display: block; }
+  }
+
+  .inv-card {
+    background: var(--db-card-bg, #17171c);
+    border: 1px solid var(--db-border, rgba(255,255,255,.08));
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .inv-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .inv-card-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    line-height: 1.3;
+  }
+  .inv-card-amount {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--green, #1fae6e);
+    white-space: nowrap;
+  }
+
+  .inv-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .inv-card-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #a8a8b3;
+  }
+  .inv-card-meta-row i { font-size: 13px; width: 14px; }
+  .inv-card-meta-row .no-phone { color: var(--red, #e05c5c); }
+
+  .inv-card-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .inv-card-btn-send {
+    flex: 1;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: .55rem .8rem;
+    font-size: .85rem;
+  }
+  .inv-card-btn-download {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.06);
+    color: #fff;
+    text-decoration: none;
+    font-size: 15px;
+  }
+</style>
+
+<script nonce="{{ request.csp_nonce }}">
+// Centralized: keep this file responsible only for UI/opening behavior.
+// Authorization + link generation stay server-side (send_invoice_api).
+const SEND_INVOICE_API_URL = "{% url 'billing:send_invoice_api' %}";
+const CSRF_TOKEN = "{{ csrf_token }}";
+
+function openExternally(url) {
+    // If running inside the EnterGYM Android WebView, use the injected
+    // bridge so the link opens in the system browser/WhatsApp instead of
+    // getting trapped inside the WebView. Falls back to window.open on the
+    // normal website.
+    if (window.EnterGYMBridge && typeof window.EnterGYMBridge.openExternal === "function") {
+        window.EnterGYMBridge.openExternal(url);
+        return true;
+    }
+    const win = window.open(url, "_blank");
+    return !!win;
+}
+
+document.querySelectorAll(".send-invoice-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+        const invoiceId = btn.dataset.invoiceId;
+        btn.disabled = true;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        try {
+            const resp = await fetch(SEND_INVOICE_API_URL, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": CSRF_TOKEN,
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: `invoice_id=${encodeURIComponent(invoiceId)}`,
+            });
+            const data = await resp.json();
+
+            if (!data.ok) {
+                alert(data.error || "Could not generate the WhatsApp link.");
+                return;
+            }
+
+            const opened = openExternally(data.wa_url);
+            if (!opened) {
+                // Graceful fallback — never fail silently.
+                promptCopyFallback(data.wa_url, data.message);
+            }
+        } catch (err) {
+            alert("Network error while sending the invoice. Please try again.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    });
+});
+
+function promptCopyFallback(waUrl, message) {
+    const text = message || waUrl;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert("WhatsApp couldn't be opened automatically. The invoice message was copied — paste it into WhatsApp manually.");
+        }).catch(() => {
+            window.prompt("Copy this invoice message manually:", text);
+        });
+    } else {
+        window.prompt("Copy this invoice message manually:", text);
+    }
+}
+</script>
+{% endblock %}

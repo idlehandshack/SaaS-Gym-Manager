@@ -4,6 +4,7 @@ from django.core.cache import cache
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from decimal import Decimal
+import secrets
 # ──────────────────────────────────────────────────────────────────────────────
 # Payment
 # Thin snapshot of a membership payment. Created when staff records a payment
@@ -317,3 +318,52 @@ def clear_revenue_cache_on_refund_change(sender, instance, **kwargs):
     """A refund changes net revenue for its gym immediately — same
     invalidation rule as Invoice/Payment writes."""
     cache.delete(f"admin_revenue_{instance.gym_id}")
+
+def _generate_share_token() -> str:
+    # 32 bytes -> 43 url-safe chars. Unguessable, unrelated to invoice PK.
+    return secrets.token_urlsafe(32)
+
+
+class InvoiceShareToken(models.Model):
+    invoice = models.OneToOneField(
+        'billing.Invoice', on_delete=models.CASCADE, related_name='share_token'
+    )
+    token = models.CharField(
+        max_length=64, unique=True, db_index=True, default=_generate_share_token, editable=False,
+    )
+    # Optional expiration — off by default (None = never expires), per spec's
+    # "make it configurable" recommendation. Left unset unless a gym opts in.
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        'auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Share/open tracking — operational only, never claims WhatsApp delivery.
+    last_shared_at = models.DateTimeField(null=True, blank=True)
+    share_count = models.PositiveIntegerField(default=0)
+    last_opened_at = models.DateTimeField(null=True, blank=True)
+    open_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Invoice Share Token'
+        verbose_name_plural = 'Invoice Share Tokens'
+
+    def __str__(self):
+        return f"ShareToken[{self.invoice.invoice_number}]"
+
+    @property
+    def is_expired(self) -> bool:
+        return bool(self.expires_at and timezone.now() > self.expires_at)
+
+    def mark_shared(self):
+        self.last_shared_at = timezone.now()
+        self.share_count = models.F('share_count') + 1
+        self.save(update_fields=['last_shared_at', 'share_count'])
+        self.refresh_from_db(fields=['share_count'])
+
+    def mark_opened(self):
+        self.last_opened_at = timezone.now()
+        self.open_count = models.F('open_count') + 1
+        self.save(update_fields=['last_opened_at', 'open_count'])
+        self.refresh_from_db(fields=['open_count'])

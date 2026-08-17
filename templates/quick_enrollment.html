@@ -324,7 +324,7 @@
     <!-- ── Payment (Optional) ── -->
     <div class="qe-section-label"><span>Payment (Optional)</span></div>
     <div class="qe-grid-2">
-      <input class="qe-field" type="number" name="paid_amount" placeholder="Amount Paid Now" autocomplete="off" min="0" step="0.01" />
+      <input class="qe-field" type="number" name="paid_amount" placeholder="Amount Paid Now" autocomplete="new-password" min="0" step="0.01" />
 
       <select class="qe-field" name="payment_method" autocomplete="off">
         <option value="">Payment Method</option>
@@ -334,7 +334,7 @@
       </select>
 
       <div class="qe-col-full">
-        <input class="qe-field" type="date" name="payment_date" autocomplete="off" />
+        <input class="qe-field" type="date" name="payment_date" autocomplete="new-password" />
       </div>
     </div>
 
@@ -437,6 +437,10 @@
     label.innerText = name + " — ₹" + price;
     label.classList.remove("qe-placeholder");
     document.getElementById("planInput").value = id;
+
+    const paidAmount = document.querySelector('input[name="paid_amount"]');
+    if (paidAmount) paidAmount.value = price;
+
     qeCloseAll();
   }
 
@@ -449,6 +453,25 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    const paymentDate = document.querySelector('input[name="payment_date"]');
+    const paidAmount  = document.querySelector('input[name="paid_amount"]');
+    const startDateInput = document.getElementById("membershipStartDateInput");
+
+    // clear paid_amount on load (plan not chosen yet)
+    if (paidAmount) paidAmount.value = "";
+
+    // pre-fill payment_date to match the default start date on load
+    if (paymentDate && startDateInput && startDateInput.value) {
+        paymentDate.value = startDateInput.value;
+    }
+
+    // keep payment_date synced whenever start date changes
+    if (startDateInput && paymentDate) {
+        startDateInput.addEventListener("change", function () {
+            paymentDate.value = startDateInput.value;
+        });
+    }
+
     document.getElementById("planBtn").addEventListener("click", function () { qeToggleDropdown("plan"); });
     document.getElementById("trainerBtn").addEventListener("click", function () { qeToggleDropdown("trainer"); });
 

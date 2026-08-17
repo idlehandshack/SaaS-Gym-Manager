@@ -113,23 +113,21 @@ def _prune_bad_tokens(tokens: list[str], response) -> None:
 # ── Gym-scoped staff token helper ─────────────────────────────────────────────
 
 def _get_staff_tokens(gym) -> list[str]:
-    """
-    Return active FCM tokens for staff belonging to the given gym only.
-
-    Now works correctly because StaffDevice has both gym FK and user FK.
-    Previously StaffDevice had no gym FK so this returned tokens from
-    ALL gyms — every staff notification went to all gyms' staff.
-    """
     if not gym:
         logger.warning("_get_staff_tokens called with gym=None — returning empty")
         return []
 
+    from Gym.models import StaffProfile  # local import avoids circular import
+
+    staff_user_ids = (
+        StaffProfile.objects
+        .filter(gym=gym, active=True, role__in=['gym_owner', 'receptionist'])
+        .values_list('user_id', flat=True)
+    )
+
     return list(
         StaffDevice.objects
-        .filter(gym=gym, active=True,user__staff_profile__role__in=[
-                'gym_owner',
-                'receptionist',
-            ],)      
+        .filter(gym=gym, active=True, user_id__in=staff_user_ids)
         .values_list('fcm_token', flat=True)
     )
 
