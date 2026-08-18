@@ -860,6 +860,7 @@ def signupPage(request):
         return redirect('/')
 
     gym = getattr(request, 'gym', None)
+    next_url = request.GET.get('next') or request.POST.get('next', '/')
 
     if request.method == "POST":
         form = UserLogin(request.POST, gym=gym)
@@ -881,10 +882,10 @@ def signupPage(request):
                         )
                         if linked_enrollment:
                             linked_enrollment.user = user
-                            linked_enrollment.source = "MEMBER"    
+                            linked_enrollment.source = "MEMBER"
 
                             update_fields = ['user', 'source']
-                            if not linked_enrollment.email and user.email:  
+                            if not linked_enrollment.email and user.email:
                                 linked_enrollment.email = user.email
                                 update_fields.append('email')
 
@@ -897,9 +898,10 @@ def signupPage(request):
                 cache.delete(f"enrollment_{user.id}_{gym.pk}")
                 cache.delete(f"enrolled_{user.id}_{gym.pk}")
                 cache.delete(f"enrollment_status_{user.id}_{gym.pk}")
-                return redirect('/profile/')
+                if next_url == '/':
+                    return redirect('/profile/')
+            return _post_login_redirect(request, next_url)
 
-            return redirect('/')
     else:
         form = UserLogin(gym=gym)
 
@@ -907,7 +909,7 @@ def signupPage(request):
         "registration/saas_signup.html" if gym is None
         else "registration/signup.html"
     )
-    return render(request, signup_template, {'form': form, 'gym': gym})
+    return render(request, signup_template, {'form': form, 'gym': gym, 'next': next_url})
 
 
 def loginPage(request):
@@ -930,7 +932,7 @@ def loginPage(request):
             reset_attempt(ip, phone)
             auth_log(request, user)
             messages.success(request, "Logged in successfully!")
-            return _post_login_redirect(request,next_url)
+            return _post_login_redirect(request, next_url)
         else:
             check_password(password, "pbkdf2_sha256$600000$dummy$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=")
             record_failed_attempt(ip, phone)
@@ -942,7 +944,7 @@ def loginPage(request):
         else "registration/login.html"
     )
 
-    return render(request, login_template, {'next': next_url, 'gym': gym ,})
+    return render(request, login_template, {'next': next_url, 'gym': gym})
 
 
 def handlelogout(request):
@@ -1652,6 +1654,9 @@ def attendance_page(request):
         .filter(user=user, gym=gym)
         .order_by('-date')
     )
+
+    qr_result = request.session.pop('qr_result_flash', None)
+
     return render(request, "attendence.html", {
         "enrollment":   enrollment,
         "records":      all_attended[:30],
@@ -1665,6 +1670,7 @@ def attendance_page(request):
         "today": today,
         "gym" : gym,
         "geo_enabled": geo_enabled,
+        "qr_result": qr_result,
     })
 @active_member_required
 @login_required

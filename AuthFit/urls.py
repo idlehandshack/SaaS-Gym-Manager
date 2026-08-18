@@ -12,7 +12,7 @@ from AuthFit.views_expiry_reminder import (
 )
 from AuthFit.decorators import active_member_required
 from . import device_views
-
+from AuthFit.qr_entry import qr_attendance_entry, qr_attendance_resume
 from Gym.views import (
     saas_dashboard, upi_payment_settings, all_gyms_view, add_gst_profile,
     add_staff_profile, gym_detail_json, add_gym_page, search_owner_by_phone,
@@ -120,6 +120,8 @@ attendance_patterns = [
     path('api/embedding-version/', views.get_embedding_version, name='embedding-version'),
     path('api/get-users/', views.get_users),
     path('api/stats/', views.stats_api, name='stats_api'),
+    path('attendance/qr/resume/', qr_attendance_resume, name='qr_attendance_resume'),
+    path('attendance/qr/<str:qr_token>/', qr_attendance_entry, name='qr_attendance_entry'),
 ]
 
 

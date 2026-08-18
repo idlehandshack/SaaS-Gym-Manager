@@ -77,7 +77,7 @@
     <div class="auth-card">
       <p class="login-text">
         Already have an account?
-        <a href="{% url 'login' %}">Login</a>
+        <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Login</a>
       </p>
       <div class="auth-mobile-brand">
         {% if gym and gym.logo %}
@@ -96,6 +96,7 @@
 
       <form method="POST" action="" class="signup-form" novalidate>
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
 
         <!-- Phone Number -->
         <div class="form-group">

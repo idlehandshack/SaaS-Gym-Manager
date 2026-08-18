@@ -35,7 +35,8 @@ from PIL import Image
 from AuthFit.views import _gym_staff_required
 from AuthFit.views import _get_gym
 from Gym.services.platform_insights import invalidate_platform_insights_cache
-
+from django.urls import reverse
+import json
 QR_TEMPLATE_PATH = os.path.join(settings.BASE_DIR, "static", "images", "Attendance template.png")
  
 # Region inside the template where the white QR panel sits (measured from the template)
@@ -113,17 +114,21 @@ def send_renewal_reminder(request, attempt_id):
 
     return JsonResponse({'status': 'sent' if sent else 'no_device', 'delivered': sent})
 
-import json
+def _qr_payload(request, qr_obj):
+    return request.build_absolute_uri(
+        reverse('qr_attendance_entry', args=[qr_obj.token])
+    )
+
 
 @_gym_staff_required
 def gym_qr_settings(request):
     gym = getattr(request, 'gym', None)
     qr_obj, _ = GymQRCode.objects.get_or_create(gym=gym)
-    payload = _qr_payload(qr_obj)
+    payload = _qr_payload(request, qr_obj)
     return render(request, "gym_qr_settings.html", {
         "gym": gym,
         "qr_payload": payload,
-        "qr_payload_json": json.dumps(payload),
+        "qr_payload_json": json_lib.dumps(payload),
         "regenerated_at": qr_obj.regenerated_at,
     })
 

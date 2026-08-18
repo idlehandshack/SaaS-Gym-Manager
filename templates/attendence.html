@@ -521,6 +521,9 @@
       {% for a in attended %}"{{ a.date|date:'Y-m-d' }}"{% if not forloop.last %},{% endif %}{% endfor %}
     ];
   </script>
+  {% if qr_result %}
+    {{ qr_result|json_script:"qr-result-data" }}
+  {% endif %}
 
   <main>
   <div class="attendance-container hero-animate">
@@ -820,9 +823,21 @@
         );
       });
 
+      const QR_URL_RE = /^https:\/\/[^/]+\/attendance\/qr\/([A-Za-z0-9_-]{16,64})\/?(?:\?.*)?$/;
+
+      function extractToken(decodedText) {
+        const m = decodedText.match(QR_URL_RE);
+        return m ? m[1] : null;
+      }
+
       function onScanSuccess(decodedText) {
         scanner.stop().then(() => { readerDiv.style.display = 'none'; });
-        submitScannedToken(decodedText.replace('ENTERGYM-QR:', ''));
+        const token = extractToken(decodedText);
+        if (!token) {
+          showResultPopup({ status: 'invalid_qr', message: 'This is not a valid EnterGYM attendance QR code.' });
+          return;
+        }
+        submitScannedToken(token);
       }
 
       function submitScannedToken(token) {
@@ -920,7 +935,16 @@
         if (!token) return;
         submitScannedToken(String(token).replace('ENTERGYM-QR:', ''));
       };
+      window.__showQRResultOnLoad = showResultPopup;
     })();
+  </script>
+  <script nonce="{{ request.csp_nonce }}">
+    document.addEventListener('DOMContentLoaded', function () {
+      const el = document.getElementById('qr-result-data');
+      if (el && window.__showQRResultOnLoad) {
+        window.__showQRResultOnLoad(JSON.parse(el.textContent));
+      }
+    });
   </script>
   <script nonce="{{ request.csp_nonce }}">
     {% if geo_enabled and not already_mark %}
