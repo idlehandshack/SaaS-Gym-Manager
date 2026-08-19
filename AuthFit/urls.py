@@ -104,6 +104,9 @@ profile_patterns = [
     path('needs-attention/', views.needs_attention, name='needs_attention'),
     path('tutorials/', tutorial_page, name='tutorial_page'),
     path('gym/<uuid:gym_id>/enrollments/export/',export_enrollments_excel, name='export_enrollments'),
+    path('staff/profile/', views.staff_profile, name='staff_profile'),
+    path('staff/profile/update-email/', views.update_staff_email, name='update_staff_email'),
+    path('staff/profile/update-name/', views.update_staff_name, name='update_staff_name'),
 ]
 
 

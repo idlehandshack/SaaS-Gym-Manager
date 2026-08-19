@@ -79,7 +79,6 @@ def mark_qr_attendance(user, qr_token):
             user.id, qr_token[:12],
         )
         return {'status': 'error', 'message': 'Too many attempts. Please wait a moment and try again.'}
-
     try:
         qr = GymQRCode.objects.select_related('gym').get(token=qr_token)
     except GymQRCode.DoesNotExist:

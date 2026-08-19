@@ -1,0 +1,365 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+
+  <style>
+    :root {
+      --bg:          #080808;
+      --surface:     #111111;
+      --surface-2:   #181818;
+      --surface-3:   #1e1e1e;
+      --border:      rgba(255,255,255,.06);
+      --border-2:    rgba(255,255,255,.11);
+      --orange:      #ff5a00;
+      --orange-dim:  rgba(255,90,0,.10);
+      --orange-bdr:  rgba(255,90,0,.28);
+      --green:       #5de87c;
+      --red:         #ef5350;
+      --text-hi:     #f5f5f5;
+      --text-mid:    #888;
+      --font-d:      "Barlow Condensed", sans-serif;
+      --font-b:      "Barlow", sans-serif;
+      --t:           .22s;
+      --radius-lg:   18px;
+      --radius-md:   12px;
+      --radius-sm:   8px;
+      --radius-pill: 40px;
+      --nav-h:       60px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-hi);
+      font-family: var(--font-b);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    .store-nav {
+      position: sticky; top: 0; z-index: 200;
+      height: var(--nav-h);
+      background: rgba(8,8,8,.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .nav-inner {
+      width: 100%; padding: 0 clamp(16px,4vw,40px);
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .nav-brand {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(1.1rem,3vw,1.5rem);
+      text-transform: uppercase; text-decoration: none;
+      color: var(--text-hi); letter-spacing: -.01em;
+      white-space: nowrap; display: flex; align-items: center; gap: 8px;
+    }
+    .nav-brand .acc { color: var(--orange); }
+    .nav-badge {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      background: var(--orange-dim); color: var(--orange);
+      border: 1px solid var(--orange-bdr);
+      padding: 5px 14px; border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+
+    .page-header {
+      position: relative;
+      padding: clamp(40px,7vw,72px) 0 clamp(28px,5vw,48px);
+      text-align: center; overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: clamp(24px,4vw,40px);
+    }
+    .page-header::before {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255,90,0,.09) 0%, transparent 70%);
+      z-index: 0;
+    }
+    .header-inner { position: relative; z-index: 1; padding: 0 clamp(16px,4vw,40px); }
+    .header-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--font-d); font-size: clamp(.68rem,1.8vw,.8rem);
+      font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 10px;
+      padding: 5px 14px;
+      border: 1px solid var(--orange-bdr); border-radius: var(--radius-pill);
+      background: var(--orange-dim);
+    }
+    .page-header h1 {
+      font-family: var(--font-d); font-weight: 900;
+      font-size: clamp(2rem,7vw,3.8rem); line-height: .92;
+      letter-spacing: -.01em; text-transform: uppercase;
+      margin-bottom: 8px; color: var(--text-hi);
+    }
+    .page-header h1 .accent { color: var(--orange); }
+
+    .profile-page {
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 clamp(12px,3vw,24px) clamp(60px,8vw,100px);
+    }
+    .main {
+      display: flex; justify-content: center; align-items: flex-start;
+      gap: clamp(28px, 5vw, 90px); flex-wrap: wrap;
+    }
+
+    .profile-left {
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center; flex-shrink: 0;
+    }
+    .avatar-circle {
+      border-radius: 50%;
+      border: 2px solid var(--orange);
+      overflow: hidden; position: relative;
+      box-shadow: 0 0 15px rgba(255, 90, 0, 0.35);
+      background: var(--surface-2);
+    }
+    .avatar-initial {
+      width: 100%; height: 100%;
+      background: var(--surface-3);
+      display: flex; justify-content: center; align-items: center;
+      color: var(--orange);
+      font-family: var(--font-d); font-size: 44px; font-weight: 900;
+    }
+    .member-name {
+      font-family: var(--font-d); font-size: 24px; font-weight: 900;
+      text-transform: uppercase; color: var(--orange);
+      margin-top: 14px; text-align: center;
+    }
+    .welcome-msg { font-size: 13px; color: var(--text-mid); margin-top: 6px; }
+
+    .info-card {
+      width: 100%; max-width: 750px;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-2);
+      overflow: hidden;
+    }
+    .card-row { display: grid; grid-template-columns: 1fr 1fr; }
+    .card-row.top { margin-top: 6px; }
+    .card-cell { position: relative; padding: 18px 30px; }
+    .card-cell.side { padding-left: 30px; }
+    .card-cell::after {
+      content: ""; position: absolute;
+      left: 20px; right: 20px; bottom: 0; height: 1px;
+      background: var(--border);
+    }
+    .cell-label {
+      font-family: var(--font-d); font-size: .72rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--text-mid);
+    }
+    .cell-value {
+      font-family: var(--font-b); font-size: 19px; font-weight: 600;
+      margin-top: 10px; color: var(--text-hi);
+    }
+    .cell-value.orange { color: var(--orange); }
+
+    .renew-btn {
+      font-family: var(--font-d); font-size: 11px;
+      padding: 4px 10px; background: var(--orange); color: #fff;
+      border: none; border-radius: 4px; cursor: pointer;
+      font-weight: 700; letter-spacing: .5px; white-space: nowrap;
+      text-transform: uppercase; transition: background var(--t);
+    }
+    .renew-btn:hover { background: #e04e00; }
+
+    #message-container {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; width: 100%; max-width: 400px; padding: 0 16px;
+    }
+    .flash-message {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; margin-bottom: 12px; border-radius: var(--radius-md);
+      font-size: 14px; font-weight: 500; color: white;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px);
+    }
+    .flash-message.success { background: linear-gradient(to right, #22c55e, #059669); }
+    .flash-message.error   { background: linear-gradient(to right, #ef4444, #b91c1c); }
+    .flash-message.default { background-color: #1f2937; }
+    .close-btn {
+      margin-left: 10px; font-size: 18px; font-weight: bold;
+      border: none; background: none; color: white; cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      .main { flex-direction: column; align-items: center; gap: 30px; }
+      .info-card { max-width: 100%; }
+      .card-row { grid-template-columns: 1fr; }
+      .card-cell.side { padding-left: 20px; }
+      .card-row.top { margin-top: 10px; }
+      .card-cell { padding: 16px 20px; }
+      .card-cell::after { left: 15px; right: 15px; }
+      .cell-label { font-size: .68rem; }
+      .cell-value { font-size: 17px; margin-top: 6px; }
+      .member-name { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="message-container">
+    {% for message in messages %}
+    <div class="flash-message {{ message.tags }}">
+      <span>{{ message }}</span>
+      <button class="close-btn">×</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <nav class="store-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="{% url 'dashboard_home' %}">
+        <span class="back-icon">←</span>
+        {% if gym %}{{ gym.gym_name }}{% else %}EnterGYM{% endif %}
+        <span class="acc">Dashboard</span>
+      </a>
+      <div class="nav-badge">{{ staff_profile.get_role_display }}</div>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-eyebrow">Staff Account</div>
+      <h1>Your <span class="accent">Profile</span></h1>
+    </div>
+  </header>
+
+  <main class="profile-page">
+    <div class="main">
+      <div class="profile-left">
+        <div class="avatar-circle" style="width:110px;height:110px;">
+          <div class="avatar-initial">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</div>
+        </div>
+        <div class="member-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+        <div class="welcome-msg">Welcome to your profile</div>
+      </div>
+
+      <div class="info-card">
+        <div class="card-row top">
+          <div class="card-cell side">
+            <div class="cell-label">Full Name</div>
+            <div id="nameDisplay" class="cell-value orange" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <span id="nameDisplayText">{{ request.user.get_full_name|default:"Not set" }}</span>
+              <button type="button" id="editNameBtn" class="renew-btn" style="background:var(--surface-2); color:var(--orange); border:1px solid var(--orange-bdr);">Change</button>
+            </div>
+            <form id="nameForm" method="POST" action="{% url 'update_staff_name' %}" style="display:none; margin-top:8px;">
+              {% csrf_token %}
+              <input type="text" name="full_name" id="nameInput"
+                     value="{{ request.user.get_full_name }}" required
+                     style="width:100%; padding:10px 14px; background:var(--surface-2);
+                            border:1px solid var(--border-2); border-radius:var(--radius-sm);
+                            color:var(--text-hi); font-size:14px; font-family:var(--font-b);">
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button type="submit" class="renew-btn">Save</button>
+                <button type="button" id="cancelNameBtn" class="renew-btn" style="background:var(--surface-2); color:var(--text-mid);">Cancel</button>
+              </div>
+              <div id="nameError" style="color:var(--red); font-size:12px; margin-top:6px; display:none;"></div>
+            </form>
+          </div>
+
+          <div class="card-cell">
+            <div class="cell-label">Email Address</div>
+            <div id="emailDisplay" class="cell-value orange" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <span id="emailDisplayText">{{ request.user.email|default:"Not Provided" }}</span>
+              <button type="button" id="editEmailBtn" class="renew-btn" style="background:var(--surface-2); color:var(--orange); border:1px solid var(--orange-bdr);">
+                {% if request.user.email %}Change{% else %}Add Email{% endif %}
+              </button>
+            </div>
+            <form id="emailForm" method="POST" action="{% url 'update_staff_email' %}" style="display:none; margin-top:8px;">
+              {% csrf_token %}
+              <input type="email" name="email" id="emailInput"
+                     value="{{ request.user.email }}" placeholder="you@example.com" required
+                     style="width:100%; padding:10px 14px; background:var(--surface-2);
+                            border:1px solid var(--border-2); border-radius:var(--radius-sm);
+                            color:var(--text-hi); font-size:14px; font-family:var(--font-b);">
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button type="submit" class="renew-btn">Save</button>
+                <button type="button" id="cancelEmailBtn" class="renew-btn" style="background:var(--surface-2); color:var(--text-mid);">Cancel</button>
+              </div>
+              <div id="emailError" style="color:var(--red); font-size:12px; margin-top:6px; display:none;"></div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card-row">
+          <div class="card-cell side">
+            <div class="cell-label">Role</div>
+            <div class="cell-value orange">{{ staff_profile.get_role_display|default:"Not Provided" }}</div>
+          </div>
+          <div class="card-cell">
+            <div class="cell-label">Gym</div>
+            <div class="cell-value orange">{{ gym.gym_name|default:"Not Provided" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script nonce="{{ request.csp_nonce }}">
+    (function () {
+      function setup(editBtnId, cancelBtnId, displayId, formId, errorId, displayTextId, responseKey) {
+        const editBtn     = document.getElementById(editBtnId);
+        const cancelBtn   = document.getElementById(cancelBtnId);
+        const display     = document.getElementById(displayId);
+        const form        = document.getElementById(formId);
+        const errorBox    = document.getElementById(errorId);
+        const displayText = document.getElementById(displayTextId);
+
+        editBtn.addEventListener('click', function () {
+          display.style.display = 'none';
+          form.style.display = 'block';
+        });
+
+        cancelBtn.addEventListener('click', function () {
+          form.style.display = 'none';
+          display.style.display = 'flex';
+          errorBox.style.display = 'none';
+        });
+
+        form.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          errorBox.style.display = 'none';
+          try {
+            const res = await fetch(form.action, {
+              method: 'POST',
+              headers: { 'X-Requested-With': 'XMLHttpRequest' },
+              body: new FormData(form),
+            });
+            const data = await res.json();
+            if (res.ok) {
+              displayText.textContent = data[responseKey];
+              editBtn.textContent = 'Change';
+              form.style.display = 'none';
+              display.style.display = 'flex';
+            } else {
+              errorBox.textContent = data.error || 'Something went wrong.';
+              errorBox.style.display = 'block';
+            }
+          } catch (err) {
+            errorBox.textContent = 'Network error. Please try again.';
+            errorBox.style.display = 'block';
+          }
+        });
+      }
+
+      setup('editNameBtn', 'cancelNameBtn', 'nameDisplay', 'nameForm', 'nameError', 'nameDisplayText', 'full_name');
+      setup('editEmailBtn', 'cancelEmailBtn', 'emailDisplay', 'emailForm', 'emailError', 'emailDisplayText', 'email');
+    })();
+  </script>
+</body>
+</html>

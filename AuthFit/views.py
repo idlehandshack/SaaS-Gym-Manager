@@ -29,7 +29,7 @@ from django.core.exceptions import PermissionDenied
 import io
 import logging
 from urllib.parse import urlencode
-from Gym.models import Gym,GymWhatsAppSettings                         
+from Gym.models import Gym,GymWhatsAppSettings,StaffProfile                    
 from AuthFit.models import (
     Contact, Enrollment, EnrollmentTransfer, MembershipPlan, Trainer,
     Attendence as Attendence_model ,MembershipPlanChangeLog
@@ -75,6 +75,8 @@ from Gym.theme import THEME_PRESETS
 from AuthFit.notifications import notify_member_plan_changed
 from urllib.parse import quote
 from Gym.dashboard_stat_cards import STAT_CARD_REGISTRY
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 ALLOWED_EXTENSIONS  = {'.jpg', '.jpeg', '.png', '.webp'}
 INTERNAL_API_KEY    = os.environ.get("INTERNAL_API_KEY", "")
@@ -946,7 +948,46 @@ def loginPage(request):
 
     return render(request, login_template, {'next': next_url, 'gym': gym})
 
+@login_required
+def staff_profile(request):
+    staff_profile = getattr(request, 'staff_profile', None)  # or however you resolve this
+    if not staff_profile:
+        staff_profile = StaffProfile.objects.filter(user=request.user, active=True).first()
 
+    gym = getattr(request, 'gym', None) or (staff_profile.gym if staff_profile else None)
+
+    return render(request, "staff_profile.html", {
+        "staff_profile": staff_profile,
+        "gym": gym,
+    })
+
+
+@login_required
+@require_POST
+def update_staff_email(request):
+    email = request.POST.get('email', '').strip()
+    try:
+        validate_email(email)
+    except ValidationError:
+        return JsonResponse({"error": "Enter a valid email address."}, status=400)
+
+    request.user.email = email
+    request.user.save(update_fields=['email'])
+    return JsonResponse({"email": email})
+
+
+@login_required
+@require_POST
+def update_staff_name(request):
+    name = request.POST.get('full_name', '').strip()
+    if not name:
+        return JsonResponse({"error": "Name cannot be empty."}, status=400)
+
+    parts = name.split(' ', 1)
+    request.user.first_name = parts[0]
+    request.user.last_name = parts[1] if len(parts) > 1 else ''
+    request.user.save(update_fields=['first_name', 'last_name'])
+    return JsonResponse({"full_name": name})
 def handlelogout(request):
     logout(request)
     messages.success(request, "Logged out successfully.")
