@@ -69,6 +69,7 @@ core_patterns = [
     path('data-deletion/',data_deletion , name = "data-deletion"),
     path("superadmin/gym/<uuid:gym_id>/toggle-status/", toggle_gym_status, name="toggle_gym_status"),
     path("superadmin/gym/<uuid:gym_id>/quick-edit/", gym_quick_edit, name="gym_quick_edit"),
+    path('.well-known/assetlinks.json', views.assetlinks_json, name='assetlinks_json'),
 ]
 
 

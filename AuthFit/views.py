@@ -183,6 +183,21 @@ def _superuser_required_local(view_fn):
         return view_fn(request, *args, **kwargs)
     return wrapped
 
+def assetlinks_json(request):
+    data = [
+        {
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+                "namespace": "android_app",
+                "package_name": "saas.gym",
+                "sha256_cert_fingerprints": [
+                    "F3:D7:7B:32:7F:66:67:97:17:54:D4:A2:88:22:CC:F4:93:26:1A:65:EC:FF:05:E6:D4:0A:A4:91:CC:AD:8D:96"
+                ]
+            }
+        }
+    ]
+    return JsonResponse(data, safe=False)
+
 def gym_favicon(request):
     gym = getattr(request, 'gym', None)
 
