@@ -773,10 +773,21 @@
       bar.style.width = '0';
       setTimeout(function () { bar.style.width = target; }, 300);
     });
-
   })();
   </script>
   <script src="{% static 'vendor/bootstrap/html5-qrcode.min.js' %}" defer></script>
+  {% if pending_qr_token %}
+  <script nonce="{{ request.csp_nonce }}">
+    document.addEventListener("DOMContentLoaded", function() {
+        if (window.__submitScannedToken) {
+            // Give UI a tiny moment to render before firing the API request
+            setTimeout(function() {
+                window.__submitScannedToken("{{ pending_qr_token }}");
+            }, 300);
+        }
+    });
+  </script>
+  {% endif %}
   {% if request.user.is_authenticated and not request.is_gym_staff and not request.is_super_admin %}
   <script nonce="{{ request.csp_nonce }}">
   (function () {
@@ -822,7 +833,6 @@
           () => {}
         );
       });
-
       const QR_URL_RE = /^https:\/\/[^/]+\/attendance\/qr\/([A-Za-z0-9_-]{16,64})\/?(?:\?.*)?$/;
 
       function extractToken(decodedText) {
@@ -860,6 +870,7 @@
             alert('Network error — try again.');
         });
       }
+      window.__submitScannedToken = submitScannedToken;
 
       function markButtonAsLogged() {
         btn.disabled = true;
@@ -970,6 +981,29 @@
     {% endif %}
   {% endif %}
   <script src="{% static 'js/messages.js' %}"></script>
-
+  {% if qr_result %}
+    <!-- Safely pass the Python dictionary to Javascript -->
+    {{ qr_result|json_script:"qr-result-data" }}
+    
+    <script nonce="{{ request.csp_nonce }}" >
+      document.addEventListener("DOMContentLoaded", function() {
+          try {
+              // Read the result from the backend
+              const result = JSON.parse(document.getElementById('qr-result-data').textContent);
+              
+              // Re-use your existing frontend handler to show the toast/popup
+              if (window.__showQRResultOnLoad) {
+                  window.__showQRResultOnLoad(result);
+              } else {
+                  // Fallback just in case the function isn't ready
+                  console.log("QR Result:", result.message);
+                  alert(result.message); 
+              }
+          } catch(e) {
+              console.error("Failed to parse QR result", e);
+          }
+      });
+    </script>
+  {% endif %}
 </body>
 </html>

@@ -26,24 +26,10 @@ METHOD_LABELS = {
 
 
 def broadcast_attendance_marked(enrollment, attendance, method: str) -> None:
-    """
-    Fire-and-forget websocket broadcast, gym-scoped.
-
-    enrollment: the Enrollment row for the member who just attended
-                (must have selectPlan populated or accessible).
-    attendance: the Attendence row that was just created.
-    method:     'face' | 'qr' | 'geo'
-
-    Never raises. A broadcast failure (Redis hiccup, missing channel layer,
-    bad image URL, etc.) must never break the attendance flow that already
-    succeeded and was already committed to the database.
-    """
     try:
         gym = enrollment.gym
         if gym is None:
             return
-
-        # ── Member photo (best-effort, same pattern as today_attendance view) ──
         image_url = None
         if enrollment.face_image:
             try:
@@ -64,7 +50,6 @@ def broadcast_attendance_marked(enrollment, attendance, method: str) -> None:
                     enrollment.id,
                 )
 
-        # ── Days-remaining badge ─────────────────────────────────────────
         days_remaining = enrollment.days_remaining
         if enrollment.is_expired:
             days_label, days_color = "Expired Membership", "danger"
