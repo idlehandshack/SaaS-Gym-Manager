@@ -49,11 +49,22 @@
     to{ opacity:1; transform:translateY(0); }
   }
   .mp-plan-card:hover{ background:var(--surface-2); transform:translateY(-3px); border-color:var(--border-2); }
+  
   .mp-plan-name{
+    display: flex; align-items: center; justify-content: space-between;
     font-family:var(--font-d); font-weight:800; font-size:1.15rem;
     text-transform:uppercase; letter-spacing:.02em; color:var(--text-hi);
     margin-bottom:.6rem;
   }
+  
+  /* NEW: Hidden Badge */
+  .mp-badge-hidden {
+    font-size: 0.6rem; padding: 3px 8px; border-radius: var(--radius-pill);
+    background: rgba(239, 68, 68, 0.15); color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    letter-spacing: 0.05em; font-weight: 700;
+  }
+
   .mp-plan-price{
     font-family:var(--font-d); font-weight:900; font-size:1.9rem;
     color:var(--orange); line-height:1; margin-bottom:.25rem;
@@ -126,7 +137,7 @@
     font-weight:700; letter-spacing:.14em; text-transform:uppercase;
     color:var(--text-mid); margin-bottom:.5rem;
   }
-  .mp-field input{
+  .mp-field input[type="text"], .mp-field input[type="number"] {
     width:100%; background:var(--surface-2); border:1px solid var(--border-2);
     color:var(--text-hi); font-family:var(--font-b); font-size:.92rem;
     padding:.68rem .85rem; border-radius:var(--radius-sm);
@@ -135,6 +146,14 @@
   .mp-field input:hover, .mp-field input:focus{
     outline:none; border-color:var(--orange-bdr); box-shadow:0 0 0 3px var(--orange-dim);
   }
+  
+  /* NEW: Checkbox Label Styling */
+  .mp-checkbox-label {
+    display: flex !important; align-items: center; gap: 8px; cursor: pointer;
+    text-transform: none !important; letter-spacing: normal !important;
+    font-family: var(--font-b) !important; font-size: 0.9rem !important; color: var(--text-hi) !important;
+  }
+
   .mp-field-hint{ font-size:.7rem; color:var(--text-lo); margin-top:.4rem; letter-spacing:.02em; }
   .mp-panel-submit{
     width:100%; font-family:var(--font-d); font-size:.85rem; font-weight:800;
@@ -165,15 +184,22 @@
 <div class="mp-plan-grid">
   {% for p in plans %}
   <div class="mp-plan-card" style="animation-delay: {{ forloop.counter0|add:0 }}0ms">
-    <div class="mp-plan-name">{{ p.plan }}</div>
+    <div class="mp-plan-name">
+      {{ p.plan }}
+      {% if p.is_hidden %}
+      <span class="mp-badge-hidden">Hidden</span>
+      {% endif %}
+    </div>
     <div class="mp-plan-price"><sup>₹</sup>{{ p.price }}</div>
     <div class="mp-plan-duration">{{ p.duration_days }} Days</div>
     <div class="mp-plan-actions">
+      <!-- UPDATED: Added data-hidden attribute -->
       <button type="button" class="mp-plan-btn mp-btn-edit js-edit-plan"
               data-id="{{ p.id }}"
               data-name="{{ p.plan }}"
               data-price="{{ p.price }}"
-              data-duration="{{ p.duration_days }}">
+              data-duration="{{ p.duration_days }}"
+              data-hidden="{{ p.is_hidden|yesno:'true,false' }}">
         Edit
       </button>
       <form method="post" style="flex:1" class="js-delete-form" data-name="{{ p.plan }}">
@@ -217,6 +243,13 @@
       <input type="number" name="duration_days" id="mpPlanDurationInput" placeholder="90" min="1" step="1" required>
       <div class="mp-field-hint">e.g. 30 = monthly, 90 = quarterly, 365 = yearly</div>
     </div>
+    <div class="mp-field">
+      <label class="mp-checkbox-label">
+        <input type="checkbox" name="is_hidden" id="mpPlanHiddenInput">
+        <strong>Staff Only (Hide from members)</strong>
+      </label>
+      <div class="mp-field-hint">If checked, regular members will not see this plan. Only owners and receptionists can use it for enrollment.</div>
+    </div>
 
     <button type="submit" class="mp-panel-submit" id="mpPanelSubmitBtn">Create Plan</button>
   </form>
@@ -245,17 +278,19 @@
     document.getElementById('mpPanelTitle').textContent = 'New Plan';
     document.getElementById('mpPanelSubmitBtn').textContent = 'Create Plan';
     document.getElementById('mpPlanIdInput').value = '';
+    document.getElementById('mpPlanHiddenInput').checked = false; // Reset checkbox
     mpForm.reset();
     mpOpenPanel();
   });
 
-  function mpOpenEdit(id, name, price, duration) {
+  function mpOpenEdit(id, name, price, duration, isHidden) {
     document.getElementById('mpPanelTitle').textContent = 'Edit Plan';
     document.getElementById('mpPanelSubmitBtn').textContent = 'Save Changes';
     document.getElementById('mpPlanIdInput').value = id;
     document.getElementById('mpPlanNameInput').value = name;
     document.getElementById('mpPlanPriceInput').value = price;
     document.getElementById('mpPlanDurationInput').value = duration;
+    document.getElementById('mpPlanHiddenInput').checked = (isHidden === 'true'); // Set checkbox state
     mpOpenPanel();
   }
 
@@ -266,7 +301,8 @@
         btn.dataset.id,
         btn.dataset.name,
         btn.dataset.price,
-        btn.dataset.duration
+        btn.dataset.duration,
+        btn.dataset.hidden
       );
     });
   });

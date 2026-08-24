@@ -19,7 +19,9 @@ Reusable filter row. Also lives inside the parent <form> in list.html.
       <select name="plan" id="filterPlan" class="db-members-select">
         <option value="">All Plans</option>
         {% for p in plans %}
-          <option value="{{ p.id }}" {% if current_plan == p.id|stringformat:"s" %}selected{% endif %}>{{ p.plan }}</option>
+          <option value="{{ p.id }}" {% if current_plan == p.id|stringformat:"s" %}selected{% endif %}>
+            {{ p.plan }} {% if p.is_hidden %}(Staff Only){% endif %}
+          </option>
         {% endfor %}
       </select>
     </div>

@@ -800,6 +800,294 @@
       </div>
 
     </footer>
+    {% if request.user.is_authenticated and not isStaff and enrolled and enrollment %}
+      {% with days=enrollment.days_remaining %}
+        {% if enrollment.is_expired or days <= 3 %}
+          
+          <!-- Home Page Member Expiry Alert Popup -->
+          <div id="homeMemberExpiryPopup" class="home-expiry-overlay" style="display: none;">
+            <div class="home-expiry-modal">
+              
+              <div class="home-expiry-icon">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+              </div>
+              
+              <h3 class="home-expiry-title">Membership Alert</h3>
+              
+              <p class="home-expiry-message">
+                {% if enrollment.is_expired %}
+                  Your gym plan has <span class="expiry-highlight" style="color: #ef5350;">Expired</span>.
+                {% elif days == 0 %}
+                  Your gym plan expires <span class="expiry-highlight text-warning">Today</span>!
+                {% else %}
+                  Your gym plan is expiring in <span class="expiry-highlight">{{ days }} day{{ days|pluralize }}</span>.
+                {% endif %}
+              </p>
+              
+              <p class="home-expiry-subtext">Please visit your profile to renew your subscription and avoid interruptions to your workout.</p>
+              
+              <div class="home-expiry-actions">
+                <a href="/profile/" class="home-btn-primary">
+                  Go to Profile to Renew
+                </a>
+                <button type="button" id="closeHomeExpiryBtn" class="home-btn-secondary">
+                  Remind Me Later
+                </button>
+              </div>
+              
+            </div>
+          </div>
+
+          <style>
+            .home-expiry-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 999999; display: flex; align-items: center; justify-content: center; }
+            .home-expiry-modal { background: #111111; padding: 35px 25px 25px; border: 1px solid rgba(255,255,255,0.11); border-radius: 18px; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6); animation: homePopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+            .home-expiry-icon { width: 64px; height: 64px; background: rgba(255, 90, 0, 0.1); color: #ff5a00; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; }
+            .home-expiry-title { margin-bottom: 8px; font-size: 1.35rem; font-weight: 900; color: #f5f5f5; font-family: 'Orbitron', 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+            .home-expiry-message { font-size: 1.05rem; color: #888; margin-bottom: 8px; }
+            .expiry-highlight { font-weight: 700; color: #ff5a00; }
+            .home-expiry-subtext { font-size: 0.85rem; color: #666; margin-bottom: 25px; line-height: 1.4; }
+            .home-expiry-actions { display: flex; flex-direction: column; gap: 12px; }
+            .home-btn-primary { background: #ff5a00; color: #fff !important; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 800; font-size: 1rem; font-family: 'Orbitron', 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: background 0.2s ease; }
+            .home-btn-primary:hover { background: #e04e00; }
+            .home-btn-secondary { background: transparent; color: #888; border: none; padding: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: color 0.2s ease; }
+            .home-btn-secondary:hover { color: #f5f5f5; }
+            @keyframes homePopIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+          </style>
+
+          <script nonce="{{ request.csp_nonce }}">
+            document.addEventListener("DOMContentLoaded", function() {
+              if (!sessionStorage.getItem("homeExpiryPopupSeen")) {
+                const popup = document.getElementById("homeMemberExpiryPopup");
+                if (popup) {
+                  setTimeout(() => { popup.style.display = "flex"; }, 1200);
+                }
+              }
+
+              const closeBtn = document.getElementById("closeHomeExpiryBtn");
+              if (closeBtn) {
+                closeBtn.addEventListener("click", function() {
+                  const popup = document.getElementById("homeMemberExpiryPopup");
+                  popup.style.transition = "opacity 0.3s ease";
+                  popup.style.opacity = "0";
+                  setTimeout(() => { popup.style.display = "none"; }, 300);
+                  sessionStorage.setItem("homeExpiryPopupSeen", "true");
+                });
+              }
+            });
+          </script>
+        {% endif %}
+      {% endwith %}
+    {% endif %}
+    {% if request.staff_role == 'gym_owner' or request.staff_role == 'receptionist' %}
+      {% if gym and gym.subscription_end %}
+        {% with days=gym.days_until_expiry %}
+          {% if days <= 3 %}
+            <!-- Modern Gym Owner Subscription Expiry Popup -->
+            <div id="gymExpiryPopupOverlay" class="modern-expiry-overlay" style="display: none;">
+              <div class="modern-expiry-modal">
+                
+                <div class="modern-expiry-icon">
+                  <span class="modern-expiry-warning">!</span>
+                </div>
+                
+                <h3 class="modern-expiry-title">Subscription Alert</h3>
+                
+                <p class="modern-expiry-message">
+                  {% if days < 0 %}
+                    Your gym plan expired <span class="expiry-highlight text-danger">{{ days|cut:'-' }} day{{ days|cut:'-'|pluralize }} ago</span>.
+                  {% elif days == 0 %}
+                    Your gym plan expires <span class="expiry-highlight text-warning">Today</span>!
+                  {% else %}
+                    Your gym plan is expiring in <span class="expiry-highlight">{{ days }} day{{ days|pluralize }}</span>.
+                  {% endif %}
+                </p>
+                
+                <p class="modern-expiry-subtext">Please renew your subscription to avoid service interruptions.</p>
+                
+                <div class="modern-expiry-actions">
+                  <a href="{% url 'gym_payment_page' %}" class="modern-btn-primary">
+                    Pay Now <i class="bi bi-arrow-right-short ms-1"></i>
+                  </a>
+                  <!-- Added ID and removed inline onclick -->
+                  <button type="button" id="gymExpiryRemindBtn" class="modern-btn-secondary">
+                    Remind Me Later
+                  </button>
+                </div>
+                
+              </div>
+            </div>
+
+            <style>
+              /* Overlay background */
+              .modern-expiry-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.75);
+                backdrop-filter: blur(6px);
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+
+              /* Modal Card */
+              .modern-expiry-modal {
+                background: #ffffff;
+                padding: 35px 25px 25px;
+                border-radius: 20px;
+                text-align: center;
+                max-width: 360px;
+                width: 90%;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                animation: modernPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+              }
+
+              /* Icon Wrap */
+              .modern-expiry-icon {
+                  width: 64px;
+                  height: 64px;
+                  background: rgba(255, 123, 0, 0.15);
+                  color: #ff7b00;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin: 0 auto 20px auto;
+              }
+
+              /* Visible warning symbol */
+              .modern-expiry-warning {
+                  width: 32px;
+                  height: 32px;
+                  border: 3px solid #ff7b00;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 22px;
+                  font-weight: 900;
+                  line-height: 1;
+                  font-family: Arial, sans-serif;
+              }
+
+              /* Typography */
+              .modern-expiry-title {
+                margin-bottom: 8px;
+                font-size: 1.35rem;
+                font-weight: 800;
+                color: #1a1a1a;
+                font-family: 'Orbitron', 'Rajdhani', sans-serif;
+              }
+              
+              .modern-expiry-message {
+                font-size: 1.05rem;
+                color: #4a4a4a;
+                margin-bottom: 8px;
+              }
+
+              .expiry-highlight {
+                font-weight: 700;
+                color: #ff7b00;
+              }
+
+              .modern-expiry-subtext {
+                font-size: 0.85rem;
+                color: #888;
+                margin-bottom: 25px;
+                line-height: 1.4;
+              }
+
+              /* Button Layout */
+              .modern-expiry-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+              }
+
+              /* Buttons */
+              .modern-btn-primary {
+                background: #ff7b00;
+                color: #fff !important;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 10px;
+                font-weight: 600;
+                font-size: 1rem;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 15px rgba(255, 123, 0, 0.3);
+              }
+              .modern-btn-primary:hover {
+                background: #e66e00;
+                transform: translateY(-2px);
+              }
+
+              .modern-btn-secondary {
+                background: transparent;
+                color: #666;
+                border: none;
+                padding: 10px;
+                font-weight: 600;
+                font-size: 0.9rem;
+                border-radius: 10px;
+                transition: all 0.2s ease;
+              }
+              .modern-btn-secondary:hover {
+                background: #f5f5f5;
+                color: #333;
+              }
+
+              /* Smooth pop-in animation */
+              @keyframes modernPopIn {
+                0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+                100% { transform: scale(1) translateY(0); opacity: 1; }
+              }
+            </style>
+
+            <script nonce="{{ request.csp_nonce }}">
+              document.addEventListener("DOMContentLoaded", function() {
+                // 1. Handle popup display logic
+                if (!sessionStorage.getItem("gymExpiryPopupSeen")) {
+                  const popup = document.getElementById("gymExpiryPopupOverlay");
+                  if (popup) {
+                    setTimeout(() => {
+                      popup.style.display = "flex";
+                    }, 800);
+                  }
+                }
+
+                // 2. Attach event listener dynamically to avoid CSP inline-handler violation
+                const remindBtn = document.getElementById("gymExpiryRemindBtn");
+                if (remindBtn) {
+                  remindBtn.addEventListener("click", function() {
+                    const popup = document.getElementById("gymExpiryPopupOverlay");
+                    
+                    // Add fade-out effect
+                    popup.style.transition = "opacity 0.3s ease";
+                    popup.style.opacity = "0";
+                    
+                    setTimeout(() => {
+                      popup.style.display = "none";
+                    }, 300);
+
+                    // Mark as seen for this session
+                    sessionStorage.setItem("gymExpiryPopupSeen", "true");
+                  });
+                }
+              });
+            </script>
+          {% endif %}
+        {% endwith %}
+      {% endif %}
+    {% endif %}
     <script src="{% static 'js/home.js' %}" defer></script>
     {% if request.user.is_authenticated %}
       {% if VAPID_PUBLIC_KEY %}

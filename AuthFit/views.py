@@ -1089,33 +1089,36 @@ def homePage(request):
         social_links = gym.social_links
         cache.set(social_key, social_links, timeout=3600)
 
-    enrolled    = False
-    isStaff     = False
-    isSuperuser = False
+    enrolled       = False
+    isStaff        = False
+    isSuperuser    = False
+    enrollment_obj = None
 
     if request.user.is_authenticated:
         isStaff     = getattr(request, 'is_gym_staff', False)
         isSuperuser = getattr(request, 'is_super_admin', False)
 
-        cache_key = f"enrolled_{request.user.id}_{gym.pk}"
-        enrolled  = cache.get(cache_key)
-        if enrolled is None:
-            enrolled = Enrollment.objects.filter(
-                user=request.user, gym=gym
-            ).exists()
-            cache.set(cache_key, enrolled, timeout=300)
+        cache_key = f"enrollment_obj_{request.user.id}_{gym.pk}"
+        enrollment_obj = cache.get(cache_key)
+        
+        if enrollment_obj is None:
+            enrollment_obj = Enrollment.objects.filter(user=request.user, gym=gym).first()
+            cache.set(cache_key, enrollment_obj, timeout=300)
+            
+        enrolled = bool(enrollment_obj)
 
     geo_attendance_enabled = bool(gym.enable_geo_attendance)
     return render(request, 'gym_home.html', {
-        "gym":               gym,
-        "enrolled":          enrolled,
-        "isStaff":           isStaff,
-        "isSuperuser":       isSuperuser,
-        "plans":             plans,
-        "gym_services":         gym_services,          
-        "gym_equipment_brands": gym_equipment_brands,    
+        "gym":                   gym,
+        "enrolled":              enrolled,
+        "enrollment":            enrollment_obj,
+        "isStaff":               isStaff,
+        "isSuperuser":           isSuperuser,
+        "plans":                 plans,
+        "gym_services":          gym_services,          
+        "gym_equipment_brands":  gym_equipment_brands,    
         "geo_attendance_enabled": geo_attendance_enabled,
-        "social_links":         social_links,
+        "social_links":          social_links,
     })
 
 
@@ -1222,6 +1225,7 @@ def membership_plans(request):
         plan_name     = request.POST.get("plan", "").strip()
         price_raw     = request.POST.get("price", "").strip()
         duration_raw  = request.POST.get("duration_days", "").strip()
+        is_hidden     = request.POST.get("is_hidden") == "on"
 
         def fail(msg):
             messages.error(request, msg)
@@ -1251,7 +1255,8 @@ def membership_plans(request):
             plan.plan          = plan_name
             plan.price         = price
             plan.duration_days = duration_days
-            plan.save(update_fields=["plan", "price", "duration_days"])
+            plan.is_hidden     = is_hidden # Update field
+            plan.save(update_fields=["plan", "price", "duration_days", "is_hidden"])
             messages.success(request, f"'{plan_name}' updated.")
         else:
             MembershipPlan.objects.create(
@@ -1259,6 +1264,7 @@ def membership_plans(request):
                 plan=plan_name,
                 price=price,
                 duration_days=duration_days,
+                is_hidden=is_hidden # Save field
             )
             messages.success(request, f"'{plan_name}' created.")
 
@@ -1545,13 +1551,12 @@ def enrollment(request):
 def Profile(request):
     gym = getattr(request, 'gym', None)
     enrollment = request.enrollment
-
-    plans_key = f"membership_plans_all_{gym.pk}" if gym else f"membership_plans_all_user_{request.user.id}"
+    plans_key = f"membership_plans_public_{gym.pk}" if gym else f"membership_plans_public_user_{request.user.id}"
     plans     = cache.get(plans_key)
     if plans is None:
-        qs    = MembershipPlan.objects.filter(gym=gym) if gym else MembershipPlan.objects.none()
+        qs    = MembershipPlan.objects.filter(gym=gym, is_hidden=False) if gym else MembershipPlan.objects.none()
         plans = list(qs.order_by("duration_days").values("id", "plan", "price", "duration_days"))
-        cache.set(plans_key, plans, timeout=3600)
+        cache.set(plans_key, plans, timeout=60)
 
     image_url = None
     if enrollment and enrollment.face_image:
@@ -1728,6 +1733,7 @@ def attendance_page(request):
         "geo_enabled": geo_enabled,
         "qr_result": qr_result,
     })
+
 @active_member_required
 @login_required
 @require_POST
@@ -1737,7 +1743,8 @@ def renew_membership(request):
     enrollment = request.enrollment
 
     plan_id       = request.POST.get("plan")
-    selected_plan = MembershipPlan.objects.filter(id=plan_id, gym=gym).first()
+    selected_plan = MembershipPlan.objects.filter(id=plan_id, gym=gym, is_hidden=False).first()
+    
     if not selected_plan:
         messages.error(request, "Invalid plan selected.")
         return redirect('/profile/')
@@ -1999,7 +2006,7 @@ def payment_management(request):
             "fullname":             e.fullname,
             "phone":                e.phone,
             "plan_name":            e.selectPlan.plan if e.selectPlan else "—",
-            "plan_price":           float(e.selectPlan.price) if e.selectPlan else 0,
+            "plan_price":           float(e.Amount),
             "amount":               float(e.Amount),
             "paid":                 float(e.paidAmount),
             "pending":              float(e.pendingAmount),
@@ -2055,7 +2062,7 @@ def update_payment(request):
             qs = qs.filter(gym=gym)
         enrollment = qs.get(pk=enrollment_id)
 
-        plan_price     = float(enrollment.selectPlan.price) if enrollment.selectPlan else float(enrollment.Amount)
+        plan_price = float(enrollment.Amount)
         paid_amount    = min(paid_amount, plan_price)
         pending_amount = max(plan_price - paid_amount, 0)
 

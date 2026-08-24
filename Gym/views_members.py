@@ -77,7 +77,7 @@ def member_list(request):
     except EmptyPage:
         page_obj = paginator.get_page(1)
     plans = MembershipPlan.objects.filter(
-        gym=gym).order_by("plan").values("id", "plan")
+        gym=gym).order_by("plan").values("id", "plan", "is_hidden")
     trainers = Trainer.objects.filter(
         gym=gym).order_by("name").values("id", "name")
     querystring = request.GET.copy()
@@ -119,7 +119,7 @@ def member_detail(request, member_id):
     plans = cache.get(plans_key)
     if plans is None:
         plans = list(MembershipPlan.objects.filter(gym=gym).values(
-            "id", "plan", "price", "duration_days"))
+            "id", "plan", "price", "duration_days", "is_hidden"))
         cache.set(plans_key, plans, timeout=3600)
     context = {
         "gym": gym,

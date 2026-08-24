@@ -61,6 +61,10 @@ class MembershipPlan(models.Model):
         default=False,
         help_text="Show this plan in the pricing section of your gym's public homepage."
     )
+    is_hidden = models.BooleanField(
+        default=False,
+        help_text="Hide this plan from regular members. Only owners/receptionists can see and assign it."
+    )
     objects = GymManager()
 
     def __str__(self):
