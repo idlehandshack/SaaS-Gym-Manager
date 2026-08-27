@@ -24,31 +24,39 @@ from Gym.models import StaffProfile
 
 
 def get_staff_profile(user):
-    return getattr(user, 'staff_profile', None)
+    if not user.is_authenticated:
+        return None
+    if hasattr(user, 'staff_profiles'):
+        return user.staff_profiles.first()
+        
+    return None
 
 
 def can_manage_announcements(user) -> bool:
-    """True for super admins and gym owners. Trainers -> False. Receptionists -> False (manage, not view)."""
     if not user.is_authenticated:
         return False
+        
     if user.is_superuser:
         return True
+        
     profile = get_staff_profile(user)
-    return bool(profile and profile.active and profile.role == 'gym_owner')
-
+    if not profile or not profile.active:
+        return False
+        
+    # Gym Owners always have full access to create/edit
+    if profile.role == 'gym_owner':
+        return True
+        
+    # Receptionists get access ONLY IF the 'Push Notifications' box is checked
+    if profile.role == 'receptionist':
+        perms = getattr(profile, 'permissions', None)
+        return bool(perms and getattr(perms, 'can_manage_notifications', False))
+        
+    return False
 
 def can_view_announcements_admin(user) -> bool:
-    """
-    True for anyone allowed into the Communication > Announcements screens,
-    including read-only receptionists (gated by StaffPermission).
-    """
-    if can_manage_announcements(user):
-        return True
-    profile = get_staff_profile(user)
-    if not profile or not profile.active or profile.role != 'receptionist':
-        return False
-    perms = getattr(profile, 'permissions', None)
-    return bool(perms and getattr(perms, 'can_manage_notifications', False))
+    # Point the list view to use the exact same logic as the create view
+    return can_manage_announcements(user)
 
 
 def resolve_gym_for_staff(user):

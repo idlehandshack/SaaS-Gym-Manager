@@ -3,10 +3,6 @@
 
 {% block extra_css %}
 <style>
-  /* Same approach as the announcements list page: reuse dashboard.css
-     vars/classes, only add what's missing (form field theming, since
-     Django widgets render bare <input>/<select>/<textarea> here). */
-
   .db-content > .db-card{ height:auto; }
 
   .db-back-btn{
@@ -19,11 +15,11 @@
 
   .db-form-label{
     font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.03em;
-    color:var(--text-hi); margin-bottom:.35rem; display:block;   /* was #fff */
+    color:var(--text-hi); margin-bottom:.35rem; display:block;
   }
   .db-form-hint{ font-size:.76rem; color:var(--text-lo); margin-top:.3rem; }
 
-  /* Style whatever Django's widgets render — input/select/textarea */
+  /* Style whatever Django's widgets render */
   .db-form-card input[type="text"],
   .db-form-card input[type="url"],
   .db-form-card input[type="datetime-local"],
@@ -33,7 +29,7 @@
     width:100%;
     background:var(--surface-2);
     border:1px solid var(--border);
-    color: var(--text-hi) !important;
+    color: var(--text-hi) !important; /* <--- This will correctly handle light/dark mode text */
     -webkit-text-fill-color: var(--text-hi);
     caret-color: var(--text-hi);
     border-radius:var(--radius-sm);
@@ -85,10 +81,23 @@
   .img-thumb-preview{
     max-height:80px; border-radius:var(--radius-sm); border:1px solid var(--border); margin-top:.5rem; display:block;
   }
-  .db-form-card textarea {
-      color: #ffffff !important;
-      -webkit-text-fill-color: #ffffff; /* Chrome/Safari */
-      caret-color: #ffffff;
+
+  /* --- NEW: Fixed Button Visibility Styles --- */
+  .db-btn {
+    color: var(--text-hi); /* Makes the text visible */
+    text-decoration: none;
+  }
+  .db-btn:hover {
+    color: var(--orange);
+  }
+  .db-btn-primary {
+    background-color: var(--orange);
+    color: #ffffff !important; /* Forces white text on primary button */
+    border: 1px solid var(--orange-bdr);
+  }
+  .db-btn-primary:hover {
+    background-color: var(--orange-dim);
+    color: #ffffff !important;
   }
 </style>
 {% endblock %}
@@ -107,51 +116,51 @@
 
   <div class="row g-3">
     <div class="col-md-8">
-      <label class="db-form-label">Title</label>
+      <label class="db-form-label" for="{{ form.title.id_for_label }}">Title</label>
       {{ form.title }}
       {% if form.title.errors %}<div class="db-field-error">{{ form.title.errors }}</div>{% endif %}
     </div>
     <div class="col-md-4">
-      <label class="db-form-label">Category</label>
+      <label class="db-form-label" for="{{ form.announcement_type.id_for_label }}">Category</label>
       {{ form.announcement_type }}
     </div>
 
     <div class="col-12">
-      <label class="db-form-label">Description</label>
+      <label class="db-form-label" for="{{ form.description.id_for_label }}">Description</label>
       {{ form.description }}
       {% if form.description.errors %}<div class="db-field-error">{{ form.description.errors }}</div>{% endif %}
     </div>
 
     <div class="col-md-4">
-      <label class="db-form-label">Priority</label>
+      <label class="db-form-label" for="{{ form.priority.id_for_label }}">Priority</label>
       {{ form.priority }}
       <div class="db-form-hint">High: sticky popup until read/dismissed. Medium: shown once. Low: center only.</div>
     </div>
     <div class="col-md-4">
-      <label class="db-form-label">Image</label>
+      <label class="db-form-label" for="{{ form.image.id_for_label }}">Image</label>
       {{ form.image }}
       {% if announcement.image %}<img src="{{ announcement.image.url }}" class="img-thumb-preview">{% endif %}
     </div>
     <div class="col-md-4">
-      <label class="db-form-label">Attachment</label>
+      <label class="db-form-label" for="{{ form.attachment.id_for_label }}">Attachment</label>
       {{ form.attachment }}
     </div>
 
     <div class="col-md-6">
-      <label class="db-form-label">External Link</label>
+      <label class="db-form-label" for="{{ form.external_link.id_for_label }}">External Link</label>
       {{ form.external_link }}
     </div>
     <div class="col-md-2">
-      <label class="db-form-label">Publish Date</label>
+      <label class="db-form-label" for="{{ form.publish_date.id_for_label }}">Publish Date</label>
       {{ form.publish_date }}
     </div>
     <div class="col-md-2">
-      <label class="db-form-label">Publish Time</label>
+      <label class="db-form-label" for="{{ form.publish_time.id_for_label }}">Publish Time</label>
       {{ form.publish_time }}
       <div class="db-form-hint">Slot times align with the server cron run.</div>
     </div>
     <div class="col-md-3">
-      <label class="db-form-label">Expires At</label>
+      <label class="db-form-label" for="{{ form.expires_at.id_for_label }}">Expires At</label>
       {{ form.expires_at }}
       {% if form.expires_at.errors %}<div class="db-field-error">{{ form.expires_at.errors }}</div>{% endif %}
     </div>
@@ -159,35 +168,35 @@
     <div class="col-12"><hr></div>
 
     <div class="col-md-4">
-      <label class="db-form-label">Target Audience</label>
+      <label class="db-form-label" for="{{ form.target_audience.id_for_label }}">Target Audience</label>
       {{ form.target_audience }}
     </div>
     <div class="col-md-4" id="wrap-target_plan">
-      <label class="db-form-label">Plan</label>
+      <label class="db-form-label" for="{{ form.target_plan.id_for_label }}">Plan</label>
       {{ form.target_plan }}
     </div>
     <div class="col-md-4" id="wrap-target_trainer">
-      <label class="db-form-label">Trainer</label>
+      <label class="db-form-label" for="{{ form.target_trainer.id_for_label }}">Trainer</label>
       {{ form.target_trainer }}
     </div>
     <div class="col-12" id="wrap-target_members">
-      <label class="db-form-label">Specific Members</label>
+      <label class="db-form-label" for="{{ form.target_members.id_for_label }}">Specific Members</label>
       {{ form.target_members }}
     </div>
 
     <div class="col-12"><hr></div>
 
     <div class="col-12">
-      <label class="db-form-label">Display Channels</label>
+      <div class="db-form-label">Display Channels</div>
       <div class="db-check-group">
-        <div class="db-check">{{ form.show_popup }} <label>Popup</label></div>
-        <div class="db-check">{{ form.show_banner }} <label>Website Banner</label></div>
-        <div class="db-check">{{ form.show_web }} <label>Show on Website</label></div>
-        <div class="db-check">{{ form.show_mobile }} <label>Show on Mobile App</label></div>
-        <div class="db-check">{{ form.send_push }} <label>Send Push Notification</label></div>
-        <div class="db-check">{{ form.require_read }} <label>Require Read Confirmation</label></div>
-        <div class="db-check">{{ form.pin_home }} <label>Pin to Home</label></div>
-        <div class="db-check">{{ form.is_active }} <label>Active</label></div>
+        <div class="db-check">{{ form.show_popup }} <label for="{{ form.show_popup.id_for_label }}">Popup</label></div>
+        <div class="db-check">{{ form.show_banner }} <label for="{{ form.show_banner.id_for_label }}">Website Banner</label></div>
+        <div class="db-check">{{ form.show_web }} <label for="{{ form.show_web.id_for_label }}">Show on Website</label></div>
+        <div class="db-check">{{ form.show_mobile }} <label for="{{ form.show_mobile.id_for_label }}">Show on Mobile App</label></div>
+        <div class="db-check">{{ form.send_push }} <label for="{{ form.send_push.id_for_label }}">Send Push Notification</label></div>
+        <div class="db-check">{{ form.require_read }} <label for="{{ form.require_read.id_for_label }}">Require Read Confirmation</label></div>
+        <div class="db-check">{{ form.pin_home }} <label for="{{ form.pin_home.id_for_label }}">Pin to Home</label></div>
+        <div class="db-check">{{ form.is_active }} <label for="{{ form.is_active.id_for_label }}">Active</label></div>
       </div>
     </div>
   </div>

@@ -70,8 +70,11 @@ class AnnouncementAdmin(admin.ModelAdmin):
         profile = getattr(request.user, 'staff_profile', None)
         return bool(profile and profile.role == 'gym_owner')
 
-    has_change_permission = has_add_permission
-    has_delete_permission = has_add_permission
+    def has_change_permission(self, request, obj=None):
+        return self.has_add_permission(request)
+
+    def has_delete_permission(self, request, obj=None):
+        return self.has_add_permission(request) 
 
 
 @admin.register(AnnouncementRead)

@@ -9,10 +9,9 @@
       name="description"
       content="EnterGYM — Multi-tenant gym management SaaS platform. Manage members, attendance, face recognition, GPS check-in, payments and supplements. Built for serious gyms."
     />
-
     <meta
-        name="keywords"
-        content="
+      name="keywords"
+      content="
         best gym management software India,
         gym management software India 2026,
         affordable gym software India,
@@ -48,7 +47,7 @@
         entergym,
         Arrow SoftTech
         "
-      />
+    />
     <meta name="author" content="Arrow SoftTech" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://entergym.in/" />
@@ -75,8 +74,8 @@
       name="twitter:image"
       content="https://entergym.in/static/images/og-preview.png"
     />
-    <link rel="icon" href="{% static 'images/favicons.ico' %}">
-    <link rel="shortcut icon" href="{% static 'images/favicons.ico' %}">
+    <link rel="icon" href="{% static 'images/favicon.ico' %}" />
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" />
     <meta name="theme-color" content="#5B5FFF" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -90,24 +89,23 @@
   <body>
     <header class="site-nav" id="siteNav">
       <a href="/" class="nav-brand">
-          <img
-              src="{% static 'images/Logo1s.png' %}"
-              alt="EnterGYM Logo"
-              class="brand-logo"
-              width="40"
-              height="40"
-          />
-          <span class="brand-name">EnterGYM</span>
+        <img
+          src="{% static 'images/Logo1s.png' %}"
+          alt="EnterGYM Logo"
+          class="brand-logo"
+          width="40"
+          height="40"
+        />
+        <span class="brand-name">EnterGYM</span>
       </a>
       <nav class="nav-links" aria-label="Primary navigation">
         <a href="#features">Features</a>
-        <a href="#about">About</a>
+        <a href="/plans/">Plan</a>
         <a href="https://wa.me/917000032565">Contact</a>
       </nav>
 
       <div class="nav-actions">
-        {% if request.user.is_authenticated %} 
-        {% if request.user.is_superuser%}
+        {% if request.user.is_authenticated %} {% if request.user.is_superuser%}
         <a href="/superadmin/dashboard/" class="btn-ghost">Dashboard</a>
         {% endif %}
         <form action="{% url 'logout' %}" method="POST" style="display: inline">
@@ -122,28 +120,45 @@
     </header>
     <section class="hero-section">
       <div class="hero-inner">
-        <div class="hero-left ">
-          <p class="hero-eyebrow hero-animate d1">Infrastructure for serious gyms</p>
+        <div class="hero-left">
+          <p class="hero-eyebrow hero-animate d1">
+            Infrastructure for serious gyms
+          </p>
           <h1 class="hero-heading hero-animate d2">
-          Gym Management <br /> Software<br /><em>India</em>
+            Gym Management <br />
+            Software<br /><em>India</em>
           </h1>
           <p class="hero-body hero-animate d3">
-            Replace your register with a system that tracks enrollments, payments, and check-ins automatically — so you spend less time chasing dues and more time growing your gym.
+            Replace your register with a system that tracks enrollments,
+            payments, and check-ins automatically — so you spend less time
+            chasing dues and more time growing your gym.
           </p>
           {% if trusted_gym_logos %}
           <div class="hero-trusted hero-animate d4">
-            <p class="hero-trusted-label">Trusted by gyms across Chhattisgarh</p>
-          
+            <p class="hero-trusted-label">
+              Trusted by gyms across Chhattisgarh
+            </p>
             <div class="hero-logo-marquee">
               <div class="hero-logo-track">
-          
                 {% for logo in trusted_gym_logos %}
-                  <img class="hero-logo-item" src="{{ logo.logo_url }}" alt="{{ logo.name }} logo" loading="lazy" />
+                <img
+                  class="hero-logo-item"
+                  src="{{ logo.logo_url }}"
+                  alt="{{ logo.name }} logo"
+                  loading="eager"
+                  fetchpriority="low"
+                />
+                {% endfor %} {# Set B — exact duplicate of Set A, required for
+                the seamless loop #} {% for logo in trusted_gym_logos %}
+                <img
+                  class="hero-logo-item"
+                  src="{{ logo.logo_url }}"
+                  alt=""
+                  aria-hidden="true"
+                  loading="eager"
+                  fetchpriority="low"
+                />
                 {% endfor %}
-                {% for logo in trusted_gym_logos %}
-                  <img class="hero-logo-item" src="{{ logo.logo_url }}" alt="" aria-hidden="true" loading="lazy" />
-                {% endfor %}
-          
               </div>
             </div>
           </div>
@@ -151,12 +166,16 @@
         </div>
 
         <div class="hero-right hero-animate d5" aria-hidden="true">
-          <div class="globe-wrap" role="region" aria-label="EnterGYM live network activity">
+          <div
+            class="globe-wrap"
+            role="region"
+            aria-label="EnterGYM live network activity"
+          >
             <div class="g-header">
               <div class="g-dots" aria-hidden="true">
-                <div class="g-dot" style="background:#ef4444"></div>
-                <div class="g-dot" style="background:#f59e0b"></div>
-                <div class="g-dot" style="background:#10b981"></div>
+                <div class="g-dot" style="background: #ef4444"></div>
+                <div class="g-dot" style="background: #f59e0b"></div>
+                <div class="g-dot" style="background: #10b981"></div>
               </div>
               <span class="g-title">entergym.network — live</span>
               <span class="g-live" aria-live="polite">● LIVE</span>
@@ -170,8 +189,12 @@
                 loop
                 playsinline
                 preload="auto"
-                aria-hidden="true">
-                <source src="{% static 'images/earth.mp4' %}" type="video/mp4">
+                aria-hidden="true"
+              >
+                <source
+                  src="{% static 'images/earth.mp4' %}"
+                  type="video/mp4"
+                />
               </video>
               <div class="g-stats" aria-label="Live statistics">
                 <div class="g-stat">
@@ -179,15 +202,27 @@
                   <span class="g-stat-lbl">members</span>
                 </div>
                 <div class="g-stat">
-                  <span class="g-stat-val" style="color:#10b981" id="statGyms">—</span>
+                  <span class="g-stat-val" style="color: #10b981" id="statGyms"
+                    >—</span
+                  >
                   <span class="g-stat-lbl">gyms live</span>
                 </div>
                 <div class="g-stat">
-                  <span class="g-stat-val" style="color:#8b8fff" id="statRevenue">—</span>
+                  <span
+                    class="g-stat-val"
+                    style="color: #8b8fff"
+                    id="statRevenue"
+                    >—</span
+                  >
                   <span class="g-stat-lbl">gym's revenue</span>
                 </div>
                 <div class="g-stat">
-                  <span class="g-stat-val" style="color:#f59e0b" id="statUptime">—</span>
+                  <span
+                    class="g-stat-val"
+                    style="color: #f59e0b"
+                    id="statUptime"
+                    >—</span
+                  >
                   <span class="g-stat-lbl">uptime</span>
                 </div>
               </div>
@@ -196,20 +231,20 @@
         </div>
       </div>
     </section>
-  
+
     <section class="problem-section">
       <div class="problem-inner">
         <div class="problem-layout">
-
           <div class="problem-header">
             <p class="section-eyebrow">The reality check</p>
-            <h2>
-              Running a gym on<br />Register<br />is holding you back.
-            </h2>
+            <h2>Running a gym on<br />Register<br />is holding you back.</h2>
           </div>
 
-          <div class="problem-stack" role="group" aria-label="Before and after EnterGYM comparison">
-
+          <div
+            class="problem-stack"
+            role="group"
+            aria-label="Before and after EnterGYM comparison"
+          >
             <!-- BEFORE CARD -->
             <article
               class="stack-card stack-card--before"
@@ -221,52 +256,106 @@
             >
               <div class="stack-card-inner">
                 <div class="stack-card-header">
-                  <span class="stack-badge stack-badge--before">Before EnterGYM</span>
+                  <span class="stack-badge stack-badge--before"
+                    >Before EnterGYM</span
+                  >
                 </div>
                 <ul class="stack-list">
                   <li class="stack-item stack-item--pain">
                     <span class="stack-icon stack-icon--pain">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M5 5L15 15M15 5L5 15"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                        />
+                      </svg>
                     </span>
                     <div>
                       <strong>New members enrolled on paper</strong>
-                      <span>Name, number, plan — written in a register that lives on the front desk and nowhere else.</span>
+                      <span
+                        >Name, number, plan — written in a register that lives
+                        on the front desk and nowhere else.</span
+                      >
                     </div>
                   </li>
                   <li class="stack-item stack-item--pain">
                     <span class="stack-icon stack-icon--pain">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M5 5L15 15M15 5L5 15"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                        />
+                      </svg>
                     </span>
                     <div>
                       <strong>Payment status is a guessing game</strong>
-                      <span>Flipping through pages to check if this month's fee was paid or not.</span>
+                      <span
+                        >Flipping through pages to check if this month's fee was
+                        paid or not.</span
+                      >
                     </div>
                   </li>
                   <li class="stack-item stack-item--pain">
                     <span class="stack-icon stack-icon--pain">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M5 5L15 15M15 5L5 15"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                        />
+                      </svg>
                     </span>
                     <div>
-                      <strong>One register, one desk, one point of failure</strong>
-                      <span>Lost, damaged, or misplaced — and years of member and payment history goes with it.</span>
+                      <strong
+                        >One register, one desk, one point of failure</strong
+                      >
+                      <span
+                        >Lost, damaged, or misplaced — and years of member and
+                        payment history goes with it.</span
+                      >
                     </div>
                   </li>
                   <li class="stack-item stack-item--pain">
                     <span class="stack-icon stack-icon--pain">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M5 5L15 15M15 5L5 15"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                        />
+                      </svg>
                     </span>
                     <div>
                       <strong>No way to check dues remotely</strong>
-                      <span>Owner has to be physically present at the desk to know who owes what.</span>
+                      <span
+                        >Owner has to be physically present at the desk to know
+                        who owes what.</span
+                      >
                     </div>
                   </li>
                   <li class="stack-item stack-item--pain">
                     <span class="stack-icon stack-icon--pain">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M5 5L15 15M15 5L5 15"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                        />
+                      </svg>
                     </span>
                     <div>
                       <strong>Handwriting errors, crossed-out entries</strong>
-                      <span>Illegible names, wrong amounts, no audit trail — disputes are impossible to settle.</span>
+                      <span
+                        >Illegible names, wrong amounts, no audit trail —
+                        disputes are impossible to settle.</span
+                      >
                     </div>
                   </li>
                 </ul>
@@ -285,61 +374,119 @@
             >
               <div class="stack-card-inner">
                 <div class="stack-card-header">
-                  <span class="stack-badge stack-badge--after">After EnterGYM</span>
+                  <span class="stack-badge stack-badge--after"
+                    >After EnterGYM</span
+                  >
                 </div>
                 <ul class="stack-list">
                   <li class="stack-item stack-item--solved">
                     <span class="stack-icon stack-icon--solved">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M4 10.5L8 14.5L16 5.5"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
                     </span>
                     <div>
                       <strong>Digital enrollment in under a minute</strong>
-                      <span>Name, plan, photo, and payment — captured once, stored forever, searchable instantly.</span>
+                      <span
+                        >Name, plan, photo, and payment — captured once, stored
+                        forever, searchable instantly.</span
+                      >
                     </div>
                   </li>
                   <li class="stack-item stack-item--solved">
                     <span class="stack-icon stack-icon--solved">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M4 10.5L8 14.5L16 5.5"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
                     </span>
                     <div>
                       <strong>Payment status at a glance</strong>
-                      <span>Paid, pending, or overdue — colour-coded and visible the moment you open the app.</span>
+                      <span
+                        >Paid, pending, or overdue — colour-coded and visible
+                        the moment you open the app.</span
+                      >
                     </div>
                   </li>
                   <li class="stack-item stack-item--solved">
                     <span class="stack-icon stack-icon--solved">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M4 10.5L8 14.5L16 5.5"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
                     </span>
                     <div>
-                      <strong>Member and payment records backed up in the cloud</strong>
-                      <span>Nothing lives on one desk. Nothing gets lost, torn, or misplaced.</span>
+                      <strong
+                        >Member and payment records backed up in the
+                        cloud</strong
+                      >
+                      <span
+                        >Nothing lives on one desk. Nothing gets lost, torn, or
+                        misplaced.</span
+                      >
                     </div>
                   </li>
                   <li class="stack-item stack-item--solved">
                     <span class="stack-icon stack-icon--solved">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M4 10.5L8 14.5L16 5.5"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
                     </span>
                     <div>
                       <strong>Check dues from anywhere</strong>
-                      <span>Owner sees every pending payment from their phone — no desk visit required.</span>
+                      <span
+                        >Owner sees every pending payment from their phone — no
+                        desk visit required.</span
+                      >
                     </div>
                   </li>
                   <li class="stack-item stack-item--solved">
                     <span class="stack-icon stack-icon--solved">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M4 10.5L8 14.5L16 5.5"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
                     </span>
                     <div>
                       <strong>Every payment logged with a timestamp</strong>
-                      <span>Clear, disputable-free records — who paid, how much, and when.</span>
+                      <span
+                        >Clear, disputable-free records — who paid, how much,
+                        and when.</span
+                      >
                     </div>
                   </li>
                 </ul>
               </div>
               <span class="stack-hint">Click to compare</span>
             </article>
-
           </div>
-
         </div>
       </div>
     </section>
@@ -354,16 +501,20 @@
           <p class="feat-eyebrow-pill">What's inside</p>
           <h2>Thirteen systems.<br />One platform.</h2>
           <p class="section-sub">
-            Each module was built for gym operators, not adapted from generic software.
+            Each module was built for gym operators, not adapted from generic
+            software.
           </p>
         </div>
 
         <div class="feat-grid" id="featGrid">
-
           <button class="feat-card" type="button" data-feat="01">
             <span class="feat-index">01</span>
             <h3 class="head-color">Powerful <span>Admin Dashboard</span></h3>
-            <p>Run your entire gym from one place with real-time insights, member management, payments, attendance, reports, and automated reminders.</p>
+            <p>
+              Run your entire gym from one place with real-time insights, member
+              management, payments, attendance, reports, and automated
+              reminders.
+            </p>
             <span class="feat-card-cta">View details →</span>
             <div class="feat-detail" hidden>
               <div class="dashboard-features">
@@ -374,7 +525,11 @@
               </div>
               <div class="feat-visual feat-visual--members">
                 <div class="fv-card">
-                  <img src="{% static 'images/features/Dashboard.webp' %}" alt="Member management dashboard" class="fv-image">
+                  <img
+                    src="{% static 'images/features/Dashboard.webp' %}"
+                    alt="Member management dashboard"
+                    class="fv-image"
+                  />
                 </div>
               </div>
             </div>
@@ -383,17 +538,31 @@
           <button class="feat-card" type="button" data-feat="02">
             <span class="feat-index">02</span>
             <h3 class="head-color">Smart <span>Payment Reminders</span></h3>
-            <p>Never miss a membership payment again. Members receive automatic reminders before their plan expires through PWA, browser, and mobile app notifications.</p>
+            <p>
+              Never miss a membership payment again. Members receive automatic
+              reminders before their plan expires through PWA, browser, and
+              mobile app notifications.
+            </p>
             <span class="feat-card-cta">View details →</span>
             <div class="feat-detail" hidden>
               <div class="dashboard-features">
-                <div class="feature-item">Automatic reminders 7, 4, 2 & 1 day before expiry</div>
-                <div class="feature-item">Instant notifications on PWA, Browser & Mobile App</div>
-                <div class="feature-item">Due amount, expiry date & membership details included</div>
+                <div class="feature-item">
+                  Automatic reminders 7, 4, 2 & 1 day before expiry
+                </div>
+                <div class="feature-item">
+                  Instant notifications on PWA, Browser & Mobile App
+                </div>
+                <div class="feature-item">
+                  Due amount, expiry date & membership details included
+                </div>
               </div>
               <div class="feat-visual feat-visual--face">
                 <div class="fv-card">
-                  <img src="{% static 'images/features/due.webp' %}" alt="Payment reminders" class="fv-image">
+                  <img
+                    src="{% static 'images/features/due.webp' %}"
+                    alt="Payment reminders"
+                    class="fv-image"
+                  />
                 </div>
               </div>
             </div>
@@ -402,18 +571,34 @@
           <button class="feat-card" type="button" data-feat="03">
             <span class="feat-index">03</span>
             <h3 class="head-color">GPS-Based <span>Geo Attendance</span></h3>
-            <p>Ensure members can check in only when they're physically present at your gym. EnterGYM uses secure GPS geofencing to prevent fake check-ins.</p>
+            <p>
+              Ensure members can check in only when they're physically present
+              at your gym. EnterGYM uses secure GPS geofencing to prevent fake
+              check-ins.
+            </p>
             <span class="feat-card-cta">View details →</span>
             <div class="feat-detail" hidden>
               <div class="dashboard-features">
-                <div class="feature-item">Custom Geo-Fence with configurable radius</div>
-                <div class="feature-item">Attendance only within the authorized gym location</div>
-                <div class="feature-item">Prevents fake check-ins using location verification</div>
-                <div class="feature-item">Real-time attendance history with location & timestamp</div>
+                <div class="feature-item">
+                  Custom Geo-Fence with configurable radius
+                </div>
+                <div class="feature-item">
+                  Attendance only within the authorized gym location
+                </div>
+                <div class="feature-item">
+                  Prevents fake check-ins using location verification
+                </div>
+                <div class="feature-item">
+                  Real-time attendance history with location & timestamp
+                </div>
               </div>
               <div class="feat-visual">
                 <div class="fv-card">
-                  <img src="{% static 'images/features/Attendance.webp' %}" alt="GPS attendance map" class="fv-image">
+                  <img
+                    src="{% static 'images/features/Attendance.webp' %}"
+                    alt="GPS attendance map"
+                    class="fv-image"
+                  />
                 </div>
               </div>
             </div>
@@ -422,17 +607,31 @@
           <button class="feat-card" type="button" data-feat="04">
             <span class="feat-index">04</span>
             <h3 class="head-color">Smart <span>Member Management</span></h3>
-            <p>Manage every member from a single dashboard. Track memberships, payments, attendance, and activity while keeping member information organized and secure.</p>
+            <p>
+              Manage every member from a single dashboard. Track memberships,
+              payments, attendance, and activity while keeping member
+              information organized and secure.
+            </p>
             <span class="feat-card-cta">View details →</span>
             <div class="feat-detail" hidden>
               <div class="dashboard-features">
-                <div class="feature-item">Create and manage unlimited member profiles</div>
-                <div class="feature-item">Assign, renew & upgrade membership plans</div>
-                <div class="feature-item">Track payments, dues & attendance history</div>
+                <div class="feature-item">
+                  Create and manage unlimited member profiles
+                </div>
+                <div class="feature-item">
+                  Assign, renew & upgrade membership plans
+                </div>
+                <div class="feature-item">
+                  Track payments, dues & attendance history
+                </div>
               </div>
               <div class="feat-visual feat-visual--face">
                 <div class="fv-card">
-                  <img src="{% static 'images/features/Member.webp' %}" alt="Member management" class="fv-image">
+                  <img
+                    src="{% static 'images/features/Member.webp' %}"
+                    alt="Member management"
+                    class="fv-image"
+                  />
                 </div>
               </div>
             </div>
@@ -441,17 +640,32 @@
           <button class="feat-card" type="button" data-feat="05">
             <span class="feat-index">05</span>
             <h3 class="head-color">Push <span>Notifications</span></h3>
-            <p>Keep members engaged with automated push notifications for renewals, payment reminders and attendance alerts from one dashboard.</p>
+            <p>
+              Keep members engaged with automated push notifications for
+              renewals, payment reminders and attendance alerts from one
+              dashboard.
+            </p>
             <span class="feat-card-cta">View details →</span>
             <div class="feat-detail" hidden>
               <div class="dashboard-features">
-                <div class="feature-item">Automatically remind members before their plans expire.</div>
-                <div class="feature-item">Instantly notify the receptionist and gym staff whenever a new member joins.</div>
-                <div class="feature-item">Send reminders for pending and upcoming membership payments.</div>
+                <div class="feature-item">
+                  Automatically remind members before their plans expire.
+                </div>
+                <div class="feature-item">
+                  Instantly notify the receptionist and gym staff whenever a new
+                  member joins.
+                </div>
+                <div class="feature-item">
+                  Send reminders for pending and upcoming membership payments.
+                </div>
               </div>
               <div class="feat-visual">
                 <div class="fv-card">
-                  <img src="{% static 'images/features/Notification.webp' %}" alt="Push notifications" class="fv-image">
+                  <img
+                    src="{% static 'images/features/Notification.webp' %}"
+                    alt="Push notifications"
+                    class="fv-image"
+                  />
                 </div>
               </div>
             </div>
@@ -460,18 +674,34 @@
           <button class="feat-card" type="button" data-feat="06">
             <span class="feat-index">06</span>
             <h3 class="head-color">Fully Isolated <span>GYM</span></h3>
-            <p>EnterGYM keeps every branch isolated. Members, trainers, attendance, payments, inventory, and reports belong only to their respective gym.</p>
+            <p>
+              EnterGYM keeps every branch isolated. Members, trainers,
+              attendance, payments, inventory, and reports belong only to their
+              respective gym.
+            </p>
             <span class="feat-card-cta">View details →</span>
             <div class="feat-detail" hidden>
               <div class="dashboard-features">
-                <div class="feature-item">Complete data isolation for every gym</div>
-                <div class="feature-item">Separate members, staff, attendance, and payments</div>
-                <div class="feature-item">Independent reports and analytics for each location</div>
-                <div class="feature-item">Secure multi-tenant architecture with zero data mixing</div>
+                <div class="feature-item">
+                  Complete data isolation for every gym
+                </div>
+                <div class="feature-item">
+                  Separate members, staff, attendance, and payments
+                </div>
+                <div class="feature-item">
+                  Independent reports and analytics for each location
+                </div>
+                <div class="feature-item">
+                  Secure multi-tenant architecture with zero data mixing
+                </div>
               </div>
               <div class="feat-visual feat-visual--face">
                 <div class="fv-card">
-                  <img src="{% static 'images/features/multi.webp' %}" alt="Multi-branch isolation" class="fv-image">
+                  <img
+                    src="{% static 'images/features/multi.webp' %}"
+                    alt="Multi-branch isolation"
+                    class="fv-image"
+                  />
                 </div>
               </div>
             </div>
@@ -480,102 +710,197 @@
           <button class="feat-card" type="button" data-feat="07">
             <span class="feat-index">07</span>
             <h3 class="head-color">GST <span>Billing & Reports</span></h3>
-            <p>Simplify GST compliance with automated billing and one-click Excel exports for your Chartered Accountant.</p>
+            <p>
+              Simplify GST compliance with automated billing and one-click Excel
+              exports for your Chartered Accountant.
+            </p>
             <span class="feat-card-cta">View details →</span>
             <div class="feat-detail" hidden>
               <div class="dashboard-features">
-                <div class="feature-item">Generate GST-ready Excel reports instantly for return preparation.</div>
-                <div class="feature-item">CGST, SGST, and IGST are calculated automatically on every invoice.</div>
-                <div class="feature-item">Create clean, tax-compliant invoices with your gym branding.</div>
-                <div class="feature-item">No more copying invoice data into spreadsheets manually.</div>
+                <div class="feature-item">
+                  Generate GST-ready Excel reports instantly for return
+                  preparation.
+                </div>
+                <div class="feature-item">
+                  CGST, SGST, and IGST are calculated automatically on every
+                  invoice.
+                </div>
+                <div class="feature-item">
+                  Create clean, tax-compliant invoices with your gym branding.
+                </div>
+                <div class="feature-item">
+                  No more copying invoice data into spreadsheets manually.
+                </div>
               </div>
               <div class="feat-visual">
                 <div class="fv-card">
-                  <img src="{% static 'images/features/gst.webp' %}" alt="GST billing" class="fv-image">
+                  <img
+                    src="{% static 'images/features/gst.webp' %}"
+                    alt="GST billing"
+                    class="fv-image"
+                  />
                 </div>
               </div>
             </div>
           </button>
-
           <button class="feat-card" type="button" data-feat="08">
             <span class="feat-index">08</span>
-            <h3 class="head-color">Download Monthly <span>Gym Reports</span></h3>
-            <p>Get comprehensive monthly reports covering revenue, memberships, collections, attendance, and business trends.</p>
+            <h3 class="head-color">
+              Download Monthly <span>Gym Reports</span>
+            </h3>
+            <p>
+              Get comprehensive monthly reports covering revenue, memberships,
+              collections, attendance, and business trends.
+            </p>
             <span class="feat-card-cta">View details →</span>
             <div class="feat-detail" hidden>
               <div class="dashboard-features">
-                <div class="feature-item">View total revenue, monthly earnings, and business growth.</div>
-                <div class="feature-item">Track collected payments, outstanding dues, and payment methods.</div>
-                <div class="feature-item">See new enrollments, active members, expired memberships, and renewals.</div>
-                <div class="feature-item">Download professional Excel reports with a single click.</div>
+                <div class="feature-item">
+                  View total revenue, monthly earnings, and business growth.
+                </div>
+                <div class="feature-item">
+                  Track collected payments, outstanding dues, and payment
+                  methods.
+                </div>
+                <div class="feature-item">
+                  See new enrollments, active members, expired memberships, and
+                  renewals.
+                </div>
+                <div class="feature-item">
+                  Download professional Excel reports with a single click.
+                </div>
               </div>
               <div class="feat-visual feat-visual--face">
                 <div class="fv-card">
-                  <img src="{% static 'images/features/monthly.webp' %}" alt="Monthly reports" class="fv-image">
+                  <img
+                    src="{% static 'images/features/monthly.webp' %}"
+                    alt="Monthly reports"
+                    class="fv-image"
+                  />
                 </div>
               </div>
             </div>
           </button>
-
           <button class="feat-card" type="button" data-feat="09">
             <span class="feat-index">09</span>
             <h3 class="head-color">AI Face Attendance <span>System</span></h3>
-            <p>Members simply look at the camera, and attendance is recorded instantly — no cards, fingerprints, QR codes, or manual entry required.</p>
+            <p>
+              Members simply look at the camera, and attendance is recorded
+              instantly — no cards, fingerprints, QR codes, or manual entry
+              required.
+            </p>
             <span class="feat-card-cta">View details →</span>
             <div class="feat-detail" hidden>
               <div class="dashboard-features">
-                <div class="feature-item">Attendance is marked in less than a second for a smooth member experience.</div>
-                <div class="feature-item">Advanced AI face recognition ensures reliable and accurate identification.</div>
-                <div class="feature-item">Designed specifically for high-traffic gym environments with fast member check-ins.</div>
-                <div class="feature-item">Attendance is instantly available in your dashboard and reports.</div>
+                <div class="feature-item">
+                  Attendance is marked in less than a second for a smooth member
+                  experience.
+                </div>
+                <div class="feature-item">
+                  Advanced AI face recognition ensures reliable and accurate
+                  identification.
+                </div>
+                <div class="feature-item">
+                  Designed specifically for high-traffic gym environments with
+                  fast member check-ins.
+                </div>
+                <div class="feature-item">
+                  Attendance is instantly available in your dashboard and
+                  reports.
+                </div>
               </div>
               <div class="feature-note">
                 <strong>⚠ Simple Setup:</strong>
-                <p>AI Face Attendance requires a <strong>standard laptop or desktop</strong> for server activation. <strong>Webcam included by EnterGYM</strong>. No additional biometric hardware needed. <a class="guide" href="/help/desktop/">Quick Guide</a></p>
+                <p>
+                  AI Face Attendance requires a
+                  <strong>standard laptop or desktop</strong> for server
+                  activation. <strong>Webcam included by EnterGYM</strong>. No
+                  additional biometric hardware needed.
+                  <a class="guide" href="/help/desktop/">Quick Guide</a>
+                </p>
               </div>
               <div class="feature-note--cta-row">
                 <a href="/aiattendance/" class="btn-primary aiattend-more-btn">
-                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M8 1.5l1.8 3.8 4.2.6-3 3 .7 4.2L8 11.2l-3.7 1.9.7-4.2-3-3 4.2-.6L8 1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M8 1.5l1.8 3.8 4.2.6-3 3 .7 4.2L8 11.2l-3.7 1.9.7-4.2-3-3 4.2-.6L8 1.5z"
+                      stroke="currentColor"
+                      stroke-width="1.3"
+                      stroke-linejoin="round"
+                    />
                   </svg>
                   More Details
                 </a>
               </div>
               <div class="feat-visual">
                 <div class="fv-card">
-                  <img src="{% static 'images/features/face.webp' %}" alt="AI face attendance" class="fv-image">
+                  <img
+                    src="{% static 'images/features/face.webp' %}"
+                    alt="AI face attendance"
+                    class="fv-image"
+                  />
                 </div>
               </div>
             </div>
           </button>
-
           <button class="feat-card" type="button" data-feat="10">
             <span class="feat-index">10</span>
             <h3 class="head-color">Online Supplement <span>Store</span></h3>
-            <p>Sell protein, creatine, pre-workout, and other supplements directly from your gym.</p>
+            <p>
+              Sell protein, creatine, pre-workout, and other supplements
+              directly from your gym.
+            </p>
             <span class="feat-card-cta">View details →</span>
             <div class="feat-detail" hidden>
               <div class="dashboard-features">
-                <div class="feature-item">Create your own branded online store in minutes.</div>
-                <div class="feature-item">Manage products, categories, stock, and pricing from one dashboard.</div>
-                <div class="feature-item">Increase your gym's monthly revenue with zero extra staff.</div>
-                <div class="feature-item">Mobile-friendly shopping experience for customers.</div>
+                <div class="feature-item">
+                  Create your own branded online store in minutes.
+                </div>
+                <div class="feature-item">
+                  Manage products, categories, stock, and pricing from one
+                  dashboard.
+                </div>
+                <div class="feature-item">
+                  Increase your gym's monthly revenue with zero extra staff.
+                </div>
+                <div class="feature-item">
+                  Mobile-friendly shopping experience for customers.
+                </div>
               </div>
               <div class="feat-visual feat-visual--face">
                 <div class="fv-card">
-                  <img src="{% static 'images/features/store.webp' %}" alt="Supplement store" class="fv-image">
+                  <img
+                    src="{% static 'images/features/store.webp' %}"
+                    alt="Supplement store"
+                    class="fv-image"
+                  />
                 </div>
               </div>
             </div>
           </button>
-
         </div>
-
         <!-- ── Feature detail modal (shared, filled by JS) ── -->
         <div class="feat-modal" id="featModal" hidden>
           <div class="feat-modal-overlay" id="featModalOverlay"></div>
-          <div class="feat-modal-panel" role="dialog" aria-modal="true" aria-labelledby="featModalTitle">
-            <button class="feat-modal-close" id="featModalClose" aria-label="Close">✕</button>
+          <div
+            class="feat-modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="featModalTitle"
+          >
+            <button
+              class="feat-modal-close"
+              id="featModalClose"
+              aria-label="Close"
+            >
+              ✕
+            </button>
             <div class="feat-modal-head">
               <span class="feat-modal-index" id="featModalIndex"></span>
               <h3 class="head-color" id="featModalTitle"></h3>
@@ -583,44 +908,62 @@
             <div class="feat-modal-body" id="featModalBody"></div>
           </div>
         </div>
-
         <div class="feat-extra-grid">
-
           <div class="feat-extra-card">
             <div class="fe-visual">
-              <img src="{% static 'images/features/attendancerecord.webp' %}"
-                  alt="Attendance records dashboard" class="fe-image" loading="lazy">
+              <img
+                src="{% static 'images/features/attendancerecord.webp' %}"
+                alt="Attendance records dashboard"
+                class="fe-image"
+                loading="lazy"
+              />
             </div>
-            <h4 class="fe-title head-color"><span>Attendance Tracking</span></h4>
-            <p class="fe-desc">Complete attendance history with trainer-wise breakdown, due alerts, and exportable reports — all in one view.</p>
+            <h4 class="fe-title head-color">
+              <span>Attendance Tracking</span>
+            </h4>
+            <p class="fe-desc">
+              Complete attendance history with trainer-wise breakdown, due
+              alerts, and exportable reports — all in one view.
+            </p>
           </div>
-
           <div class="feat-extra-card">
             <div class="fe-visual">
-              <img src="{% static 'images/features/duepayment.webp' %}"
-                  alt="Due payments and WhatsApp reminders" class="fe-image" loading="lazy">
+              <img
+                src="{% static 'images/features/duepayment.webp' %}"
+                alt="Due payments and WhatsApp reminders"
+                class="fe-image"
+                loading="lazy"
+              />
             </div>
-            <h4 class="fe-title head-color"> <span>Due Payments &amp; WhatsApp</span></h4>
-            <p class="fe-desc">See overdue and upcoming dues at a glance, then send payment reminders straight to WhatsApp in one click.</p>
+            <h4 class="fe-title head-color">
+              <span>Due Payments &amp; WhatsApp</span>
+            </h4>
+            <p class="fe-desc">
+              See overdue and upcoming dues at a glance, then send payment
+              reminders straight to WhatsApp in one click.
+            </p>
           </div>
-
           <div class="feat-extra-card">
             <div class="fe-visual">
-              <img src="{% static 'images/features/membershipplan.webp' %}"
-                  alt="Membership plans and discounts" class="fe-image" loading="lazy">
+              <img
+                src="{% static 'images/features/membershipplan.webp' %}"
+                alt="Membership plans and discounts"
+                class="fe-image"
+                loading="lazy"
+              />
             </div>
             <h4 class="fe-title head-color"><span>Membership Plans</span></h4>
-            <p class="fe-desc">Set up tiered plans with custom pricing and discounts, so members can pick a plan and join in seconds.</p>
+            <p class="fe-desc">
+              Set up tiered plans with custom pricing and discounts, so members
+              can pick a plan and join in seconds.
+            </p>
           </div>
         </div>
-
       </div>
     </section>
     <section class="mp-section" id="member-portal">
       <div class="mp-inner">
-
         <div class="mp-layout">
-
           <!-- ── Left: heading / copy (unchanged content) ── -->
           <div class="mp-header">
             <p class="section-eyebrow">Member Portal</p>
@@ -629,34 +972,74 @@
             </h2>
             <p class="mp-sub">
               Empower your members with a beautiful web and mobile app to manage
-              their fitness journey — memberships, receipts, attendance, and more.
+              their fitness journey — memberships, receipts, attendance, and
+              more.
             </p>
             <a href="#pricing" class="mp-cta-btn">
               See it on your gym
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M5 12h14M13 6l6 6-6 6"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </a>
-
-            <!-- Legend hidden — hotspots now activate purely by hovering the
-                phone rows themselves (data-target elements), see JS. Kept in
-                DOM (not deleted) since member-portal.js still queries it for
-                keyboard/touch fallback wiring; just visually removed. -->
-            <p class="mp-legend-caption" style="display:none;">Or explore the app directly →</p>
-            <ul class="mp-legend" id="mpLegend" style="display:none;">
-              <li class="mp-legend-item is-active" data-hotspot="plan" tabindex="0" role="button" aria-pressed="true">
+            <p class="mp-legend-caption" style="display: none">
+              Or explore the app directly →
+            </p>
+            <ul class="mp-legend" id="mpLegend" style="display: none">
+              <li
+                class="mp-legend-item is-active"
+                data-hotspot="plan"
+                tabindex="0"
+                role="button"
+                aria-pressed="true"
+              >
                 <span class="mp-legend-dot"></span>Membership Plan
               </li>
-              <li class="mp-legend-item" data-hotspot="phone" tabindex="0" role="button" aria-pressed="false">
+              <li
+                class="mp-legend-item"
+                data-hotspot="phone"
+                tabindex="0"
+                role="button"
+                aria-pressed="false"
+              >
                 <span class="mp-legend-dot"></span>Phone Number
               </li>
-              <li class="mp-legend-item" data-hotspot="payment" tabindex="0" role="button" aria-pressed="false">
+              <li
+                class="mp-legend-item"
+                data-hotspot="payment"
+                tabindex="0"
+                role="button"
+                aria-pressed="false"
+              >
                 <span class="mp-legend-dot"></span>Payment Status
               </li>
-              <li class="mp-legend-item" data-hotspot="status" tabindex="0" role="button" aria-pressed="false">
+              <li
+                class="mp-legend-item"
+                data-hotspot="status"
+                tabindex="0"
+                role="button"
+                aria-pressed="false"
+              >
                 <span class="mp-legend-dot"></span>Membership Status
               </li>
-              <li class="mp-legend-item" data-hotspot="trainer" tabindex="0" role="button" aria-pressed="false">
+              <li
+                class="mp-legend-item"
+                data-hotspot="trainer"
+                tabindex="0"
+                role="button"
+                aria-pressed="false"
+              >
                 <span class="mp-legend-dot"></span>Pending Amount
               </li>
             </ul>
@@ -664,14 +1047,26 @@
 
           <!-- ── Right: interactive phone stage ── -->
           <div class="mp-stage" id="mpStage">
-
-            <!-- SVG overlay for animated connector lines — sized to the stage,
-                redrawn on hotspot activation / resize by member-portal.js -->
-            <svg class="mp-lines" id="mpLines" aria-hidden="true" focusable="false">
+            <svg
+              class="mp-lines"
+              id="mpLines"
+              aria-hidden="true"
+              focusable="false"
+            >
               <defs>
-                <linearGradient id="mpLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient
+                  id="mpLineGradient"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="0%"
+                >
                   <stop offset="0%" stop-color="#ff5a1f" stop-opacity="0.95" />
-                  <stop offset="100%" stop-color="#ff9a5a" stop-opacity="0.55" />
+                  <stop
+                    offset="100%"
+                    stop-color="#ff9a5a"
+                    stop-opacity="0.55"
+                  />
                 </linearGradient>
               </defs>
               <path id="mpLinePath" class="mp-line-path" d="" />
@@ -698,33 +1093,68 @@
               <span class="mp-label-title">Pending Amount</span>
               <span class="mp-label-sub">Outstanding balance</span>
             </div>
-
             <!-- Phone mockup — Golden Gym member profile screen -->
             <div class="mp-phone-wrap">
               <div class="mp-phone mp-phone--gold">
                 <div class="mp-phone-notch"></div>
                 <div class="mp-phone-screen gp-screen">
-
                   <div class="gp-navbar">
                     <p class="gp-brand"><span>PROFILE</span></p>
                     <div class="gp-navbar-actions">
-                      <button class="gp-bell" type="button" aria-label="Notifications">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                          <path d="M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                      <button
+                        class="gp-bell"
+                        type="button"
+                        aria-label="Notifications"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"
+                            stroke="currentColor"
+                            stroke-width="1.6"
+                            stroke-linejoin="round"
+                          />
+                          <path
+                            d="M13.73 21a2 2 0 01-3.46 0"
+                            stroke="currentColor"
+                            stroke-width="1.6"
+                            stroke-linecap="round"
+                          />
                         </svg>
                       </button>
-                      <button class="gp-pay-btn" type="button">PAY ₹2000</button>
+                      <button class="gp-pay-btn" type="button">
+                        PAY ₹2000
+                      </button>
                     </div>
                   </div>
-
                   <div class="gp-profile">
                     <span class="gp-avatar-wrap">
                       <span class="gp-avatar">S</span>
                       <span class="gp-avatar-camera" aria-hidden="true">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                          <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                          <circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="1.8"/>
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <path
+                            d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linejoin="round"
+                          />
+                          <circle
+                            cx="12"
+                            cy="13"
+                            r="3"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                          />
                         </svg>
                       </span>
                     </span>
@@ -732,9 +1162,7 @@
                     <p class="gp-id">0303</p>
                     <p class="gp-welcome">Welcome to your profile</p>
                   </div>
-
                   <div class="gp-card">
-
                     <div class="gp-row" data-target="phone">
                       <span class="gp-row-label">Phone Number</span>
                       <span class="gp-row-value">7000032565</span>
@@ -749,248 +1177,355 @@
                     </div>
                     <div class="gp-row" data-target="status">
                       <span class="gp-row-label">Membership Status</span>
-                      <span class="gp-row-value gp-active">Active (146 days left)</span>
+                      <span class="gp-row-value gp-active"
+                        >Active (146 days left)</span
+                      >
                     </div>
-
                     <div class="gp-row gp-row--last" data-target="trainer">
                       <span class="gp-row-label">Pending Amount</span>
                       <span class="gp-row-value">₹3000</span>
                     </div>
-
                   </div>
-
                   <div class="gp-invoice-section">
-                    <p class="gp-invoice-label">Payment &amp; Invoice History</p>
-
+                    <p class="gp-invoice-label">
+                      Payment &amp; Invoice History
+                    </p>
                     <div class="gp-invoice-card">
                       <p class="gp-invoice-id">GG-/2026-27/0036</p>
-                      <p class="gp-invoice-meta">03 Aug 2026 &middot; Tax Invoice</p>
+                      <p class="gp-invoice-meta">
+                        03 Aug 2026 &middot; Tax Invoice
+                      </p>
                       <p class="gp-invoice-amount">₹2000.00</p>
-                      <button class="gp-invoice-download" type="button">Download</button>
+                      <button class="gp-invoice-download" type="button">
+                        Download
+                      </button>
                     </div>
                   </div>
-
                 </div>
               </div>
-              <div class="mp-phone-glow mp-phone-glow--gold" aria-hidden="true"></div>
+              <div
+                class="mp-phone-glow mp-phone-glow--gold"
+                aria-hidden="true"
+              ></div>
             </div>
-
           </div>
-
         </div>
       </div>
     </section>
-    
+    <section class="gw-section" id="gym-website">
+      <div class="gw-inner">
+        <div class="gws-orb gws-orb--1"></div>
+        <div class="gws-orb gws-orb--2"></div>
+        <div class="gws-orb gws-orb--3"></div>
+        <div class="gws-grid">
+          <!-- Marketing copy -->
+          <div class="gws-intro">
+            <p class="section-eyebrow">Website & App</p>
+            <h2 class="gw-heading">
+              Your gym gets its own<br /><em>Website &amp; App.</em>
+            </h2>
+            <p class="gw-sub">
+              Every gym on EnterGYM gets a professionally generated website and
+              mobile app — automatically powered by your admin dashboard data.
+              No developer needed.
+            </p>
+          </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-     GYM WEBSITE & APP SECTION
-     ═══════════════════════════════════════════════════════════════ -->
-      <section class="gw-section" id="gym-website">
-        <div class="gw-inner">
-          <div class="gws-orb gws-orb--1"></div>
-          <div class="gws-orb gws-orb--2"></div>
-          <div class="gws-orb gws-orb--3"></div>
-          <div class="gws-grid">
+          <!-- Website preview card -->
+          <div class="gws-website-card">
+            <div class="gws-website-bar">
+              <span class="gws-live">
+                <span class="gws-live-dot"></span>Live
+              </span>
+              <span class="gws-url">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zm-3 8V7a3 3 0 116 0v3H9z"
+                    fill="currentColor"
+                  />
+                </svg>
+                yourgym.entergym.in
+              </span>
+            </div>
 
-            <!-- Marketing copy -->
-            <div class="gws-intro">
-              <p class="section-eyebrow">Website & App</p>
-              <h2 class="gw-heading">
-                Your gym gets its own<br /><em>Website &amp; App.</em>
-              </h2>
-              <p class="gw-sub">
-                Every gym on EnterGYM gets a professionally generated website and
-                mobile app — automatically powered by your admin dashboard data.
-                No developer needed.
+            <div class="gws-website-body">
+              <div class="gws-website-mesh"></div>
+              <div class="gws-website-ui">
+                <span class="gws-ui-bar gws-ui-bar--wide"></span>
+                <span class="gws-ui-bar gws-ui-bar--mid"></span>
+                <div class="gws-ui-row">
+                  <span class="gws-ui-chip"></span>
+                  <span class="gws-ui-chip"></span>
+                  <span class="gws-ui-chip"></span>
+                </div>
+              </div>
+            </div>
+
+            <a
+              href="https://muscle-garage.entergym.in"
+              target="_blank"
+              rel="noopener"
+              class="gws-preview-btn"
+            >
+              Preview website
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                class="gws-preview-arrow"
+                aria-hidden="true"
+              >
+                <path
+                  d="M9 6l6 6-6 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </a>
+          </div>
+
+          <!-- Phone showcase -->
+          <div class="gws-phone-stage">
+            <div class="gws-phone-glow"></div>
+            <div class="gws-callout">
+              <div class="gws-callout-card">
+                <strong>Your Gym Logo</strong>
+                <span>Automatically branded</span>
+              </div>
+              <svg
+                class="gws-callout-line"
+                viewBox="0 0 300 400"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M20,70 C120,70 90,260 220,300"
+                  stroke="var(--green)"
+                  stroke-width="2"
+                  fill="none"
+                />
+                <circle cx="220" cy="300" r="5" fill="var(--green)" />
+              </svg>
+            </div>
+            <div class="gws-phone">
+              <div class="gws-phone-notch"></div>
+              <div class="gws-phone-screen">
+                <img
+                  src="{% static 'images/icon.webp' %}"
+                  alt="EnterGYM mobile app"
+                  class="gws-phone-logo"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform badges -->
+          <div class="gws-platform-row">
+            <span class="gws-badge">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <rect
+                  x="5"
+                  y="2"
+                  width="14"
+                  height="20"
+                  rx="3"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                />
+                <circle cx="12" cy="18" r="1" fill="currentColor" />
+              </svg>
+              Android app
+              <em class="gws-badge-tag gws-badge-tag--live">Live</em>
+            </span>
+            <span class="gws-badge">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                />
+                <path
+                  d="M3 12h18M12 3a13.5 13.5 0 010 18M12 3a13.5 13.5 0 000 18"
+                  stroke="currentColor"
+                  stroke-width="1.3"
+                />
+              </svg>
+              Web PWA <em class="gws-badge-tag gws-badge-tag--live">Live</em>
+            </span>
+            <span class="gws-badge gws-badge--soon">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M17.5 15.5c-.8 1.2-1.6 2.3-2.9 2.3-1.3 0-1.7-.7-3.1-.7s-1.9.7-3.1.8c-1.2 0-2.1-1.2-3-2.3C3.7 13.8 2.6 9.8 4.2 7c.8-1.4 2.3-2.3 3.9-2.3 1.2 0 2.4.8 3.1.8.7 0 2.1-1 3.6-.9.6.03 2.3.25 3.5 1.9-.1.05-2.1 1.2-2.1 3.6.03 2.9 2.5 3.9 2.5 3.9-.03.07-.4 1.4-1.3 2.7z"
+                  stroke="currentColor"
+                  stroke-width="1.3"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              iOS PWA <em class="gws-badge-tag gws-badge-tag--live">Live</em>
+            </span>
+          </div>
+
+          <!-- Supported users -->
+          <div class="gws-users-row">
+            <span class="gws-chip">✓ Gym members</span>
+            <span class="gws-chip">✓ Gym owners</span>
+          </div>
+
+          <!-- Feature list -->
+          <ul class="gws-feature-list">
+            <li>Android app included</li>
+            <li>Web PWA included</li>
+            <li>iOS PWA support</li>
+            <li>Connected to your admin dashboard</li>
+            <li>No developer required</li>
+          </ul>
+          <div class="gws-bottom-note">
+            <div>
+              <strong>Automatically Provisioned</strong>
+              <p>
+                Every gym receives its own branded website and member app
+                automatically. No developer, hosting setup, or manual
+                configuration required.
               </p>
             </div>
-
-            <!-- Website preview card -->
-            <div class="gws-website-card">
-              <div class="gws-website-bar">
-                <span class="gws-live">
-                  <span class="gws-live-dot"></span>Live
-                </span>
-                <span class="gws-url">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zm-3 8V7a3 3 0 116 0v3H9z" fill="currentColor"/>
-                  </svg>
-                  yourgym.entergym.in
-                </span>
-              </div>
-
-              <div class="gws-website-body">
-                <div class="gws-website-mesh"></div>
-                <div class="gws-website-ui">
-                  <span class="gws-ui-bar gws-ui-bar--wide"></span>
-                  <span class="gws-ui-bar gws-ui-bar--mid"></span>
-                  <div class="gws-ui-row">
-                    <span class="gws-ui-chip"></span>
-                    <span class="gws-ui-chip"></span>
-                    <span class="gws-ui-chip"></span>
-                  </div>
-                </div>
-              </div>
-
-              <a href="https://muscle-garage.entergym.in"
-                target="_blank"
-                rel="noopener"
-                class="gws-preview-btn">
-                Preview website
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" class="gws-preview-arrow" aria-hidden="true">
-                  <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-            </div>
-
-            <!-- Phone showcase -->
-            <div class="gws-phone-stage">
-              <div class="gws-phone-glow"></div>
-              <div class="gws-callout">
-                <div class="gws-callout-card">
-                    <strong>Your Gym Logo</strong>
-                    <span>Automatically branded</span>
-                </div>
-                <svg class="gws-callout-line" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">
-                  <path d="M20,70 C120,70 90,260 220,300" stroke="var(--green)" stroke-width="2" fill="none"/>
-                  <circle cx="220" cy="300" r="5" fill="var(--green)"/>
-                </svg>
-              </div>
-              <div class="gws-phone">
-                <div class="gws-phone-notch"></div>
-                <div class="gws-phone-screen">
-                  <img
-                    src="{% static 'images/icon.png' %}"
-                    alt="EnterGYM mobile app"
-                    class="gws-phone-logo"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Platform badges -->
-            <div class="gws-platform-row">
-              <span class="gws-badge">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <rect x="5" y="2" width="14" height="20" rx="3" stroke="currentColor" stroke-width="1.6"/>
-                  <circle cx="12" cy="18" r="1" fill="currentColor"/>
-                </svg>
-                Android app <em class="gws-badge-tag gws-badge-tag--live">Live</em>
-              </span>
-              <span class="gws-badge">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
-                  <path d="M3 12h18M12 3a13.5 13.5 0 010 18M12 3a13.5 13.5 0 000 18" stroke="currentColor" stroke-width="1.3"/>
-                </svg>
-                Web PWA <em class="gws-badge-tag gws-badge-tag--live">Live</em>
-              </span>
-              <span class="gws-badge gws-badge--soon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M17.5 15.5c-.8 1.2-1.6 2.3-2.9 2.3-1.3 0-1.7-.7-3.1-.7s-1.9.7-3.1.8c-1.2 0-2.1-1.2-3-2.3C3.7 13.8 2.6 9.8 4.2 7c.8-1.4 2.3-2.3 3.9-2.3 1.2 0 2.4.8 3.1.8.7 0 2.1-1 3.6-.9.6.03 2.3.25 3.5 1.9-.1.05-2.1 1.2-2.1 3.6.03 2.9 2.5 3.9 2.5 3.9-.03.07-.4 1.4-1.3 2.7z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-                </svg>
-                iOS PWA <em class="gws-badge-tag gws-badge-tag--live">Live</em>
-              </span>
-            </div>
-
-            <!-- Supported users -->
-            <div class="gws-users-row">
-              <span class="gws-chip">✓ Gym members</span>
-              <span class="gws-chip">✓ Gym owners</span>
-            </div>
-
-            <!-- Feature list -->
-            <ul class="gws-feature-list">
-              <li>Android app included</li>
-              <li>Web PWA included</li>
-              <li>iOS PWA support</li>
-              <li>Connected to your admin dashboard</li>
-              <li>No developer required</li>
-            </ul>
-            <div class="gws-bottom-note">
-              <div>
-                <strong>Automatically Provisioned</strong>
-                <p>
-                  Every gym receives its own branded website and member app automatically.
-                  No developer, hosting setup, or manual configuration required.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
-      </section>
-      <section class="mj-section" id="member-journey">
-
-        <div class="mj-inner">
-          <p class="section-eyebrow">The Experience</p>
-          <h2 class="gw-heading">
-            Your Member Journey,<br /><em>Start to Finish.</em>
-          </h2>
-          <p class="gw-sub">
-            Watch how a new member goes from sign-up to walking through your door.
+      </div>
+    </section>
+    <section class="mj-section" id="member-journey">
+      <div class="mj-inner">
+        <p class="section-eyebrow">The Experience</p>
+        <h2 class="gw-heading">
+          Your Member Journey,<br /><em>Start to Finish.</em>
+        </h2>
+        <p class="gw-sub">
+          Watch how a new member goes from sign-up to walking through your door.
+        </p>
+        <div class="mj-tabs" id="mjTabs" role="tablist">
+          <button
+            class="mj-tab active"
+            type="button"
+            role="tab"
+            data-journey="member"
+            aria-selected="true"
+          >
+            Member Journey
+          </button>
+          <button
+            class="mj-tab"
+            type="button"
+            role="tab"
+            data-journey="owner"
+            aria-selected="false"
+          >
+            Gym Owner Journey
+          </button>
+          <span class="mj-tab-indicator" id="mjTabIndicator"></span>
+        </div>
+      </div>
+      <div class="mj-stage" id="mjStage" data-journey="member">
+        <div class="mj-stage-bg"></div>
+        <div class="mj-grid-fx"></div>
+        <div class="mj-noise"></div>
+        <div class="mj-stage-head">
+          <span class="mj-progress-label" id="mjProgLabel">Step 1 of 5</span>
+          <div class="mj-progress-track">
+            <div class="mj-progress-fill" id="mjProgFill"></div>
+          </div>
+        </div>
+        <div class="mj-mini-timeline" id="mjMiniTimeline"></div>
+        <div class="mj-scene-viewport" id="mjSceneViewport"></div>
+        <!-- Idle state: shown before the journey starts -->
+        <div class="mj-start-overlay" id="mjStartOverlay">
+          <button class="mj-start-btn" id="mjStartBtn" type="button">
+            Start member journey
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div class="mj-final-scene" id="mjFinalScene">
+          <div class="mj-final-timeline" id="mjFinalTimeline"></div>
+          <h2>Your Member Journey Starts Here.</h2>
+          <p>
+            From first sign-up to walking through the door — every step of the
+            EnterGYM member experience, connected into one seamless flow.
           </p>
-
-          <div class="mj-tabs" id="mjTabs" role="tablist">
-            <button class="mj-tab active" type="button" role="tab" data-journey="member" aria-selected="true">Member Journey</button>
-            <button class="mj-tab" type="button" role="tab" data-journey="owner" aria-selected="false">Gym Owner Journey</button>
-            <span class="mj-tab-indicator" id="mjTabIndicator"></span>
-          </div>
+          <button class="mj-cta-btn" id="mjExploreBtn">Close</button>
         </div>
-
-        <div class="mj-stage" id="mjStage" data-journey="member">
-
-          <div class="mj-stage-bg"></div>
-          <div class="mj-grid-fx"></div>
-          <div class="mj-noise"></div>
-
-          <div class="mj-stage-head">
-            <span class="mj-progress-label" id="mjProgLabel">Step 1 of 5</span>
-            <div class="mj-progress-track"><div class="mj-progress-fill" id="mjProgFill"></div></div>
-          </div>
-
-          <div class="mj-mini-timeline" id="mjMiniTimeline"></div>
-
-          <div class="mj-scene-viewport" id="mjSceneViewport"></div>
-
-          <!-- Idle state: shown before the journey starts -->
-          <div class="mj-start-overlay" id="mjStartOverlay">
-            <button class="mj-start-btn" id="mjStartBtn" type="button">
-              Start member journey
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="mj-final-scene" id="mjFinalScene">
-            <div class="mj-final-timeline" id="mjFinalTimeline"></div>
-            <h2>Your Member Journey Starts Here.</h2>
-            <p>From first sign-up to walking through the door — every step of the EnterGYM member experience, connected into one seamless flow.</p>
-            <button class="mj-cta-btn" id="mjExploreBtn">Close</button>
-          </div>
-
-        </div>
-
-      </section>
-      <section class="testimonials-section">
+      </div>
+    </section>
+    <section class="testimonials-section">
       <div class="testimonials-inner">
-    
         <div class="testi-dotgrid" aria-hidden="true">
           {% for i in "x"|rjust:"108" %}<span></span>{% endfor %}
         </div>
-    
         <div class="testi-header">
           <p class="testi-eyebrow">Real gym owners</p>
           <h2 class="testi-heading">
             <span class="testi-heading-top">
               Some Reviews of
-              <svg class="testi-squiggle" width="64" height="16" viewBox="0 0 70 16" fill="none" aria-hidden="true">
-                <path d="M2 8c4-6 8-6 12 0s8 6 12 0 8-6 12 0 8 6 12 0 8-6 12 0" stroke-width="2" stroke-linecap="round"/>
+              <svg
+                class="testi-squiggle"
+                width="64"
+                height="16"
+                viewBox="0 0 70 16"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M2 8c4-6 8-6 12 0s8 6 12 0 8-6 12 0 8 6 12 0 8-6 12 0"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
               </svg>
             </span>
-            <span class="testi-heading-main">My Clients<span class="dot">.</span></span>
+            <span class="testi-heading-main"
+              >My Clients<span class="dot">.</span></span
+            >
           </h2>
         </div>
-    
         <div class="testi-carousel" id="testiCarousel">
           <div class="testi-stage" id="testiStage">
             <svg
@@ -1062,38 +1597,51 @@
             {% endfor %} {% endif %}
           </div>
         </div>
-    
         <div class="testi-dots" id="testiDots"></div>
-    
       </div>
     </section>
-    
+
     <section class="pricing" id="pricing">
       <div class="pricing__grid"></div>
       <div class="pricing__inner">
-    
         <div class="p-head">
           <p class="p-eyebrow">Pricing</p>
           <h2 class="p-heading">Choose Your <span>Plan</span></h2>
-          <p class="p-body">Every plan includes full Premium+ features. No feature lock-ins, no surprises — pick what fits your gym's rep count.</p>
+          <p class="p-body">
+            Every plan includes full Premium+ features. No feature lock-ins, no
+            surprises — pick what fits your gym's rep count.
+          </p>
         </div>
-    
         <div class="p-tabs" role="tablist" aria-label="Pricing plans">
           <div class="p-tab-indicator" id="tabIndicator"></div>
-          <button class="p-tab" type="button" role="tab" data-panel="panel-launchpad">
+          <button
+            class="p-tab"
+            type="button"
+            role="tab"
+            data-panel="panel-launchpad"
+          >
             <span class="p-tab__name">Launchpad</span>
             <span class="p-tab__sub">Free Tier</span>
           </button>
-          <button class="p-tab is-active" type="button" role="tab" data-panel="panel-fixed">
+          <button
+            class="p-tab is-active"
+            type="button"
+            role="tab"
+            data-panel="panel-fixed"
+          >
             <span class="p-tab__name">Fixed Subscription</span>
             <span class="p-tab__sub">Prepaid</span>
           </button>
-          <button class="p-tab" type="button" role="tab" data-panel="panel-chain">
+          <button
+            class="p-tab"
+            type="button"
+            role="tab"
+            data-panel="panel-chain"
+          >
             <span class="p-tab__name">Chain Pro</span>
             <span class="p-tab__sub">Enterprise</span>
           </button>
         </div>
-    
         <!-- LAUNCHPAD -->
         <div class="p-panel" id="panel-launchpad">
           <div class="p-card">
@@ -1103,17 +1651,26 @@
               <span class="p-card__price-amount" data-count="0">₹0</span>
               <span class="p-card__price-unit">/7 Day</span>
             </div>
-            <p class="p-card__note">Up to 40 members — perfect for new gyms testing the waters.</p>
+            <p class="p-card__note">
+              Up to 40 members — perfect for new gyms testing the waters.
+            </p>
             <ul class="p-checklist">
-              <li class="p-check-item"><span class="p-check-icon">✓</span>All Premium+ features</li>
-              <li class="p-check-item"><span class="p-check-icon">✓</span>Up to 40 members included</li>
-              <li class="p-check-item"><span class="p-check-icon">✓</span>No card required to start</li>
+              <li class="p-check-item">
+                <span class="p-check-icon">✓</span>All Premium+ features
+              </li>
+              <li class="p-check-item">
+                <span class="p-check-icon">✓</span>Up to 40 members included
+              </li>
+              <li class="p-check-item">
+                <span class="p-check-icon">✓</span>No card required to start
+              </li>
             </ul>
-            <a href="https://wa.me/917000032565" class="p-btn p-btn--primary">Start for free</a>
+            <a href="https://wa.me/917000032565" class="p-btn p-btn--primary"
+              >Start for free</a
+            >
             <p class="p-foot-note">Upgrade anytime as your gym grows</p>
           </div>
         </div>
-    
         <!-- FIXED SUBSCRIPTION -->
         <div class="p-panel is-active" id="panel-fixed">
           <div class="p-grid">
@@ -1122,39 +1679,60 @@
               <p class="p-grid-card__period">1 Month</p>
               <div class="p-grid-card__price" data-count="399">₹399</div>
               <ul class="p-checklist">
-                <li class="p-check-item"><span class="p-check-icon">✓</span>Up to 75 members</li>
-                <li class="p-check-item"><span class="p-check-icon">✓</span>All Premium+ features</li>
+                <li class="p-check-item">
+                  <span class="p-check-icon">✓</span>Up to 75 members
+                </li>
+                <li class="p-check-item">
+                  <span class="p-check-icon">✓</span>All Premium+ features
+                </li>
               </ul>
-              <a href="https://wa.me/917000032565" class="p-btn p-btn--primary">Subscribe</a>
-              <a href="/termandcondition/" class="p-btn p-btn--ghost">Terms &amp; Details</a>
+              <a href="https://wa.me/917000032565" class="p-btn p-btn--primary"
+                >Subscribe</a
+              >
+              <a href="/termandcondition/" class="p-btn p-btn--ghost"
+                >Terms &amp; Details</a
+              >
             </div>
-    
             <div class="p-grid-card p-grid-card--popular">
               <span class="p-badge">Growth</span>
               <p class="p-grid-card__period">1 Month</p>
               <div class="p-grid-card__price" data-count="549">₹549</div>
               <ul class="p-checklist">
-                <li class="p-check-item"><span class="p-check-icon">✓</span>Up to 120 members</li>
-                <li class="p-check-item"><span class="p-check-icon">✓</span>All Premium+ features</li>
+                <li class="p-check-item">
+                  <span class="p-check-icon">✓</span>Up to 120 members
+                </li>
+                <li class="p-check-item">
+                  <span class="p-check-icon">✓</span>All Premium+ features
+                </li>
               </ul>
-              <a href="https://wa.me/917000032565" class="p-btn p-btn--primary">Subscribe</a>
-              <a href="/termandcondition/" class="p-btn p-btn--ghost">Terms &amp; Details</a>
+              <a href="https://wa.me/917000032565" class="p-btn p-btn--primary"
+                >Subscribe</a
+              >
+              <a href="/termandcondition/" class="p-btn p-btn--ghost"
+                >Terms &amp; Details</a
+              >
             </div>
-    
             <div class="p-grid-card">
               <span class="p-badge">Professional</span>
               <p class="p-grid-card__period">1 Month</p>
               <div class="p-grid-card__price" data-count="899">₹899</div>
               <ul class="p-checklist">
-                <li class="p-check-item"><span class="p-check-icon">✓</span>Up to 250 members</li>
-                <li class="p-check-item"><span class="p-check-icon">✓</span>All Premium+ features</li>
+                <li class="p-check-item">
+                  <span class="p-check-icon">✓</span>Up to 250 members
+                </li>
+                <li class="p-check-item">
+                  <span class="p-check-icon">✓</span>All Premium+ features
+                </li>
               </ul>
-              <a href="https://wa.me/917000032565" class="p-btn p-btn--primary">Subscribe</a>
-              <a href="/termandcondition/" class="p-btn p-btn--ghost">Terms &amp; Details</a>
+              <a href="https://wa.me/917000032565" class="p-btn p-btn--primary"
+                >Subscribe</a
+              >
+              <a href="/termandcondition/" class="p-btn p-btn--ghost"
+                >Terms &amp; Details</a
+              >
             </div>
           </div>
         </div>
-    
         <!-- CHAIN PRO -->
         <div class="p-panel" id="panel-chain">
           <div class="p-card">
@@ -1164,16 +1742,27 @@
               <span class="p-card__price-amount">Custom</span>
               <span class="p-card__price-unit">pricing</span>
             </div>
-            <p class="p-card__note">Built for multi-branch chains with centralized reporting and dedicated support.</p>
+            <p class="p-card__note">
+              Built for multi-branch chains with centralized reporting and
+              dedicated support.
+            </p>
             <ul class="p-checklist">
-              <li class="p-check-item"><span class="p-check-icon">✓</span>Unlimited branches, unified dashboard</li>
-              <li class="p-check-item"><span class="p-check-icon">✓</span>Dedicated account manager</li>
-              <li class="p-check-item"><span class="p-check-icon">✓</span>Custom integrations &amp; SLA</li>
+              <li class="p-check-item">
+                <span class="p-check-icon">✓</span>Unlimited branches, unified
+                dashboard
+              </li>
+              <li class="p-check-item">
+                <span class="p-check-icon">✓</span>Dedicated account manager
+              </li>
+              <li class="p-check-item">
+                <span class="p-check-icon">✓</span>Custom integrations &amp; SLA
+              </li>
             </ul>
-            <a href="https://wa.me/917000032565" class="p-btn p-btn--primary">Contact Sales</a>
+            <a href="https://wa.me/917000032565" class="p-btn p-btn--primary"
+              >Contact Sales</a
+            >
           </div>
         </div>
-    
       </div>
     </section>
     <!-- ═══════════════════════════════════════════════════════════════
@@ -1181,36 +1770,89 @@
      ═══════════════════════════════════════════════════════════════ -->
     <section class="faq-section" id="faq" aria-labelledby="faq-heading">
       <div class="faq-inner">
-
         <div class="faq-header">
           <p class="section-eyebrow">FAQ</p>
           <h2 class="faq-heading" id="faq-heading">
             Frequently Asked<br /><em>Questions</em>
           </h2>
-          <p class="faq-sub">Got questions? We've got answers. Everything you need to know about EnterGYM.</p>
+          <p class="faq-sub">
+            Got questions? We've got answers. Everything you need to know about
+            EnterGYM.
+          </p>
 
           <div class="faq-search">
-            <svg class="faq-search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/>
-              <path d="M11 11L14.5 14.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <svg
+              class="faq-search-icon"
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle
+                cx="7"
+                cy="7"
+                r="5.2"
+                stroke="currentColor"
+                stroke-width="1.4"
+              />
+              <path
+                d="M11 11L14.5 14.5"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+              />
             </svg>
-            <input type="text" id="faqSearchInput" class="faq-search-input" placeholder="Search a question…" autocomplete="off" aria-label="Search FAQs">
-            <button type="button" id="faqSearchClear" class="faq-search-clear" hidden aria-label="Clear search">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <input
+              type="text"
+              id="faqSearchInput"
+              class="faq-search-input"
+              placeholder="Search a question…"
+              autocomplete="off"
+              aria-label="Search FAQs"
+            />
+            <button
+              type="button"
+              id="faqSearchClear"
+              class="faq-search-clear"
+              hidden
+              aria-label="Clear search"
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M2 2L10 10M10 2L2 10"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
               </svg>
             </button>
           </div>
         </div>
 
         <div class="faq-grid" id="faqGrid">
-
           <div class="faq-item" data-faq-index="0">
             <button class="faq-q" aria-expanded="false">
               <span>What is EnterGYM?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>EnterGYM is an all-in-one gym management software designed for gyms and fitness centers. It helps you manage members, memberships, attendance, payments, invoices, trainers, expenses, notifications, and everyday gym operations from one platform.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  EnterGYM is an all-in-one gym management software designed for
+                  gyms and fitness centers. It helps you manage members,
+                  memberships, attendance, payments, invoices, trainers,
+                  expenses, notifications, and everyday gym operations from one
+                  platform.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="1">
@@ -1218,7 +1860,18 @@
               <span>Why does my gym need management software?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Managing a gym using paper registers, spreadsheets, and separate payment records can make it difficult to track members, attendance, pending payments, and membership expiry. EnterGYM brings these operations together in one dashboard so you can spend less time on administration and more time growing your gym.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Managing a gym using paper registers, spreadsheets, and
+                  separate payment records can make it difficult to track
+                  members, attendance, pending payments, and membership expiry.
+                  EnterGYM brings these operations together in one dashboard so
+                  you can spend less time on administration and more time
+                  growing your gym.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="2">
@@ -1226,7 +1879,18 @@
               <span>What features are included in EnterGYM?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>EnterGYM includes member management, membership plans, attendance tracking, payment and invoice management, trainer management, expense tracking, announcements, automated membership expiry notifications, member portals, QR attendance, and AI face attendance support. All Premium+ features are included in the subscription.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  EnterGYM includes member management, membership plans,
+                  attendance tracking, payment and invoice management, trainer
+                  management, expense tracking, announcements, automated
+                  membership expiry notifications, member portals, QR
+                  attendance, and AI face attendance support. All Premium+
+                  features are included in the subscription.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="3">
@@ -1234,7 +1898,17 @@
               <span>Does EnterGYM send membership expiry reminders?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM can send membership expiry notifications to members through supported push notification channels. This helps members stay informed about their membership validity and upcoming renewal dates, reducing the chance of missed renewals.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Yes. EnterGYM can send membership expiry notifications to
+                  members through supported push notification channels. This
+                  helps members stay informed about their membership validity
+                  and upcoming renewal dates, reducing the chance of missed
+                  renewals.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="4">
@@ -1242,7 +1916,18 @@
               <span>What subscription plans are available?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>EnterGYM currently offers fixed subscription plans based on your gym's active member capacity. The Starter plan is ₹399/month for up to 75 members, Growth is ₹549/month for up to 120 members, and Professional is ₹899/month for up to 250 members. Multi-branch gyms can contact us for custom Chain Pro pricing.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  EnterGYM currently offers fixed subscription plans based on
+                  your gym's active member capacity. The Starter plan is
+                  ₹399/month for up to 75 members, Growth is ₹549/month for up
+                  to 120 members, and Professional is ₹899/month for up to 250
+                  members. Multi-branch gyms can contact us for custom Chain Pro
+                  pricing.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="5">
@@ -1250,7 +1935,16 @@
               <span>Can members use EnterGYM from their phone?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM provides a mobile-friendly member experience along with an Android app experience. Members can access their gym information, membership details, attendance features, and other available member services directly from their phone.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Yes. EnterGYM provides a mobile-friendly member experience
+                  along with an Android app experience. Members can access their
+                  gym information, membership details, attendance features, and
+                  other available member services directly from their phone.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="6">
@@ -1258,7 +1952,15 @@
               <span>Can I change my subscription plan as my gym grows?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. You can move to a higher subscription plan when your gym grows and requires a larger member capacity. Contact our team through WhatsApp and we will help you upgrade your plan.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Yes. You can move to a higher subscription plan when your gym
+                  grows and requires a larger member capacity. Contact our team
+                  through WhatsApp and we will help you upgrade your plan.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="7">
@@ -1266,7 +1968,17 @@
               <span>What can members do from the Member Portal?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Members can view their membership information, check attendance history, access payment and receipt information, receive membership notifications, and use the attendance features provided by their gym. The available features depend on the services enabled by the gym.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Members can view their membership information, check
+                  attendance history, access payment and receipt information,
+                  receive membership notifications, and use the attendance
+                  features provided by their gym. The available features depend
+                  on the services enabled by the gym.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="8">
@@ -1274,7 +1986,16 @@
               <span>Does EnterGYM offer a free trial?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. New gyms can start with a 7-day free trial with access to Premium+ features for up to 40 members. No payment card is required to start the trial. You can upgrade to a paid subscription whenever you are ready.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Yes. New gyms can start with a 7-day free trial with access to
+                  Premium+ features for up to 40 members. No payment card is
+                  required to start the trial. You can upgrade to a paid
+                  subscription whenever you are ready.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="9">
@@ -1282,7 +2003,16 @@
               <span>Can EnterGYM send notifications to members?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM supports member notifications for important gym updates such as membership expiry reminders and announcements. Gyms can use the notification system to keep members informed without relying entirely on manual communication.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Yes. EnterGYM supports member notifications for important gym
+                  updates such as membership expiry reminders and announcements.
+                  Gyms can use the notification system to keep members informed
+                  without relying entirely on manual communication.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="10">
@@ -1290,7 +2020,17 @@
               <span>How does attendance tracking work?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>EnterGYM supports multiple attendance methods, including QR code attendance, GPS-based attendance, manual staff check-in, and AI-powered face recognition attendance. Attendance records are timestamped and connected to the member's profile so gym staff can easily review attendance history.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  EnterGYM supports multiple attendance methods, including QR
+                  code attendance, GPS-based attendance, manual staff check-in,
+                  and AI-powered face recognition attendance. Attendance records
+                  are timestamped and connected to the member's profile so gym
+                  staff can easily review attendance history.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="11">
@@ -1298,7 +2038,17 @@
               <span>What staff roles are supported?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>EnterGYM supports role-based access for Super Admin, Gym Owner, Trainer, and Receptionist. Each role can be given access to the functions required for their responsibilities, helping gym owners keep operational data organized and controlled.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  EnterGYM supports role-based access for Super Admin, Gym
+                  Owner, Trainer, and Receptionist. Each role can be given
+                  access to the functions required for their responsibilities,
+                  helping gym owners keep operational data organized and
+                  controlled.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="12">
@@ -1306,15 +2056,37 @@
               <span>Can EnterGYM manage multiple gym branches?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM is built as a multi-tenant platform and supports multi-branch gym operations. Each gym or branch can have its own members, staff, attendance, payments, settings, and operational data while owners can manage their business from a centralized platform.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Yes. EnterGYM is built as a multi-tenant platform and supports
+                  multi-branch gym operations. Each gym or branch can have its
+                  own members, staff, attendance, payments, settings, and
+                  operational data while owners can manage their business from a
+                  centralized platform.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="13">
             <button class="faq-q" aria-expanded="false">
-              <span>Can I manage payments, invoices, and expenses in EnterGYM?</span>
+              <span
+                >Can I manage payments, invoices, and expenses in
+                EnterGYM?</span
+              >
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM provides payment and invoice management for member transactions and also supports gym expense tracking. This gives gym owners better visibility into their collections, expenses, and overall financial performance.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Yes. EnterGYM provides payment and invoice management for
+                  member transactions and also supports gym expense tracking.
+                  This gives gym owners better visibility into their
+                  collections, expenses, and overall financial performance.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="14">
@@ -1322,7 +2094,17 @@
               <span>How can I get started with EnterGYM?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Getting started is simple. Start the 7-day free trial, configure your gym information, add your staff and members, and begin managing your gym from the EnterGYM dashboard. If you need help choosing a plan or setting up your gym, contact our team on WhatsApp.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Getting started is simple. Start the 7-day free trial,
+                  configure your gym information, add your staff and members,
+                  and begin managing your gym from the EnterGYM dashboard. If
+                  you need help choosing a plan or setting up your gym, contact
+                  our team on WhatsApp.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="faq-item" data-faq-index="15">
@@ -1330,34 +2112,76 @@
               <span>Is my gym data separated from other gyms?</span>
               <span class="faq-icon" aria-hidden="true">+</span>
             </button>
-            <div class="faq-a-wrap"><div class="faq-a"><p>Yes. EnterGYM uses a multi-tenant architecture where each gym's operational data is scoped to its own gym account. Members, attendance, payments, staff, settings, and other gym information are kept within the appropriate gym context.</p></div></div>
+            <div class="faq-a-wrap">
+              <div class="faq-a">
+                <p>
+                  Yes. EnterGYM uses a multi-tenant architecture where each
+                  gym's operational data is scoped to its own gym account.
+                  Members, attendance, payments, staff, settings, and other gym
+                  information are kept within the appropriate gym context.
+                </p>
+              </div>
+            </div>
           </div>
-
         </div>
 
-        <p class="faq-no-results" id="faqNoResults" hidden>No questions match "<span id="faqNoResultsTerm"></span>". Try a different search, or ask us directly on WhatsApp.</p>
+        <p class="faq-no-results" id="faqNoResults" hidden>
+          No questions match "<span id="faqNoResultsTerm"></span>". Try a
+          different search, or ask us directly on WhatsApp.
+        </p>
 
         <div class="faq-cta">
           <div class="faq-cta-inner">
             <div class="faq-cta-icon">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-                <rect width="28" height="28" rx="6" fill="rgba(91,95,255,0.12)"/>
-                <path d="M14 8.4a5.3 5.3 0 00-4.5 8.1L9 19.3l2.6-.5A5.3 5.3 0 1014 8.4z" stroke="#5B5FFF" stroke-width="1.4"/>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 28 28"
+                fill="none"
+                aria-hidden="true"
+              >
+                <rect
+                  width="28"
+                  height="28"
+                  rx="6"
+                  fill="rgba(91,95,255,0.12)"
+                />
+                <path
+                  d="M14 8.4a5.3 5.3 0 00-4.5 8.1L9 19.3l2.6-.5A5.3 5.3 0 1014 8.4z"
+                  stroke="#5B5FFF"
+                  stroke-width="1.4"
+                />
               </svg>
             </div>
             <div>
               <h3 class="faq-cta-title">Still have questions?</h3>
-              <p class="faq-cta-body">Talk to us on WhatsApp — we'll answer within minutes.</p>
+              <p class="faq-cta-body">
+                Talk to us on WhatsApp — we'll answer within minutes.
+              </p>
             </div>
-            <a href="https://wa.me/917000032565" class="btn-primary faq-wa-btn" target="_blank" rel="noopener">
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M8 2.7a5.3 5.3 0 00-4.5 8.1L3 13.3l2.6-.5A5.3 5.3 0 108 2.7z" stroke="currentColor" stroke-width="1.3"/>
+            <a
+              href="https://wa.me/917000032565"
+              class="btn-primary faq-wa-btn"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M8 2.7a5.3 5.3 0 00-4.5 8.1L3 13.3l2.6-.5A5.3 5.3 0 108 2.7z"
+                  stroke="currentColor"
+                  stroke-width="1.3"
+                />
               </svg>
               Chat on WhatsApp
             </a>
           </div>
         </div>
-
       </div>
     </section>
 
@@ -1395,12 +2219,10 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="contact-demo-cta">
-      <!-- ── Request a Demo ── -->
-      <a href="{% url 'demoRequest:request_demo' %}" class="btn-request-demo">
-        Request a Demo
-      </a>
+      <div class="contact-demo-cta">
+        <a href="{% url 'demoRequest:request_demo' %}" class="btn-request-demo">
+          Request a Demo
+        </a>
       </div>
     </section>
 
@@ -1423,21 +2245,79 @@
           </p>
 
           <div class="footer-social">
-            <a href="https://www.instagram.com/entergym.in/" class="footer-social-btn" aria-label="Instagram" target="_blank" rel="noopener">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.8"/>
-                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
-                <circle cx="17.3" cy="6.7" r="1.1" fill="currentColor"/>
+            <a
+              href="https://www.instagram.com/entergym.in/"
+              class="footer-social-btn"
+              aria-label="Instagram"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <rect
+                  x="3"
+                  y="3"
+                  width="18"
+                  height="18"
+                  rx="5"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="4"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" />
               </svg>
             </a>
-            <a href="#" class="footer-social-btn" aria-label="Facebook" target="_blank" rel="noopener">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 8.5h2V5.2h-2.4c-2.3 0-3.8 1.5-3.8 3.9V11H8.5v3.2h2.3V21h3.3v-6.8h2.3l.4-3.2h-2.7V9.4c0-.6.3-.9 1-.9z" fill="currentColor"/>
+            <a
+              href="#"
+              class="footer-social-btn"
+              aria-label="Facebook"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M15 8.5h2V5.2h-2.4c-2.3 0-3.8 1.5-3.8 3.9V11H8.5v3.2h2.3V21h3.3v-6.8h2.3l.4-3.2h-2.7V9.4c0-.6.3-.9 1-.9z"
+                  fill="currentColor"
+                />
               </svg>
             </a>
-            <a href="#" class="footer-social-btn" aria-label="X (Twitter)" target="_blank" rel="noopener">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 4l16 16M20 4L4 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <a
+              href="#"
+              class="footer-social-btn"
+              aria-label="X (Twitter)"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 4l16 16M20 4L4 20"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
               </svg>
             </a>
           </div>
@@ -1479,7 +2359,10 @@
         <div class="footer-col">
           <div class="footer-uptime">
             <span class="uptime-dot"></span>
-            <span>All systems normal <br> · 99.98% uptime</span>
+            <span
+              >All systems normal <br />
+              · 99.98% uptime</span
+            >
           </div>
         </div>
       </div>
@@ -1507,79 +2390,82 @@
       }
     </script>
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "What is the best gym management software in India?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "EnterGYM is India's most affordable and feature-rich gym management software. It offers member management, GPS attendance, face recognition, push notifications, automated payment reminders, and a branded member app — all starting at just ₹4.99 per active member per month."
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is the best gym management software in India?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "EnterGYM is India's most affordable and feature-rich gym management software. It offers member management, GPS attendance, face recognition, push notifications, automated payment reminders, and a branded member app — all starting at just ₹4.99 per active member per month."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is the Launchpad free plan?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The Launchpad plan is completely free — forever. It supports up to 25 active members and includes core member management and manual attendance. No credit card required."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does Pay-as-you-Go billing work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "With Pay-as-you-Go, you pay only for active members each month. Rates are tiered: ₹6.99/member for up to 100 members, ₹5.99/member for 101–300 members, and ₹4.99/member for 301+ members. Your first month is free."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is there a free trial for gym management software?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Every new gym gets a 14-day free trial with full access to all Premium+ features — no credit card needed. Pay-as-you-Go and Fixed Subscription plans also include 1 month free on first signup."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does GPS attendance tracking work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "EnterGYM uses GPS geo-fencing so members can only check in when physically inside the gym. Face Recognition and manual check-in are also available. All methods log timestamped entries synced in real time."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How much does gym management software cost in India?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "EnterGYM starts completely free. For growing gyms, Pay-as-you-Go starts at ₹4.99 per active member per month. Fixed subscriptions start at ₹3,499 for 3 months with unlimited members and all Premium+ features."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does every gym get its own website and mobile app?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Every gym on EnterGYM automatically gets a professional website and a branded Android mobile app generated from your dashboard data. The iOS app is coming soon. No developer required."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How long does migration to EnterGYM take?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Migration is free and takes less than 24 hours. Share your member list in any format — Excel, CSV, or WhatsApp export — and our team handles everything. You go live within 24 hours, guaranteed."
+            }
           }
-        },
-        {
-          "@type": "Question",
-          "name": "What is the Launchpad free plan?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "The Launchpad plan is completely free — forever. It supports up to 25 active members and includes core member management and manual attendance. No credit card required."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How does Pay-as-you-Go billing work?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "With Pay-as-you-Go, you pay only for active members each month. Rates are tiered: ₹6.99/member for up to 100 members, ₹5.99/member for 101–300 members, and ₹4.99/member for 301+ members. Your first month is free."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Is there a free trial for gym management software?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Every new gym gets a 14-day free trial with full access to all Premium+ features — no credit card needed. Pay-as-you-Go and Fixed Subscription plans also include 1 month free on first signup."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How does GPS attendance tracking work?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "EnterGYM uses GPS geo-fencing so members can only check in when physically inside the gym. Face Recognition and manual check-in are also available. All methods log timestamped entries synced in real time."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How much does gym management software cost in India?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "EnterGYM starts completely free. For growing gyms, Pay-as-you-Go starts at ₹4.99 per active member per month. Fixed subscriptions start at ₹3,499 for 3 months with unlimited members and all Premium+ features."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Does every gym get its own website and mobile app?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Every gym on EnterGYM automatically gets a professional website and a branded Android mobile app generated from your dashboard data. The iOS app is coming soon. No developer required."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How long does migration to EnterGYM take?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Migration is free and takes less than 24 hours. Share your member list in any format — Excel, CSV, or WhatsApp export — and our team handles everything. You go live within 24 hours, guaranteed."
-          }
-        }
-      ]
-    }
+        ]
+      }
     </script>
     <script src="{% static 'vendor/bootstrap/gsap.min.js' %}" defer></script>
-    <script src="{% static 'vendor/bootstrap/ScrollTrigger.min.js' %}" defer></script>
+    <script
+      src="{% static 'vendor/bootstrap/ScrollTrigger.min.js' %}"
+      defer
+    ></script>
     <script src="{% static 'vendor/bootstrap/Flip.min.js' %}" defer></script>
     <script src="{% static 'vendor/bootstrap/lenis.min.js' %}" defer></script>
     <script src="{% static 'js/saas_home.js' %}" defer></script>
@@ -1587,14 +2473,15 @@
       (function () {
         function initWave() {
           try {
-            const canvas = document.getElementById('waveCanvas');
+            const canvas = document.getElementById("waveCanvas");
             if (!canvas) return;
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext("2d");
             if (!ctx) return;
-            const section = canvas.closest('.features-section');
+            const section = canvas.closest(".features-section");
             if (!section) return;
 
-            let width = 0, height = 0;
+            let width = 0,
+              height = 0;
             const dpr = Math.min(window.devicePixelRatio || 1, 2);
             let raf = null;
             let visible = true;
@@ -1602,11 +2489,23 @@
 
             function getLayers() {
               const isMobile = window.innerWidth <= 640;
-              const b = isMobile ? [0.05, 0.08, 0.11] : [0.14, 0.20, 0.28];
+              const b = isMobile ? [0.05, 0.08, 0.11] : [0.14, 0.2, 0.28];
 
               return [
-                { color: 'rgba(22, 86, 214, 0.55)',  base: b[0], amp: [26, 14, 8],  freq: [0.0032, 0.0071, 0.013], speed: [0.008, -0.006, 0.010] },
-                { color: 'rgba(14, 61, 45, 0.35)',  base: b[1], amp: [34, 18, 15], freq: [0.0022, 0.0058, 0.011], speed: [-0.006, 0.007, -0.008] },
+                {
+                  color: "rgba(22, 86, 214, 0.55)",
+                  base: b[0],
+                  amp: [26, 14, 8],
+                  freq: [0.0032, 0.0071, 0.013],
+                  speed: [0.008, -0.006, 0.01],
+                },
+                {
+                  color: "rgba(14, 61, 45, 0.35)",
+                  base: b[1],
+                  amp: [34, 18, 15],
+                  freq: [0.0022, 0.0058, 0.011],
+                  speed: [-0.006, 0.007, -0.008],
+                },
               ];
             }
 
@@ -1616,8 +2515,8 @@
               height = Math.max(Math.round(rect.height), 1);
               canvas.width = Math.round(width * dpr);
               canvas.height = Math.round(height * dpr);
-              canvas.style.width = width + 'px';
-              canvas.style.height = height + 'px';
+              canvas.style.width = width + "px";
+              canvas.style.height = height + "px";
               ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
               layers = getLayers();
             }
@@ -1646,14 +2545,17 @@
               ctx.closePath();
 
               ctx.fillStyle = color;
-              ctx.shadowColor = 'rgba(22,86,214,0.25)';
+              ctx.shadowColor = "rgba(22,86,214,0.25)";
               ctx.shadowBlur = 40;
               ctx.fill();
               ctx.shadowBlur = 0;
             }
 
             function frame() {
-              if (!visible) { raf = null; return; }
+              if (!visible) {
+                raf = null;
+                return;
+              }
               ctx.clearRect(0, 0, width, height);
               layers.forEach(drawLayer);
               t += 1;
@@ -1661,19 +2563,48 @@
             }
 
             function start() {
-              if (!raf) { raf = requestAnimationFrame(frame); }
+              if (!raf) {
+                raf = requestAnimationFrame(frame);
+              }
             }
             function stop() {
-              if (raf) { cancelAnimationFrame(raf); raf = null; }
+              if (raf) {
+                cancelAnimationFrame(raf);
+                raf = null;
+              }
+            }
+            function forceRestart() {
+              if (!visible) return;
+              raf = null;
+              start();
             }
 
-            if ('ResizeObserver' in window) {
-              const ro = new ResizeObserver(() => resize());
+            let resizeTimer = null;
+            function debouncedResize() {
+              clearTimeout(resizeTimer);
+              resizeTimer = setTimeout(resize, 120);
+            }
+
+            if ("ResizeObserver" in window) {
+              const ro = new ResizeObserver(() => debouncedResize());
               ro.observe(section);
             }
 
-            window.addEventListener('resize', resize);
-            window.addEventListener('load', resize);
+            window.addEventListener("resize", debouncedResize);
+            window.addEventListener("load", resize);
+            document.addEventListener("visibilitychange", () => {
+              if (!document.hidden) forceRestart();
+            });
+            window.addEventListener("pageshow", (e) => {
+              if (e.persisted) forceRestart();
+            });
+            let lastT = -1;
+            setInterval(() => {
+              if (visible && raf && t === lastT) {
+                forceRestart();
+              }
+              lastT = t;
+            }, 3000);
 
             requestAnimationFrame(() => {
               resize();
@@ -1682,32 +2613,35 @@
 
             resize();
 
-            if ('IntersectionObserver' in window) {
-              const io = new IntersectionObserver((entries) => {
-                entries.forEach((e) => {
-                  visible = e.isIntersecting;
-                  if (visible) start(); else stop();
-                });
-              }, { threshold: 0.01 });
+            if ("IntersectionObserver" in window) {
+              const io = new IntersectionObserver(
+                (entries) => {
+                  entries.forEach((e) => {
+                    visible = e.isIntersecting;
+                    if (visible) start();
+                    else stop();
+                  });
+                },
+                { threshold: 0.01 },
+              );
               io.observe(section);
             }
 
             start();
           } catch (err) {
-            console.error('[wave] init failed:', err);
+            console.error("[wave] init failed:", err);
           }
         }
 
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', initWave);
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initWave);
         } else {
           initWave();
         }
       })();
-      </script>
+    </script>
     <script nonce="{{ request.csp_nonce }}">
       (function () {
-        /* Nav scroll */
         const nav = document.getElementById("siteNav");
         if (nav) {
           window.addEventListener(
@@ -1719,29 +2653,26 @@
           );
         }
       })();
-
-      /* -----------------------------------------------------------------------------
-        FAQ — accordion + live search + mobile load-more
-      ----------------------------------------------------------------------------- */
       (function () {
-        const grid      = document.getElementById("faqGrid");
-        const items     = grid
-          ? Array.from(grid.querySelectorAll(".faq-item"))
-              .sort((a, b) => (+a.dataset.faqIndex) - (+b.dataset.faqIndex))
+        const grid = document.getElementById("faqGrid");
+        const items = grid
+          ? Array.from(grid.querySelectorAll(".faq-item")).sort(
+              (a, b) => +a.dataset.faqIndex - +b.dataset.faqIndex,
+            )
           : [];
-        const searchIn  = document.getElementById("faqSearchInput");
-        const clearBtn  = document.getElementById("faqSearchClear");
+        const searchIn = document.getElementById("faqSearchInput");
+        const clearBtn = document.getElementById("faqSearchClear");
         const noResults = document.getElementById("faqNoResults");
         const noResTerm = document.getElementById("faqNoResultsTerm");
-        const wrap      = document.getElementById("faqLoadMoreWrap");
-        const loadBtn   = document.getElementById("faqLoadMoreBtn");
+        const wrap = document.getElementById("faqLoadMoreWrap");
+        const loadBtn = document.getElementById("faqLoadMoreBtn");
         const loadLabel = document.getElementById("faqLoadMoreLabel");
         if (!items.length) return;
 
         const mq = window.matchMedia("(max-width: 860px)");
         const INITIAL_COUNT = 5;
-        const STEP_COUNT    = 3;
-        let visibleCount    = INITIAL_COUNT;
+        const STEP_COUNT = 3;
+        let visibleCount = INITIAL_COUNT;
 
         /* ── accordion open/close ── */
         items.forEach((item) => {
@@ -1783,11 +2714,13 @@
 
           const matched = [];
           items.forEach((item) => {
-            const qText = item.querySelector(".faq-q span").dataset.original
-              || item.querySelector(".faq-q span").textContent;
+            const qText =
+              item.querySelector(".faq-q span").dataset.original ||
+              item.querySelector(".faq-q span").textContent;
             const aText = item.querySelector(".faq-a p").textContent;
             const haystack = (qText + " " + aText).toLowerCase();
-            const isMatch = !term || haystack.indexOf(term.toLowerCase()) !== -1;
+            const isMatch =
+              !term || haystack.indexOf(term.toLowerCase()) !== -1;
             if (isMatch) matched.push(item);
             highlight(item, isMatch ? term : "");
           });
@@ -1846,184 +2779,215 @@
           });
         }
 
-        if (typeof mq.addEventListener === "function") mq.addEventListener("change", render);
+        if (typeof mq.addEventListener === "function")
+          mq.addEventListener("change", render);
         else if (typeof mq.addListener === "function") mq.addListener(render);
 
         render();
       })();
-  </script>
-<script nonce="{{ request.csp_nonce }}">
-(function () {
-  var stage = document.getElementById('testiStage');
-  var dotsWrap = document.getElementById('testiDots');
-  if (!stage || !dotsWrap) return;
+    </script>
+    <script nonce="{{ request.csp_nonce }}">
+      (function () {
+        var stage = document.getElementById("testiStage");
+        var dotsWrap = document.getElementById("testiDots");
+        if (!stage || !dotsWrap) return;
 
-  var cards = Array.prototype.slice.call(stage.querySelectorAll('.testi-card'));
-  if (!cards.length) return;
+        var cards = Array.prototype.slice.call(
+          stage.querySelectorAll(".testi-card"),
+        );
+        if (!cards.length) return;
 
-  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var DURATION = 650;
-  var EASING = 'cubic-bezier(.22, .61, .36, 1)';
+        var reducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+        var DURATION = 650;
+        var EASING = "cubic-bezier(.22, .61, .36, 1)";
 
-  // Kill any CSS transition on the cards so it can never fight the WAAPI animation.
-  cards.forEach(function (c) {
-  c.style.transition = 'none';
-  c.style.animation = 'none'; // add this line — kills any lingering reveal-fallback keyframe
-});
+        // Kill any CSS transition on the cards so it can never fight the WAAPI animation.
+        cards.forEach(function (c) {
+          c.style.transition = "none";
+          c.style.animation = "none"; // add this line — kills any lingering reveal-fallback keyframe
+        });
 
-  var active = cards.findIndex(function (c) { return c.classList.contains('is-active'); });
-  if (active < 0) active = 0;
-  cards.forEach(function (c, i) { c.classList.toggle('is-active', i === active); });
-  if (cards[active]) cards[active].classList.add('content-in');
+        var active = cards.findIndex(function (c) {
+          return c.classList.contains("is-active");
+        });
+        if (active < 0) active = 0;
+        cards.forEach(function (c, i) {
+          c.classList.toggle("is-active", i === active);
+        });
+        if (cards[active]) cards[active].classList.add("content-in");
 
-  var timer;
-  var transitioning = false;
+        var timer;
+        var transitioning = false;
 
-  function buildDots() {
-    dotsWrap.innerHTML = '';
-    cards.forEach(function (_, i) {
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'testi-dot';
-      b.setAttribute('aria-label', 'Show testimonial ' + (i + 1));
-      b.addEventListener('click', function () {
-        if (i === active) return;
-        goTo(i, i > active ? 'forward' : 'backward');
+        function buildDots() {
+          dotsWrap.innerHTML = "";
+          cards.forEach(function (_, i) {
+            var b = document.createElement("button");
+            b.type = "button";
+            b.className = "testi-dot";
+            b.setAttribute("aria-label", "Show testimonial " + (i + 1));
+            b.addEventListener("click", function () {
+              if (i === active) return;
+              goTo(i, i > active ? "forward" : "backward");
+            });
+            dotsWrap.appendChild(b);
+          });
+          updateDots();
+        }
+
+        function updateDots() {
+          Array.prototype.slice
+            .call(dotsWrap.children)
+            .forEach(function (d, i) {
+              var dist = Math.abs(i - active);
+              d.classList.toggle("is-active", i === active);
+              d.classList.toggle("is-far", dist >= 2);
+            });
+        }
+
+        function setStageHeight() {
+          stage.style.minHeight = cards[active].offsetHeight + "px";
+        }
+
+        function goTo(i, direction) {
+          if (cards.length < 2 || i === active || transitioning) return;
+
+          var outgoing = cards[active];
+          var incoming = cards[i];
+          var forward = direction !== "backward";
+
+          active = i;
+          updateDots();
+
+          if (reducedMotion || typeof outgoing.animate !== "function") {
+            outgoing.classList.remove("is-active", "content-in");
+            incoming.classList.add("is-active", "content-in");
+            setStageHeight();
+            resetAutoplay();
+            return;
+          }
+
+          transitioning = true;
+
+          var stageWidth = stage.offsetWidth || 1;
+          var exitX = forward ? stageWidth : -stageWidth;
+          var enterX = forward ? -stageWidth : stageWidth;
+
+          outgoing.style.transition = "none";
+          incoming.style.transition = "none";
+
+          outgoing.classList.remove("content-in"); // stop its content animations immediately
+          outgoing.style.visibility = "visible";
+          outgoing.style.zIndex = "1";
+          outgoing.style.opacity = "1";
+          outgoing.style.transform = "translateX(0px)";
+
+          // Position-only class, NOT content-in yet — content stays invisible/unanimated
+          // until the card actually reaches center.
+          incoming.classList.add("is-active");
+          incoming.style.visibility = "visible";
+          incoming.style.zIndex = "2";
+          incoming.style.opacity = "0";
+          incoming.style.transform = "translateX(" + enterX + "px)";
+
+          void outgoing.offsetWidth;
+          void incoming.offsetWidth;
+
+          var outAnim = outgoing.animate(
+            [
+              { transform: "translateX(0px)", opacity: 1 },
+              { transform: "translateX(" + exitX + "px)", opacity: 0 },
+            ],
+            { duration: DURATION, easing: EASING, fill: "forwards" },
+          );
+
+          var inAnim = incoming.animate(
+            [
+              { transform: "translateX(" + enterX + "px)", opacity: 0 },
+              { transform: "translateX(0px)", opacity: 1 },
+            ],
+            { duration: DURATION, easing: EASING, fill: "forwards" },
+          );
+
+          setStageHeight();
+
+          var finished = 0;
+          function onDone() {
+            finished++;
+            if (finished < 2) return;
+
+            outgoing.classList.remove("is-active");
+            outgoing.style.visibility = "";
+            outgoing.style.zIndex = "";
+            outgoing.style.opacity = "";
+            outgoing.style.transform = "";
+
+            incoming.style.visibility = "";
+            incoming.style.zIndex = "";
+            incoming.style.opacity = "";
+            incoming.style.transform = "";
+
+            // NOW trigger the content pop-ins, only once the card has visibly arrived.
+            incoming.classList.add("content-in");
+
+            try {
+              outAnim.cancel();
+            } catch (e) {}
+            try {
+              inAnim.cancel();
+            } catch (e) {}
+
+            transitioning = false;
+          }
+
+          outAnim.onfinish = onDone;
+          inAnim.onfinish = onDone;
+          resetAutoplay();
+        }
+
+        function resetAutoplay() {
+          clearInterval(timer);
+          if (cards.length > 1) {
+            timer = setInterval(function () {
+              goTo((active + 1) % cards.length, "forward");
+            }, 6000);
+          }
+        }
+
+        buildDots();
+        requestAnimationFrame(setStageHeight);
+        window.addEventListener("resize", setStageHeight);
+        resetAutoplay();
+        stage.addEventListener("mouseenter", function () {
+          clearInterval(timer);
+        });
+        stage.addEventListener("mouseleave", resetAutoplay);
+      })();
+    </script>
+    
+    <!-- ANTI-LAG SCRIPT: Auto-pauses heavy background video on budget devices -->
+    <script nonce="{{ request.csp_nonce }}">
+      document.addEventListener("DOMContentLoaded", () => {
+        const isLowEnd = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || 
+                         (navigator.connection && (navigator.connection.saveData || navigator.connection.effectiveType.includes('2g')));
+        
+        if (isLowEnd || window.innerWidth < 768) {
+          const video = document.querySelector('.g-video');
+          if (video) {
+            video.pause();
+            video.removeAttribute('autoplay');
+          }
+        }
       });
-      dotsWrap.appendChild(b);
-    });
-    updateDots();
-  }
-
-  function updateDots() {
-    Array.prototype.slice.call(dotsWrap.children).forEach(function (d, i) {
-      var dist = Math.abs(i - active);
-      d.classList.toggle('is-active', i === active);
-      d.classList.toggle('is-far', dist >= 2);
-    });
-  }
-
-  function setStageHeight() {
-    stage.style.minHeight = cards[active].offsetHeight + 'px';
-  }
-
-  function goTo(i, direction) {
-  if (cards.length < 2 || i === active || transitioning) return;
-
-  var outgoing = cards[active];
-  var incoming = cards[i];
-  var forward = direction !== 'backward';
-
-  active = i;
-  updateDots();
-
-  if (reducedMotion || typeof outgoing.animate !== 'function') {
-    outgoing.classList.remove('is-active', 'content-in');
-    incoming.classList.add('is-active', 'content-in');
-    setStageHeight();
-    resetAutoplay();
-    return;
-  }
-
-  transitioning = true;
-
-  var stageWidth = stage.offsetWidth || 1;
-  var exitX = forward ? stageWidth : -stageWidth;
-  var enterX = forward ? -stageWidth : stageWidth;
-
-  outgoing.style.transition = 'none';
-  incoming.style.transition = 'none';
-
-  outgoing.classList.remove('content-in'); // stop its content animations immediately
-  outgoing.style.visibility = 'visible';
-  outgoing.style.zIndex = '1';
-  outgoing.style.opacity = '1';
-  outgoing.style.transform = 'translateX(0px)';
-
-  // Position-only class, NOT content-in yet — content stays invisible/unanimated
-  // until the card actually reaches center.
-  incoming.classList.add('is-active');
-  incoming.style.visibility = 'visible';
-  incoming.style.zIndex = '2';
-  incoming.style.opacity = '0';
-  incoming.style.transform = 'translateX(' + enterX + 'px)';
-
-  void outgoing.offsetWidth;
-  void incoming.offsetWidth;
-
-  var outAnim = outgoing.animate(
-    [
-      { transform: 'translateX(0px)', opacity: 1 },
-      { transform: 'translateX(' + exitX + 'px)', opacity: 0 }
-    ],
-    { duration: DURATION, easing: EASING, fill: 'forwards' }
-  );
-
-  var inAnim = incoming.animate(
-    [
-      { transform: 'translateX(' + enterX + 'px)', opacity: 0 },
-      { transform: 'translateX(0px)', opacity: 1 }
-    ],
-    { duration: DURATION, easing: EASING, fill: 'forwards' }
-  );
-
-  setStageHeight();
-
-  var finished = 0;
-  function onDone() {
-    finished++;
-    if (finished < 2) return;
-
-    outgoing.classList.remove('is-active');
-    outgoing.style.visibility = '';
-    outgoing.style.zIndex = '';
-    outgoing.style.opacity = '';
-    outgoing.style.transform = '';
-
-    incoming.style.visibility = '';
-    incoming.style.zIndex = '';
-    incoming.style.opacity = '';
-    incoming.style.transform = '';
-
-    // NOW trigger the content pop-ins, only once the card has visibly arrived.
-    incoming.classList.add('content-in');
-
-    try { outAnim.cancel(); } catch (e) {}
-    try { inAnim.cancel(); } catch (e) {}
-
-    transitioning = false;
-  }
-
-  outAnim.onfinish = onDone;
-  inAnim.onfinish = onDone;
-
-  resetAutoplay();
-}
-
-  function resetAutoplay() {
-    clearInterval(timer);
-    if (cards.length > 1) {
-      timer = setInterval(function () {
-        goTo((active + 1) % cards.length, 'forward');
-      }, 6000);
-    }
-  }
-
-  buildDots();
-  requestAnimationFrame(setStageHeight);
-  window.addEventListener('resize', setStageHeight);
-  resetAutoplay();
-  stage.addEventListener('mouseenter', function () { clearInterval(timer); });
-  stage.addEventListener('mouseleave', resetAutoplay);
-})();
-</script>
-    {% if request.user.is_authenticated %}
-      {% if VAPID_PUBLIC_KEY %}
-        <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
-        <script src="{% static 'js/push_subscribe.js' %}" defer></script>
-        <script src="{% static 'js/notification_permission.js' %}" defer></script>
-        <script src="{% static 'js/sw_register.js' %}" defer></script>
-      {% endif %}
-    {% endif %}
+    </script>
+    
+    {% if request.user.is_authenticated %} {% if VAPID_PUBLIC_KEY %}
+    <div id="vapid-meta" data-key="{{ VAPID_PUBLIC_KEY }}"></div>
+    <script src="{% static 'js/push_subscribe.js' %}" defer></script>
+    <script src="{% static 'js/notification_permission.js' %}" defer></script>
+    <script src="{% static 'js/sw_register.js' %}" defer></script>
+    {% endif %} {% endif %}
   </body>
 </html>

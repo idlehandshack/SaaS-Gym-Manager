@@ -1,5 +1,5 @@
 /* ================================================================
-   EnterGYM — saas_home.css
+   EnterGYM — saas_home.css (OPTIMIZED FOR 60FPS)
    ================================================================ */
 
 
@@ -282,7 +282,7 @@ img, svg   { max-width: 100%; }
 
 
 /* ─────────────────────────────────────────────────────────────────
-   06  HERO
+   06  HERO (OPTIMIZED: Blurs Removed)
    ───────────────────────────────────────────────────────────────── */
 .hero-section {
   min-height: calc(100vh - var(--nav-h) - 36px);
@@ -295,7 +295,7 @@ img, svg   { max-width: 100%; }
   background-color: #050608;
 }
 
-/* Shape 1 — massive circle, top-right, bleeding off viewport */
+/* Shape 1 — massive circle, top-right */
 .hero-section::before {
   content: "";
   position: absolute;
@@ -312,13 +312,11 @@ img, svg   { max-width: 100%; }
     rgba(11,61,145,0.10) 55%,
     transparent 75%
   );
-  filter: blur(4px);
   animation: heroFloatA 26s ease-in-out infinite;
-  will-change: transform;
   pointer-events: none;
 }
 
-/* Shape 2 — giant circle, bottom-right, bleeding off viewport */
+/* Shape 2 — giant circle, bottom-right */
 .hero-section::after {
   content: "";
   position: absolute;
@@ -335,9 +333,7 @@ img, svg   { max-width: 100%; }
     rgba(11,61,145,0.08) 58%,
     transparent 76%
   );
-  filter: blur(4px);
   animation: heroFloatB 24s ease-in-out infinite;
-  will-change: transform;
   pointer-events: none;
 }
 
@@ -368,7 +364,7 @@ img, svg   { max-width: 100%; }
   pointer-events: none;
 }
 
-/* Smaller atmospheric glow, between the two big circles */
+/* Smaller atmospheric glow */
 .hero-inner::after {
   content: "";
   position: absolute;
@@ -385,7 +381,6 @@ img, svg   { max-width: 100%; }
     rgba(11,61,145,0.06) 45%,
     transparent 72%
   );
-  filter: blur(55px);
   pointer-events: none;
 }
 
@@ -415,7 +410,6 @@ img, svg   { max-width: 100%; }
     rgba(11,61,145,0.14) 42%,
     transparent 74%
   );
-  filter: blur(70px);
   pointer-events: none;
 }
 
@@ -470,10 +464,8 @@ img, svg   { max-width: 100%; }
     rgba(22,86,214,0.16) 45%,
     transparent 72%
   );
-  filter: blur(30px);
   pointer-events: none;
   animation: orbDrift1 22s ease-in-out infinite;
-  will-change: transform;
 }
 
 .hero-body::after {
@@ -491,10 +483,8 @@ img, svg   { max-width: 100%; }
     rgba(22,86,214,0.12) 48%,
     transparent 74%
   );
-  filter: blur(24px);
   pointer-events: none;
   animation: orbDrift2 17s ease-in-out infinite;
-  will-change: transform;
 }
 
 .hero-eyebrow::after {
@@ -512,10 +502,8 @@ img, svg   { max-width: 100%; }
     rgba(11,61,145,0.10) 50%,
     transparent 75%
   );
-  filter: blur(18px);
   pointer-events: none;
   animation: orbDrift3 26s ease-in-out infinite;
-  will-change: transform;
 }
 
 /* ── "Trusted by" logo marquee ── */
@@ -534,8 +522,6 @@ img, svg   { max-width: 100%; }
   font-weight: 800;
 }
 
-/* Fades the logo strip out at both edges instead of hard-cutting it,
-   so logos entering/leaving the loop don't pop in abruptly. */
 .hero-logo-marquee {
   overflow: hidden;
   width: 100%;
@@ -572,18 +558,16 @@ img, svg   { max-width: 100%; }
   filter: grayscale(0) brightness(1);
 }
 
-/* .hero-cta / .hero-cta-row2 are positioning anchors for the mobile
-   glow circles below (see the consolidated mobile media query). */
 .hero-cta,
 .hero-cta-row2 {
   position: relative;
 }
 
-/* ===== HERO ENTRANCE ANIMATION (runs once on page load/refresh) ===== */
+/* ===== HERO ENTRANCE ANIMATION (SMOOTHED) ===== */
 .hero-animate {
   opacity: 0;
-  transform: translateY(28px);
-  animation: heroSmoothFade 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform: translateY(20px);
+  animation: heroSmoothFade 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes heroSmoothFade {
   to {
@@ -592,24 +576,18 @@ img, svg   { max-width: 100%; }
   }
 }
 
-/* d2 — slide in from the left instead of up */
 .hero-animate.d2 {
-  transform: translateX(-40px);
+  transform: translateX(-20px);
   animation-name: heroFadeFromLeft;
   animation-duration: 0.8s;
 }
 @keyframes heroFadeFromLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-40px);
-  }
   to {
     opacity: 1;
     transform: translateX(0);
   }
 }
 
-/* d3 — plain smooth fade, no movement */
 .hero-animate.d3 {
   transform: none;
   animation-name: heroFadeOnly;
@@ -620,13 +598,14 @@ img, svg   { max-width: 100%; }
   to   { opacity: 1; }
 }
 
-/* Stagger — each element starts slightly after the previous one */
 .hero-animate.d1 { animation-delay: 0.05s; }
-.hero-animate.d2 { animation-delay: 0.35s; }
-.hero-animate.d3 { animation-delay: 0.85s; }
-.hero-animate.d4 { animation-delay: 1.35s; }
-.hero-animate.d5 { animation-delay: 1.60s; }
-.hero-animate.d6 { animation-delay: 1.75s; }
+.hero-animate.d2 { animation-delay: 0.3s; }
+.hero-animate.d3 { animation-delay: 0.6s; }
+.hero-animate.d4 { animation-delay: 0.9s; }
+.hero-animate.d5 { animation-delay: 1.1s; }
+.hero-animate.d6 { animation-delay: 1.2s; }
+
+
 /* ─────────────────────────────────────────────────────────────────
    18  GLOBE WIDGET
    ───────────────────────────────────────────────────────────────── */
@@ -725,7 +704,7 @@ img, svg   { max-width: 100%; }
 
 
 /* ─────────────────────────────────────────────────────────────────
-   07  PROBLEM SECTION
+   07  PROBLEM SECTION (OPTIMIZED)
    ───────────────────────────────────────────────────────────────── */
 .problem-section {
   padding: 80px 40px;
@@ -749,9 +728,7 @@ img, svg   { max-width: 100%; }
     rgba(11,61,145,0.10) 55%,
     transparent 75%
   );
-  filter: blur(4px);
   animation: heroFloatA 26s ease-in-out infinite;
-  will-change: transform;
   pointer-events: none;
 }
 .problem-section::after {
@@ -770,9 +747,7 @@ img, svg   { max-width: 100%; }
     rgba(11,61,145,0.08) 58%,
     transparent 76%
   );
-  filter: blur(4px);
   animation: heroFloatB 24s ease-in-out infinite;
-  will-change: transform;
   pointer-events: none;
 }
 .problem-inner  { max-width: 1200px; margin: 0 auto; }
@@ -834,6 +809,7 @@ img, svg   { max-width: 100%; }
 .problem-item div    { display: flex; flex-direction: column; gap: 3px; }
 .problem-item strong { font-size: 0.875rem; font-weight: 500; color: var(--text-hi); }
 .problem-item span   { font-size: 0.825rem; color: var(--text-lo); line-height: 1.55; }
+
 /* ─────────────────────────────────────────────────────────────────
    PROBLEM SECTION — STACKED COMPARISON CARDS
    ───────────────────────────────────────────────────────────────── */
@@ -864,9 +840,7 @@ img, svg   { max-width: 100%; }
   transition:
     transform 550ms cubic-bezier(0.22, 0.9, 0.17, 1),
     opacity 550ms cubic-bezier(0.22, 0.9, 0.17, 1),
-    box-shadow 550ms cubic-bezier(0.22, 0.9, 0.17, 1),
-    filter 550ms cubic-bezier(0.22, 0.9, 0.17, 1);
-  will-change: transform, opacity, box-shadow;
+    box-shadow 550ms cubic-bezier(0.22, 0.9, 0.17, 1);
 }
 
 .stack-card:focus-visible {
@@ -885,21 +859,18 @@ img, svg   { max-width: 100%; }
   z-index: 1;
   transform: translate(-50%, -50%) translateY(22px) scale(0.94);
   opacity: 0.75;
-  filter: blur(0.4px) brightness(0.85);
 }
 
 .problem-stack.is-swapped .stack-card--after {
   z-index: 2;
   transform: translate(-50%, -50%) translateY(0) scale(1);
   opacity: 1;
-  filter: none;
 }
 
 .problem-stack.is-swapped .stack-card--before {
   z-index: 1;
   transform: translate(-50%, -50%) translateY(22px) scale(0.94);
   opacity: 0.75;
-  filter: blur(0.4px) brightness(0.85);
 }
 
 .stack-card[data-state="back"] {
@@ -986,7 +957,7 @@ img, svg   { max-width: 100%; }
 
 
 /* ─────────────────────────────────────────────────────────────────
-   16  SHARED ANIMATIONS (keyframes used across sections above)
+   16  SHARED ANIMATIONS
    ───────────────────────────────────────────────────────────────── */
 @keyframes reveal-fallback {
   to { opacity: 1; transform: none; }
@@ -1033,8 +1004,7 @@ img, svg   { max-width: 100%; }
   50%      { opacity: 0.4; }
 }
 
-/* Mobile-only drift keyframes — bigger swing than the desktop
-   heroFloatA/B/C so movement reads against the smaller mobile circles. */
+/* Mobile-only drift keyframes */
 @keyframes heroFloatA-mobile {
   0%, 100% { transform: translate3d(0, 0, 0); }
   50%      { transform: translate3d(-45px, 55px, 0); }
@@ -1051,12 +1021,6 @@ img, svg   { max-width: 100%; }
 
 /* ─────────────────────────────────────────────────────────────────
    17  RESPONSIVE (single consolidated media query per breakpoint)
-
-   Note: the four mobile glow circles around the hero copy/CTA
-   (.hero-trusted::before/::after and .hero-cta::before /
-   .hero-cta-row2::after) previously duplicated the exact same
-   rule four times per breakpoint. They're combined below into one
-   rule per breakpoint, applied to all four selectors at once.
    ───────────────────────────────────────────────────────────────── */
 
 @media (max-width: 860px) {
@@ -1075,7 +1039,6 @@ img, svg   { max-width: 100%; }
     height: 620px;
     top: -220px;
     right: -160px;
-    filter: blur(3px);
     opacity: 0.85;
     animation: heroFloatA-mobile 16s ease-in-out infinite;
   }
@@ -1084,7 +1047,6 @@ img, svg   { max-width: 100%; }
     height: 520px;
     bottom: -180px;
     right: -110px;
-    filter: blur(3px);
     opacity: 0.75;
     animation: heroFloatB-mobile 14s ease-in-out infinite;
   }
@@ -1097,19 +1059,17 @@ img, svg   { max-width: 100%; }
     width: 320px;
     height: 320px;
     right: -90px;
-    filter: blur(30px);
     opacity: 0.85;
   }
   .hero-right::before {
     inset: -40px;
-    filter: blur(40px);
     opacity: 1;
   }
 
   /* -- Small orbs around heading/body/eyebrow -- */
-  .hero-heading::after { width: 130px; height: 130px; top: -20px; left: 55%; filter: blur(18px); opacity: 0.7; }
-  .hero-body::after    { width: 90px;  height: 90px;  bottom: -30px; left: 15%; filter: blur(14px); opacity: 0.6; }
-  .hero-eyebrow::after { width: 70px;  height: 70px;  top: -10px; left: 5%;  filter: blur(10px); opacity: 0.55; }
+  .hero-heading::after { width: 130px; height: 130px; top: -20px; left: 55%; opacity: 0.7; }
+  .hero-body::after    { width: 90px;  height: 90px;  bottom: -30px; left: 15%; opacity: 0.6; }
+  .hero-eyebrow::after { width: 70px;  height: 70px;  top: -10px; left: 5%; opacity: 0.55; }
 
   /* -- Extra glow circle behind the heading (top-left) -- */
   .hero-heading::before {
@@ -1128,15 +1088,12 @@ img, svg   { max-width: 100%; }
       rgba(11,61,145,0.08) 58%,
       transparent 76%
     );
-    filter: blur(3px);
     opacity: 0.8;
     pointer-events: none;
-    will-change: transform;
     animation: heroFloatC-mobile 17s ease-in-out infinite;
   }
 
-  /* -- Glow circles flanking the trusted-logos / CTA area --
-     (combined: same rule now shared by all four hosts) -- */
+  /* -- Glow circles flanking the trusted-logos / CTA area -- */
   .hero-trusted::before,
   .hero-cta::before {
     content: "";
@@ -1154,10 +1111,8 @@ img, svg   { max-width: 100%; }
       rgba(11,61,145,0.07) 60%,
       transparent 78%
     );
-    filter: blur(3px);
     opacity: 0.75;
     pointer-events: none;
-    will-change: transform;
     animation: heroFloatC-mobile 18s ease-in-out infinite;
   }
   .hero-trusted::after,
@@ -1177,10 +1132,8 @@ img, svg   { max-width: 100%; }
       rgba(11,61,145,0.07) 60%,
       transparent 78%
     );
-    filter: blur(3px);
     opacity: 0.72;
     pointer-events: none;
-    will-change: transform;
     animation: heroFloatA-mobile 16s ease-in-out infinite;
   }
 
@@ -1294,12 +1247,7 @@ img, svg   { max-width: 100%; }
     width: 230px;
     height: 230px;
     right: -60px;
-    filter: blur(26px);
     opacity: 0.8;
-  }
-  .hero-right::before {
-    inset: -28px;
-    filter: blur(32px);
   }
 
   .hero-heading::after { width: 95px; height: 95px; opacity: 0.6; }
@@ -1404,12 +1352,7 @@ img, svg   { max-width: 100%; }
     width: 180px;
     height: 180px;
     right: -48px;
-    filter: blur(22px);
     opacity: 0.78;
-  }
-  .hero-right::before {
-    inset: -20px;
-    filter: blur(26px);
   }
 
   .hero-heading::before {
@@ -1450,25 +1393,19 @@ img, svg   { max-width: 100%; }
   font-weight: 700;
 }
 .features-section { padding: 120px 40px; background: #0a0a0a;border-top: 1px solid var(--border); }
+
+/* Features background (OPTIMIZED) */
 .features-section::before {
   content: "";
   position: absolute;
   z-index: -3;
- width: 1400px;
+  width: 1400px;
   height: 1400px;
   top: -1260px;
   right: -255px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 40% 40%,
-    rgba(22,86,214,0.38) 0%,
-    rgba(11, 60, 145, 0.285) 32%,
-    rgba(11, 60, 145, 0.084) 55%,
-    transparent 70%
-  );
-  filter: blur(4px);
+  background: radial-gradient(circle at 40% 40%, rgba(22,86,214,0.38) 0%, rgba(11, 60, 145, 0.285) 32%, rgba(11, 60, 145, 0.084) 55%, transparent 70%);
   animation: heroFloatB 26s ease-in-out infinite;
-  will-change: transform;
   pointer-events: none;
 }
 @keyframes heroFloatB {
@@ -2075,9 +2012,6 @@ img, svg   { max-width: 100%; }
 
 /* =============================================================================
    MEMBER PORTAL — interactive phone showcase
-   Reuses the site's existing custom properties (--indigo, --bg, --surface,
-   --border, --text-hi, --text-lo, --radius, --display, --mono, --green).
-   Local fallbacks are provided so the section is safe to drop in standalone.
 ============================================================================= */
 
 .mp-section {
@@ -2121,6 +2055,7 @@ img, svg   { max-width: 100%; }
   color: var(--mp-indigo);
   margin-bottom: 18px;
 }
+
 /* ── Floating orbs (desktop) ── */
 .mp-heading::after {
   content: "";
@@ -2137,10 +2072,8 @@ img, svg   { max-width: 100%; }
     rgba(22,86,214,0.16) 45%,
     transparent 72%
   );
-  filter: blur(30px);
   pointer-events: none;
   animation: orbDrift1 22s ease-in-out infinite;
-  will-change: transform;
 }
 
 .mp-section::after {
@@ -2158,33 +2091,10 @@ img, svg   { max-width: 100%; }
     rgba(22,86,214,0.12) 48%,
     transparent 74%
   );
-  filter: blur(24px);
   pointer-events: none;
   animation: orbDrift2 17s ease-in-out infinite;
-  will-change: transform;
 }
 
-@keyframes orbDrift1 {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  20%  { transform: translate3d(120px, 80px, 0) scale(1.08); }
-  40%  { transform: translate3d(60px, 220px, 0) scale(0.95); }
-  60%  { transform: translate3d(-80px, 160px, 0) scale(1.05); }
-  80%  { transform: translate3d(-60px, 40px, 0) scale(0.98); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
-}
-@keyframes orbDrift2 {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  25%  { transform: translate3d(-70px, -50px, 0) scale(1.1); }
-  50%  { transform: translate3d(40px, -110px, 0) scale(0.92); }
-  75%  { transform: translate3d(90px, -30px, 0) scale(1.05); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
-}
-@keyframes orbDrift3 {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  30%  { transform: translate3d(60px, 100px, 0) scale(1.1); }
-  60%  { transform: translate3d(140px, 40px, 0) scale(0.9); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
-}
 .mp-heading {
   font-family: var(--mp-display);
   font-weight: 700;
@@ -2221,9 +2131,7 @@ img, svg   { max-width: 100%; }
 .mp-cta-btn svg    { transition: transform 0.2s ease; }
 .mp-cta-btn:hover svg { transform: translateX(3px); }
 
-/* Legend — hidden site-wide (kept in DOM for JS wiring / a11y fallback,
-   see member-portal.js). Hotspots are now driven purely by hovering /
-   tapping the phone rows themselves. */
+/* Legend — hidden site-wide */
 .mp-legend-caption,
 .mp-legend {
   display: none;
@@ -2280,16 +2188,12 @@ img, svg   { max-width: 100%; }
   stroke-linecap: round;
   opacity: 0;
   transition: opacity 0.3s ease;
-  /* stroke-dasharray/offset are set inline by JS from the measured path
-     length, then animated to 0 for a true draw-in (not a repeating dash) */
 }
 .mp-line-path.is-visible {
   opacity: 0.9;
   transition: opacity 0.3s ease, stroke-dashoffset 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Floating labels — absolutely positioned by JS (left/top computed per
-   hotspot); hidden until their hotspot is active */
 .mp-label {
   position: absolute;
   z-index: 4;
@@ -2317,7 +2221,6 @@ img, svg   { max-width: 100%; }
 .mp-label-title { font-size: 0.82rem; font-weight: 600; color: var(--mp-text-hi); }
 .mp-label-sub   { font-size: 0.72rem; color: var(--mp-text-lo); white-space: normal; }
 
-/* Glowing dot marker drawn at the connector's phone-side endpoint */
 .mp-dot {
   position: absolute;
   z-index: 4;
@@ -2341,10 +2244,6 @@ img, svg   { max-width: 100%; }
   100% { box-shadow: 0 0 0 0 rgba(255,90,31,0); }
 }
 
-/* Mobile floating tooltip (touch) — positioned above the tapped element.
-   Styled to match the desktop .mp-label card (title + sub) rather than a
-   single-line pill, since mobile now shows the same phone size/detail
-   level as desktop. */
 .mp-tooltip {
   position: absolute;
   z-index: 6;
@@ -2568,8 +2467,6 @@ img, svg   { max-width: 100%; }
   inset: -60px;
   z-index: 1;
   background: radial-gradient(closest-side, var(--mp-indigo-glow), transparent 70%);
-  filter: blur(30px);
-  opacity: 0.55;
   pointer-events: none;
   animation: mp-glow-breathe 5s ease-in-out infinite;
 }
@@ -2761,8 +2658,6 @@ img, svg   { max-width: 100%; }
 @media (max-width: 980px) and (min-width: 641px) {
   .mp-layout { grid-template-columns: 1fr; gap: 48px; }
   .mp-stage  { min-height: auto; }
-  /* Tablet: keep connectors but simplify — labels default to a single
-     side so lines stay short and predictable at this width. */
   .mp-label { max-width: 170px; }
 }
 
@@ -2770,21 +2665,10 @@ img, svg   { max-width: 100%; }
   .mp-section { padding: 90px 20px; }
   .mp-layout { grid-template-columns: 1fr; gap: 40px; }
   .mp-stage  { min-height: auto; }
-  .mp-tooltip-title{
-    font-size: 0.7rem;
-  }
-  .mp-tooltip-sub{
-    font-size: 0.5rem;
-  }
-  /* Phone now matches desktop size instead of shrinking */
+  .mp-tooltip-title{ font-size: 0.7rem; }
+  .mp-tooltip-sub{ font-size: 0.5rem; }
   .mp-phone { width: 300px; height: 610px; }
-
-  /* Connector lines/orbiting labels stay hidden on mobile (no room for
-     the sweeping line); tapping a row instead shows .mp-tooltip, which
-     is styled like the desktop .mp-label (title + sub) — see above. */
-  .mp-lines,
-  .mp-label,
-  .mp-dot { display: none; }
+  .mp-lines, .mp-label, .mp-dot { display: none; }
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -2980,7 +2864,6 @@ img, svg   { max-width: 100%; }
   width: 140px;
   height: 28px;
   background: radial-gradient(ellipse, rgba(91,95,255,0.45) 0%, transparent 70%);
-  filter: blur(6px);
   animation: gwsGlow 3.4s ease-in-out infinite;
 }
 .gws-phone {
@@ -3198,6 +3081,37 @@ img, svg   { max-width: 100%; }
   .gws-phone { width: 128px; height: 262px; }
   .gws-phone-screen { width: 110px; height: 234px; }
   .gws-website-body { min-height: 170px; }
+  .gw-heading {
+    font-size: clamp(1.5rem, 6vw, 1.9rem);
+    line-height: 1.16;
+    margin-bottom: 12px;
+  }
+  .gws-intro .gw-sub {
+    font-size: 0.86rem;
+    line-height: 1.6;
+  }
+  .gws-preview-btn {
+    padding: 12px;
+    font-size: 0.82rem;
+  }
+  .gws-live {
+    font-size: 0.58rem;
+  }
+  .gws-url {
+    font-size: 0.62rem;
+    padding: 3px 10px;
+  }
+  .gws-feature-list li {
+    font-size: 0.8rem;
+    padding-left: 18px;
+  }
+  .gws-bottom-note strong {
+    font-size: 0.88rem;
+  }
+  .gws-bottom-note p {
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
 }
 .gws-callout {
   position: absolute;
@@ -3251,7 +3165,6 @@ img, svg   { max-width: 100%; }
   border: 1.5px solid var(--green);
   border-radius: 8px;
   box-shadow: 0 0 12px rgba(16,185,129,0.5);
-  /* size/position this to sit over the relevant area of the phone screen */
   width: 70%;
   height: 14%;
   top: 60%;
@@ -3292,7 +3205,6 @@ img, svg   { max-width: 100%; }
 .gws-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(40px);
   pointer-events: none;
   z-index: 0;
   opacity: 0.55;
@@ -3402,9 +3314,6 @@ img, svg   { max-width: 100%; }
 .mj-inner .gw-heading { margin: 14px 0; }
 .mj-inner .gw-sub { margin: 0 auto; }
 
-/* In normal document flow — never covers the real nav, never needs
-   body-scroll locking. Scroll hijack only ever runs once expanded
-   (see JS), and body scroll is explicitly locked for that state. */
 .mj-stage {
   position: relative;
   width: 100%;
@@ -3419,9 +3328,6 @@ img, svg   { max-width: 100%; }
   transition: border-radius 0.35s ease;
 }
 
-/* Backdrop shown behind the expanded stage. The stage itself no longer
-   covers the full viewport — it becomes a large centered "screen" that
-   covers ~70% of the viewport, so the dimmed page stays visible around it. */
 .mj-backdrop {
   position: fixed; inset: 0; z-index: 899;
   background: rgba(3,3,6,.78);
@@ -3432,8 +3338,6 @@ img, svg   { max-width: 100%; }
 }
 .mj-backdrop.mj-show { opacity: 1; visibility: visible; pointer-events: auto; }
 
-/* Expanded state — a large 70%-of-viewport "screen", entered only on
-   explicit user click, always exitable via the close button or Escape. */
 .mj-stage.mj-expanded {
   position: fixed;
   top: 50%; left: 50%;
@@ -3534,8 +3438,7 @@ img, svg   { max-width: 100%; }
   mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, black 30%, transparent 85%);
 }
 
-/* Step counter + progress bar — always centered at the top of the stage,
-   independent of the close button in the corner. */
+/* Step counter + progress bar */
 .mj-stage-head {
   position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
   z-index: 20;
@@ -3575,9 +3478,6 @@ img, svg   { max-width: 100%; }
 }
 .mj-scene.active { opacity: 1; pointer-events: auto; visibility: visible; }
 
-/* Wrap holds the skip control (top, right-aligned, directly above the
-   mockup's browser bar), the mockup itself, and the caption — stacked so
-   the mockup can grow to fill the available height of the stage. */
 .mj-mockup-wrap {
   position: relative;
   display: flex;
@@ -3607,8 +3507,6 @@ img, svg   { max-width: 100%; }
 .mj-mdot.r { background: #ff5f57; } .mj-mdot.y { background: #febc2e; } .mj-mdot.g { background: #28c840; }
 .mj-murl { flex: 1; margin-left: 10px; background: #1b1b1b; border: 1px solid rgba(255,255,255,.08); border-radius: 999px; padding: 5px 14px; font-size: 12px; color: #9a9a9a; font-family: var(--mono); }
 
-/* Video mockup screen — fills all remaining space in the mockup and the
-   video itself is stretched/cropped to fully cover that space. */
 .mj-mscreen { position: relative; flex: 1 1 auto; min-height: 0; background: #0d0d0d; overflow: hidden; }
 .mj-mscreen video {
   position: absolute; inset: 0;
@@ -3693,9 +3591,6 @@ img, svg   { max-width: 100%; }
 }
 /* ─────────────────────────────────────────────────────────────────
    TESTIMONIALS — directional slide carousel
-   Uses the site's existing tokens: --border --indigo --green --yellow
-   --text-hi --text-mid --text-lo --text-faint --mono
-   (add --indigo:#5b5fff to :root if it isn't already defined)
    ───────────────────────────────────────────────────────────────── */
 
 .testimonials-section { padding: 120px 40px; border-top: 1px solid var(--border); position: relative; overflow: hidden; }
@@ -3736,8 +3631,6 @@ img, svg   { max-width: 100%; }
   width: 100%;
   max-width: 960px;
   min-height: 480px;
-  /* no overflow:hidden here — logo/quote-icon poke outside the card box.
-     Page-level horizontal scroll is already blocked by .testimonials-section */
 }
 
 .testi-card {
@@ -3782,6 +3675,7 @@ img, svg   { max-width: 100%; }
   opacity: .9;
 }
 
+/* Optimize testi-card glow (no heavy blur) */
 .testi-card::after {
   content: "";
   position: absolute;
@@ -3791,13 +3685,9 @@ img, svg   { max-width: 100%; }
   right: -100px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255,255,255,.18), transparent 70%);
-  filter: blur(35px);
   pointer-events: none;
 }
 
-/* Resting / centered state — position + glow ONLY.
-   Content pop-in animations are driven separately by .content-in,
-   which JS adds only after the slide-in transform has fully finished. */
 .testi-card.is-active {
   opacity: 1;
   visibility: visible;
@@ -3855,7 +3745,6 @@ img, svg   { max-width: 100%; }
 .testi-stars { color: var(--yellow); font-size: 0.95rem; letter-spacing: 2px; display: inline-flex; gap: 1px; }
 .testi-stars .ts-star { display: inline-block; opacity: 0; transform: scale(0.3) translateY(4px); }
 
-/* Content pop-in — triggered by JS only once the slide-in transform is done */
 .testi-card.content-in .testi-stars .ts-star { animation: star-pop 0.45s cubic-bezier(.34,1.56,.64,1) forwards; }
 .testi-card.content-in .testi-stars .ts-star:nth-child(1) { animation-delay: 0.05s; }
 .testi-card.content-in .testi-stars .ts-star:nth-child(2) { animation-delay: 0.12s; }
@@ -3868,8 +3757,6 @@ img, svg   { max-width: 100%; }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* Quote wrapper: on desktop just holds the text; on mobile also holds
-   the clamp + "See more" toggle (see media query below). */
 .testi-quote  { position: relative; overflow: hidden; font-size: 1rem; color: var(--text-mid); line-height: 1.75; margin: 0; }
 .testi-quote-text p { margin: 0 0 14px; }
 .testi-quote-text p:last-child { margin-bottom: 0; }
@@ -3886,8 +3773,6 @@ img, svg   { max-width: 100%; }
 }
 @keyframes quote-shimmer { from { left: -60%; } to { left: 130%; } }
 
-/* "See more" toggle — hidden on desktop, shown only inside the mobile
-   media query below where the clamp is actually active. */
 .testi-quote-toggle { display: none; }
 
 /* ── right column: logo, gym name, city ──────────────────────────── */
@@ -3896,7 +3781,7 @@ img, svg   { max-width: 100%; }
   width: 190px;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;   /* accent square hugs the right side */
+  align-items: flex-end;
   gap: 26px;
   position: relative;
 }
@@ -4061,54 +3946,7 @@ img, svg   { max-width: 100%; }
   }
 }
 /* ─────────────────────────────────────────────────────────────────
-   19  MEMBER PORTAL SECTION
-   ───────────────────────────────────────────────────────────────── */
-.mp-section {
-  padding: 120px 40px;
-  border-top: 1px solid var(--border);
-  position: relative;
-  overflow: hidden;
-}
-.mp-section::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 55% 50% at 80% 50%, rgba(91,95,255,0.07) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 40% at 10% 60%, rgba(16,185,129,0.04) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.mp-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  position: relative;
-}
-
-/* ── Header ── */
-.mp-header { max-width: 600px; margin-bottom: 72px; }
-
-.mp-heading {
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: clamp(2rem, 3.5vw, 3rem);
-  line-height: 1.08;
-  letter-spacing: -0.03em;
-  color: var(--text-hi);
-  margin-bottom: 14px;
-}
-.mp-heading em { font-style: normal; color: var(--indigo); }
-
-.mp-sub {
-  font-size: 1.0625rem;
-  color: var(--text-lo);
-  line-height: 1.65;
-  max-width: 52ch;
-}
-/* ─────────────────────────────────────────────────────────────────
    13  PRICING (redesigned — Launchpad / Fixed Subscription / Chain Pro)
-   Add this ONE line to your existing :root block (02 DESIGN TOKENS):
-     --indigo-light: #8b8fff;   ← lighter tint of --indigo, used for gradients
    ───────────────────────────────────────────────────────────────── */
   .pricing{
     background:
@@ -4200,13 +4038,31 @@ img, svg   { max-width: 100%; }
   /* Single centered card (Launchpad / Chain Pro) */
   .p-card{
     max-width:460px; margin:0 auto;
-    background:var(--surface);
+    background:rgba(30,30,46,0.55);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
     border:1px solid var(--border);
     border-radius:var(--radius);
     padding:40px 36px;
     position:relative;
     overflow:hidden;
     box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+    isolation: isolate;
+  }
+  /* Orb behind the card (optimized, no blur) */
+  .p-card::after{
+    content:"";
+    position:absolute;
+    inset:-20%;
+    z-index:-1;
+    pointer-events:none;
+    background:
+      radial-gradient(circle 70px at 20% 20%, var(--indigo-light), transparent 70%),
+      radial-gradient(circle 55px at 85% 30%, #ff8fd6, transparent 70%),
+      radial-gradient(circle 60px at 50% 85%, #6ff5e0, transparent 70%);
+    background-repeat:no-repeat;
+    opacity: 0.5;
+    animation: orbDrift 12s ease-in-out infinite;
   }
   .p-card::before{
     content:"";
@@ -4262,13 +4118,34 @@ img, svg   { max-width: 100%; }
   /* Three-card grid (Fixed Subscription) */
   .p-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
   .p-grid-card{
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    background:rgba(30,30,46,0.55); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border:1px solid var(--border); border-radius:var(--radius);
     padding:30px 26px; display:flex; flex-direction:column; position:relative; overflow:hidden;
+    isolation: isolate;
+  }
+  /* Orbs for grid cards (optimized, no blur) */
+  .p-grid-card::after{
+    content:"";
+    position:absolute;
+    inset:-20%;
+    z-index:-1;
+    pointer-events:none;
+    background:
+      radial-gradient(circle 70px at 20% 20%, var(--indigo-light), transparent 70%),
+      radial-gradient(circle 55px at 85% 30%, #ff8fd6, transparent 70%),
+      radial-gradient(circle 60px at 50% 85%, #6ff5e0, transparent 70%);
+    background-repeat:no-repeat;
+    opacity: 0.5;
+    animation: orbDrift 12s ease-in-out infinite;
   }
   .p-grid-card--popular{
     border-color:var(--indigo);
     box-shadow: 0 30px 70px rgba(47,143,255,0.14), 0 0 0 1px var(--indigo-glow);
     transform: translateY(-8px);
+  }
+  .p-grid-card--popular::after{
+    opacity:0.65;
+    animation-duration:16s;
   }
   .p-grid-card--popular::before{
     content:""; position:absolute; top:-1px; left:8%; right:8%; height:1px;
@@ -4290,15 +4167,6 @@ img, svg   { max-width: 100%; }
     .p-tabs{ max-width:100%; align-items: center; }
     .p-tab__sub{ display:none; }
 
-    /* ---------------------------------------------------------------
-       MOBILE PRICE CAROUSEL (Fixed Subscription only)
-       3 cards sit in a single row. Center = enlarged, full detail.
-       Sides = scaled-down "peeking" tabs, price only. Tap or swipe a
-       side card and it becomes center. This CSS only *reads* the
-       .p-slot-left / .p-slot-center / .p-slot-right classes your
-       existing JS (section 5b) already assigns — no JS/HTML changes
-       needed.
-    ------------------------------------------------------------------ */
     #panel-fixed .p-grid{
       display:block;
       position:relative;
@@ -4446,52 +4314,43 @@ img, svg   { max-width: 100%; }
     #panel-fixed .p-grid-card.p-slot-left{ left:-2%; }
     #panel-fixed .p-grid-card.p-slot-right{ left:102%; }
   }
-  /* ─────────────────────────────────────────────────────────────────
-   14  GLASS CARD + FLOATING ORB LAYER
-   Add this ONE line to your :root block if not already present:
-     --indigo-glow: rgba(92,95,255,0.35);
-   Applies to .p-card (Launchpad/Chain Pro) and .p-grid-card (Fixed Sub)
-   ───────────────────────────────────────────────────────────────── */
+  @media (max-width: 400px){
+    .pricing{ padding:80px 14px 60px; }
+    .p-head{ margin-bottom:0; }
+    .p-body{ font-size:0.95rem; }
 
-.p-card,
-.p-grid-card{
-  background: rgba(30,30,46,0.55);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  isolation:isolate; /* keeps the orb stacking contained to this card */
-}
+    .p-tabs{ padding:5px; margin:44px auto 48px; }
+    .p-tab{ padding:11px 6px; }
+    .p-tab__name{ font-size:0.78rem; }
 
-/* orb layer — sits above the glass bg, behind real content (z-index:-1
-   relative to the card's own stacking context, see note below) */
-.p-card::after,
-.p-grid-card::after{
-  content:"";
-  position:absolute;
-  inset:-20%;
-  z-index:-1;
-  filter:blur(30px);
-  opacity:0.5;
-  pointer-events:none;
-  background:
-    radial-gradient(circle 70px at 20% 20%, var(--indigo-light), transparent 70%),
-    radial-gradient(circle 55px at 85% 30%, #ff8fd6, transparent 70%),
-    radial-gradient(circle 60px at 50% 85%, #6ff5e0, transparent 70%);
-  background-repeat:no-repeat;
-  animation: orbDrift 12s ease-in-out infinite;
-}
+    .p-card{ padding:26px 18px; }
 
-/* popular card gets a slightly stronger glow + slower drift, to feel premium */
-.p-grid-card--popular::after{
-  opacity:0.65;
-  animation-duration:16s;
-}
+    #panel-fixed .p-grid{ min-height:420px; }
 
-@keyframes orbDrift{
-  0%   { background-position: 0% 0%, 100% 0%, 50% 100%; }
-  33%  { background-position: 45% 55%, 55% 20%, 20% 80%; }
-  66%  { background-position: 15% 85%, 95% 70%, 75% 25%; }
-  100% { background-position: 0% 0%, 100% 0%, 50% 100%; }
-}
+    #panel-fixed .p-grid-card.p-slot-center{
+      width:88%;
+      padding:24px 16px;
+    }
+    #panel-fixed .p-grid-card__price{ font-size:2.1rem; }
+    #panel-fixed .p-grid-card .p-checklist{ gap:10px; margin-bottom:18px; }
+    #panel-fixed .p-grid-card .p-check-item{ font-size:0.8rem; }
+    #panel-fixed .p-btn{ padding:13px 18px; font-size:0.86rem; }
+
+    #panel-fixed .p-grid-card.p-slot-left,
+    #panel-fixed .p-grid-card.p-slot-right{
+      width:30%;
+      height:78%;
+      padding:14px 6px;
+    }
+    #panel-fixed .p-grid-card.p-slot-left{ left:4%; }
+    #panel-fixed .p-grid-card.p-slot-right{ left:96%; }
+
+    #panel-fixed .p-slot-left .p-badge,
+    #panel-fixed .p-slot-right .p-badge{ font-size:1.1rem; }
+    #panel-fixed .p-slot-left .p-grid-card__price,
+    #panel-fixed .p-slot-right .p-grid-card__price{ font-size:1rem; }
+  }
+
 /* ─────────────────────────────────────────────────────────────────
    21  FAQ SECTION — redesigned with search + smooth accordion
    ───────────────────────────────────────────────────────────────── */
@@ -4752,9 +4611,6 @@ img, svg   { max-width: 100%; }
   .faq-cta-title { font-size: 0.95rem; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .faq-icon, .faq-q, .faq-item, .faq-a-wrap, .faq-a, .faq-search-input { transition: none; }
-}
 /* ─────────────────────────────────────────────────────────────────
    14  CONTACT
    ───────────────────────────────────────────────────────────────── */
@@ -4812,275 +4668,6 @@ img, svg   { max-width: 100%; }
   transform: translateY(-1px);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SCREENSHOT WEBSITE CAROUSEL (swc-*)
-   Self-contained module — safe to paste alongside existing CSS.
-   ═══════════════════════════════════════════════════════════════ */
-.swc-browser {
-  --swc-bg:      #0f172a;
-  --swc-glass:   rgba(20, 20, 30, 0.7);
-  --swc-border:  rgba(255, 255, 255, 0.08);
-  --swc-glow:    rgba(59, 130, 246, 0.35);
-  --swc-blue:    #3b82f6;
-  --swc-radius:  22px;
-  --swc-ease:    cubic-bezier(.22, .61, .36, 1);
-  --swc-dur:     800ms;
-
-  position: relative;
-  border-radius: var(--swc-radius);
-  background: var(--swc-bg);
-  border: 1px solid var(--swc-border);
-  overflow: hidden;
-  box-shadow:
-    0 35px 80px rgba(0,0,0,0.45),
-    0 0 0 1px rgba(255,255,255,0.04),
-    0 0 60px var(--swc-glow);
-  isolation: isolate;
-}
-
-/* ── Browser chrome bar ───────────────────────────── */
-.swc-browser-bar {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  background: var(--swc-glass);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border-bottom: 1px solid var(--swc-border);
-  position: relative;
-  z-index: 3;
-}
-.swc-traffic { display: flex; gap: 7px; flex-shrink: 0; }
-.swc-dot { width: 11px; height: 11px; border-radius: 50%; display: block; }
-.swc-dot--red    { background: #ff5f57; }
-.swc-dot--yellow { background: #febc2e; }
-.swc-dot--green  { background: #28c840; }
-
-.swc-url-bar {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  max-width: 320px;
-  margin: 0 auto;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid var(--swc-border);
-  border-radius: 100px;
-  padding: 5px 14px;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 0.72rem;
-  color: rgba(255,255,255,0.55);
-  letter-spacing: 0.02em;
-}
-.swc-url-bar svg { color: rgba(255,255,255,0.35); flex-shrink: 0; }
-
-.swc-live-badge {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #34d399;
-  background: rgba(16,185,129,0.12);
-  border: 1px solid rgba(16,185,129,0.25);
-  padding: 4px 10px;
-  border-radius: 100px;
-}
-.swc-live-pulse {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 6px #34d399;
-  animation: swc-pulse 2s ease-in-out infinite;
-}
-
-/* ── Viewport / track ─────────────────────────────── */
-.swc-viewport {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  perspective: 1400px;
-  touch-action: pan-y;
-  cursor: grab;
-}
-.swc-viewport:active { cursor: grabbing; }
-
-.swc-track {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-/* Each slide sits stacked; JS toggles state classes */
-.swc-slide {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  will-change: transform, opacity;
-  transform: translate3d(100%, 0, 0) scale(0.92);
-  opacity: 0;
-  z-index: 1;
-  transition:
-    transform var(--swc-dur) var(--swc-ease),
-    opacity   var(--swc-dur) var(--swc-ease);
-  backface-visibility: hidden;
-}
-
-/* Active slide: full scale, centered, sharp */
-.swc-slide.is-active {
-  transform: translate3d(0, 0, 0) scale(1);
-  opacity: 1;
-  z-index: 3;
-}
-
-/* Previous slide (queued to the left) */
-.swc-slide.is-prev {
-  transform: translate3d(-100%, 0, 0) scale(0.92);
-  opacity: 0.55;
-  z-index: 2;
-}
-
-/* Next slide (queued to the right) */
-.swc-slide.is-next {
-  transform: translate3d(100%, 0, 0) scale(0.92);
-  opacity: 0.55;
-  z-index: 2;
-}
-
-/* Slides not in prev/active/next stay hidden off to a side, no transition churn */
-.swc-slide.is-hidden {
-  opacity: 0;
-  z-index: 0;
-}
-
-.swc-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top center;
-  display: block;
-  will-change: transform;
-  transform: scale(1.03);
-  transition: transform 6s var(--swc-ease);
-}
-/* subtle continuous zoom while a slide is active — "Ken Burns" feel */
-.swc-slide.is-active .swc-img {
-  transform: scale(1.08);
-}
-
-/* Dragging state: kill transitions for 1:1 tracking */
-.swc-browser.is-dragging .swc-slide {
-  transition: none;
-}
-
-/* ── Arrows ────────────────────────────────────────── */
-.swc-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: #fff;
-  cursor: pointer;
-  z-index: 5;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-}
-.swc-arrow:hover {
-  background: var(--swc-blue);
-  border-color: var(--swc-blue);
-  transform: translateY(-50%) scale(1.08);
-  box-shadow: 0 0 24px var(--swc-glow);
-}
-.swc-arrow:active { transform: translateY(-50%) scale(0.96); }
-.swc-arrow:focus-visible { outline: 2px solid var(--swc-blue); outline-offset: 2px; }
-.swc-arrow--prev { left: 16px; }
-.swc-arrow--next { right: 16px; }
-
-/* ── Dots ──────────────────────────────────────────── */
-.swc-dots {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 16px 0;
-  background: var(--swc-glass);
-  border-top: 1px solid var(--swc-border);
-  position: relative;
-  z-index: 3;
-}
-.swc-dot-btn {
-  width: 6px;
-  height: 6px;
-  border-radius: 100px;
-  background: rgba(255,255,255,0.25);
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: width var(--swc-dur) var(--swc-ease), background 0.25s ease;
-}
-.swc-dot-btn:hover { background: rgba(255,255,255,0.5); }
-.swc-dot-btn.is-active {
-  width: 22px;
-  background: linear-gradient(90deg, var(--swc-blue), #60a5fa);
-}
-.swc-dot-btn:focus-visible { outline: 2px solid var(--swc-blue); outline-offset: 2px; }
-
-/* ── Responsive ────────────────────────────────────── */
-@media (max-width: 860px) {
-  .swc-viewport { aspect-ratio: 16 / 11; }
-  .swc-url-bar { max-width: 220px; }
-}
-
-@media (max-width: 640px) {
-  .swc-browser-bar { padding: 10px 12px; gap: 10px; }
-  .swc-live-badge { display: none; } /* reduce clutter on small screens */
-  .swc-url-bar { font-size: 0.65rem; max-width: 170px; }
-  .swc-viewport { aspect-ratio: 4 / 3; }
-
-  /* Hide adjacent-slide 3D scaling effect on mobile per spec — only active slide shown */
-  .swc-slide.is-prev,
-  .swc-slide.is-next { opacity: 0; }
-
-  .swc-arrow { width: 36px; height: 36px; }
-  .swc-arrow--prev { left: 8px; }
-  .swc-arrow--next { right: 8px; }
-  .swc-dots { padding: 12px 0; gap: 6px; }
-}
-
-@keyframes swc-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-/* Respect reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .swc-slide,
-  .swc-img,
-  .swc-arrow,
-  .swc-dot-btn {
-    transition-duration: 0.01ms !important;
-    animation: none !important;
-  }
-}
 /* ─────────────────────────────────────────────────────────────────
    15  FOOTER
    ───────────────────────────────────────────────────────────────── */
@@ -5113,7 +4700,7 @@ img, svg   { max-width: 100%; }
 .footer-uptime { display: flex; align-items: center; gap: 7px; margin-top: 24px; font-family: var(--mono); font-size: 0.62rem; color: var(--green); letter-spacing: 0.04em; }
 .uptime-dot    { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); flex-shrink: 0; animation: badge-pulse 2s ease-in-out infinite; }
 
-/* ── Social icons (desktop: small, inline under tagline) ── */
+/* ── Social icons ── */
 .footer-social {
   display: flex;
   align-items: center;
@@ -5138,13 +4725,7 @@ img, svg   { max-width: 100%; }
   background: rgba(255,255,255,0.04);
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   RESPONSIVE — FOOTER
-   Desktop grid (4 columns) stays exactly as-is above this point.
-   Below the breakpoint, restyle to match the single-column
-   reference layout: bigger bold logo, tagline, social icon row,
-   then stacked sections with bold white headers.
-   ───────────────────────────────────────────────────────────────── */
+/* ── Responsive Footer ── */
 @media (max-width: 860px) {
   .site-footer { padding: 56px 24px 32px; }
 
@@ -5154,7 +4735,7 @@ img, svg   { max-width: 100%; }
     padding-bottom: 32px;
   }
 
-  .footer-col--brand { padding-right: 0; }
+  .footer-col--brand { padding-right: 0; display: flex; flex-direction: column; order: -1; }
 
   .footer-brand-link { margin-bottom: 18px; }
   .brand-mark { width: 32px; height: 32px; }
@@ -5176,11 +4757,7 @@ img, svg   { max-width: 100%; }
     border-radius: 10px;
   }
 
-  /* Copy line moves below the stacked sections on mobile,
-     matching the reference's bottom-of-stack placement */
-  .footer-col--brand { order: -1; }
   .footer-copy { order: 99; margin-top: 8px; }
-  .footer-col--brand { display: flex; flex-direction: column; }
 
   .footer-col-head {
     font-family: var(--display);
@@ -5201,197 +4778,4 @@ img, svg   { max-width: 100%; }
 @media (max-width: 480px) {
   .site-footer { padding: 48px 20px 28px; }
   .footer-inner--grid { gap: 32px; }
-}
-
-
-/* ─────────────────────────────────────────────────────────────────
-   16  ANIMATIONS
-   ───────────────────────────────────────────────────────────────── */
-@keyframes ticker-scroll {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@keyframes badge-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.45; }
-}
-@keyframes feed-slide-in {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes ring-pulse {
-  0%, 100% { transform: scale(1);    opacity: 0.4; }
-  50%       { transform: scale(1.06); opacity: 0.9; }
-}
-@keyframes scan-sweep {
-  0%   { top: 8px;  opacity: 0; }
-  10%  {            opacity: 1; }
-  90%  {            opacity: 1; }
-  100% { top: 92px; opacity: 0; }
-}
-@keyframes radius-pulse {
-  0%, 100% { transform: translate(-50%,-50%) scale(1);    opacity: 1; }
-  50%       { transform: translate(-50%,-50%) scale(1.05); opacity: 0.7; }
-}
-
-
-/* ─────────────────────────────────────────────────────────────────
-   17  RESPONSIVE
-   ───────────────────────────────────────────────────────────────── */
-
-/* ── ≤ 1100px — tighten horizontal padding ── */
-@media (max-width: 1100px) {
-  .site-nav,
-  .hero-section,
-  .problem-section,
-  .features-section,
-  .how-section,
-  .faceid-section,
-  .testimonials-section,
-  .contact-section,
-  .site-footer,
-  .s5-pricing,
-  .s6-calc {
-    padding-left: 28px;
-    padding-right: 28px;
-  }
-}
-
-/* ── ≤ 960px — stack two-column grids ── */
-@media (max-width: 960px) {
-  /* Hero */
-  .hero-section { min-height: auto; padding-top: 56px; padding-bottom: 56px; }
-  .hero-inner   { grid-template-columns: 1fr; gap: 48px; }
-  .hero-right   { max-width: 560px; margin: 0 auto; }
-
-  /* Problem */
-  .problem-grid { grid-template-columns: 1fr; }
-
-  /* Features */
-  .feat-row        { grid-template-columns: 1fr; gap: 40px; }
-  .feat-row--flip  { direction: ltr; }
-  .feat-visual     { max-width: 480px; margin: 0 auto; width: 100%; }
-  .feat-mini-row   { grid-template-columns: 1fr; }
-  .feat-mini       { border-right: none; border-bottom: 1px solid var(--border); padding: 36px 24px; }
-  .feat-mini:last-child { border-bottom: none; }
-  .features-header { margin-bottom: 56px; }
-
-  /* How */
-  .how-steps     { flex-direction: column; gap: 16px; }
-  .how-connector { flex-direction: row; padding: 0; margin-top: 0; }
-  .how-line      { width: 24px; height: 1px; }
-
-  /* Face-ID */
-  .faceid-inner { grid-template-columns: 1fr; gap: 48px; }
-  .faceid-card  { max-width: 340px; margin: 0 auto; }
-
-  /* Testimonials */
-  .testi-grid { grid-template-columns: 1fr; }
-
-  /* Contact */
-  .contact-inner { grid-template-columns: 1fr; gap: 48px; }
-  .contact-right { max-width: 480px; margin: 0 auto; width: 100%; }
-
-  /* Pricing grid */
-  .s5-grid { grid-template-columns: 1fr; gap: 16px; }
-
-  /* Calculator */
-  .s6-layout { grid-template-columns: 1fr; }
-  .s6-result-empty { padding: 32px 20px; }
-
-  /* Footer */
-  .footer-inner--grid { grid-template-columns: 1fr 1fr; gap: 32px; }
-  .footer-col--brand  { grid-column: 1 / -1; padding-right: 0; }
-}
-
-/* ── ≤ 780px — collapse nav links ── */
-@media (max-width: 780px) {
-  .nav-links    { display: none; }
-  .nav-actions  { margin-left: auto; }
-}
-
-/* ── ≤ 640px — phones ── */
-@media (max-width: 640px) {
-  /* Nav */
-  .site-nav { padding: 10px 16px; gap: 10px 16px; }
-  .brand-name { font-size: 0.95rem; }
-  .nav-actions { gap: 6px; }
-  .nav-actions .btn-ghost,
-  .nav-actions .btn-solid { padding: 8px 12px; font-size: 0.8rem; }
-
-  /* Ticker */
-  .ticker-rail { height: 32px; }
-  .tick-item   { font-size: 0.65rem; padding: 0 22px; }
-
-  /* Shared section padding */
-  .hero-section,
-  .problem-section,
-  .features-section,
-  .how-section,
-  .faceid-section,
-  .testimonials-section,
-  .contact-section,
-  .site-footer,
-  .s5-pricing,
-  .s6-calc {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  /* Hero */
-  .hero-heading { font-size: clamp(1.9rem, 8vw, 2.6rem); margin-bottom: 16px; }
-  .hero-body    { font-size: 0.95rem; margin-bottom: 28px; }
-  .hero-cta     { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 36px; }
-  .hero-cta a   { justify-content: center; width: 100%; }
-  .proof-item   { padding-right: 18px; min-width: 30%; }
-  .proof-num    { font-size: 1.4rem; }
-  .proof-divider { display: none; }
-
-  /* Problem */
-  .problem-col { padding: 28px 20px; }
-
-  /* Features */
-  .features-header h2 { font-size: clamp(1.7rem, 7vw, 2.2rem); }
-  .features-header    { margin-bottom: 40px; }
-  .feat-row           { gap: 28px; padding: 40px 0; }
-  .feat-text h3       { font-size: 25px;font-weight: 600; }
-  .feat-mini          { padding: 30px 18px; }
-  .map-bg             { height: 130px; }
-
-  /* How */
-  .how-step { padding: 28px 24px; }
-
-  /* Face-ID */
-  .faceid-bullets li { flex-direction: column; gap: 4px; }
-
-  /* Testimonials */
-  .testi-card { padding: 24px; }
-
-  /* Pricing */
-  .s5-tabs { grid-template-columns: repeat(2, 1fr); max-width: 360px; }
-  .s5-card { padding: 24px 20px; }
-  .s5-card__price-amount { font-size: 1.85rem; }
-
-  /* Calculator */
-  .s6-input-panel  { padding: 22px 18px; }
-  .s6-savings-grid { grid-template-columns: 1fr 1fr; }
-  .s6-result-cta.is-visible { flex-direction: column; }
-
-  /* Contact */
-  .contact-left h2 { font-size: clamp(1.6rem, 7vw, 2rem); }
-  .contact-card    { padding: 24px; }
-  .cc-row          { flex-wrap: wrap; }
-
-  /* Footer */
-  .footer-inner--grid { grid-template-columns: 1fr 1fr; gap: 24px; }
-  .footer-col--brand  { grid-column: 1 / -1; }
-}
-
-/* ── ≤ 400px — very small phones ── */
-@media (max-width: 400px) {
-  .nav-actions .btn-ghost,
-  .nav-actions .btn-solid { padding: 7px 10px; font-size: 0.74rem; }
-  .hero-heading  { font-size: 1.7rem; }
-  .proof-item    { min-width: 45%; }
-  .feed-tag      { min-width: 0; padding: 2px 5px; }
 }
