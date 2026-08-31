@@ -28,16 +28,23 @@ function onEnter(elements, callback, options) {
 
 
 /* -----------------------------------------------------------------------------
-   2. NAV SCROLL
+   NAV SCROLL EFFECT (Cross-Browser & Mobile Safe)
 ----------------------------------------------------------------------------- */
-(function () {
+document.addEventListener("DOMContentLoaded", function() {
   var nav = document.getElementById("siteNav");
   if (!nav) return;
 
   window.addEventListener("scroll", function () {
-    nav.classList.toggle("is-scrolled", window.scrollY > 8);
+    // This checks 3 different values to ensure it works on all mobile devices
+    var scrolled = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    
+    if (scrolled > 10) {
+      nav.classList.add("is-scrolled");
+    } else {
+      nav.classList.remove("is-scrolled");
+    }
   }, { passive: true });
-})();
+});
 
 
 /* -----------------------------------------------------------------------------
@@ -536,53 +543,6 @@ function onEnter(elements, callback, options) {
         track.classList.add("is-ready");
       }
     }, 150);
-  });
-})();
-/* -----------------------------------------------------------------------------
-   10. FEATURE CARDS → DETAIL MODAL
------------------------------------------------------------------------------ */
-(function () {
-  var grid  = document.getElementById("featGrid");
-  var modal = document.getElementById("featModal");
-  if (!grid || !modal) return;
-
-  var overlay   = document.getElementById("featModalOverlay");
-  var closeBtn  = document.getElementById("featModalClose");
-  var indexEl   = document.getElementById("featModalIndex");
-  var titleEl   = document.getElementById("featModalTitle");
-  var bodyEl    = document.getElementById("featModalBody");
-  var lastFocus = null;
-
-  function openModal(card) {
-    var index  = card.querySelector(".feat-index");
-    var title  = card.querySelector("h3");
-    var detail = card.querySelector(".feat-detail");
-    if (!title || !detail) return;
-
-    indexEl.textContent = index ? index.textContent : "";
-    titleEl.innerHTML    = title.innerHTML;
-    bodyEl.innerHTML     = detail.innerHTML;
-
-    lastFocus = document.activeElement;
-    modal.hidden = false;
-    document.body.style.overflow = "hidden";
-    closeBtn.focus();
-  }
-
-  function closeModal() {
-    modal.hidden = true;
-    document.body.style.overflow = "";
-    if (lastFocus) lastFocus.focus();
-  }
-
-  Array.from(grid.querySelectorAll(".feat-card")).forEach(function (card) {
-    card.addEventListener("click", function () { openModal(card); });
-  });
-
-  overlay.addEventListener("click", closeModal);
-  closeBtn.addEventListener("click", closeModal);
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && !modal.hidden) closeModal();
   });
 })();
 (function () {
@@ -1405,4 +1365,22 @@ function onEnter(elements, callback, options) {
     var b = tabBtns.filter(function (x) { return x.dataset.journey === activeKey; })[0];
     moveIndicator(b);
   });
+})();
+/* -----------------------------------------------------------------------------
+   FLOATING CONTACT BUTTON SCROLL LOGIC
+----------------------------------------------------------------------------- */
+(function() {
+  var contactBtn = document.getElementById('floatingContactBtn');
+  if (!contactBtn) return;
+
+  // Amount of pixels to scroll before the button appears
+  var SCROLL_THRESHOLD = 400; 
+
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > SCROLL_THRESHOLD) {
+      contactBtn.classList.add('is-visible');
+    } else {
+      contactBtn.classList.remove('is-visible');
+    }
+  }, { passive: true }); // passive:true improves scroll performance
 })();

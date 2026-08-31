@@ -360,7 +360,6 @@
                   </li>
                 </ul>
               </div>
-              <span class="stack-hint">Click to compare</span>
             </article>
 
             <!-- AFTER CARD -->
@@ -491,473 +490,179 @@
       </div>
     </section>
 
-    <section class="features-section" id="features">
-      <div class="wave-bg">
-        <canvas id="waveCanvas" class="wave-canvas" aria-hidden="true"></canvas>
+    <!-- ═══════════════════════════════════════════════════════════════
+     PREMIUM BENTO FEATURES SECTION
+     ═══════════════════════════════════════════════════════════════ -->
+    <section class="features-premium" id="features">
+      <!-- Glowing Background Orbs -->
+      <div class="fp-background">
+        <div class="fp-glow-orb orb-1"></div>
+        <div class="fp-glow-orb orb-2"></div>
+        <div class="fp-grid-lines"></div>
       </div>
-
-      <div class="features-inner">
-        <div class="features-header">
-          <p class="feat-eyebrow-pill">What's inside</p>
-          <h2>Thirteen systems.<br />One platform.</h2>
-          <p class="section-sub">
-            Each module was built for gym operators, not adapted from generic
-            software.
+    
+      <div class="fp-inner">
+        <div class="fp-header">
+          <span class="fp-badge">What's inside</span>
+          <h2 class="fp-title">Thirteen systems.<br /><span>One platform.</span></h2>
+          <p class="fp-subtitle">
+            Each module was built for gym operators, not adapted from generic software.
           </p>
         </div>
-
-        <div class="feat-grid" id="featGrid">
-          <button class="feat-card" type="button" data-feat="01">
-            <span class="feat-index">01</span>
-            <h3 class="head-color">Powerful <span>Admin Dashboard</span></h3>
-            <p>
-              Run your entire gym from one place with real-time insights, member
-              management, payments, attendance, reports, and automated
-              reminders.
-            </p>
-            <span class="feat-card-cta">View details →</span>
-            <div class="feat-detail" hidden>
-              <div class="dashboard-features">
-                <div class="feature-item">Live Business Analytics</div>
-                <div class="feature-item">Member & Membership Management</div>
-                <div class="feature-item">Payments & Revenue Tracking</div>
-                <div class="feature-item">Smart Expiry & Payment Reminders</div>
+    
+        <!-- NEW BENTO GRID -->
+        <div class="bento-grid">
+    
+          <!-- Card 01 -->
+          <div class="bento-card col-span-4 bg-dark" tabindex="0" role="button" aria-pressed="false" aria-label="Powerful Admin Dashboard, tap to view image">
+            <div class="bento-content">
+              <div class="bento-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
               </div>
-              <div class="feat-visual feat-visual--members">
-                <div class="fv-card">
-                  <img
-                    src="{% static 'images/features/Dashboard.webp' %}"
-                    alt="Member management dashboard"
-                    class="fv-image"
-                  />
-                </div>
-              </div>
+              <h3>Powerful Admin Dashboard</h3>
+              <p>Run your entire gym from one place with real-time insights, member management, payments, attendance, reports, and automated reminders.</p>
             </div>
-          </button>
-
-          <button class="feat-card" type="button" data-feat="02">
-            <span class="feat-index">02</span>
-            <h3 class="head-color">Smart <span>Payment Reminders</span></h3>
-            <p>
-              Never miss a membership payment again. Members receive automatic
-              reminders before their plan expires through PWA, browser, and
-              mobile app notifications.
-            </p>
-            <span class="feat-card-cta">View details →</span>
-            <div class="feat-detail" hidden>
-              <div class="dashboard-features">
-                <div class="feature-item">
-                  Automatic reminders 7, 4, 2 & 1 day before expiry
-                </div>
-                <div class="feature-item">
-                  Instant notifications on PWA, Browser & Mobile App
-                </div>
-                <div class="feature-item">
-                  Due amount, expiry date & membership details included
-                </div>
-              </div>
-              <div class="feat-visual feat-visual--face">
-                <div class="fv-card">
-                  <img
-                    src="{% static 'images/features/due.webp' %}"
-                    alt="Payment reminders"
-                    class="fv-image"
-                  />
-                </div>
-              </div>
+            <div class="bento-reveal">
+              <img src="{% static 'images/features/Dashboard.webp' %}" alt="Powerful Admin Dashboard" loading="lazy">
+              <div class="bento-reveal-overlay"></div>
             </div>
-          </button>
-
-          <button class="feat-card" type="button" data-feat="03">
-            <span class="feat-index">03</span>
-            <h3 class="head-color">GPS-Based <span>Geo Attendance</span></h3>
-            <p>
-              Ensure members can check in only when they're physically present
-              at your gym. EnterGYM uses secure GPS geofencing to prevent fake
-              check-ins.
-            </p>
-            <span class="feat-card-cta">View details →</span>
-            <div class="feat-detail" hidden>
-              <div class="dashboard-features">
-                <div class="feature-item">
-                  Custom Geo-Fence with configurable radius
-                </div>
-                <div class="feature-item">
-                  Attendance only within the authorized gym location
-                </div>
-                <div class="feature-item">
-                  Prevents fake check-ins using location verification
-                </div>
-                <div class="feature-item">
-                  Real-time attendance history with location & timestamp
-                </div>
-              </div>
-              <div class="feat-visual">
-                <div class="fv-card">
-                  <img
-                    src="{% static 'images/features/Attendance.webp' %}"
-                    alt="GPS attendance map"
-                    class="fv-image"
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-
-          <button class="feat-card" type="button" data-feat="04">
-            <span class="feat-index">04</span>
-            <h3 class="head-color">Smart <span>Member Management</span></h3>
-            <p>
-              Manage every member from a single dashboard. Track memberships,
-              payments, attendance, and activity while keeping member
-              information organized and secure.
-            </p>
-            <span class="feat-card-cta">View details →</span>
-            <div class="feat-detail" hidden>
-              <div class="dashboard-features">
-                <div class="feature-item">
-                  Create and manage unlimited member profiles
-                </div>
-                <div class="feature-item">
-                  Assign, renew & upgrade membership plans
-                </div>
-                <div class="feature-item">
-                  Track payments, dues & attendance history
-                </div>
-              </div>
-              <div class="feat-visual feat-visual--face">
-                <div class="fv-card">
-                  <img
-                    src="{% static 'images/features/Member.webp' %}"
-                    alt="Member management"
-                    class="fv-image"
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-
-          <button class="feat-card" type="button" data-feat="05">
-            <span class="feat-index">05</span>
-            <h3 class="head-color">Push <span>Notifications</span></h3>
-            <p>
-              Keep members engaged with automated push notifications for
-              renewals, payment reminders and attendance alerts from one
-              dashboard.
-            </p>
-            <span class="feat-card-cta">View details →</span>
-            <div class="feat-detail" hidden>
-              <div class="dashboard-features">
-                <div class="feature-item">
-                  Automatically remind members before their plans expire.
-                </div>
-                <div class="feature-item">
-                  Instantly notify the receptionist and gym staff whenever a new
-                  member joins.
-                </div>
-                <div class="feature-item">
-                  Send reminders for pending and upcoming membership payments.
-                </div>
-              </div>
-              <div class="feat-visual">
-                <div class="fv-card">
-                  <img
-                    src="{% static 'images/features/Notification.webp' %}"
-                    alt="Push notifications"
-                    class="fv-image"
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-
-          <button class="feat-card" type="button" data-feat="06">
-            <span class="feat-index">06</span>
-            <h3 class="head-color">Fully Isolated <span>GYM</span></h3>
-            <p>
-              EnterGYM keeps every branch isolated. Members, trainers,
-              attendance, payments, inventory, and reports belong only to their
-              respective gym.
-            </p>
-            <span class="feat-card-cta">View details →</span>
-            <div class="feat-detail" hidden>
-              <div class="dashboard-features">
-                <div class="feature-item">
-                  Complete data isolation for every gym
-                </div>
-                <div class="feature-item">
-                  Separate members, staff, attendance, and payments
-                </div>
-                <div class="feature-item">
-                  Independent reports and analytics for each location
-                </div>
-                <div class="feature-item">
-                  Secure multi-tenant architecture with zero data mixing
-                </div>
-              </div>
-              <div class="feat-visual feat-visual--face">
-                <div class="fv-card">
-                  <img
-                    src="{% static 'images/features/multi.webp' %}"
-                    alt="Multi-branch isolation"
-                    class="fv-image"
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-
-          <button class="feat-card" type="button" data-feat="07">
-            <span class="feat-index">07</span>
-            <h3 class="head-color">GST <span>Billing & Reports</span></h3>
-            <p>
-              Simplify GST compliance with automated billing and one-click Excel
-              exports for your Chartered Accountant.
-            </p>
-            <span class="feat-card-cta">View details →</span>
-            <div class="feat-detail" hidden>
-              <div class="dashboard-features">
-                <div class="feature-item">
-                  Generate GST-ready Excel reports instantly for return
-                  preparation.
-                </div>
-                <div class="feature-item">
-                  CGST, SGST, and IGST are calculated automatically on every
-                  invoice.
-                </div>
-                <div class="feature-item">
-                  Create clean, tax-compliant invoices with your gym branding.
-                </div>
-                <div class="feature-item">
-                  No more copying invoice data into spreadsheets manually.
-                </div>
-              </div>
-              <div class="feat-visual">
-                <div class="fv-card">
-                  <img
-                    src="{% static 'images/features/gst.webp' %}"
-                    alt="GST billing"
-                    class="fv-image"
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-          <button class="feat-card" type="button" data-feat="08">
-            <span class="feat-index">08</span>
-            <h3 class="head-color">
-              Download Monthly <span>Gym Reports</span>
-            </h3>
-            <p>
-              Get comprehensive monthly reports covering revenue, memberships,
-              collections, attendance, and business trends.
-            </p>
-            <span class="feat-card-cta">View details →</span>
-            <div class="feat-detail" hidden>
-              <div class="dashboard-features">
-                <div class="feature-item">
-                  View total revenue, monthly earnings, and business growth.
-                </div>
-                <div class="feature-item">
-                  Track collected payments, outstanding dues, and payment
-                  methods.
-                </div>
-                <div class="feature-item">
-                  See new enrollments, active members, expired memberships, and
-                  renewals.
-                </div>
-                <div class="feature-item">
-                  Download professional Excel reports with a single click.
-                </div>
-              </div>
-              <div class="feat-visual feat-visual--face">
-                <div class="fv-card">
-                  <img
-                    src="{% static 'images/features/monthly.webp' %}"
-                    alt="Monthly reports"
-                    class="fv-image"
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-          <button class="feat-card" type="button" data-feat="09">
-            <span class="feat-index">09</span>
-            <h3 class="head-color">AI Face Attendance <span>System</span></h3>
-            <p>
-              Members simply look at the camera, and attendance is recorded
-              instantly — no cards, fingerprints, QR codes, or manual entry
-              required.
-            </p>
-            <span class="feat-card-cta">View details →</span>
-            <div class="feat-detail" hidden>
-              <div class="dashboard-features">
-                <div class="feature-item">
-                  Attendance is marked in less than a second for a smooth member
-                  experience.
-                </div>
-                <div class="feature-item">
-                  Advanced AI face recognition ensures reliable and accurate
-                  identification.
-                </div>
-                <div class="feature-item">
-                  Designed specifically for high-traffic gym environments with
-                  fast member check-ins.
-                </div>
-                <div class="feature-item">
-                  Attendance is instantly available in your dashboard and
-                  reports.
-                </div>
-              </div>
-              <div class="feature-note">
-                <strong>⚠ Simple Setup:</strong>
-                <p>
-                  AI Face Attendance requires a
-                  <strong>standard laptop or desktop</strong> for server
-                  activation. <strong>Webcam included by EnterGYM</strong>. No
-                  additional biometric hardware needed.
-                  <a class="guide" href="/help/desktop/">Quick Guide</a>
-                </p>
-              </div>
-              <div class="feature-note--cta-row">
-                <a href="/aiattendance/" class="btn-primary aiattend-more-btn">
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M8 1.5l1.8 3.8 4.2.6-3 3 .7 4.2L8 11.2l-3.7 1.9.7-4.2-3-3 4.2-.6L8 1.5z"
-                      stroke="currentColor"
-                      stroke-width="1.3"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                  More Details
-                </a>
-              </div>
-              <div class="feat-visual">
-                <div class="fv-card">
-                  <img
-                    src="{% static 'images/features/face.webp' %}"
-                    alt="AI face attendance"
-                    class="fv-image"
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-          <button class="feat-card" type="button" data-feat="10">
-            <span class="feat-index">10</span>
-            <h3 class="head-color">Online Supplement <span>Store</span></h3>
-            <p>
-              Sell protein, creatine, pre-workout, and other supplements
-              directly from your gym.
-            </p>
-            <span class="feat-card-cta">View details →</span>
-            <div class="feat-detail" hidden>
-              <div class="dashboard-features">
-                <div class="feature-item">
-                  Create your own branded online store in minutes.
-                </div>
-                <div class="feature-item">
-                  Manage products, categories, stock, and pricing from one
-                  dashboard.
-                </div>
-                <div class="feature-item">
-                  Increase your gym's monthly revenue with zero extra staff.
-                </div>
-                <div class="feature-item">
-                  Mobile-friendly shopping experience for customers.
-                </div>
-              </div>
-              <div class="feat-visual feat-visual--face">
-                <div class="fv-card">
-                  <img
-                    src="{% static 'images/features/store.webp' %}"
-                    alt="Supplement store"
-                    class="fv-image"
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-        </div>
-        <!-- ── Feature detail modal (shared, filled by JS) ── -->
-        <div class="feat-modal" id="featModal" hidden>
-          <div class="feat-modal-overlay" id="featModalOverlay"></div>
-          <div
-            class="feat-modal-panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="featModalTitle"
-          >
-            <button
-              class="feat-modal-close"
-              id="featModalClose"
-              aria-label="Close"
-            >
-              ✕
-            </button>
-            <div class="feat-modal-head">
-              <span class="feat-modal-index" id="featModalIndex"></span>
-              <h3 class="head-color" id="featModalTitle"></h3>
-            </div>
-            <div class="feat-modal-body" id="featModalBody"></div>
           </div>
-        </div>
-        <div class="feat-extra-grid">
-          <div class="feat-extra-card">
-            <div class="fe-visual">
-              <img
-                src="{% static 'images/features/attendancerecord.webp' %}"
-                alt="Attendance records dashboard"
-                class="fe-image"
-                loading="lazy"
-              />
+    
+          <!-- Card 02 -->
+          <div class="bento-card col-span-8 bg-dark" tabindex="0" role="button" aria-pressed="false" aria-label="Smart Payment Reminders, tap to view image">
+            <div class="bento-content">
+              <div class="bento-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <h3>Smart Payment Reminders</h3>
+              <p>Never miss a membership payment again. Automated notifications before plans expire.</p>
             </div>
-            <h4 class="fe-title head-color">
-              <span>Attendance Tracking</span>
-            </h4>
-            <p class="fe-desc">
-              Complete attendance history with trainer-wise breakdown, due
-              alerts, and exportable reports — all in one view.
-            </p>
-          </div>
-          <div class="feat-extra-card">
-            <div class="fe-visual">
-              <img
-                src="{% static 'images/features/duepayment.webp' %}"
-                alt="Due payments and WhatsApp reminders"
-                class="fe-image"
-                loading="lazy"
-              />
+            <div class="bento-reveal">
+              <img src="{% static 'images/features/Payment.webp' %}" alt="Smart Payment Reminders" loading="lazy">
+              <div class="bento-reveal-overlay"></div>
             </div>
-            <h4 class="fe-title head-color">
-              <span>Due Payments &amp; WhatsApp</span>
-            </h4>
-            <p class="fe-desc">
-              See overdue and upcoming dues at a glance, then send payment
-              reminders straight to WhatsApp in one click.
-            </p>
           </div>
-          <div class="feat-extra-card">
-            <div class="fe-visual">
-              <img
-                src="{% static 'images/features/membershipplan.webp' %}"
-                alt="Membership plans and discounts"
-                class="fe-image"
-                loading="lazy"
-              />
+    
+          <!-- Card 03 -->
+          <div class="bento-card col-span-4 bg-dark" tabindex="0" role="button" aria-pressed="false" aria-label="GPS-Based Geo Attendance, tap to view image">
+            <div class="bento-content">
+              <div class="bento-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <h3>GPS-Based Geo Attendance</h3>
+              <p>Ensure members check in only when physically present. Secure geofencing prevents fake check-ins.</p>
             </div>
-            <h4 class="fe-title head-color"><span>Membership Plans</span></h4>
-            <p class="fe-desc">
-              Set up tiered plans with custom pricing and discounts, so members
-              can pick a plan and join in seconds.
-            </p>
+            <div class="bento-reveal">
+              <img src="{% static 'images/features/Attendance.webp' %}" alt="GPS-Based Geo Attendance" loading="lazy">
+              <div class="bento-reveal-overlay"></div>
+            </div>
           </div>
+    
+          <!-- Card 04 -->
+          <div class="bento-card col-span-4 bg-dark" tabindex="0" role="button" aria-pressed="false" aria-label="Smart Member Management, tap to view image">
+            <div class="bento-content">
+              <div class="bento-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <h3>Smart Member Management</h3>
+              <p>Manage every member from a single dashboard. Track memberships, payments, and attendance.</p>
+            </div>
+            <div class="bento-reveal">
+              <img src="{% static 'images/features/Member.webp' %}" alt="Smart Member Management" loading="lazy">
+              <div class="bento-reveal-overlay"></div>
+            </div>
+          </div>
+    
+          <!-- Card 05 -->
+          <div class="bento-card col-span-4 bg-dark" tabindex="0" role="button" aria-pressed="false" aria-label="Push Notifications, tap to view image">
+            <div class="bento-content">
+              <div class="bento-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <h3>Push Notifications</h3>
+              <p>Keep members engaged with automated alerts for renewals, payment reminders and attendance.</p>
+            </div>
+            <div class="bento-reveal">
+              <img src="{% static 'images/features/Notification.webp' %}" alt="Push Notifications" loading="lazy">
+              <div class="bento-reveal-overlay"></div>
+            </div>
+          </div>
+    
+          <!-- Card 06 -->
+          <div class="bento-card col-span-8 bg-dark" tabindex="0" role="button" aria-pressed="false" aria-label="Fully Isolated GYM Ecosystem, tap to view image">
+            <div class="bento-content">
+              <div class="bento-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+              </div>
+              <h3>Fully Isolated GYM Ecosystem</h3>
+              <p>EnterGYM keeps every branch isolated. Members, trainers, attendance, payments, inventory, and reports belong only to their respective gym.</p>
+            </div>
+            <div class="bento-reveal">
+              <img src="{% static 'images/features/multi.webp' %}" alt="Fully Isolated GYM Ecosystem" loading="lazy">
+              <div class="bento-reveal-overlay"></div>
+            </div>
+          </div>
+    
+          <!-- Card 07 -->
+          <div class="bento-card col-span-4 bg-dark" tabindex="0" role="button" aria-pressed="false" aria-label="GST Billing and Reports, tap to view image">
+            <div class="bento-content">
+              <div class="bento-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </div>
+              <h3>GST Billing & Reports</h3>
+              <p>Simplify compliance with automated billing and one-click Excel exports for your CA.</p>
+            </div>
+            <div class="bento-reveal">
+              <img src="{% static 'images/features/gst.webp' %}" alt="GST Billing and Reports" loading="lazy">
+              <div class="bento-reveal-overlay"></div>
+            </div>
+          </div>
+    
+          <!-- Card 08 -->
+          <div class="bento-card col-span-4 bg-dark" tabindex="0" role="button" aria-pressed="false" aria-label="Download Monthly Reports, tap to view image">
+            <div class="bento-content">
+              <div class="bento-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+              </div>
+              <h3>Download Monthly Reports</h3>
+              <p>Get comprehensive monthly reports covering revenue, collections, attendance, and trends.</p>
+            </div>
+            <div class="bento-reveal">
+              <img src="{% static 'images/features/monthly.webp' %}" alt="Download Monthly Reports" loading="lazy">
+              <div class="bento-reveal-overlay"></div>
+            </div>
+          </div>
+    
+          <!-- Card 09 -->
+          <div class="bento-card col-span-8 row-span-2 bg-gradient" tabindex="0" role="button" aria-pressed="false" aria-label="AI Face Attendance System, tap to view image">
+            <div class="bento-content">
+              <div class="bento-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M19 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z"/></svg>
+              </div>
+              <h3>AI Face Attendance System</h3>
+              <p>Members simply look at the camera, and attendance is recorded instantly — no cards, fingerprints, QR codes, or manual entry required.</p>
+            </div>
+            <div class="bento-reveal">
+              <img src="{% static 'images/features/face.webp' %}" alt="AI Face Attendance System" loading="lazy">
+              <div class="bento-reveal-overlay"></div>
+            </div>
+          </div>
+    
+          <!-- Card 10 -->
+          <div class="bento-card col-span-8 bg-dark" tabindex="0" role="button" aria-pressed="false" aria-label="Online Supplement Store, tap to view image">
+            <div class="bento-content">
+              <div class="bento-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              </div>
+              <h3>Online Supplement Store</h3>
+              <p>Sell protein, creatine, and gear directly from your gym. Manage inventory easily.</p>
+            </div>
+            <div class="bento-reveal">
+              <img src="{% static 'images/features/store.webp' %}" alt="Online Supplement Store" loading="lazy">
+              <div class="bento-reveal-overlay"></div>
+            </div>
+          </div>
+    
         </div>
       </div>
     </section>
@@ -2245,87 +1950,24 @@
           </p>
 
           <div class="footer-social">
-            <a
-              href="https://www.instagram.com/entergym.in/"
-              class="footer-social-btn"
-              aria-label="Instagram"
-              target="_blank"
-              rel="noopener"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <rect
-                  x="3"
-                  y="3"
-                  width="18"
-                  height="18"
-                  rx="5"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                />
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="4"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                />
+            <a href="https://www.instagram.com/entergym.in/" class="footer-social-btn" aria-label="Instagram" target="_blank" rel="noopener">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.8" />
+                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
                 <circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" />
               </svg>
             </a>
-            <a
-              href="#"
-              class="footer-social-btn"
-              aria-label="Facebook"
-              target="_blank"
-              rel="noopener"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M15 8.5h2V5.2h-2.4c-2.3 0-3.8 1.5-3.8 3.9V11H8.5v3.2h2.3V21h3.3v-6.8h2.3l.4-3.2h-2.7V9.4c0-.6.3-.9 1-.9z"
-                  fill="currentColor"
-                />
+            <a href="#" class="footer-social-btn" aria-label="Facebook" target="_blank" rel="noopener">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 8.5h2V5.2h-2.4c-2.3 0-3.8 1.5-3.8 3.9V11H8.5v3.2h2.3V21h3.3v-6.8h2.3l.4-3.2h-2.7V9.4c0-.6.3-.9 1-.9z" fill="currentColor" />
               </svg>
             </a>
-            <a
-              href="#"
-              class="footer-social-btn"
-              aria-label="X (Twitter)"
-              target="_blank"
-              rel="noopener"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M4 4l16 16M20 4L4 20"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                />
+            <a href="#" class="footer-social-btn" aria-label="X (Twitter)" target="_blank" rel="noopener">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 4l16 16M20 4L4 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
               </svg>
             </a>
           </div>
-
-          <p class="footer-copy">
-            © 2026 EnterGYM by
-            <a href="https://wa.me/917000032565">Arrow SoftTech</a>.
-          </p>
         </div>
 
         <div class="footer-col">
@@ -2348,6 +1990,7 @@
           </ul>
         </div>
 
+        <!-- Legal & Uptime combined into one column -->
         <div class="footer-col">
           <p class="footer-col-head">Legal</p>
           <ul class="footer-links">
@@ -2355,16 +1998,19 @@
             <li><a href="/termandcondition/">Terms of Service</a></li>
             <li><a href="/refundpolicy/">Refund Policy</a></li>
           </ul>
-        </div>
-        <div class="footer-col">
-          <div class="footer-uptime">
+          
+          <div class="footer-uptime" style="margin-top: 32px;">
             <span class="uptime-dot"></span>
-            <span
-              >All systems normal <br />
-              · 99.98% uptime</span
-            >
+            <span>All systems normal <br /> · 99.98% uptime</span>
           </div>
         </div>
+      </div>
+      
+      <!-- Footer Copyright Bar -->
+      <div class="footer-bottom">
+        <p class="footer-copy">
+          © 2026 EnterGYM by <a href="https://wa.me/917000032565">Arrow SoftTech</a>.
+        </p>
       </div>
     </footer>
     <script src="{% static 'js/live_stats.js' %}" defer></script>
@@ -2470,189 +2116,6 @@
     <script src="{% static 'vendor/bootstrap/lenis.min.js' %}" defer></script>
     <script src="{% static 'js/saas_home.js' %}" defer></script>
     <script nonce="{{ request.csp_nonce }}">
-      (function () {
-        function initWave() {
-          try {
-            const canvas = document.getElementById("waveCanvas");
-            if (!canvas) return;
-            const ctx = canvas.getContext("2d");
-            if (!ctx) return;
-            const section = canvas.closest(".features-section");
-            if (!section) return;
-
-            let width = 0,
-              height = 0;
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
-            let raf = null;
-            let visible = true;
-            let layers = getLayers();
-
-            function getLayers() {
-              const isMobile = window.innerWidth <= 640;
-              const b = isMobile ? [0.05, 0.08, 0.11] : [0.14, 0.2, 0.28];
-
-              return [
-                {
-                  color: "rgba(22, 86, 214, 0.55)",
-                  base: b[0],
-                  amp: [26, 14, 8],
-                  freq: [0.0032, 0.0071, 0.013],
-                  speed: [0.008, -0.006, 0.01],
-                },
-                {
-                  color: "rgba(14, 61, 45, 0.35)",
-                  base: b[1],
-                  amp: [34, 18, 15],
-                  freq: [0.0022, 0.0058, 0.011],
-                  speed: [-0.006, 0.007, -0.008],
-                },
-              ];
-            }
-
-            function resize() {
-              const rect = section.getBoundingClientRect();
-              width = Math.max(Math.round(rect.width), 1);
-              height = Math.max(Math.round(rect.height), 1);
-              canvas.width = Math.round(width * dpr);
-              canvas.height = Math.round(height * dpr);
-              canvas.style.width = width + "px";
-              canvas.style.height = height + "px";
-              ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-              layers = getLayers();
-            }
-
-            let t = 0;
-
-            function drawLayer(layer) {
-              const { color, base, amp, freq, speed } = layer;
-              const baseY = height * base;
-
-              ctx.beginPath();
-              ctx.moveTo(0, height);
-              ctx.lineTo(0, baseY);
-
-              const step = 6;
-              for (let x = 0; x <= width; x += step) {
-                const y =
-                  baseY +
-                  Math.sin(x * freq[0] + t * speed[0]) * amp[0] +
-                  Math.sin(x * freq[1] + t * speed[1]) * amp[1] +
-                  Math.sin(x * freq[2] + t * speed[2]) * amp[2];
-                ctx.lineTo(x, y);
-              }
-
-              ctx.lineTo(width, height);
-              ctx.closePath();
-
-              ctx.fillStyle = color;
-              ctx.shadowColor = "rgba(22,86,214,0.25)";
-              ctx.shadowBlur = 40;
-              ctx.fill();
-              ctx.shadowBlur = 0;
-            }
-
-            function frame() {
-              if (!visible) {
-                raf = null;
-                return;
-              }
-              ctx.clearRect(0, 0, width, height);
-              layers.forEach(drawLayer);
-              t += 1;
-              raf = requestAnimationFrame(frame);
-            }
-
-            function start() {
-              if (!raf) {
-                raf = requestAnimationFrame(frame);
-              }
-            }
-            function stop() {
-              if (raf) {
-                cancelAnimationFrame(raf);
-                raf = null;
-              }
-            }
-            function forceRestart() {
-              if (!visible) return;
-              raf = null;
-              start();
-            }
-
-            let resizeTimer = null;
-            function debouncedResize() {
-              clearTimeout(resizeTimer);
-              resizeTimer = setTimeout(resize, 120);
-            }
-
-            if ("ResizeObserver" in window) {
-              const ro = new ResizeObserver(() => debouncedResize());
-              ro.observe(section);
-            }
-
-            window.addEventListener("resize", debouncedResize);
-            window.addEventListener("load", resize);
-            document.addEventListener("visibilitychange", () => {
-              if (!document.hidden) forceRestart();
-            });
-            window.addEventListener("pageshow", (e) => {
-              if (e.persisted) forceRestart();
-            });
-            let lastT = -1;
-            setInterval(() => {
-              if (visible && raf && t === lastT) {
-                forceRestart();
-              }
-              lastT = t;
-            }, 3000);
-
-            requestAnimationFrame(() => {
-              resize();
-              requestAnimationFrame(resize);
-            });
-
-            resize();
-
-            if ("IntersectionObserver" in window) {
-              const io = new IntersectionObserver(
-                (entries) => {
-                  entries.forEach((e) => {
-                    visible = e.isIntersecting;
-                    if (visible) start();
-                    else stop();
-                  });
-                },
-                { threshold: 0.01 },
-              );
-              io.observe(section);
-            }
-
-            start();
-          } catch (err) {
-            console.error("[wave] init failed:", err);
-          }
-        }
-
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", initWave);
-        } else {
-          initWave();
-        }
-      })();
-    </script>
-    <script nonce="{{ request.csp_nonce }}">
-      (function () {
-        const nav = document.getElementById("siteNav");
-        if (nav) {
-          window.addEventListener(
-            "scroll",
-            () => {
-              nav.classList.toggle("is-scrolled", window.scrollY > 8);
-            },
-            { passive: true },
-          );
-        }
-      })();
       (function () {
         const grid = document.getElementById("faqGrid");
         const items = grid
@@ -2966,8 +2429,90 @@
         stage.addEventListener("mouseleave", resetAutoplay);
       })();
     </script>
+    <script nonce="{{ request.csp_nonce }}">
+    document.addEventListener("DOMContentLoaded", () => {
+      const cards = document.querySelectorAll('.bento-card');
     
-    <!-- ANTI-LAG SCRIPT: Auto-pauses heavy background video on budget devices -->
+      /* 1. Toggle Image Reveal Functionality */
+      function toggleCard(card) {
+        const isOpen = card.classList.contains('is-revealed');
+        cards.forEach(c => {
+          if (c !== card) {
+            c.classList.remove('is-revealed');
+            c.setAttribute('aria-pressed', 'false');
+          }
+        });
+        card.classList.toggle('is-revealed', !isOpen);
+        card.setAttribute('aria-pressed', String(!isOpen));
+      }
+    
+      cards.forEach(card => {
+        card.addEventListener('click', (e) => {
+            // Prevent click if we are just interacting with mouse tracking
+            toggleCard(card);
+        });
+        
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleCard(card);
+          }
+        });
+
+        /* 2. Mouse Tracking Spotlight Effect */
+        card.addEventListener('mousemove', e => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          card.style.setProperty('--mouse-x', `${x}px`);
+          card.style.setProperty('--mouse-y', `${y}px`);
+        });
+      });
+    
+      /* Close revealed cards when clicking outside */
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.bento-card')) {
+          cards.forEach(c => {
+            c.classList.remove('is-revealed');
+            c.setAttribute('aria-pressed', 'false');
+          });
+        }
+      });
+
+      /* 3. GSAP ScrollTrigger Animations */
+      if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Animate Header
+        gsap.from(".fp-header > *", {
+          scrollTrigger: {
+            trigger: ".features-premium",
+            start: "top 80%",
+          },
+          y: 40,
+          opacity: 0,
+          duration: 0.8,
+          stagger: 0.1,
+          ease: "power3.out"
+        });
+
+        // Stagger animate Bento Cards
+        gsap.from(".bento-card", {
+          scrollTrigger: {
+            trigger: ".bento-grid",
+            start: "top 85%",
+          },
+          y: 80,
+          rotationX: 10,
+          opacity: 0,
+          duration: 0.9,
+          stagger: 0.08,
+          ease: "back.out(1.2)",
+          transformOrigin: "center bottom"
+        });
+      }
+    });
+    </script>
     <script nonce="{{ request.csp_nonce }}">
       document.addEventListener("DOMContentLoaded", () => {
         const isLowEnd = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || 
@@ -2989,5 +2534,13 @@
     <script src="{% static 'js/notification_permission.js' %}" defer></script>
     <script src="{% static 'js/sw_register.js' %}" defer></script>
     {% endif %} {% endif %}
+    <!-- Floating Contact Button -->
+    <a href="https://wa.me/917000032565?text=I%20am%20interested%20in%20your%20software" 
+      id="floatingContactBtn" 
+      class="floating-contact-btn" 
+      target="_blank" 
+      rel="noopener noreferrer">
+      Contact Us
+    </a>
   </body>
 </html>
