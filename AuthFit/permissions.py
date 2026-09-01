@@ -7,7 +7,6 @@
 from rest_framework.permissions import BasePermission
 import functools
 import logging
-
 from django.core.exceptions import PermissionDenied
 
 from Gym.models import StaffPermission, PERMISSION_DEFINITIONS
@@ -25,55 +24,33 @@ ALL_PERMISSION_FIELDS = [f for f, _, _ in PERMISSION_DEFINITIONS]
 
 
 def has_permission(request, permission_name: str) -> bool:
-    """
-    Central permission check.
-
-    - Superuser / super_admin  -> always True
-    - gym_owner                -> always True
-    - everyone else            -> looked up from StaffPermission, False if missing
-    """
-    if getattr(request.user, "is_superuser", False):
+    if getattr(request.user, "is_superuser", False) or getattr(request, "is_super_admin", False):
         return True
-
-    if getattr(request, "is_super_admin", False):
-        return True
-
     if getattr(request, "staff_role", None) == "gym_owner":
         return True
+    gym = getattr(request, "gym", None)
+    staff_profile = getattr(request, "staff_profile", None)
+    if not staff_profile and hasattr(request.user, 'staff_profiles'):
+        staff_profile = request.user.staff_profiles.filter(gym=gym, active=True).first()
 
-    staff_profile = getattr(request.user, "staff_profile", None)
     if staff_profile is None:
         return False
-
+    if staff_profile.role == "gym_owner":
+        return True
     try:
         perms = staff_profile.permissions
-    except StaffPermission.DoesNotExist:
+    except Exception:
         logger.warning(
             "StaffPermission missing for staff_profile_id=%s — defaulting to no access.",
             staff_profile.pk,
         )
         return False
-
     if permission_name not in ALL_PERMISSION_FIELDS:
-        # Fail closed on typos instead of silently granting access.
         logger.error("Unknown permission_name requested: %s", permission_name)
         return False
-
     return bool(getattr(perms, permission_name, False))
 
 class IsGymOwnerOrReceptionist(BasePermission):
-    """
-    Allows access only to authenticated staff whose StaffProfile.role is
-    'gym_owner' or 'receptionist'. Trainers, members, and anonymous
-    users are rejected.
-
-    Assumes request.user.staff_profile exists for staff accounts (same
-    relation already used elsewhere in this codebase, e.g.
-    user__staff_profile__role in Shop/notifications.py). If the user has
-    no staff_profile at all (e.g. a plain member account), access is
-    denied rather than raising.
-    """
-
     message = "Only gym owners and receptionists can send expiry reminders."
 
     def has_permission(self, request, view) -> bool:
@@ -81,11 +58,10 @@ class IsGymOwnerOrReceptionist(BasePermission):
         if not user or not user.is_authenticated:
             return False
 
-        staff_profile = getattr(user, 'staff_profile', None)
-        if staff_profile is None:
-            return False
-
-        return staff_profile.role in ALLOWED_EXPIRY_REMINDER_ROLES
+        if getattr(user, 'is_superuser', False):
+            return True
+        staff_role = getattr(request, 'staff_role', None)
+        return staff_role in ALLOWED_EXPIRY_REMINDER_ROLES
     
 
 def permission_required(permission_name: str):

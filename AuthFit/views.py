@@ -1751,20 +1751,24 @@ def renew_membership(request):
 
     today = timezone.now().date()
     if enrollment.DueDate and enrollment.DueDate > today:
+        new_start_date = enrollment.DueDate
         new_due_date = enrollment.DueDate + timedelta(days=selected_plan.duration_days)
     else:
+        new_start_date = today
         new_due_date = today + timedelta(days=selected_plan.duration_days)
 
-    enrollment.selectPlan    = selected_plan
-    enrollment.Amount        = selected_plan.price
-    enrollment.paidAmount    = 0
-    enrollment.pendingAmount = selected_plan.price
-    enrollment.paymentStatus = "Pending"
-    enrollment.paymentMethod = None
-    enrollment.paymentDate   = None
-    enrollment.DueDate       = new_due_date
+    enrollment.selectPlan            = selected_plan
+    enrollment.membership_start_date = new_start_date
+    enrollment.Amount                = selected_plan.price
+    enrollment.paidAmount            = 0
+    enrollment.pendingAmount         = selected_plan.price
+    enrollment.paymentStatus         = "Pending"
+    enrollment.paymentMethod         = None
+    enrollment.paymentDate           = None
+    enrollment.DueDate               = new_due_date
+
     enrollment.save(update_fields=[
-        "selectPlan", "Amount", "paidAmount", "pendingAmount",
+        "selectPlan", "membership_start_date", "Amount", "paidAmount", "pendingAmount",
         "paymentStatus", "paymentMethod", "paymentDate", "DueDate",
     ])
 
@@ -1790,28 +1794,32 @@ def staff_renew_membership(request, member_id):
     if not selected_plan:
         messages.error(request, "Invalid plan selected.")
         return redirect('member_detail', member_id=member_id)
+        
     old_plan = enrollment.selectPlan
     old_price = enrollment.Amount
     old_due_date = enrollment.DueDate
 
     today = timezone.now().date()
     if enrollment.DueDate and enrollment.DueDate > today:
+        new_start_date = enrollment.DueDate
         new_due_date = enrollment.DueDate + timedelta(days=selected_plan.duration_days)
     else:
+        new_start_date = today
         new_due_date = today + timedelta(days=selected_plan.duration_days)
 
-    enrollment.selectPlan    = selected_plan
-    enrollment.Amount        = selected_plan.price
-    enrollment.paidAmount    = 0
-    enrollment.pendingAmount = selected_plan.price
-    enrollment.paymentStatus = "Pending"
-    enrollment.paymentMethod = None
-    enrollment.paymentDate   = None
-    enrollment.DueDate       = new_due_date
+    enrollment.selectPlan            = selected_plan
+    enrollment.membership_start_date = new_start_date
+    enrollment.Amount                = selected_plan.price
+    enrollment.paidAmount            = 0
+    enrollment.pendingAmount         = selected_plan.price
+    enrollment.paymentStatus         = "Pending"
+    enrollment.paymentMethod         = None
+    enrollment.paymentDate           = None
+    enrollment.DueDate               = new_due_date
     enrollment.save(update_fields=[
-        "selectPlan", "Amount", "paidAmount", "pendingAmount",
+        "selectPlan", "membership_start_date", "Amount", "paidAmount", "pendingAmount",
         "paymentStatus", "paymentMethod", "paymentDate", "DueDate",
-    ])
+    ]) 
     MembershipPlanChangeLog.objects.create(
         gym=gym,
         enrollment=enrollment,

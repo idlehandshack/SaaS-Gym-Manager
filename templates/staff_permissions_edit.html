@@ -72,21 +72,24 @@
     margin-bottom: 18px;
     padding: 7px 14px;
     border-radius: 10px;
-    border: 1px solid rgba(255,255,255,.1);
+    /* Updated border */
+    border: 1px solid var(--border, rgba(255,255,255,.1));
     background: transparent;
-    color: #999;
+    /* Updated color */
+    color: var(--text-mid, #999);
     font-size: 12px;
     font-weight: 500;
     text-decoration: none;
     transition: border-color .2s, color .2s, background .2s;
   }
   .db-back-btn:hover {
-    border-color: #ff5a00;
-    color: #f5f5f5;
+    border-color: var(--orange, #ff5a00);
+    color: var(--text-hi, #f5f5f5);
     background: rgba(255, 90, 0, .06);
   }
 
-  .db-username-strong { color: #f5f5f5; font-weight: 600; margin-right: 10px; }
+  /* Updated color */
+  .db-username-strong { color: var(--text-hi, #f5f5f5); font-weight: 600; margin-right: 10px; }
 
   .db-role-badge {
     font-family: "Barlow Condensed", sans-serif;
@@ -95,7 +98,7 @@
     letter-spacing: .14em;
     text-transform: uppercase;
     background: rgba(255, 90, 0, .1);
-    color: #ff5a00;
+    color: var(--orange, #ff5a00);
     border: 1px solid rgba(255, 90, 0, .28);
     padding: 4px 12px;
     border-radius: 40px;
@@ -103,7 +106,8 @@
   }
 
   .db-perm-group-card {
-    border: 1px solid rgba(255,255,255,.11);
+    /* Updated border */
+    border: 1px solid var(--border, rgba(255,255,255,.11));
     border-radius: 18px;
     padding: 20px;
     margin: 0;
@@ -120,12 +124,13 @@
     font-size: 1rem;
     letter-spacing: .06em;
     text-transform: uppercase;
-    color: #f5f5f5;
+    /* Updated text color and bottom border */
+    color: var(--text-hi, #f5f5f5);
     padding-bottom: 12px;
     margin-bottom: 8px;
-    border-bottom: 1px solid rgba(255,255,255,.11);
+    border-bottom: 1px solid var(--border, rgba(255,255,255,.11));
   }
-  .db-perm-group-card legend i { color: #ff5a00; font-size: .95rem; }
+  .db-perm-group-card legend i { color: var(--orange, #ff5a00); font-size: .95rem; }
 
   .db-perm-toggle {
     display: flex;
@@ -133,7 +138,8 @@
     justify-content: space-between;
     gap: 14px;
     padding: 10px 2px;
-    border-bottom: 1px solid rgba(255,255,255,.06);
+    /* Updated bottom border */
+    border-bottom: 1px solid var(--border, rgba(255,255,255,.06));
     cursor: pointer;
   }
   .db-perm-toggle:last-child { border-bottom: none; }
@@ -141,7 +147,8 @@
     font-family: "Barlow", sans-serif;
     font-size: 13px;
     font-weight: 500;
-    color: rgba(255,255,255,.8);
+    /* Updated label color */
+    color: var(--text-hi, rgba(255,255,255,.8));
     line-height: 1.4;
   }
 
@@ -149,8 +156,9 @@
   .db-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   .db-slider {
     position: absolute; inset: 0; pointer-events: none;
-    background: #1e1e1e;
-    border: 1px solid rgba(255,255,255,.11);
+    /* Updated toggle background and border */
+    background: var(--surface-2, #1e1e1e);
+    border: 1px solid var(--border, rgba(255,255,255,.11));
     border-radius: 999px;
     transition: background .22s cubic-bezier(.4,0,.2,1), border-color .22s cubic-bezier(.4,0,.2,1);
   }
@@ -158,19 +166,21 @@
     content: "";
     position: absolute; top: 2px; left: 2px;
     height: 16px; width: 16px; border-radius: 50%;
-    background: #888;
+    /* Updated toggle thumb */
+    background: var(--text-mid, #888);
     transition: transform .22s cubic-bezier(.4,0,.2,1), background .22s cubic-bezier(.4,0,.2,1);
   }
   .db-switch input:checked + .db-slider { background: rgba(255, 90, 0, .1); border-color: rgba(255, 90, 0, .28); }
-  .db-switch input:checked + .db-slider::before { transform: translateX(18px); background: #ff5a00; }
-  .db-switch input:focus-visible + .db-slider { outline: 2px solid #ff5a00; outline-offset: 2px; }
+  .db-switch input:checked + .db-slider::before { transform: translateX(18px); background: var(--orange, #ff5a00); }
+  .db-switch input:focus-visible + .db-slider { outline: 2px solid var(--orange, #ff5a00); outline-offset: 2px; }
 
   .db-perms-empty {
-    border: 1px dashed rgba(255,255,255,.11);
+    /* Updated empty state border and text */
+    border: 1px dashed var(--border, rgba(255,255,255,.11));
     border-radius: 18px;
     padding: 28px;
     text-align: center;
-    color: #888;
+    color: var(--text-mid, #888);
     font-size: 13px;
   }
 
@@ -193,7 +203,7 @@
 
   .db-btn-save {
     border: none;
-    background: #ff5a00;
+    background: var(--orange, #ff5a00);
     color: #fff;
     width: 100%;
   }

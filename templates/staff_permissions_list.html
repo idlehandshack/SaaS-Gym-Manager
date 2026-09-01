@@ -65,8 +65,10 @@
     flex-wrap: wrap;
     gap: 14px;
   }
-  .db-staff-count { font-size: 13px; color: #888; }
-  .db-staff-count strong { color: #f5f5f5; font-weight: 600; }
+  .db-staff-count { font-size: 13px; color: var(--text-mid, #888); }
+  /* Updated to use --text-hi so it turns dark in light mode */
+  .db-staff-count strong { color: var(--text-hi, #f5f5f5); font-weight: 600; }
+  
   .db-back-btn {
     display: inline-flex;
     align-items: center;
@@ -74,17 +76,18 @@
     margin-bottom: 18px;
     padding: 7px 14px;
     border-radius: 10px;
-    border: 1px solid rgba(255,255,255,.1);
+    /* Updated border */
+    border: 1px solid var(--border, rgba(255,255,255,.1));
     background: transparent;
-    color: #999;
+    color: var(--text-mid, #999);
     font-size: 12px;
     font-weight: 500;
     text-decoration: none;
     transition: border-color .2s, color .2s, background .2s;
   }
   .db-back-btn:hover {
-    border-color: #ff5a00;
-    color: #f5f5f5;
+    border-color: var(--orange, #ff5a00);
+    color: var(--text-hi, #f5f5f5);
     background: rgba(255, 90, 0, .06);
   }
   .db-role-filters { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -96,22 +99,24 @@
     text-transform: uppercase;
     padding: 6px 14px;
     border-radius: 40px;
-    border: 1px solid rgba(255,255,255,.11);
-    background: #181818;
-    color: #888;
+    /* Updated background and border */
+    border: 1px solid var(--border, rgba(255,255,255,.11));
+    background: var(--surface-2, #181818);
+    color: var(--text-mid, #888);
     cursor: pointer;
     transition: background .22s, border-color .22s, color .22s;
   }
-  .db-role-pill:hover { color: #f5f5f5; }
+  .db-role-pill:hover { color: var(--text-hi, #f5f5f5); }
   .db-role-pill.active {
     background: rgba(255, 90, 0, .1);
-    color: #ff5a00;
+    color: var(--orange, #ff5a00);
     border-color: rgba(255, 90, 0, .28);
   }
 
   .db-staff-card {
     background: transparent;
-    border: 1px solid rgba(255,255,255,.11);
+    /* Updated border */
+    border: 1px solid var(--border, rgba(255,255,255,.11));
     border-radius: 18px;
     padding: 18px;
     display: flex;
@@ -123,7 +128,8 @@
   }
   .db-staff-card:hover {
     border-color: rgba(255, 90, 0, .28);
-    background: rgba(255,255,255,.02);
+    /* Updated hover background */
+    background: var(--surface-3, rgba(255,255,255,.02));
     transform: translateY(-2px);
   }
 
@@ -140,7 +146,7 @@
     font-family: "Barlow Condensed", sans-serif;
     font-weight: 800;
     font-size: 1.1rem;
-    color: #ff5a00;
+    color: var(--orange, #ff5a00);
     text-transform: uppercase;
   }
 
@@ -149,7 +155,8 @@
     font-family: "Barlow", sans-serif;
     font-weight: 600;
     font-size: 14.5px;
-    color: #f5f5f5;
+    /* Updated to use --text-hi so it turns dark in light mode */
+    color: var(--text-hi, #f5f5f5);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -164,7 +171,7 @@
     letter-spacing: .12em;
     text-transform: uppercase;
     background: rgba(255, 90, 0, .1);
-    color: #ff5a00;
+    color: var(--orange, #ff5a00);
     border: 1px solid rgba(255, 90, 0, .28);
     padding: 3px 10px;
     border-radius: 40px;
@@ -179,24 +186,25 @@
   .db-staff-username {
     font-family: "JetBrains Mono", monospace;
     font-size: 11.5px;
-    color: #888;
+    color: var(--text-mid, #888);
   }
 
   .db-staff-arrow {
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    background: #1e1e1e;
-    border: 1px solid rgba(255,255,255,.11);
+    /* Updated background and border */
+    background: var(--surface-2, #1e1e1e);
+    border: 1px solid var(--border, rgba(255,255,255,.11));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #888;
+    color: var(--text-mid, #888);
     font-size: .8rem;
     flex-shrink: 0;
     transition: background .22s, color .22s;
   }
-  .db-staff-card:hover .db-staff-arrow { background: #ff5a00; color: #fff; }
+  .db-staff-card:hover .db-staff-arrow { background: var(--orange, #ff5a00); color: #fff; }
 </style>
 {% endblock %}
 

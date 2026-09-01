@@ -207,8 +207,10 @@ class SendExpiryReminderPageView(LoginRequiredMixin, UserPassesTestMixin, Templa
     raise_exception = True  # authenticated but wrong role -> 403, not a redirect loop
 
     def test_func(self):
-        staff_profile = getattr(self.request.user, 'staff_profile', None)
-        return staff_profile is not None and staff_profile.role in ALLOWED_EXPIRY_REMINDER_ROLES
+        if self.request.user.is_superuser:
+            return True
+        staff_role = getattr(self.request, 'staff_role', None)
+        return staff_role in ALLOWED_EXPIRY_REMINDER_ROLES
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

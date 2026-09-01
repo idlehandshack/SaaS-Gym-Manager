@@ -42,37 +42,6 @@
           {% for error in form.legal_business_name.errors %}<div class="db-error">{{ error }}</div>{% endfor %}
         </div>
       </div>
-
-      <div class="db-toggle-row mt-3">
-        <div>
-          <div class="db-toggle-label">GST Registered</div>
-          <div class="db-toggle-sub">Turn on if this gym has a valid GSTIN</div>
-        </div>
-        <label class="db-switch">
-          {{ form.is_gst_registered }}
-          <span class="db-track"></span>
-        </label>
-      </div>
-
-      <div class="db-toggle-row">
-        <div>
-          <div class="db-toggle-label">Composition Scheme</div>
-          <div class="db-toggle-sub">Issues a Bill of Supply instead of a Tax Invoice (no GST shown)</div>
-        </div>
-        <label class="db-switch">
-          {{ form.composition_scheme }}
-          <span class="db-track"></span>
-        </label>
-      </div>
-
-      <div class="row g-3 db-gst-only" id="gstin-wrap">
-        <div class="col-12">
-          <label class="db-field-label" for="{{ form.gstin.id_for_label }}">GSTIN</label>
-          {{ form.gstin }}
-          <div class="db-hint">15-character GST Identification Number.</div>
-          {% for error in form.gstin.errors %}<div class="db-error">{{ error }}</div>{% endfor %}
-        </div>
-      </div>
     </div>
   </div>
 
@@ -124,26 +93,10 @@
     </div>
     <div class="p-3">
       <div class="row g-3">
-        <div class="col-12 col-md-6">
-          <label class="db-field-label" for="{{ form.invoice_series_prefix.id_for_label }}">Invoice Series Prefix</label>
-          {{ form.invoice_series_prefix }}
-          {% for error in form.invoice_series_prefix.errors %}<div class="db-error">{{ error }}</div>{% endfor %}
-        </div>
-        <div class="col-12 col-md-6">
-          <label class="db-field-label" for="{{ form.default_sac_membership.id_for_label }}">Default SAC Code</label>
-          {{ form.default_sac_membership }}
-          {% for error in form.default_sac_membership.errors %}<div class="db-error">{{ error }}</div>{% endfor %}
-        </div>
         <div class="col-12">
           <div class="db-invoice-preview">
             Next invoice number preview: <strong id="invoice-preview-text">INV/2026-27/0001</strong>
           </div>
-        </div>
-        <div class="col-12">
-          <label class="db-field-label" for="{{ form.signature_image.id_for_label }}">Signature / Stamp Image URL</label>
-          {{ form.signature_image }}
-          <div class="db-hint">Cloudinary URL — shown on the bottom-right of generated invoices.</div>
-          {% for error in form.signature_image.errors %}<div class="db-error">{{ error }}</div>{% endfor %}
         </div>
       </div>
     </div>
@@ -166,17 +119,18 @@
     margin-bottom: 18px;
     padding: 7px 14px;
     border-radius: 10px;
-    border: 1px solid rgba(255,255,255,.1);
+    /* Updated border and color */
+    border: 1px solid var(--border, rgba(255,255,255,.1));
     background: transparent;
-    color: #999;
+    color: var(--text-mid, #999);
     font-size: 12px;
     font-weight: 500;
     text-decoration: none;
     transition: border-color .2s, color .2s, background .2s;
   }
   .db-back-btn:hover {
-    border-color: #ff5a00;
-    color: #f5f5f5;
+    border-color: var(--orange, #ff5a00);
+    color: var(--text-hi, #f5f5f5);
     background: rgba(255, 90, 0, .06);
   }
 
@@ -213,7 +167,7 @@
     height: 24px;
     border-radius: 50%;
     background: rgba(255, 90, 0, .12);
-    color: #ff5a00;
+    color: var(--orange, #ff5a00);
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     margin-right: 6px;
@@ -223,13 +177,15 @@
     display: block;
     font-size: 12px;
     font-weight: 600;
-    color: #888;
+    /* Updated color */
+    color: var(--text-mid, #888);
     text-transform: uppercase;
     letter-spacing: .04em;
     margin-bottom: 6px;
   }
 
-  .db-hint { color: #666; font-size: 12px; margin-top: 6px; }
+  /* Updated text colors */
+  .db-hint { color: var(--text-mid, #666); font-size: 12px; margin-top: 6px; }
   .db-error { color: #ef4444; font-size: 12px; margin-top: 6px; }
 
   /* Style the rendered Django form widgets */
@@ -237,11 +193,12 @@
   #gst-form input[type="url"],
   #gst-form select {
     width: 100%;
-    background: rgba(255,255,255,.03);
-    border: 1px solid rgba(255,255,255,.1);
+    /* Updated background, border, and text color */
+    background: var(--surface-2, rgba(255,255,255,.03));
+    border: 1px solid var(--border, rgba(255,255,255,.1));
     border-radius: 10px;
     padding: 11px 14px;
-    color: #f5f5f5;
+    color: var(--text-hi, #f5f5f5);
     font-family: 'Barlow', sans-serif;
     font-size: 14px;
     outline: none;
@@ -250,10 +207,11 @@
   #gst-form input[type="text"]:focus,
   #gst-form input[type="url"]:focus,
   #gst-form select:focus {
-    border-color: #ff5a00;
+    border-color: var(--orange, #ff5a00);
     background: rgba(255, 90, 0, .05);
   }
-  #gst-form select option { background: #111; color: #f5f5f5; }
+  /* Updated select dropdown background */
+  #gst-form select option { background: var(--surface, #111); color: var(--text-hi, #f5f5f5); }
 
   #gstin-wrap input {
     font-family: 'JetBrains Mono', monospace;
@@ -264,14 +222,16 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(255,255,255,.02);
-    border: 1px solid rgba(255,255,255,.08);
+    /* Updated background and border */
+    background: var(--surface-2, rgba(255,255,255,.02));
+    border: 1px solid var(--border, rgba(255,255,255,.08));
     border-radius: 12px;
     padding: 14px 16px;
     margin-bottom: 16px;
   }
-  .db-toggle-label { font-size: 14px; font-weight: 600; color: #f5f5f5; }
-  .db-toggle-sub { font-size: 12px; color: #666; margin-top: 2px; }
+  /* Updated text colors */
+  .db-toggle-label { font-size: 14px; font-weight: 600; color: var(--text-hi, #f5f5f5); }
+  .db-toggle-sub { font-size: 12px; color: var(--text-mid, #666); margin-top: 2px; }
 
   .db-switch {
     position: relative;
@@ -284,7 +244,8 @@
   .db-switch .db-track {
     position: absolute;
     inset: 0;
-    background: #2a2a2a;
+    /* Updated un-toggled background */
+    background: var(--border-2, #2a2a2a);
     border-radius: 999px;
     cursor: pointer;
     transition: background .2s;
@@ -296,11 +257,12 @@
     height: 18px;
     left: 3px;
     top: 3px;
+    /* Maintained white indicator */
     background: #fff;
     border-radius: 50%;
     transition: transform .2s;
   }
-  .db-switch input:checked + .db-track { background: #ff5a00; }
+  .db-switch input:checked + .db-track { background: var(--orange, #ff5a00); }
   .db-switch input:checked + .db-track::before { transform: translateX(20px); }
 
   .db-gst-only { transition: opacity .2s; }
@@ -309,16 +271,17 @@
   .db-invoice-preview {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
-    color: #999;
-    background: rgba(255,255,255,.02);
-    border: 1px dashed rgba(255,255,255,.15);
+    /* Updated background, text, and border */
+    color: var(--text-mid, #999);
+    background: var(--surface-2, rgba(255,255,255,.02));
+    border: 1px dashed var(--border, rgba(255,255,255,.15));
     border-radius: 10px;
     padding: 12px 14px;
   }
-  .db-invoice-preview strong { color: #ff5a00; }
+  .db-invoice-preview strong { color: var(--orange, #ff5a00); }
 
   .db-btn-primary {
-    background: #ff5a00;
+    background: var(--orange, #ff5a00);
     color: #fff;
     font-weight: 600;
     font-size: 14px;
@@ -330,14 +293,15 @@
 
   .db-btn-ghost {
     background: transparent;
-    border: 1px solid rgba(255,255,255,.1);
-    color: #999;
+    /* Updated border and text */
+    border: 1px solid var(--border, rgba(255,255,255,.1));
+    color: var(--text-mid, #999);
     font-weight: 600;
     font-size: 14px;
     padding: 10px 22px;
     border-radius: 10px;
   }
-  .db-btn-ghost:hover { border-color: #ff5a00; color: #f5f5f5; }
+  .db-btn-ghost:hover { border-color: var(--orange, #ff5a00); color: var(--text-hi, #f5f5f5); }
 </style>
 {% endblock %}
 
