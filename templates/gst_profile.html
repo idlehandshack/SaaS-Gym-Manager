@@ -304,38 +304,3 @@
   .db-btn-ghost:hover { border-color: var(--orange, #ff5a00); color: var(--text-hi, #f5f5f5); }
 </style>
 {% endblock %}
-
-{% block extra_js %}
-<script nonce="{{ request.csp_nonce }}">
-(function() {
-  const gstToggle = document.getElementById('{{ form.is_gst_registered.id_for_label }}');
-  const gstinWrap = document.getElementById('gstin-wrap');
-  const gstinInput = document.getElementById('{{ form.gstin.id_for_label }}');
-
-  function syncGstinVisibility() {
-    if (gstToggle.checked) {
-      gstinWrap.classList.remove('db-hidden-field');
-    } else {
-      gstinWrap.classList.add('db-hidden-field');
-    }
-  }
-  gstToggle.addEventListener('change', syncGstinVisibility);
-  syncGstinVisibility();
-
-  if (gstinInput) {
-    gstinInput.addEventListener('input', function() {
-      this.value = this.value.toUpperCase();
-    });
-  }
-
-  const prefixInput = document.getElementById('{{ form.invoice_series_prefix.id_for_label }}');
-  const previewText = document.getElementById('invoice-preview-text');
-  function updatePreview() {
-    const prefix = (prefixInput.value || 'INV').toUpperCase();
-    previewText.textContent = prefix + '/2026-27/0001';
-  }
-  prefixInput.addEventListener('input', updatePreview);
-  updatePreview();
-})();
-</script>
-{% endblock %}

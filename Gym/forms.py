@@ -155,15 +155,18 @@ class StaffProfileCreateForm(forms.Form):
 class GymGSTProfileForm(forms.ModelForm):
     class Meta:
         model = GymGSTProfile
-        exclude = ["gym"]
+        fields = [
+            "legal_business_name",
+            "address_line1",
+            "address_line2",
+            "city",
+            "state",
+            "state_code",
+            "pincode"
+        ]
         widgets = {
             "legal_business_name": forms.TextInput(attrs={
                 "placeholder": "As per GST certificate"
-            }),
-            "gstin": forms.TextInput(attrs={
-                "placeholder": "22AAAAA0000A1Z5",
-                "maxlength": 15,
-                "style": "text-transform:uppercase",
             }),
             "address_line1": forms.TextInput(attrs={
                 "placeholder": "Building, street"
@@ -181,51 +184,24 @@ class GymGSTProfileForm(forms.ModelForm):
                 "placeholder": "490001",
                 "maxlength": 6,
             }),
-            "invoice_series_prefix": forms.TextInput(attrs={
-                "placeholder": "INV"
-            }),
-            "default_sac_membership": forms.TextInput(attrs={
-                "placeholder": "999652"
-            }),
-            "signature_image": forms.URLInput(attrs={
-                "placeholder": "https://res.cloudinary.com/..."
-            }),
         }
- 
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for f in ["address_line2", "gstin", "signature_image"]:
+        for f in ["address_line2"]:
             self.fields[f].required = False
- 
-    def clean_gstin(self):
-        gstin = self.cleaned_data.get("gstin", "").strip().upper()
-        if self.cleaned_data.get("is_gst_registered"):
-            if len(gstin) != 15:
-                raise forms.ValidationError("GSTIN must be exactly 15 characters.")
-            pattern = r'^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}Z[A-Z\d]{1}$'
-            if not re.match(pattern, gstin):
-                raise forms.ValidationError("Invalid GSTIN format.")
-        return gstin
- 
+
     def clean_state_code(self):
         code = self.cleaned_data.get("state_code", "").strip()
         if code and (not code.isdigit() or len(code) != 2):
             raise forms.ValidationError("State code must be 2 digits, e.g. '22'.")
         return code
- 
+
     def clean_pincode(self):
         pin = self.cleaned_data.get("pincode", "").strip()
         if not pin.isdigit() or len(pin) != 6:
             raise forms.ValidationError("Pincode must be 6 digits.")
         return pin
- 
-    def clean(self):
-        cleaned_data = super().clean()
-        is_registered = cleaned_data.get("is_gst_registered")
-        gstin = cleaned_data.get("gstin")
-        if is_registered and not gstin:
-            self.add_error("gstin", "GSTIN is required when GST registered is enabled.")
-        return cleaned_data
 
 class WhatsAppSettingsForm(forms.ModelForm):
     """
