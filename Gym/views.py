@@ -1208,3 +1208,6 @@ def gym_quick_edit(request, gym_id):
         "updated_at",
     ])
     return JsonResponse({"success": True})
+
+def game(request):
+    return render(request,"game.html")

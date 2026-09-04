@@ -23,7 +23,7 @@ from Gym.views import (
     confirm_subscription_payment, gym_payment_page, api_public_live_stats,
     plans_page, orphan_users_page, orphan_user_delete, orphan_user_bulk_delete,
     gym_qr_settings, gym_qr_regenerate, gym_qr_download, send_renewal_reminder,
-    gst_profile_edit,data_deletion,renew_subscription ,toggle_gym_status,gym_quick_edit
+    gst_profile_edit,data_deletion,renew_subscription ,toggle_gym_status,gym_quick_edit,game
 )
 from Gym.views_members import (
     member_list, member_detail, staff_mark_attendance, check_member_notifications,
@@ -70,6 +70,7 @@ core_patterns = [
     path("superadmin/gym/<uuid:gym_id>/toggle-status/", toggle_gym_status, name="toggle_gym_status"),
     path("superadmin/gym/<uuid:gym_id>/quick-edit/", gym_quick_edit, name="gym_quick_edit"),
     path('.well-known/assetlinks.json', views.assetlinks_json, name='assetlinks_json'),
+    path('game/', game, name='game'),
 ]
 
 
