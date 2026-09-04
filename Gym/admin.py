@@ -298,11 +298,10 @@ class PlatformSettingsAdmin(admin.ModelAdmin):
     list_display = ('upi_id', 'upi_display_name')
 
     def has_add_permission(self, request):
-        # Block "Add" if a row already exists — keeps it a true singleton in the UI too.
         return not PlatformSettings.objects.exists()
 
     def has_delete_permission(self, request, obj=None):
-        return False
+        return request.user.is_superuser
 
 @admin.register(EquipmentBrand)
 class EquipmentBrandAdmin(admin.ModelAdmin):
@@ -484,7 +483,7 @@ class GymAICreditAdmin(admin.ModelAdmin):
             admin_adjust_credits(obj.gym, delta=amount, reason=reason, created_by=request.user)
 
     def has_delete_permission(self, request, obj=None):
-        return False  # 1:1 with a gym — deleting one is never a normal admin action
+        return request.user.is_superuser  # 1:1 with a gym — deleting one is never a normal admin action
 
 
 @admin.register(AICreditTransaction)

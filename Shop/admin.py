@@ -323,7 +323,7 @@ class GymInventoryMovementAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return False  # immutable audit trail — even superuser can't delete
+        return request.user.is_superuser
 
 # ── StaffDevice — unchanged ────────────────────────────────────────────────────
 

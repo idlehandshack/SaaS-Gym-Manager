@@ -96,4 +96,4 @@ class ReviewGenerationLogAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return False  # enforced at model level too — permanent audit trail
+        return request.user.is_superuser
